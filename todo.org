@@ -1,0 +1,8 @@
+#+Startup: showeverything
+ 
+* Build
+** TODO Build SDL in debug mode
+* Gameplay
+** TODO Screen scrolling
+** TODO Collision on walls
+** TODO Move collisions point to bottom middle of sprite
