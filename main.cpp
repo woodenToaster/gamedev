@@ -3,24 +3,13 @@
 #include "stdio.h"
 #include "stdlib.h"
 
-int screen_clamp_x(int val) {
-    if (val < 0) {
-        return 0;
-    }
-    else if (val > 8) {
-        return 8;
-    }
-    else {
-        return val;
-    }
-}
 
-int screen_clamp_y(int val) {
-    if (val < 0) {
-        return 0;
+int clamp(int val, int min, int max) {
+    if (val < min) {
+        return min;
     }
-    else if (val > 6) {
-        return 6;
+    else if (val > max) {
+        return max;
     }
     else {
         return val;
@@ -32,8 +21,8 @@ int main(int argc, char** argv) {
     (void)argv;
 
     // Window
-    const int window_width = 640;
-    const int window_height = 480;
+    const int screen_width = 640;
+    const int screen_height = 480;
 
     SDL_Init(SDL_INIT_VIDEO);
     IMG_Init(IMG_INIT_PNG);
@@ -41,10 +30,10 @@ int main(int argc, char** argv) {
     SDL_Window* window;
     window = SDL_CreateWindow(
         "gamedev",
-        SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED,
-        window_width,
-        window_height,
+        30,
+        50,
+        screen_width,
+        screen_height,
         SDL_WINDOW_SHOWN
     );
 
@@ -81,7 +70,7 @@ int main(int argc, char** argv) {
     dest_rect.w = w_increment;
     dest_rect.h = h_increment;
 
-    SDL_Surface* windowSurface = SDL_GetWindowSurface(window);
+    SDL_Surface* window_surface = SDL_GetWindowSurface(window);
 
     if (!sprite_sheet) {
         printf("Could not load sprite sheet: %s\n", SDL_GetError());
@@ -90,19 +79,8 @@ int main(int argc, char** argv) {
     // Tiles
     int tile_width = 80;
     int tile_height = 80;
-    int x_tiles_per_screen = window_width / tile_width;
-    int y_tiles_per_screen = window_height / tile_height;
-
-    SDL_Rect tile_to_draw;
-    tile_to_draw.w = tile_width;
-    tile_to_draw.h = tile_height;
-
-    struct TileCoord {
-        int x;
-        int y;
-    };
-
-    TileCoord map_tile_coord = {0, 0};
+    int x_tiles_per_screen = screen_width / tile_width;
+    int y_tiles_per_screen = screen_height / tile_height;
 
     SDL_Rect current_tile;
     current_tile.x = sprite_rect.x;
@@ -111,51 +89,50 @@ int main(int argc, char** argv) {
     current_tile.h = tile_height;
 
     // Colors
-    Uint32 green = SDL_MapRGB(windowSurface->format, 0, 255, 0);
-    Uint32 blue = SDL_MapRGB(windowSurface->format, 0, 0, 255);
-    Uint32 yellow = SDL_MapRGB(windowSurface->format, 235, 245, 65);
+    Uint32 green = SDL_MapRGB(window_surface->format, 0, 255, 0);
+    Uint32 blue = SDL_MapRGB(window_surface->format, 0, 0, 255);
+    Uint32 yellow = SDL_MapRGB(window_surface->format, 235, 245, 65);
 
     // Map
-    // const int map_cols = 12;
-    // const int map_rows = 10;
+    const int map_cols = 12;
+    const int map_rows = 10;
 
-    // Uint8 map[map_rows][map_cols] = {
-    //     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-    //     {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-    //     {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-    //     {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-    //     {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-    //     {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-    //     {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-    //     {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-    //     {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-    //     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
-    // };
-    const int map_rows = 6;
-    const int map_cols = 8;
     Uint8 map[map_rows][map_cols] = {
-        {1, 1, 1, 1, 1, 1, 1, 1},
-        {1, 0, 0, 0, 0, 0, 0, 1},
-        {1, 0, 0, 0, 0, 0, 0, 1},
-        {1, 0, 0, 0, 0, 0, 0, 1},
-        {1, 0, 0, 0, 0, 0, 0, 1},
-        {1, 1, 1, 1, 1, 1, 1, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
     };
+
+    int map_width_pixels = map_cols * tile_width;
+    int map_height_pixels = map_rows * tile_height;
+
+    SDL_Surface* map_surface = SDL_CreateRGBSurfaceWithFormat(
+        0,
+        map_width_pixels,
+        map_height_pixels,
+        32,
+        SDL_PIXELFORMAT_RGB888
+    );
+
     // Camera
-    SDL_Rect viewport;
-    viewport.x = 0;
-    viewport.y = 0;
-    viewport.w = window_width;
-    viewport.h = window_height;
+    SDL_Rect camera;
+    camera.x = 0;
+    camera.y = 0;
+    camera.w = screen_width;
+    camera.h = screen_height;
 
-    int y_movement_threshold = y_tiles_per_screen / 2;
-    int x_movement_threshold = x_tiles_per_screen / 2;
+    int max_camera_x = map_width_pixels - camera.w;
+    int max_camera_y = map_height_pixels - camera.h;
 
-    SDL_Rect center;
-    center.x = window_width / 2;
-    center.y = window_height / 2;
-    center.w = sprite_rect.w;
-    center.h = sprite_rect.h;
+    int y_pixel_movement_threshold = screen_height / 2;
+    int x_pixel_movement_threshold = screen_width / 2;
 
     // Main loop
     while(running) {
@@ -180,110 +157,89 @@ int main(int argc, char** argv) {
                 case SDL_KEYDOWN:
                     if (event.key.keysym.scancode == SDL_SCANCODE_RIGHT ||
                         event.key.keysym.scancode == SDL_SCANCODE_L) {
-                        // dest_rect.x += sprite_speed;
-                        // sprite_rect.y = 2 * h_increment;
-                        current_tile.x += tile_width;
+                        dest_rect.x += sprite_speed;
+                        sprite_rect.y = 2 * h_increment;
+
+                        if (dest_rect.x > x_pixel_movement_threshold &&
+                            camera.x < max_camera_x) {
+                            camera.x += sprite_speed;
+                        }
                     }
                     if (event.key.keysym.scancode == SDL_SCANCODE_LEFT ||
                         event.key.keysym.scancode == SDL_SCANCODE_H) {
-                        // dest_rect.x -= sprite_speed;
-                        // sprite_rect.y = 1 * h_increment;
-                        current_tile.x -= tile_width;
+                        dest_rect.x -= sprite_speed;
+                        sprite_rect.y = 1 * h_increment;
+
+                        if (dest_rect.x <
+                            map_width_pixels - x_pixel_movement_threshold &&
+                            camera.x > 0) {
+                            camera.x -= sprite_speed;
+                        }
                     }
                     if (event.key.keysym.scancode == SDL_SCANCODE_UP ||
                         event.key.keysym.scancode == SDL_SCANCODE_K) {
-                        // dest_rect.y -= sprite_speed;
-                        // sprite_rect.y = 3 * h_increment;
-                        current_tile.y -= tile_height;
+                        dest_rect.y -= sprite_speed;
+                        sprite_rect.y = 3 * h_increment;
+
+                        if (dest_rect.y <
+                            map_height_pixels - y_pixel_movement_threshold &&
+                            camera.y > 0) {
+                            camera.y -= sprite_speed;
+                        }
                     }
                     if (event.key.keysym.scancode == SDL_SCANCODE_DOWN ||
                         event.key.keysym.scancode == SDL_SCANCODE_J) {
-                        // dest_rect.y += sprite_speed;
-                        // sprite_rect.y = 0 * h_increment;
-                        current_tile.y += tile_height;
-                    }
-                    map_tile_coord.x = current_tile.x / tile_width;
-                    map_tile_coord.y = current_tile.y / tile_height;
+                        dest_rect.y += sprite_speed;
+                        sprite_rect.y = 0 * h_increment;
 
-                    // Clamp tile
-                    if (current_tile.x < 0) {
-                        current_tile.x = 0;
-                        map_tile_coord.x = 0;
-                    }
-                    if (current_tile.x > map_cols * tile_width) {
-                        current_tile.x = map_cols * tile_width;
-                        map_tile_coord.x = map_cols;
-                    }
-                    if (current_tile.y < 0) {
-                        current_tile.y = 0;
-                        map_tile_coord.y = 0;
-                    }
-                    if (current_tile.y > map_rows * tile_height) {
-                        current_tile.y = map_rows * tile_height;
-                        map_tile_coord.y = map_rows;
+                        if (dest_rect.y > y_pixel_movement_threshold &&
+                            camera.y < max_camera_y) {
+                            camera.y += sprite_speed;
+                        }
                     }
 
-                    // current_tile.x = ((dest_rect.x + (dest_rect.w / 2)) / 80) * 80;
-                    // current_tile.y = ((dest_rect.y + (dest_rect.h / 2)) / 80) * 80;
-                    printf("Map tile coord: {%d, %d}\n", map_tile_coord.x, map_tile_coord.y);
+                    current_tile.x = ((dest_rect.x + (dest_rect.w / 2)) / 80) * 80;
+                    current_tile.y = ((dest_rect.y + (dest_rect.h / 2)) / 80) * 80;
+
+                    // Clamp camera
+                    camera.x = clamp(camera.x, 0, max_camera_x);
+                    camera.y = clamp(camera.y, 0, max_camera_y);
+
+                    // Clamp hero
+                    dest_rect.x = clamp(dest_rect.x, 0, map_width_pixels - dest_rect.w);
+                    dest_rect.y = clamp(dest_rect.y, 0, map_height_pixels - dest_rect.h);
             }
         }
 
-        // int first_tile_coordinate_x = current_tile.x / tile_width;
-        // int first_tile_coordinate_y = current_tile.y / tile_height;
-
-        int screen_y = screen_clamp_y(map_tile_coord.y - y_movement_threshold);
-        int screen_x = screen_clamp_x(map_tile_coord.x - x_movement_threshold);
-
-
-        // Draw visible portion of map, tile by tile
-        for (int row = 0; row < 6; ++row) {
-            for (int col = 0; col < 8; ++col) {
-                tile_to_draw.x = col * tile_width;
-                tile_to_draw.y = row * tile_height;
-
-                // See which tile needs to be drawn here. Determined relative
-                // to current tile in map coordinates.
-                // int map_x = screen_x + j;
-                // int map_y = screen_y + i;
-                // int tile = map[map_x][map_y];
+        // Draw map
+        for (int row = 0; row < map_rows; ++row) {
+            for (int col = 0; col < map_cols; ++col) {
+                SDL_Rect tile_rect;
+                tile_rect.x = col * tile_width;
+                tile_rect.y = row * tile_height;
+                tile_rect.w = tile_width;
+                tile_rect.h = tile_height;
 
                 if (map[row][col]) {
-                    SDL_FillRect(windowSurface, &tile_to_draw, green);
+                    SDL_FillRect(map_surface, &tile_rect, green);
                 }
                 else {
-                    SDL_FillRect(windowSurface, &tile_to_draw, blue);
+                    SDL_FillRect(map_surface, &tile_rect, blue);
                 }
             }
         }
-        SDL_Rect current_tile_dest = current_tile;
 
-        if (current_tile.x > window_width / 2 &&
-            current_tile.x < (map_cols * tile_width) - (x_movement_threshold * tile_width)) {
-            current_tile_dest.x = center.x;
-        }
-        if (current_tile.y > window_height / 2 &&
-            current_tile.y < (map_rows * tile_height) - (y_movement_threshold * tile_height)) {
-            current_tile_dest.y = center.y;
-        }
-        SDL_FillRect(windowSurface, &current_tile_dest, yellow);
+        SDL_FillRect(map_surface, &current_tile, yellow);
+        // Draw sprite on map
+        SDL_BlitSurface(sprite_sheet, &sprite_rect, map_surface, &dest_rect);
+        // Draw portion of map visible to camera on the screen
+        SDL_BlitSurface(map_surface, &camera, window_surface, NULL);
 
-        SDL_Rect sprite_blit_rect = dest_rect;
-
-        // if (dest_rect.x > x_movement_threshold * tile_width &&
-        //     dest_rect.x < (map_cols * tile_width) - (x_movement_threshold * tile_width)) {
-        //     sprite_blit_rect.x = center.x;
-        // }
-        // if (dest_rect.y > y_movement_threshold * tile_height &&
-        //     dest_rect.y < (map_rows * tile_height) - (y_movement_threshold * tile_height)) {
-        //     sprite_blit_rect.y = center.y;
-        // }
-
-        // SDL_BlitSurface(sprite_sheet, &sprite_rect, windowSurface, &sprite_blit_rect);
         SDL_UpdateWindowSurface(window);
 
         SDL_Delay(33);
         frames++;
+        fflush(stdout);
     }
 
     // Cleanup

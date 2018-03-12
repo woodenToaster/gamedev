@@ -6,3 +6,4 @@
 ** TODO Screen scrolling
 ** TODO Collision on walls
 ** TODO Move collisions point to bottom middle of sprite
+** TODO Use time delta and velocity for updating movement 
