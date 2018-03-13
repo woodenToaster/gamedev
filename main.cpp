@@ -3,6 +3,10 @@
 #include "stdio.h"
 #include "stdlib.h"
 
+struct Point {
+    float x;
+    float y;
+};
 
 int clamp(int val, int min, int max) {
     if (val < min) {
@@ -65,10 +69,14 @@ int main(int argc, char** argv) {
     int sprite_speed = 10;
 
     SDL_Rect dest_rect;
-    dest_rect.x = 0;
-    dest_rect.y = 0;
+    dest_rect.x = 85;
+    dest_rect.y = 85;
     dest_rect.w = w_increment;
     dest_rect.h = h_increment;
+
+    Point hero_collision_pt;
+    hero_collision_pt.x = dest_rect.x / 2;
+    hero_collision_pt.y = dest_rect.y + dest_rect.h;
 
     SDL_Surface* window_surface = SDL_GetWindowSurface(window);
 
@@ -79,12 +87,12 @@ int main(int argc, char** argv) {
     // Tiles
     int tile_width = 80;
     int tile_height = 80;
-    int x_tiles_per_screen = screen_width / tile_width;
-    int y_tiles_per_screen = screen_height / tile_height;
+    // int x_tiles_per_screen = screen_width / tile_width;
+    // int y_tiles_per_screen = screen_height / tile_height;
 
     SDL_Rect current_tile;
-    current_tile.x = sprite_rect.x;
-    current_tile.y = sprite_rect.y;
+    current_tile.x = dest_rect.x / tile_width;
+    current_tile.y = dest_rect.y / tile_height;
     current_tile.w = tile_width;
     current_tile.h = tile_height;
 
@@ -99,14 +107,14 @@ int main(int argc, char** argv) {
 
     Uint8 map[map_rows][map_cols] = {
         {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+        {1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1},
+        {1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1},
         {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+        {1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1},
+        {1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1},
+        {1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1},
+        {1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1},
+        {1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1},
         {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
     };
 
@@ -155,6 +163,10 @@ int main(int argc, char** argv) {
                 case SDL_QUIT:
                     running = false;
                 case SDL_KEYDOWN:
+                    SDL_Rect saved_position = dest_rect;
+                    SDL_Rect saved_camera = camera;
+                    SDL_Rect saved_tile = current_tile;
+
                     if (event.key.keysym.scancode == SDL_SCANCODE_RIGHT ||
                         event.key.keysym.scancode == SDL_SCANCODE_L) {
                         dest_rect.x += sprite_speed;
@@ -198,16 +210,29 @@ int main(int argc, char** argv) {
                         }
                     }
 
-                    current_tile.x = ((dest_rect.x + (dest_rect.w / 2)) / 80) * 80;
-                    current_tile.y = ((dest_rect.y + (dest_rect.h / 2)) / 80) * 80;
 
                     // Clamp camera
                     camera.x = clamp(camera.x, 0, max_camera_x);
                     camera.y = clamp(camera.y, 0, max_camera_y);
 
+
                     // Clamp hero
                     dest_rect.x = clamp(dest_rect.x, 0, map_width_pixels - dest_rect.w);
                     dest_rect.y = clamp(dest_rect.y, 0, map_height_pixels - dest_rect.h);
+
+                    hero_collision_pt.y = dest_rect.y + dest_rect.h;
+                    hero_collision_pt.x = dest_rect.x + dest_rect.w / 2.0;
+
+                    current_tile.x = ((int)hero_collision_pt.x / 80) * 80;
+                    current_tile.y = ((int)hero_collision_pt.y / 80) * 80;
+
+                    // Check hero collision with walls
+                    if (map[current_tile.y / tile_height][current_tile.x / tile_width]) {
+                        // Collsions. Reverse movement
+                        camera = saved_camera;
+                        dest_rect = saved_position;
+                        current_tile = saved_tile;
+                    }
             }
         }
 
