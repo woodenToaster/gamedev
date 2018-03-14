@@ -3,6 +3,8 @@
 #include "stdio.h"
 #include "stdlib.h"
 
+Uint32 SOLID = 0x01;
+
 struct Point {
     float x;
     float y;
@@ -18,6 +20,15 @@ int clamp(int val, int min, int max) {
     else {
         return val;
     }
+}
+
+bool is_solid_tile(Uint64 t) {
+    Uint32 flags = (Uint32)(t >> 32);
+    return flags & SOLID;
+}
+
+Uint32 get_color_from_tile(Uint64 t) {
+    return (Uint32)(t & 0xFFFFFFFF);
 }
 
 int main(int argc, char** argv) {
@@ -101,21 +112,52 @@ int main(int argc, char** argv) {
     Uint32 blue = SDL_MapRGB(window_surface->format, 0, 0, 255);
     Uint32 yellow = SDL_MapRGB(window_surface->format, 235, 245, 65);
 
+    enum colors_enum {GREEN, BLUE, YELLOW};
+    Uint32 colors[] = {green, blue, yellow};
+
+    struct Tile {
+        Uint32 flags;
+        Uint32 color;
+        Uint64 as_u64() {
+            return (Uint64)flags << 32 | color;
+        }
+    };
+
+    Tile wall;
+    wall.flags = SOLID;
+    wall.color = colors[GREEN];
+    Uint64 w = wall.as_u64();
+
+    Tile floor;
+    floor.flags = 0x0;
+    floor.color = colors[BLUE];
+    Uint64 f = floor.as_u64();
+
     // Map
     const int map_cols = 12;
     const int map_rows = 10;
 
-    Uint8 map[map_rows][map_cols] = {
-        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-        {1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1},
-        {1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1},
-        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-        {1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1},
-        {1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1},
-        {1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1},
-        {1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1},
-        {1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1},
-        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+    Uint64 map[map_rows][map_cols] = {
+        {w, w, w, w, w, w, w, w, w, w, w, w},
+        {w, f, f, w, f, f, f, f, f, f, f, w},
+        {w, f, f, w, f, f, f, f, f, f, w, w},
+        {w, f, f, f, f, f, f, f, f, f, f, w},
+        {w, f, f, w, f, f, f, f, f, f, f, w},
+        {w, f, f, w, w, w, w, f, f, w, f, w},
+        {w, f, f, f, f, f, w, f, f, w, f, w},
+        {w, f, f, f, f, f, w, f, f, w, f, w},
+        {w, f, f, f, f, f, f, f, f, w, f, w},
+        {w, w, w, w, w, w, w, w, w, w, w, w}
+        // {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+        // {1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1},
+        // {1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1},
+        // {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+        // {1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1},
+        // {1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1},
+        // {1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1},
+        // {1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1},
+        // {1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1},
+        // {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
     };
 
     int map_width_pixels = map_cols * tile_width;
@@ -210,11 +252,9 @@ int main(int argc, char** argv) {
                         }
                     }
 
-
                     // Clamp camera
                     camera.x = clamp(camera.x, 0, max_camera_x);
                     camera.y = clamp(camera.y, 0, max_camera_y);
-
 
                     // Clamp hero
                     dest_rect.x = clamp(dest_rect.x, 0, map_width_pixels - dest_rect.w);
@@ -227,7 +267,7 @@ int main(int argc, char** argv) {
                     current_tile.y = ((int)hero_collision_pt.y / 80) * 80;
 
                     // Check hero collision with walls
-                    if (map[current_tile.y / tile_height][current_tile.x / tile_width]) {
+                    if (is_solid_tile(map[current_tile.y / tile_height][current_tile.x / tile_width])) {
                         // Collsions. Reverse movement
                         camera = saved_camera;
                         dest_rect = saved_position;
@@ -251,6 +291,8 @@ int main(int argc, char** argv) {
                 else {
                     SDL_FillRect(map_surface, &tile_rect, blue);
                 }
+                // Uint32 fill_color = get_color_from_tile(map[row][col]);
+                // SDL_FillRect(map_surface, &tile_rect, fill_color);
             }
         }
 
