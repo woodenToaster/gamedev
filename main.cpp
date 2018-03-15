@@ -86,8 +86,8 @@ int main(int argc, char** argv) {
     dest_rect.h = h_increment;
 
     Point hero_collision_pt;
-    hero_collision_pt.x = dest_rect.x / 2;
-    hero_collision_pt.y = dest_rect.y + dest_rect.h;
+    hero_collision_pt.x = (float)dest_rect.x / 2;
+    hero_collision_pt.y = (float)dest_rect.y + dest_rect.h;
 
     SDL_Surface* window_surface = SDL_GetWindowSurface(window);
 
@@ -98,8 +98,6 @@ int main(int argc, char** argv) {
     // Tiles
     int tile_width = 80;
     int tile_height = 80;
-    // int x_tiles_per_screen = screen_width / tile_width;
-    // int y_tiles_per_screen = screen_height / tile_height;
 
     SDL_Rect current_tile;
     current_tile.x = dest_rect.x / tile_width;
@@ -148,16 +146,18 @@ int main(int argc, char** argv) {
         {w, f, f, f, f, f, w, f, f, w, f, w},
         {w, f, f, f, f, f, f, f, f, w, f, w},
         {w, w, w, w, w, w, w, w, w, w, w, w}
-        // {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-        // {1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1},
-        // {1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1},
-        // {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-        // {1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1},
-        // {1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1},
-        // {1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1},
-        // {1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1},
-        // {1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1},
-        // {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+#if 0
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+        {1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1},
+        {1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1},
+        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+        {1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1},
+        {1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1},
+        {1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1},
+        {1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1},
+        {1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1},
+        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+#endif
     };
 
     int map_width_pixels = map_cols * tile_width;
@@ -260,8 +260,8 @@ int main(int argc, char** argv) {
                     dest_rect.x = clamp(dest_rect.x, 0, map_width_pixels - dest_rect.w);
                     dest_rect.y = clamp(dest_rect.y, 0, map_height_pixels - dest_rect.h);
 
-                    hero_collision_pt.y = dest_rect.y + dest_rect.h;
-                    hero_collision_pt.x = dest_rect.x + dest_rect.w / 2.0;
+                    hero_collision_pt.y = (float)dest_rect.y + dest_rect.h;
+                    hero_collision_pt.x = dest_rect.x + dest_rect.w / 2.0f;
 
                     current_tile.x = ((int)hero_collision_pt.x / 80) * 80;
                     current_tile.y = ((int)hero_collision_pt.y / 80) * 80;
@@ -285,14 +285,8 @@ int main(int argc, char** argv) {
                 tile_rect.w = tile_width;
                 tile_rect.h = tile_height;
 
-                if (map[row][col]) {
-                    SDL_FillRect(map_surface, &tile_rect, green);
-                }
-                else {
-                    SDL_FillRect(map_surface, &tile_rect, blue);
-                }
-                // Uint32 fill_color = get_color_from_tile(map[row][col]);
-                // SDL_FillRect(map_surface, &tile_rect, fill_color);
+                Uint32 fill_color = get_color_from_tile(map[row][col]);
+                SDL_FillRect(map_surface, &tile_rect, fill_color);
             }
         }
 
