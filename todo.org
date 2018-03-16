@@ -3,7 +3,13 @@
 * Build
 ** TODO Build SDL in debug mode
 * Gameplay
-** TODO Screen scrolling
-** TODO Collision on walls
-** TODO Move collisions point to bottom middle of sprite
-** TODO Use time delta and velocity for updating movement 
+** DONE Screen scrolling
+   CLOSED: [2018-03-15 Thu 19:00]
+** DONE Collision on walls
+   CLOSED: [2018-03-15 Thu 19:00]
+** DONE Move collisions point to bottom middle of sprite
+   CLOSED: [2018-03-15 Thu 19:00]
+** TODO Use time delta and velocity for updating movement
+** TODO Make tiles 8x8
+** TODO Smooth movement (holding right doesn't 'jump')
+** TODO Don't draw each map tile on each frame

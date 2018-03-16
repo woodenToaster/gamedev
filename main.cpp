@@ -3,7 +3,12 @@
 #include "stdio.h"
 #include "stdlib.h"
 
+Uint32 NONE = 0x0;
 Uint32 SOLID = 0x01;
+Uint32 WATER = 0x01 << 1;
+Uint32 QUICKSAND = 0x01 << 2;
+Uint32 STICKY = 0x01 << 3;
+Uint32 REVERSE = 0x01 << 4;
 
 struct Point {
     float x;
@@ -25,6 +30,11 @@ int clamp(int val, int min, int max) {
 bool is_solid_tile(Uint64 t) {
     Uint32 flags = (Uint32)(t >> 32);
     return flags & SOLID;
+}
+
+bool is_slow_tile(Uint64 t) {
+    Uint32 flags = (Uint32)(t >> 32);
+    return flags & QUICKSAND;
 }
 
 Uint32 get_color_from_tile(Uint64 t) {
@@ -88,6 +98,7 @@ int main(int argc, char** argv) {
     Point hero_collision_pt;
     hero_collision_pt.x = (float)dest_rect.x / 2;
     hero_collision_pt.y = (float)dest_rect.y + dest_rect.h;
+    bool in_quicksand = false;
 
     SDL_Surface* window_surface = SDL_GetWindowSurface(window);
 
@@ -109,9 +120,10 @@ int main(int argc, char** argv) {
     Uint32 green = SDL_MapRGB(window_surface->format, 0, 255, 0);
     Uint32 blue = SDL_MapRGB(window_surface->format, 0, 0, 255);
     Uint32 yellow = SDL_MapRGB(window_surface->format, 235, 245, 65);
+    Uint32 brown = SDL_MapRGB(window_surface->format, 153, 102, 0);
 
-    enum colors_enum {GREEN, BLUE, YELLOW};
-    Uint32 colors[] = {green, blue, yellow};
+    enum colors_enum {GREEN, BLUE, YELLOW, BROWN};
+    Uint32 colors[] = {green, blue, yellow, brown};
 
     struct Tile {
         Uint32 flags;
@@ -127,9 +139,14 @@ int main(int argc, char** argv) {
     Uint64 w = wall.as_u64();
 
     Tile floor;
-    floor.flags = 0x0;
+    floor.flags = NONE;
     floor.color = colors[BLUE];
     Uint64 f = floor.as_u64();
+
+    Tile mud;
+    mud.flags = QUICKSAND;
+    mud.color = colors[BROWN];
+    Uint64 m = mud.as_u64();
 
     // Map
     const int map_cols = 12;
@@ -137,14 +154,14 @@ int main(int argc, char** argv) {
 
     Uint64 map[map_rows][map_cols] = {
         {w, w, w, w, w, w, w, w, w, w, w, w},
-        {w, f, f, w, f, f, f, f, f, f, f, w},
-        {w, f, f, w, f, f, f, f, f, f, w, w},
-        {w, f, f, f, f, f, f, f, f, f, f, w},
-        {w, f, f, w, f, f, f, f, f, f, f, w},
-        {w, f, f, w, w, w, w, f, f, w, f, w},
-        {w, f, f, f, f, f, w, f, f, w, f, w},
-        {w, f, f, f, f, f, w, f, f, w, f, w},
-        {w, f, f, f, f, f, f, f, f, w, f, w},
+        {w, f, f, w, f, f, f, f, f, f, f, f},
+        {w, f, f, w, f, f, f, f, f, f, w, f},
+        {w, f, f, f, f, f, f, f, f, f, f, m},
+        {w, f, f, w, f, f, f, f, f, f, f, f},
+        {w, f, f, w, w, w, w, f, f, w, f, f},
+        {w, f, f, f, f, f, w, f, f, w, f, f},
+        {w, f, f, f, f, f, w, f, f, w, f, m},
+        {w, f, f, f, f, f, f, f, f, w, f, f},
         {w, w, w, w, w, w, w, w, w, w, w, w}
 #if 0
         {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
@@ -267,12 +284,26 @@ int main(int argc, char** argv) {
                     current_tile.y = ((int)hero_collision_pt.y / 80) * 80;
 
                     // Check hero collision with walls
-                    if (is_solid_tile(map[current_tile.y / tile_height][current_tile.x / tile_width])) {
+                    int map_coord_x = current_tile.y / tile_height;
+                    int map_coord_y = current_tile.x / tile_width;
+                    Uint64 tile_at_hero_position = map[map_coord_x][map_coord_y];
+
+                    if (is_solid_tile(tile_at_hero_position)) {
                         // Collsions. Reverse movement
                         camera = saved_camera;
                         dest_rect = saved_position;
                         current_tile = saved_tile;
                     }
+                    if (is_slow_tile(tile_at_hero_position) && !in_quicksand) {
+                        sprite_speed -= 5;
+                        in_quicksand = true;
+                    }
+                    else if (in_quicksand) {
+                        sprite_speed += 5;
+                        in_quicksand = false;
+                    }
+
+
             }
         }
 
@@ -304,6 +335,8 @@ int main(int argc, char** argv) {
     }
 
     // Cleanup
+    SDL_FreeSurface(sprite_sheet);
+    SDL_FreeSurface(map_surface);
     IMG_Quit();
     SDL_DestroyWindow(window);
     SDL_Quit();
