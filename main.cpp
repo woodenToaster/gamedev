@@ -9,6 +9,7 @@ Uint32 WATER = 0x01 << 1;
 Uint32 QUICKSAND = 0x01 << 2;
 Uint32 STICKY = 0x01 << 3;
 Uint32 REVERSE = 0x01 << 4;
+Uint32 WARP = 0x01 << 5;
 
 struct Point {
     float x;
@@ -35,6 +36,11 @@ bool is_solid_tile(Uint64 t) {
 bool is_slow_tile(Uint64 t) {
     Uint32 flags = (Uint32)(t >> 32);
     return flags & QUICKSAND;
+}
+
+bool is_warp_tile(Uint64 t) {
+    Uint32 flags = (Uint32)(t >> 32);
+    return flags & WARP;
 }
 
 Uint32 get_color_from_tile(Uint64 t) {
@@ -95,6 +101,8 @@ int main(int argc, char** argv) {
     dest_rect.w = w_increment;
     dest_rect.h = h_increment;
 
+    SDL_Rect hero_starting_pos = dest_rect;
+
     Point hero_collision_pt;
     hero_collision_pt.x = (float)dest_rect.x / 2;
     hero_collision_pt.y = (float)dest_rect.y + dest_rect.h;
@@ -106,6 +114,16 @@ int main(int argc, char** argv) {
         printf("Could not load sprite sheet: %s\n", SDL_GetError());
     }
 
+    // Colors
+    Uint32 green = SDL_MapRGB(window_surface->format, 0, 255, 0);
+    Uint32 blue = SDL_MapRGB(window_surface->format, 0, 0, 255);
+    Uint32 yellow = SDL_MapRGB(window_surface->format, 235, 245, 65);
+    Uint32 brown = SDL_MapRGB(window_surface->format, 153, 102, 0);
+    Uint32 rust = SDL_MapRGB(window_surface->format, 153, 70, 77);
+
+    enum colors_enum {GREEN, BLUE, YELLOW, BROWN, RUST};
+    Uint32 colors[] = {green, blue, yellow, brown, rust};
+
     // Tiles
     int tile_width = 80;
     int tile_height = 80;
@@ -115,15 +133,6 @@ int main(int argc, char** argv) {
     current_tile.y = dest_rect.y / tile_height;
     current_tile.w = tile_width;
     current_tile.h = tile_height;
-
-    // Colors
-    Uint32 green = SDL_MapRGB(window_surface->format, 0, 255, 0);
-    Uint32 blue = SDL_MapRGB(window_surface->format, 0, 0, 255);
-    Uint32 yellow = SDL_MapRGB(window_surface->format, 235, 245, 65);
-    Uint32 brown = SDL_MapRGB(window_surface->format, 153, 102, 0);
-
-    enum colors_enum {GREEN, BLUE, YELLOW, BROWN};
-    Uint32 colors[] = {green, blue, yellow, brown};
 
     struct Tile {
         Uint32 flags;
@@ -148,6 +157,11 @@ int main(int argc, char** argv) {
     mud.color = colors[BROWN];
     Uint64 m = mud.as_u64();
 
+    Tile warp;
+    warp.flags = WARP;
+    warp.color = colors[RUST];
+    Uint64 wr = warp.as_u64();
+
     // Map
     const int map_cols = 12;
     const int map_rows = 10;
@@ -158,23 +172,26 @@ int main(int argc, char** argv) {
         {w, f, f, w, f, f, f, f, f, f, w, f},
         {w, f, f, f, f, f, f, f, f, f, f, m},
         {w, f, f, w, f, f, f, f, f, f, f, f},
-        {w, f, f, w, w, w, w, f, f, w, f, f},
+        {w, f, f, w, w, w, w, f, f, w, f, wr},
         {w, f, f, f, f, f, w, f, f, w, f, f},
         {w, f, f, f, f, f, w, f, f, w, f, m},
         {w, f, f, f, f, f, f, f, f, w, f, f},
         {w, w, w, w, w, w, w, w, w, w, w, w}
-#if 0
-        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-        {1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1},
-        {1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1},
-        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-        {1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1},
-        {1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1},
-        {1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1},
-        {1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1},
-        {1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1},
-        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
-#endif
+    };
+
+    Uint64 (*current_map)[map_rows][map_cols] = &map;
+
+    Uint64 map2[map_rows][map_cols] = {
+        {w, w, w, w, w, w, w, w, w, w, w, w},
+        {w, f, f, f, f, f, f, f, f, f, f, w},
+        {w, f, f, f, f, f, f, f, f, f, f, w},
+        {w, f, f, f, f, f, f, f, f, f, f, w},
+        {w, f, f, f, f, f, f, f, f, f, f, w},
+        {w, f, f, f, f, f, f, f, f, f, f, w},
+        {w, f, f, f, f, f, f, f, f, f, f, w},
+        {w, f, f, f, f, f, f, f, f, f, f, w},
+        {w, f, f, f, f, f, f, f, f, f, f, w},
+        {w, w, w, w, w, w, w, w, w, w, w, w}
     };
 
     int map_width_pixels = map_cols * tile_width;
@@ -194,6 +211,8 @@ int main(int argc, char** argv) {
     camera.y = 0;
     camera.w = screen_width;
     camera.h = screen_height;
+
+    SDL_Rect camera_starting_pos = camera;
 
     int max_camera_x = map_width_pixels - camera.w;
     int max_camera_y = map_height_pixels - camera.h;
@@ -283,26 +302,30 @@ int main(int argc, char** argv) {
                     current_tile.x = ((int)hero_collision_pt.x / 80) * 80;
                     current_tile.y = ((int)hero_collision_pt.y / 80) * 80;
 
-                    // Check hero collision with walls
                     int map_coord_x = current_tile.y / tile_height;
                     int map_coord_y = current_tile.x / tile_width;
-                    Uint64 tile_at_hero_position = map[map_coord_x][map_coord_y];
+                    Uint64 tile_at_hero_position = (*current_map)[map_coord_x][map_coord_y];
 
+                    // Handle all tiles
                     if (is_solid_tile(tile_at_hero_position)) {
-                        // Collsions. Reverse movement
+                        // Collisions. Reverse original state
                         camera = saved_camera;
                         dest_rect = saved_position;
                         current_tile = saved_tile;
                     }
                     if (is_slow_tile(tile_at_hero_position) && !in_quicksand) {
-                        sprite_speed -= 5;
+                        sprite_speed -= 8;
                         in_quicksand = true;
                     }
                     else if (in_quicksand) {
-                        sprite_speed += 5;
+                        sprite_speed += 8;
                         in_quicksand = false;
                     }
-
+                    if (is_warp_tile(tile_at_hero_position)) {
+                        current_map = &map2;
+                        dest_rect = hero_starting_pos;
+                        camera = camera_starting_pos;
+                    }
 
             }
         }
@@ -316,7 +339,7 @@ int main(int argc, char** argv) {
                 tile_rect.w = tile_width;
                 tile_rect.h = tile_height;
 
-                Uint32 fill_color = get_color_from_tile(map[row][col]);
+                Uint32 fill_color = get_color_from_tile((*current_map)[row][col]);
                 SDL_FillRect(map_surface, &tile_rect, fill_color);
             }
         }
