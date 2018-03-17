@@ -1,6 +1,6 @@
 @echo off
 
-mkdir build
+if not exist "build" mkdir build
 pushd build
 
 set INCLUDE=C:\Users\Chris\dev\SDL2-2.0.8\include;%INCLUDE%;

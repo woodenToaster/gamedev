@@ -4,7 +4,4 @@
 ** TODO Build SDL in debug mode
 * Gameplay
 ** TODO Use time delta and velocity for updating movement
-** TODO Make tiles 8x8
-** TODO Smooth movement (so that holding right doesn't 'jump')
-** DONE Don't draw each map tile on each frame
-   CLOSED: [2018-03-17 Sat 11:19]
+** TODO Make tiles 8x8?

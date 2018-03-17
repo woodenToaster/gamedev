@@ -3,13 +3,13 @@
 #include "stdio.h"
 #include "stdlib.h"
 
-Uint32 NONE = 0x0;
-Uint32 SOLID = 0x01;
-Uint32 WATER = 0x01 << 1;
-Uint32 QUICKSAND = 0x01 << 2;
-Uint32 STICKY = 0x01 << 3;
-Uint32 REVERSE = 0x01 << 4;
-Uint32 WARP = 0x01 << 5;
+const Uint32 NONE = 0x0;
+const Uint32 SOLID = 0x01;
+const Uint32 WATER = 0x01 << 1;
+const Uint32 QUICKSAND = 0x01 << 2;
+const Uint32 STICKY = 0x01 << 3;
+const Uint32 REVERSE = 0x01 << 4;
+const Uint32 WARP = 0x01 << 5;
 
 struct Point {
     float x;
@@ -108,6 +108,11 @@ int main(int argc, char** argv) {
     hero_collision_pt.y = (float)dest_rect.y + dest_rect.h;
     bool in_quicksand = false;
 
+    bool right_is_pressed = false;
+    bool left_is_pressed = false;
+    bool up_is_pressed = false;
+    bool down_is_pressed = false;
+
     SDL_Surface* window_surface = SDL_GetWindowSurface(window);
 
     if (!sprite_sheet) {
@@ -120,9 +125,6 @@ int main(int argc, char** argv) {
     Uint32 yellow = SDL_MapRGB(window_surface->format, 235, 245, 65);
     Uint32 brown = SDL_MapRGB(window_surface->format, 153, 102, 0);
     Uint32 rust = SDL_MapRGB(window_surface->format, 153, 70, 77);
-
-    enum colors_enum {GREEN, BLUE, YELLOW, BROWN, RUST};
-    Uint32 colors[] = {green, blue, yellow, brown, rust};
 
     // Tiles
     int tile_width = 80;
@@ -144,22 +146,22 @@ int main(int argc, char** argv) {
 
     Tile wall;
     wall.flags = SOLID;
-    wall.color = colors[GREEN];
+    wall.color = green;
     Uint64 w = wall.as_u64();
 
     Tile floor;
     floor.flags = NONE;
-    floor.color = colors[BLUE];
+    floor.color = blue;
     Uint64 f = floor.as_u64();
 
     Tile mud;
     mud.flags = QUICKSAND;
-    mud.color = colors[BROWN];
+    mud.color = brown;
     Uint64 m = mud.as_u64();
 
     Tile warp;
     warp.flags = WARP;
-    warp.color = colors[RUST];
+    warp.color = rust;
     Uint64 wr = warp.as_u64();
 
     // Map
@@ -237,101 +239,130 @@ int main(int argc, char** argv) {
         SDL_Event event;
         while(SDL_PollEvent(&event)) {
             switch (event.type) {
-                case SDL_KEYUP:
-                    if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
-                        running = false;
-                    }
-                    break;
-                case SDL_QUIT:
+            case SDL_KEYUP: {
+                SDL_Scancode key = event.key.keysym.scancode;
+
+                if (key == SDL_SCANCODE_ESCAPE) {
                     running = false;
-                case SDL_KEYDOWN:
-                    SDL_Rect saved_position = dest_rect;
-                    SDL_Rect saved_camera = camera;
-                    SDL_Rect saved_tile = current_tile;
-
-                    if (event.key.keysym.scancode == SDL_SCANCODE_RIGHT ||
-                        event.key.keysym.scancode == SDL_SCANCODE_L) {
-                        dest_rect.x += sprite_speed;
-                        sprite_rect.y = 2 * h_increment;
-
-                        if (dest_rect.x > x_pixel_movement_threshold &&
-                            camera.x < max_camera_x) {
-                            camera.x += sprite_speed;
-                        }
-                    }
-                    if (event.key.keysym.scancode == SDL_SCANCODE_LEFT ||
-                        event.key.keysym.scancode == SDL_SCANCODE_H) {
-                        dest_rect.x -= sprite_speed;
-                        sprite_rect.y = 1 * h_increment;
-
-                        if (dest_rect.x <
-                            map_width_pixels - x_pixel_movement_threshold &&
-                            camera.x > 0) {
-                            camera.x -= sprite_speed;
-                        }
-                    }
-                    if (event.key.keysym.scancode == SDL_SCANCODE_UP ||
-                        event.key.keysym.scancode == SDL_SCANCODE_K) {
-                        dest_rect.y -= sprite_speed;
-                        sprite_rect.y = 3 * h_increment;
-
-                        if (dest_rect.y <
-                            map_height_pixels - y_pixel_movement_threshold &&
-                            camera.y > 0) {
-                            camera.y -= sprite_speed;
-                        }
-                    }
-                    if (event.key.keysym.scancode == SDL_SCANCODE_DOWN ||
-                        event.key.keysym.scancode == SDL_SCANCODE_J) {
-                        dest_rect.y += sprite_speed;
-                        sprite_rect.y = 0 * h_increment;
-
-                        if (dest_rect.y > y_pixel_movement_threshold &&
-                            camera.y < max_camera_y) {
-                            camera.y += sprite_speed;
-                        }
-                    }
-
-                    // Clamp camera
-                    camera.x = clamp(camera.x, 0, max_camera_x);
-                    camera.y = clamp(camera.y, 0, max_camera_y);
-
-                    // Clamp hero
-                    dest_rect.x = clamp(dest_rect.x, 0, map_width_pixels - dest_rect.w);
-                    dest_rect.y = clamp(dest_rect.y, 0, map_height_pixels - dest_rect.h);
-
-                    hero_collision_pt.y = (float)dest_rect.y + dest_rect.h;
-                    hero_collision_pt.x = dest_rect.x + dest_rect.w / 2.0f;
-
-                    current_tile.x = ((int)hero_collision_pt.x / 80) * 80;
-                    current_tile.y = ((int)hero_collision_pt.y / 80) * 80;
-
-                    int map_coord_x = current_tile.y / tile_height;
-                    int map_coord_y = current_tile.x / tile_width;
-                    Uint64 tile_at_hero_position = (*current_map)[map_coord_x][map_coord_y];
-
-                    // Handle all tiles
-                    if (is_solid_tile(tile_at_hero_position)) {
-                        // Collisions. Reverse original state
-                        camera = saved_camera;
-                        dest_rect = saved_position;
-                        current_tile = saved_tile;
-                    }
-                    if (is_slow_tile(tile_at_hero_position) && !in_quicksand) {
-                        sprite_speed -= 8;
-                        in_quicksand = true;
-                    }
-                    else if (in_quicksand) {
-                        sprite_speed += 8;
-                        in_quicksand = false;
-                    }
-                    if (is_warp_tile(tile_at_hero_position)) {
-                        current_map = &map2;
-                        dest_rect = hero_starting_pos;
-                        camera = camera_starting_pos;
-                    }
-
+                }
+                if (key == SDL_SCANCODE_RIGHT || key == SDL_SCANCODE_L) {
+                    right_is_pressed = false;
+                }
+                if (key == SDL_SCANCODE_UP || key == SDL_SCANCODE_K) {
+                    up_is_pressed = false;
+                }
+                if (key == SDL_SCANCODE_DOWN || key == SDL_SCANCODE_J) {
+                    down_is_pressed = false;
+                }
+                if (key == SDL_SCANCODE_LEFT || key == SDL_SCANCODE_H) {
+                    left_is_pressed = false;
+                }
+                break;
             }
+            case SDL_QUIT: {
+                running = false;
+                break;
+            }
+            case SDL_KEYDOWN: {
+                SDL_Scancode key = event.key.keysym.scancode;
+                if (key == SDL_SCANCODE_RIGHT || key == SDL_SCANCODE_L) {
+                    right_is_pressed = true;
+                }
+                if (key == SDL_SCANCODE_LEFT || key == SDL_SCANCODE_H) {
+                    left_is_pressed = true;
+                }
+                if (key == SDL_SCANCODE_UP || key == SDL_SCANCODE_K) {
+                    up_is_pressed = true;
+                }
+                if (key == SDL_SCANCODE_DOWN || key == SDL_SCANCODE_J) {
+                    down_is_pressed = true;
+                }
+                break;
+            }
+            }
+        }
+
+        // Update
+        SDL_Rect saved_position = dest_rect;
+        SDL_Rect saved_camera = camera;
+        SDL_Rect saved_tile = current_tile;
+
+        if (right_is_pressed) {
+            dest_rect.x += sprite_speed;
+            sprite_rect.y = 2 * h_increment;
+
+            if (dest_rect.x > x_pixel_movement_threshold &&
+                camera.x < max_camera_x) {
+                camera.x += sprite_speed;
+            }
+        }
+        if (left_is_pressed) {
+            dest_rect.x -= sprite_speed;
+            sprite_rect.y = 1 * h_increment;
+
+            if (dest_rect.x <
+                map_width_pixels - x_pixel_movement_threshold &&
+                camera.x > 0) {
+                camera.x -= sprite_speed;
+            }
+        }
+        if (up_is_pressed) {
+            dest_rect.y -= sprite_speed;
+            sprite_rect.y = 3 * h_increment;
+
+            if (dest_rect.y <
+                map_height_pixels - y_pixel_movement_threshold &&
+                camera.y > 0) {
+                camera.y -= sprite_speed;
+            }
+        }
+        if (down_is_pressed) {
+            dest_rect.y += sprite_speed;
+            sprite_rect.y = 0 * h_increment;
+
+            if (dest_rect.y > y_pixel_movement_threshold &&
+                camera.y < max_camera_y) {
+                camera.y += sprite_speed;
+            }
+        }
+
+        // Clamp camera
+        camera.x = clamp(camera.x, 0, max_camera_x);
+        camera.y = clamp(camera.y, 0, max_camera_y);
+
+        // Clamp hero
+        dest_rect.x = clamp(dest_rect.x, 0, map_width_pixels - dest_rect.w);
+        dest_rect.y = clamp(dest_rect.y, 0, map_height_pixels - dest_rect.h);
+
+        hero_collision_pt.y = (float)dest_rect.y + dest_rect.h;
+        hero_collision_pt.x = dest_rect.x + dest_rect.w / 2.0f;
+
+        current_tile.x = ((int)hero_collision_pt.x / 80) * 80;
+        current_tile.y = ((int)hero_collision_pt.y / 80) * 80;
+
+        int map_coord_x = current_tile.y / tile_height;
+        int map_coord_y = current_tile.x / tile_width;
+        Uint64 tile_at_hero_position = (*current_map)[map_coord_x][map_coord_y];
+
+        // Handle all tiles
+        if (is_solid_tile(tile_at_hero_position)) {
+            // Collisions. Reverse original state
+            camera = saved_camera;
+            dest_rect = saved_position;
+            current_tile = saved_tile;
+        }
+        if (is_slow_tile(tile_at_hero_position) && !in_quicksand) {
+            sprite_speed -= 8;
+            in_quicksand = true;
+        }
+        else if (in_quicksand) {
+            sprite_speed += 8;
+            in_quicksand = false;
+        }
+        if (is_warp_tile(tile_at_hero_position)) {
+            current_map = &map2;
+            dest_rect = hero_starting_pos;
+            camera = camera_starting_pos;
         }
 
         // Get tile under camera x,y
@@ -342,7 +373,7 @@ int main(int argc, char** argv) {
         tile_rect.w = tile_width;
         tile_rect.h = tile_height;
 
-        // Draw only the portion of the map that's under the camera
+        // Draw
         for (int row = camera_tile_row;
              row < tile_rows_per_screen + camera_tile_row;
              ++row) {
