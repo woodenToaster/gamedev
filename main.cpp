@@ -104,8 +104,6 @@ int main(int argc, char** argv) {
     SDL_Rect hero_starting_pos = dest_rect;
 
     Point hero_collision_pt;
-    hero_collision_pt.x = (float)dest_rect.x / 2;
-    hero_collision_pt.y = (float)dest_rect.y + dest_rect.h;
     bool in_quicksand = false;
 
     bool right_is_pressed = false;
@@ -181,6 +179,8 @@ int main(int argc, char** argv) {
         {w, w, w, w, w, w, w, w, w, w, w, w}
     };
 
+    bool in_map1 = true;
+
     Uint64 (*current_map)[map_rows][map_cols] = &map;
 
     Uint64 map2[map_rows][map_cols] = {
@@ -189,7 +189,7 @@ int main(int argc, char** argv) {
         {w, f, f, f, f, f, f, f, f, f, f, w},
         {w, f, f, f, f, f, f, f, f, f, f, w},
         {w, f, f, f, f, f, f, f, f, f, f, w},
-        {w, f, f, f, f, f, f, f, f, f, f, w},
+        {w, f, f, f, f, wr, f, f, f, f, f, w},
         {w, f, f, f, f, f, f, f, f, f, f, w},
         {w, f, f, f, f, f, f, f, f, f, f, w},
         {w, f, f, f, f, f, f, f, f, f, f, w},
@@ -334,7 +334,7 @@ int main(int argc, char** argv) {
         dest_rect.x = clamp(dest_rect.x, 0, map_width_pixels - dest_rect.w);
         dest_rect.y = clamp(dest_rect.y, 0, map_height_pixels - dest_rect.h);
 
-        hero_collision_pt.y = (float)dest_rect.y + dest_rect.h;
+        hero_collision_pt.y = (float)dest_rect.y + dest_rect.h - 10;
         hero_collision_pt.x = dest_rect.x + dest_rect.w / 2.0f;
 
         current_tile.x = ((int)hero_collision_pt.x / 80) * 80;
@@ -360,7 +360,14 @@ int main(int argc, char** argv) {
             in_quicksand = false;
         }
         if (is_warp_tile(tile_at_hero_position)) {
-            current_map = &map2;
+            if (in_map1) {
+                current_map = &map2;
+                in_map1 = false;
+            }
+            else {
+                current_map = &map;
+                in_map1 = true;
+            }
             dest_rect = hero_starting_pos;
             camera = camera_starting_pos;
         }
