@@ -197,6 +197,10 @@ int main(int argc, char** argv) {
     int map_width_pixels = map_cols * tile_width;
     int map_height_pixels = map_rows * tile_height;
 
+    // Add 1 to each to account for displaying half a tile.
+    int tile_rows_per_screen = (screen_height / tile_height) + 1;
+    int tile_cols_per_screen = (screen_width / tile_width) + 1;
+
     SDL_Surface* map_surface = SDL_CreateRGBSurfaceWithFormat(
         0,
         map_width_pixels,
@@ -330,20 +334,32 @@ int main(int argc, char** argv) {
             }
         }
 
-        // Draw map
-        for (int row = 0; row < map_rows; ++row) {
-            for (int col = 0; col < map_cols; ++col) {
-                SDL_Rect tile_rect;
+        // Get tile under camera x,y
+        int camera_tile_row = camera.y / tile_height;
+        int camera_tile_col = camera.x / tile_width;
+
+        SDL_Rect tile_rect;
+        tile_rect.w = tile_width;
+        tile_rect.h = tile_height;
+
+        // Draw only the portion of the map that's under the camera
+        for (int row = camera_tile_row;
+             row < tile_rows_per_screen + camera_tile_row;
+             ++row) {
+
+            for (int col = camera_tile_col;
+                 col < tile_cols_per_screen + camera_tile_col;
+                 ++col) {
+
                 tile_rect.x = col * tile_width;
                 tile_rect.y = row * tile_height;
-                tile_rect.w = tile_width;
-                tile_rect.h = tile_height;
 
                 Uint32 fill_color = get_color_from_tile((*current_map)[row][col]);
                 SDL_FillRect(map_surface, &tile_rect, fill_color);
             }
         }
 
+        // Highlight tile under player
         SDL_FillRect(map_surface, &current_tile, yellow);
         // Draw sprite on map
         SDL_BlitSurface(sprite_sheet, &sprite_rect, map_surface, &dest_rect);
