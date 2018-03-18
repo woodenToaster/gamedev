@@ -6,3 +6,9 @@
 ** TODO Use time delta and velocity for updating movement
 ** TODO Make tiles 8x8?
 ** TODO Pixel perfect collision
+** TODO Basic audio
+** TODO Basic animation
+** TODO One enemy with basic AI and collision
+** TODO Base building screen
+** TODO imgui
+

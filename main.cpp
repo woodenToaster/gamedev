@@ -47,6 +47,21 @@ Uint32 get_color_from_tile(Uint64 t) {
     return (Uint32)(t & 0xFFFFFFFF);
 }
 
+// TODO: Remove globals
+Uint8* audio_pos;
+Uint32 audio_len;
+
+void mud_sound_callback(void *userdata, Uint8 *stream, int len) {
+	if (audio_len ==0)
+		return;
+
+	len = ( len > audio_len ? audio_len : len );
+	SDL_memcpy (stream, audio_pos, len);
+
+	audio_pos += len;
+	audio_len -= len;
+}
+
 int main(int argc, char** argv) {
     (void)argc;
     (void)argv;
@@ -55,7 +70,11 @@ int main(int argc, char** argv) {
     const int screen_width = 640;
     const int screen_height = 480;
 
-    SDL_Init(SDL_INIT_VIDEO);
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
+        printf("SDL failed to initialize: %s\n", SDL_GetError());
+        return 1;
+    }
+
     IMG_Init(IMG_INIT_PNG);
 
     SDL_Window* window;
@@ -77,6 +96,25 @@ int main(int argc, char** argv) {
     Uint32 frames = 0;
     Uint32 start = SDL_GetTicks();
     bool running = true;
+
+    // Sound
+    Uint32 mud_sound_len;
+    Uint8* mud_sound_buffer;
+    SDL_AudioSpec mud_sound_spec;
+    bool mud_sound_playing = false;
+
+    if (SDL_LoadWAV("sounds/mud_walk.wav",
+                    &mud_sound_spec,
+                    &mud_sound_buffer,
+                    &mud_sound_len) == NULL) {
+        printf("SLD_LoadWAV error: %s\n", SDL_GetError());
+        return 1;
+    }
+
+    mud_sound_spec.callback = mud_sound_callback;
+    mud_sound_spec.userdata = NULL;
+    audio_pos = mud_sound_buffer;
+    audio_len = mud_sound_len;
 
     // Sprite sheet
     SDL_Surface *sprite_sheet = IMG_Load("sprites/dude.png");
@@ -354,10 +392,24 @@ int main(int argc, char** argv) {
         if (is_slow_tile(tile_at_hero_position) && !in_quicksand) {
             sprite_speed -= 8;
             in_quicksand = true;
+            if (!mud_sound_playing) {
+                if (SDL_OpenAudio(&mud_sound_spec, NULL) < 0) {
+                    printf("SDL_OpenAudio error: %s\n", SDL_GetError());
+                    return 1;
+                }
+                SDL_PauseAudio(0);
+                mud_sound_playing = true;
+            }
         }
         else if (in_quicksand) {
             sprite_speed += 8;
             in_quicksand = false;
+            if (audio_len <= 0) {
+                mud_sound_playing = false;
+                audio_pos = mud_sound_buffer;
+                audio_len = mud_sound_len;
+                SDL_CloseAudio();
+            }
         }
         if (is_warp_tile(tile_at_hero_position)) {
             if (in_map1) {
@@ -414,6 +466,7 @@ int main(int argc, char** argv) {
     // Cleanup
     SDL_FreeSurface(sprite_sheet);
     SDL_FreeSurface(map_surface);
+    SDL_FreeWAV(mud_sound_buffer);
     IMG_Quit();
     SDL_DestroyWindow(window);
     SDL_Quit();
