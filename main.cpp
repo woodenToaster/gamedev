@@ -131,6 +131,7 @@ int main(int argc, char** argv) {
     sprite_rect.w = w_increment;
     sprite_rect.h = h_increment;
 
+    int current_frame = 0;
     int sprite_speed = 10;
 
     SDL_Rect dest_rect;
@@ -325,9 +326,16 @@ int main(int argc, char** argv) {
         SDL_Rect saved_camera = camera;
         SDL_Rect saved_tile = current_tile;
 
+        Uint32 now = SDL_GetTicks();
+
         if (right_is_pressed) {
             dest_rect.x += sprite_speed;
             sprite_rect.y = 2 * h_increment;
+            sprite_rect.x = current_frame * w_increment;
+            current_frame++;
+            if (current_frame > num_x_sprites - 1) {
+                current_frame = 0;
+            }
 
             if (dest_rect.x > x_pixel_movement_threshold &&
                 camera.x < max_camera_x) {
@@ -337,6 +345,11 @@ int main(int argc, char** argv) {
         if (left_is_pressed) {
             dest_rect.x -= sprite_speed;
             sprite_rect.y = 1 * h_increment;
+            sprite_rect.x = current_frame * w_increment;
+            current_frame++;
+            if (current_frame > num_x_sprites - 1) {
+                current_frame = 0;
+            }
 
             if (dest_rect.x <
                 map_width_pixels - x_pixel_movement_threshold &&
@@ -347,6 +360,11 @@ int main(int argc, char** argv) {
         if (up_is_pressed) {
             dest_rect.y -= sprite_speed;
             sprite_rect.y = 3 * h_increment;
+            sprite_rect.x = current_frame * h_increment;
+            current_frame++;
+            if (current_frame > num_x_sprites - 1) {
+                current_frame = 0;
+            }
 
             if (dest_rect.y <
                 map_height_pixels - y_pixel_movement_threshold &&
@@ -357,6 +375,11 @@ int main(int argc, char** argv) {
         if (down_is_pressed) {
             dest_rect.y += sprite_speed;
             sprite_rect.y = 0 * h_increment;
+            sprite_rect.x = current_frame * w_increment;
+            current_frame++;
+            if (current_frame > num_x_sprites - 1) {
+                current_frame = 0;
+            }
 
             if (dest_rect.y > y_pixel_movement_threshold &&
                 camera.y < max_camera_y) {

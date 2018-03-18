@@ -6,8 +6,12 @@
 ** TODO Use time delta and velocity for updating movement
 ** TODO Make tiles 8x8?
 ** TODO Pixel perfect collision
-** TODO Basic audio
-** TODO Basic animation
+** DONE Basic audio
+   CLOSED: [2018-03-18 Sun 14:26]
+*** TODO Fix clipping sound
+** DONE Basic animation
+   CLOSED: [2018-03-18 Sun 14:44]
+*** TODO Slow animationd own.
 ** TODO One enemy with basic AI and collision
 ** TODO Base building screen
 ** TODO imgui
