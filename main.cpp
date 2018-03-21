@@ -52,10 +52,11 @@ Uint8* audio_pos;
 Uint32 audio_len;
 
 void mud_sound_callback(void *userdata, Uint8 *stream, int len) {
+    (void)userdata;
 	if (audio_len ==0)
 		return;
 
-	len = ( len > audio_len ? audio_len : len );
+	len = ( (Uint32)len > audio_len ? audio_len : len );
 	SDL_memcpy (stream, audio_pos, len);
 
 	audio_pos += len;
@@ -116,34 +117,67 @@ int main(int argc, char** argv) {
     audio_pos = mud_sound_buffer;
     audio_len = mud_sound_len;
 
-    // Sprite sheet
-    SDL_Surface *sprite_sheet = IMG_Load("sprites/dude.png");
-    const int sprite_sheet_width = 256;
-    const int sprite_sheet_height = 256;
-    const int num_x_sprites = 4;
-    const int num_y_sprites = 4;
-    const int w_increment = sprite_sheet_width / num_x_sprites;
-    const int h_increment = sprite_sheet_height / num_y_sprites;
+    struct Entity {
+        SDL_Surface *sprite_sheet;
+        int sprite_sheet_width;
+        int sprite_sheet_height;
+        int num_x_sprites;
+        int num_y_sprites;
+        int w_increment;
+        int h_increment;
 
-    SDL_Rect sprite_rect;
-    sprite_rect.x = 0;
-    sprite_rect.y = 0;
-    sprite_rect.w = w_increment;
-    sprite_rect.h = h_increment;
+        SDL_Rect sprite_rect;
 
-    int current_frame = 0;
-    int sprite_speed = 10;
+        int current_frame;
+        int speed;
 
-    SDL_Rect dest_rect;
-    dest_rect.x = 85;
-    dest_rect.y = 85;
-    dest_rect.w = w_increment;
-    dest_rect.h = h_increment;
+        SDL_Rect dest_rect;
+    };
 
-    SDL_Rect hero_starting_pos = dest_rect;
+    // Hero
+    Entity hero;
+    hero.sprite_sheet = IMG_Load("sprites/dude.png");
+    hero.sprite_sheet_width = 256;
+    hero.sprite_sheet_height = 256;
+    hero.num_x_sprites = 4;
+    hero.num_y_sprites = 4;
+    hero.w_increment = hero.sprite_sheet_width / hero.num_x_sprites;
+    hero.h_increment = hero.sprite_sheet_height / hero.num_y_sprites;
+    hero.sprite_rect.x = 0;
+    hero.sprite_rect.y = 0;
+    hero.sprite_rect.w = hero.w_increment;
+    hero.sprite_rect.h = hero.h_increment;
+    hero.current_frame = 0;
+    hero.speed = 10;
+    hero.dest_rect.x = 85;
+    hero.dest_rect.y = 85;
+    hero.dest_rect.w = hero.w_increment;
+    hero.dest_rect.h = hero.h_increment;
+
+    SDL_Rect hero_starting_pos = hero.dest_rect;
 
     Point hero_collision_pt;
     bool in_quicksand = false;
+
+    // Enemy
+    Entity harlod;
+    harlod.sprite_sheet = IMG_Load("sprites/Harlod_the_caveman.png");
+    harlod.sprite_sheet_width = 64;
+    harlod.sprite_sheet_height = 64;
+    harlod.num_x_sprites = 1;
+    harlod.num_y_sprites = 1;
+    harlod.w_increment = harlod.sprite_sheet_width / harlod.num_x_sprites;
+    harlod.h_increment = harlod.sprite_sheet_height / harlod.num_y_sprites;
+    harlod.sprite_rect.x = 0;
+    harlod.sprite_rect.y = 0;
+    harlod.sprite_rect.w = harlod.w_increment;
+    harlod.sprite_rect.h = harlod.h_increment;
+    harlod.current_frame = 0;
+    harlod.speed = 5;
+    harlod.dest_rect.x = 150;
+    harlod.dest_rect.y = 150;
+    harlod.dest_rect.w = harlod.w_increment;
+    harlod.dest_rect.h = harlod.h_increment;
 
     bool right_is_pressed = false;
     bool left_is_pressed = false;
@@ -152,7 +186,7 @@ int main(int argc, char** argv) {
 
     SDL_Surface* window_surface = SDL_GetWindowSurface(window);
 
-    if (!sprite_sheet) {
+    if (!hero.sprite_sheet || !harlod.sprite_sheet) {
         printf("Could not load sprite sheet: %s\n", SDL_GetError());
     }
 
@@ -168,8 +202,8 @@ int main(int argc, char** argv) {
     int tile_height = 80;
 
     SDL_Rect current_tile;
-    current_tile.x = dest_rect.x / tile_width;
-    current_tile.y = dest_rect.y / tile_height;
+    current_tile.x = hero.dest_rect.x / tile_width;
+    current_tile.y = hero.dest_rect.y / tile_height;
     current_tile.w = tile_width;
     current_tile.h = tile_height;
 
@@ -322,68 +356,68 @@ int main(int argc, char** argv) {
         }
 
         // Update
-        SDL_Rect saved_position = dest_rect;
+        SDL_Rect saved_position = hero.dest_rect;
         SDL_Rect saved_camera = camera;
         SDL_Rect saved_tile = current_tile;
 
         Uint32 now = SDL_GetTicks();
 
         if (right_is_pressed) {
-            dest_rect.x += sprite_speed;
-            sprite_rect.y = 2 * h_increment;
-            sprite_rect.x = current_frame * w_increment;
-            current_frame++;
-            if (current_frame > num_x_sprites - 1) {
-                current_frame = 0;
+            hero.dest_rect.x += hero.speed;
+            hero.sprite_rect.y = 2 * hero.h_increment;
+            hero.sprite_rect.x = hero.current_frame * hero.w_increment;
+            hero.current_frame++;
+            if (hero.current_frame > hero.num_x_sprites - 1) {
+                hero.current_frame = 0;
             }
 
-            if (dest_rect.x > x_pixel_movement_threshold &&
+            if (hero.dest_rect.x > x_pixel_movement_threshold &&
                 camera.x < max_camera_x) {
-                camera.x += sprite_speed;
+                camera.x += hero.speed;
             }
         }
         if (left_is_pressed) {
-            dest_rect.x -= sprite_speed;
-            sprite_rect.y = 1 * h_increment;
-            sprite_rect.x = current_frame * w_increment;
-            current_frame++;
-            if (current_frame > num_x_sprites - 1) {
-                current_frame = 0;
+            hero.dest_rect.x -= hero.speed;
+            hero.sprite_rect.y = 1 * hero.h_increment;
+            hero.sprite_rect.x = hero.current_frame * hero.w_increment;
+            hero.current_frame++;
+            if (hero.current_frame > hero.num_x_sprites - 1) {
+                hero.current_frame = 0;
             }
 
-            if (dest_rect.x <
+            if (hero.dest_rect.x <
                 map_width_pixels - x_pixel_movement_threshold &&
                 camera.x > 0) {
-                camera.x -= sprite_speed;
+                camera.x -= hero.speed;
             }
         }
         if (up_is_pressed) {
-            dest_rect.y -= sprite_speed;
-            sprite_rect.y = 3 * h_increment;
-            sprite_rect.x = current_frame * h_increment;
-            current_frame++;
-            if (current_frame > num_x_sprites - 1) {
-                current_frame = 0;
+            hero.dest_rect.y -= hero.speed;
+            hero.sprite_rect.y = 3 * hero.h_increment;
+            hero.sprite_rect.x = hero.current_frame * hero.h_increment;
+            hero.current_frame++;
+            if (hero.current_frame > hero.num_x_sprites - 1) {
+                hero.current_frame = 0;
             }
 
-            if (dest_rect.y <
+            if (hero.dest_rect.y <
                 map_height_pixels - y_pixel_movement_threshold &&
                 camera.y > 0) {
-                camera.y -= sprite_speed;
+                camera.y -= hero.speed;
             }
         }
         if (down_is_pressed) {
-            dest_rect.y += sprite_speed;
-            sprite_rect.y = 0 * h_increment;
-            sprite_rect.x = current_frame * w_increment;
-            current_frame++;
-            if (current_frame > num_x_sprites - 1) {
-                current_frame = 0;
+            hero.dest_rect.y += hero.speed;
+            hero.sprite_rect.y = 0 * hero.h_increment;
+            hero.sprite_rect.x = hero.current_frame * hero.w_increment;
+            hero.current_frame++;
+            if (hero.current_frame > hero.num_x_sprites - 1) {
+                hero.current_frame = 0;
             }
 
-            if (dest_rect.y > y_pixel_movement_threshold &&
+            if (hero.dest_rect.y > y_pixel_movement_threshold &&
                 camera.y < max_camera_y) {
-                camera.y += sprite_speed;
+                camera.y += hero.speed;
             }
         }
 
@@ -392,11 +426,11 @@ int main(int argc, char** argv) {
         camera.y = clamp(camera.y, 0, max_camera_y);
 
         // Clamp hero
-        dest_rect.x = clamp(dest_rect.x, 0, map_width_pixels - dest_rect.w);
-        dest_rect.y = clamp(dest_rect.y, 0, map_height_pixels - dest_rect.h);
+        hero.dest_rect.x = clamp(hero.dest_rect.x, 0, map_width_pixels - hero.dest_rect.w);
+        hero.dest_rect.y = clamp(hero.dest_rect.y, 0, map_height_pixels - hero.dest_rect.h);
 
-        hero_collision_pt.y = (float)dest_rect.y + dest_rect.h - 10;
-        hero_collision_pt.x = dest_rect.x + dest_rect.w / 2.0f;
+        hero_collision_pt.y = (float)hero.dest_rect.y + hero.dest_rect.h - 10;
+        hero_collision_pt.x = hero.dest_rect.x + hero.dest_rect.w / 2.0f;
 
         current_tile.x = ((int)hero_collision_pt.x / 80) * 80;
         current_tile.y = ((int)hero_collision_pt.y / 80) * 80;
@@ -409,11 +443,11 @@ int main(int argc, char** argv) {
         if (is_solid_tile(tile_at_hero_position)) {
             // Collisions. Reverse original state
             camera = saved_camera;
-            dest_rect = saved_position;
+            hero.dest_rect = saved_position;
             current_tile = saved_tile;
         }
         if (is_slow_tile(tile_at_hero_position) && !in_quicksand) {
-            sprite_speed -= 8;
+            hero.speed -= 8;
             in_quicksand = true;
             if (!mud_sound_playing) {
                 if (SDL_OpenAudio(&mud_sound_spec, NULL) < 0) {
@@ -425,7 +459,7 @@ int main(int argc, char** argv) {
             }
         }
         else if (in_quicksand) {
-            sprite_speed += 8;
+            hero.speed += 8;
             in_quicksand = false;
             if (audio_len <= 0) {
                 mud_sound_playing = false;
@@ -443,7 +477,7 @@ int main(int argc, char** argv) {
                 current_map = &map;
                 in_map1 = true;
             }
-            dest_rect = hero_starting_pos;
+            hero.dest_rect = hero_starting_pos;
             camera = camera_starting_pos;
         }
 
@@ -474,8 +508,16 @@ int main(int argc, char** argv) {
 
         // Highlight tile under player
         SDL_FillRect(map_surface, &current_tile, yellow);
-        // Draw sprite on map
-        SDL_BlitSurface(sprite_sheet, &sprite_rect, map_surface, &dest_rect);
+        // Draw sprites on map
+        SDL_BlitSurface(hero.sprite_sheet, &hero.sprite_rect, map_surface, &hero.dest_rect);
+        if (!in_map1) {
+            SDL_BlitSurface(
+                harlod.sprite_sheet,
+                &harlod.sprite_rect,
+                map_surface,
+                &harlod.dest_rect
+            );
+        }
         // Draw portion of map visible to camera on the screen
         SDL_BlitSurface(map_surface, &camera, window_surface, NULL);
 
@@ -487,7 +529,7 @@ int main(int argc, char** argv) {
     }
 
     // Cleanup
-    SDL_FreeSurface(sprite_sheet);
+    SDL_FreeSurface(hero.sprite_sheet);
     SDL_FreeSurface(map_surface);
     SDL_FreeWAV(mud_sound_buffer);
     IMG_Quit();

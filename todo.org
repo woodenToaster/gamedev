@@ -2,6 +2,7 @@
  
 * Build
 ** TODO Build SDL in debug mode
+** TODO IMGUI
 * Gameplay
 ** TODO Use time delta and velocity for updating movement
 ** TODO Make tiles 8x8?
@@ -11,8 +12,8 @@
 *** TODO Fix clipping sound
 ** DONE Basic animation
    CLOSED: [2018-03-18 Sun 14:44]
-*** TODO Slow animationd own.
+*** TODO Slow animation down.
 ** TODO One enemy with basic AI and collision
 ** TODO Base building screen
-** TODO imgui
+** TODO base building gui
 
