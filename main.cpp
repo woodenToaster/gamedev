@@ -86,7 +86,7 @@ int main(int argc, char** argv) {
     // Sound
     Mix_Chunk* mud_sound = NULL;
     bool mud_sound_playing = false;
-    Uint32 mud_sound_delay;
+    Uint32 mud_sound_delay = SDL_GetTicks();
 
     if( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 ) {
         printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
@@ -137,8 +137,8 @@ int main(int argc, char** argv) {
     hero.dest_rect.h = hero.h_increment;
 
     SDL_Rect hero_starting_pos = hero.dest_rect;
-
     Point hero_collision_pt;
+    bool hero_is_moving = false;
     bool in_quicksand = false;
 
     // Enemy
@@ -401,6 +401,14 @@ int main(int argc, char** argv) {
             }
         }
 
+        if (saved_position.x != hero.dest_rect.x ||
+            saved_position.y != hero.dest_rect.y) {
+            hero_is_moving = true;
+        }
+        else {
+            hero_is_moving = false;
+        }
+
         // Clamp camera
         camera.x = clamp(camera.x, 0, max_camera_x);
         camera.y = clamp(camera.y, 0, max_camera_y);
@@ -429,7 +437,7 @@ int main(int argc, char** argv) {
         if (is_slow_tile(tile_at_hero_position) && !in_quicksand) {
             hero.speed -= 8;
             in_quicksand = true;
-            if (SDL_GetTicks() > mud_sound_delay + 250) {
+            if (SDL_GetTicks() > mud_sound_delay + 250 && hero_is_moving) {
                 mud_sound_playing = true;
                 Mix_PlayChannel(-1, mud_sound, 0);
                 mud_sound_delay = SDL_GetTicks();
