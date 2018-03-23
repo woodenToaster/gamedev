@@ -1,5 +1,6 @@
 #include "SDL.h"
 #include "SDL_image.h"
+#include "SDL_mixer.h"
 #include "stdio.h"
 #include "stdlib.h"
 
@@ -47,22 +48,6 @@ Uint32 get_color_from_tile(Uint64 t) {
     return (Uint32)(t & 0xFFFFFFFF);
 }
 
-// TODO: Remove globals
-Uint8* audio_pos;
-Uint32 audio_len;
-
-void mud_sound_callback(void *userdata, Uint8 *stream, int len) {
-    (void)userdata;
-	if (audio_len ==0)
-		return;
-
-	len = ( (Uint32)len > audio_len ? audio_len : len );
-	SDL_memcpy (stream, audio_pos, len);
-
-	audio_pos += len;
-	audio_len -= len;
-}
-
 int main(int argc, char** argv) {
     (void)argc;
     (void)argv;
@@ -99,23 +84,20 @@ int main(int argc, char** argv) {
     bool running = true;
 
     // Sound
-    Uint32 mud_sound_len;
-    Uint8* mud_sound_buffer;
-    SDL_AudioSpec mud_sound_spec;
+    Mix_Chunk* mud_sound = NULL;
     bool mud_sound_playing = false;
+    Uint32 mud_sound_delay;
 
-    if (SDL_LoadWAV("sounds/mud_walk.wav",
-                    &mud_sound_spec,
-                    &mud_sound_buffer,
-                    &mud_sound_len) == NULL) {
-        printf("SLD_LoadWAV error: %s\n", SDL_GetError());
-        return 1;
+    if( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 ) {
+        printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
+        exit(1);
     }
 
-    mud_sound_spec.callback = mud_sound_callback;
-    mud_sound_spec.userdata = NULL;
-    audio_pos = mud_sound_buffer;
-    audio_len = mud_sound_len;
+    mud_sound = Mix_LoadWAV("sounds/mud_walk.wav");
+    if (mud_sound == NULL) {
+        printf("Mix_LoadWAV error: %s\n", Mix_GetError());
+        return 1;
+    }
 
     struct Entity {
         SDL_Surface *sprite_sheet;
@@ -360,8 +342,6 @@ int main(int argc, char** argv) {
         SDL_Rect saved_camera = camera;
         SDL_Rect saved_tile = current_tile;
 
-        Uint32 now = SDL_GetTicks();
-
         if (right_is_pressed) {
             hero.dest_rect.x += hero.speed;
             hero.sprite_rect.y = 2 * hero.h_increment;
@@ -449,24 +429,15 @@ int main(int argc, char** argv) {
         if (is_slow_tile(tile_at_hero_position) && !in_quicksand) {
             hero.speed -= 8;
             in_quicksand = true;
-            if (!mud_sound_playing) {
-                if (SDL_OpenAudio(&mud_sound_spec, NULL) < 0) {
-                    printf("SDL_OpenAudio error: %s\n", SDL_GetError());
-                    return 1;
-                }
-                SDL_PauseAudio(0);
+            if (SDL_GetTicks() > mud_sound_delay + 250) {
                 mud_sound_playing = true;
+                Mix_PlayChannel(-1, mud_sound, 0);
+                mud_sound_delay = SDL_GetTicks();
             }
         }
         else if (in_quicksand) {
             hero.speed += 8;
             in_quicksand = false;
-            if (audio_len <= 0) {
-                mud_sound_playing = false;
-                audio_pos = mud_sound_buffer;
-                audio_len = mud_sound_len;
-                SDL_CloseAudio();
-            }
         }
         if (is_warp_tile(tile_at_hero_position)) {
             if (in_map1) {
@@ -531,7 +502,8 @@ int main(int argc, char** argv) {
     // Cleanup
     SDL_FreeSurface(hero.sprite_sheet);
     SDL_FreeSurface(map_surface);
-    SDL_FreeWAV(mud_sound_buffer);
+    Mix_FreeChunk(mud_sound);
+    Mix_Quit();
     IMG_Quit();
     SDL_DestroyWindow(window);
     SDL_Quit();
