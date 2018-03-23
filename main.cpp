@@ -140,6 +140,7 @@ int main(int argc, char** argv) {
     Point hero_collision_pt;
     bool hero_is_moving = false;
     bool in_quicksand = false;
+    Uint32 next_frame_delay = SDL_GetTicks();
 
     // Enemy
     Entity harlod;
@@ -342,11 +343,16 @@ int main(int argc, char** argv) {
         SDL_Rect saved_camera = camera;
         SDL_Rect saved_tile = current_tile;
 
+        Uint32 now = SDL_GetTicks();
+
         if (right_is_pressed) {
             hero.dest_rect.x += hero.speed;
             hero.sprite_rect.y = 2 * hero.h_increment;
             hero.sprite_rect.x = hero.current_frame * hero.w_increment;
-            hero.current_frame++;
+            if (now > next_frame_delay + 125) {
+                hero.current_frame++;
+                next_frame_delay = now;
+            }
             if (hero.current_frame > hero.num_x_sprites - 1) {
                 hero.current_frame = 0;
             }
@@ -360,7 +366,11 @@ int main(int argc, char** argv) {
             hero.dest_rect.x -= hero.speed;
             hero.sprite_rect.y = 1 * hero.h_increment;
             hero.sprite_rect.x = hero.current_frame * hero.w_increment;
-            hero.current_frame++;
+
+            if (now > next_frame_delay + 125) {
+                hero.current_frame++;
+                next_frame_delay = now;
+            }
             if (hero.current_frame > hero.num_x_sprites - 1) {
                 hero.current_frame = 0;
             }
@@ -375,7 +385,10 @@ int main(int argc, char** argv) {
             hero.dest_rect.y -= hero.speed;
             hero.sprite_rect.y = 3 * hero.h_increment;
             hero.sprite_rect.x = hero.current_frame * hero.h_increment;
-            hero.current_frame++;
+            if (now > next_frame_delay + 125) {
+                hero.current_frame++;
+                next_frame_delay = now;
+            }
             if (hero.current_frame > hero.num_x_sprites - 1) {
                 hero.current_frame = 0;
             }
@@ -390,7 +403,11 @@ int main(int argc, char** argv) {
             hero.dest_rect.y += hero.speed;
             hero.sprite_rect.y = 0 * hero.h_increment;
             hero.sprite_rect.x = hero.current_frame * hero.w_increment;
-            hero.current_frame++;
+            if (now > next_frame_delay + 125) {
+                hero.current_frame++;
+                next_frame_delay = now;
+            }
+
             if (hero.current_frame > hero.num_x_sprites - 1) {
                 hero.current_frame = 0;
             }
@@ -407,6 +424,11 @@ int main(int argc, char** argv) {
         }
         else {
             hero_is_moving = false;
+        }
+
+        if (!hero_is_moving) {
+            hero.current_frame = 0;
+            hero.sprite_rect.x = 0;
         }
 
         // Clamp camera

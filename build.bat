@@ -20,6 +20,5 @@ popd
 if %errorlevel% neq 0 exit /b %errorlevel%
 
 pushd data
-echo %cd%
 ..\build\main.exe
 popd
