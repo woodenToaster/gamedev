@@ -17,6 +17,20 @@ struct Point {
     float y;
 };
 
+bool overlaps(SDL_Rect* r1, SDL_Rect* r2) {
+    bool x_overlap = r1->x + r1->w > r2->x && r1->x < r2->x + r2->w;
+    bool y_overlap = r1->y + r1->h > r2->y && r1->y < r2->y + r2->h;
+    return x_overlap && y_overlap;
+}
+
+int max(int a, int b) {
+    return a > b ? a : b;
+}
+
+int min(int a, int b) {
+    return a < b ? a : b;
+}
+
 int clamp(int val, int min, int max) {
     if (val < min) {
         return min;
@@ -192,6 +206,7 @@ int main(int argc, char** argv) {
     Uint32 yellow = SDL_MapRGB(window_surface->format, 235, 245, 65);
     Uint32 brown = SDL_MapRGB(window_surface->format, 153, 102, 0);
     Uint32 rust = SDL_MapRGB(window_surface->format, 153, 70, 77);
+    Uint32 magenta = SDL_MapRGB(window_surface->format, 255, 0, 255);
 
     // Tiles
     int tile_width = 80;
@@ -444,11 +459,6 @@ int main(int argc, char** argv) {
             hero.sprite_rect.x = 0;
         }
 
-        // Hero bounding box
-        hero.bounding_box.x = hero.dest_rect.x + 10;
-        hero.bounding_box.y = hero.dest_rect.y + 10;
-        hero.bounding_box.w = hero.dest_rect.w - 10;
-        hero.bounding_box.h = hero.dest_rect.h - 10;
 
         // Clamp camera
         camera.x = clamp(camera.x, 0, max_camera_x);
@@ -542,10 +552,111 @@ int main(int argc, char** argv) {
 
         // Highlight tile under player
         // SDL_FillRect(map_surface, &current_tile, yellow);
-        SDL_SetRenderDrawColor(renderer, 235, 245, 65, 255);
-        SDL_RenderFillRect(renderer, &current_tile);
+        // SDL_SetRenderDrawColor(renderer, 235, 245, 65, 255);
+        // SDL_RenderFillRect(renderer, &current_tile);
 
         // Draw hero bounding box
+        hero.bounding_box.x = hero.dest_rect.x + 12;
+        hero.bounding_box.y = hero.dest_rect.y + 10;
+        hero.bounding_box.w = hero.dest_rect.w - 25;
+        hero.bounding_box.h = hero.dest_rect.h - 14;
+
+        SDL_Rect bb_top;
+        SDL_Rect bb_bottom;
+        SDL_Rect bb_left;
+        SDL_Rect bb_right;
+
+        bb_top.x = hero.bounding_box.x;
+        bb_top.y = hero.bounding_box.y;
+        bb_top.w = hero.bounding_box.w;
+        bb_top.h = 2;
+
+        bb_left.x = hero.bounding_box.x;
+        bb_left.y = hero.bounding_box.y;
+        bb_left.w = 2;
+        bb_left.h = hero.bounding_box.h;
+
+        bb_right.x = hero.bounding_box.x + hero.bounding_box.w;
+        bb_right.y = hero.bounding_box.y;
+        bb_right.w = 2;
+        bb_right.h = hero.bounding_box.h;
+
+        bb_bottom.x = hero.bounding_box.x;
+        bb_bottom.y = hero.bounding_box.y + hero.bounding_box.h;
+        bb_bottom.w = hero.bounding_box.w + 2;
+        bb_bottom.h = 2;
+
+
+        SDL_FillRect(map_surface, &bb_top, magenta);
+        SDL_FillRect(map_surface, &bb_left, magenta);
+        SDL_FillRect(map_surface, &bb_right, magenta);
+        SDL_FillRect(map_surface, &bb_bottom, magenta);
+
+        // Draw harlod bounding box
+        harlod.bounding_box.x = harlod.dest_rect.x;
+        harlod.bounding_box.y = harlod.dest_rect.y;
+        harlod.bounding_box.w = harlod.dest_rect.w;
+        harlod.bounding_box.h = harlod.dest_rect.h;
+
+        bb_top.x = harlod.bounding_box.x;
+        bb_top.y = harlod.bounding_box.y;
+        bb_top.w = harlod.bounding_box.w;
+        bb_top.h = 2;
+
+        bb_left.x = harlod.bounding_box.x;
+        bb_left.y = harlod.bounding_box.y;
+        bb_left.w = 2;
+        bb_left.h = harlod.bounding_box.h;
+
+        bb_right.x = harlod.bounding_box.x + harlod.bounding_box.w;
+        bb_right.y = harlod.bounding_box.y;
+        bb_right.w = 2;
+        bb_right.h = harlod.bounding_box.h;
+
+        bb_bottom.x = harlod.bounding_box.x;
+        bb_bottom.y = harlod.bounding_box.y + harlod.bounding_box.h;
+        bb_bottom.w = harlod.bounding_box.w + 2;
+        bb_bottom.h = 2;
+
+
+        SDL_FillRect(map_surface, &bb_top, magenta);
+        SDL_FillRect(map_surface, &bb_left, magenta);
+        SDL_FillRect(map_surface, &bb_right, magenta);
+        SDL_FillRect(map_surface, &bb_bottom, magenta);
+
+        // Check hero/harlod collisions
+        if (overlaps(&hero.bounding_box, &harlod.bounding_box)) {
+            // Draw overlapping bounding boxes
+            SDL_Rect overlap_box;
+            if (hero.bounding_box.x > harlod.bounding_box.x) {
+                overlap_box.x = hero.bounding_box.x;
+                overlap_box.w = harlod.bounding_box.x + harlod.bounding_box.w -
+                    hero.bounding_box.x;
+                overlap_box.w = min(overlap_box.w, hero.bounding_box.w);
+            }
+            else {
+                overlap_box.x = harlod.bounding_box.x;
+                overlap_box.w = hero.bounding_box.x + hero.bounding_box.w -
+                    harlod.bounding_box.x;
+                overlap_box.w = min(overlap_box.w, harlod.bounding_box.w);
+            }
+
+            if (hero.bounding_box.y > harlod.bounding_box.y) {
+                overlap_box.y = hero.bounding_box.y;
+                overlap_box.h = harlod.bounding_box.y + harlod.bounding_box.h -
+                    hero.bounding_box.y;
+                overlap_box.h = min(overlap_box.h, hero.bounding_box.h);
+            }
+            else {
+                overlap_box.y = harlod.bounding_box.y;
+                overlap_box.h = hero.bounding_box.y + hero.bounding_box.h -
+                    harlod.bounding_box.y;
+                overlap_box.h = min(overlap_box.h, harlod.bounding_box.h);
+            }
+            SDL_FillRect(map_surface, &overlap_box, magenta);
+
+            // do pixel collision
+        }
 
         // Draw sprites on map
         SDL_BlitSurface(hero.sprite_sheet, &hero.sprite_rect, map_surface, &hero.dest_rect);
