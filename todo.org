@@ -1,14 +1,14 @@
 #+Startup: showall
  
 * Build
-** TODO IMGUI
+** TODO [#C] IMGUI
 ** TODO [#C] Build SDL in debug mode
 * Gameplay
 ** TODO [#A] Swing a club to destroy an enemy
 ** TODO [#A] Use 2d acceleration.
 ** TODO [#A] Pixel perfect collision
+*** TODO [#A] Get pixel data from sprite sheet
 ** TODO [#A] One enemy with basic AI and collision
-** TODO [#A] Bounding boxes on sprites
 ** TODO [#B] Use time delta and velocity for updating movement
 ** TODO Make tiles 8x8?
 ** TODO [#C] Base building screen

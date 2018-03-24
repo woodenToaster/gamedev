@@ -17,6 +17,36 @@ struct Point {
     float y;
 };
 
+// Uint32 getpixel(SDL_Surface *surface, int x, int y) {
+//     int bpp = surface->format->BytesPerPixel;
+//     /* Here p is the address to the pixel we want to retrieve */
+//     Uint8 *p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
+
+//     switch(bpp) {
+//     case 1:
+//         return *p;
+//         break;
+
+//     case 2:
+//         return *(Uint16 *)p;
+//         break;
+
+//     case 3:
+//         if(SDL_BYTEORDER == SDL_BIG_ENDIAN)
+//             return p[0] << 16 | p[1] << 8 | p[2];
+//         else
+//             return p[0] | p[1] << 8 | p[2] << 16;
+//         break;
+
+//     case 4:
+//         return *(Uint32 *)p;
+//         break;
+
+//     default:
+//         return 0;       /* shouldn't happen, but avoids warnings */
+//     }
+// }
+
 bool overlaps(SDL_Rect* r1, SDL_Rect* r2) {
     bool x_overlap = r1->x + r1->w > r2->x && r1->x < r2->x + r2->w;
     bool y_overlap = r1->y + r1->h > r2->y && r1->y < r2->y + r2->h;
@@ -130,7 +160,7 @@ int main(int argc, char** argv) {
         int h_increment;
 
         SDL_Rect sprite_rect;
-
+        short** pixel_data;
         int current_frame;
         int speed;
 
@@ -162,12 +192,39 @@ int main(int argc, char** argv) {
     hero.bounding_box.y = 0;
     hero.bounding_box.w = 0;
     hero.bounding_box.h = 0;
+    // hero.pixel_data = new short*[hero.num_y_sprites * hero.num_x_sprites];
+
+    // Create pixel data for each sprite
+    // SDL_LockSurface(hero.sprite_sheet);
+    // for (int i = 0; i < hero.num_x_sprites * hero.num_y_sprites; ++i) {
+    //         hero.pixel_data[i] = new short[hero.w_increment * hero.h_increment];
+
+    //         SDL_Rect sprite_rect;
+    //         sprite_rect.x = i * hero.w_increment;
+    //         sprite_rect.y = j * hero.h_increment;
+    //         sprite_rect.w = hero.w_increment;
+    //         sprite_rect.h = hero.h_increment;
+
+    //         for (int x = sprite_rect.x; x < sprite_rect.x + sprite_rect.w; ++x) {
+    //             for (int y = sprite_rect.y; y < sprite_rect.y + sprite_rect.h; ++y) {
+    //                 int pixel_index = sprite_rect.w * x + y;
+    //                 Uint32 pixel_value = getpixel(hero.sprite_sheet, x, y);
+    //                 hero.pixel_data[index][pixel_index] = pixel_value == 0 ? 0 : 1;
+    //             }
+    //         }
+    //     }
+    // }
+    // SDL_UnlockSurface(hero.sprite_sheet);
 
     SDL_Rect hero_starting_pos = hero.dest_rect;
     Point hero_collision_pt;
     bool hero_is_moving = false;
     bool in_quicksand = false;
     Uint32 next_frame_delay = SDL_GetTicks();
+    Uint32 next_club_swing_delay = SDL_GetTicks();
+    bool swing_club = false;
+    SDL_Rect club_rect;
+    Uint32 club_swing_timeout = SDL_GetTicks();
 
     // Enemy
     Entity harlod;
@@ -203,10 +260,12 @@ int main(int argc, char** argv) {
     // Colors
     Uint32 green = SDL_MapRGB(window_surface->format, 0, 255, 0);
     Uint32 blue = SDL_MapRGB(window_surface->format, 0, 0, 255);
-    Uint32 yellow = SDL_MapRGB(window_surface->format, 235, 245, 65);
+    // Uint32 yellow = SDL_MapRGB(window_surface->format, 235, 245, 65);
     Uint32 brown = SDL_MapRGB(window_surface->format, 153, 102, 0);
     Uint32 rust = SDL_MapRGB(window_surface->format, 153, 70, 77);
     Uint32 magenta = SDL_MapRGB(window_surface->format, 255, 0, 255);
+    Uint32 black = SDL_MapRGB(window_surface->format, 0, 0, 0);
+    Uint32 red = SDL_MapRGB(window_surface->format, 255, 0, 0);
 
     // Tiles
     int tile_width = 80;
@@ -341,6 +400,9 @@ int main(int argc, char** argv) {
                 if (key == SDL_SCANCODE_LEFT || key == SDL_SCANCODE_H) {
                     left_is_pressed = false;
                 }
+                if (key == SDL_SCANCODE_F) {
+                    swing_club = true;
+                }
                 break;
             }
             case SDL_QUIT: {
@@ -459,6 +521,45 @@ int main(int argc, char** argv) {
             hero.sprite_rect.x = 0;
         }
 
+        // Handle club
+        int facing_direction = hero.sprite_rect.y / hero.h_increment;
+
+        club_rect.x = hero.dest_rect.x + hero.dest_rect.w / 2;
+        club_rect.y = hero.dest_rect.y + hero.dest_rect.h / 2;
+
+        switch(facing_direction) {
+        case 0: // down
+            club_rect.w = 8;
+            club_rect.x -= 4;
+            club_rect.h = 32;
+            club_rect.y += 16;
+            break;
+        case 1: // left
+            club_rect.w = 32;
+            club_rect.h = 8;
+            club_rect.y += 16;
+            club_rect.x -= 32;
+            break;
+        case 2: // right
+            club_rect.y += 16;
+            club_rect.w = 32;
+            club_rect.h = 8;
+            break;
+        case 3: // up
+            club_rect.x -= 4;
+            club_rect.y -= 32;
+            club_rect.w = 8;
+            club_rect.h = 32;
+            break;
+        }
+
+        if (swing_club && now > next_club_swing_delay + 500) {
+            next_club_swing_delay = now;
+            club_swing_timeout = now + 500;
+        }
+        else {
+            swing_club = false;
+        }
 
         // Clamp camera
         camera.x = clamp(camera.x, 0, max_camera_x);
@@ -661,13 +762,23 @@ int main(int argc, char** argv) {
         // Draw sprites on map
         SDL_BlitSurface(hero.sprite_sheet, &hero.sprite_rect, map_surface, &hero.dest_rect);
         // SDL_RenderCopy(renderer, hero.sprite_texture, &hero.sprite_rect, &hero.dest_rect);
-        if (!in_map1) {
-            SDL_BlitSurface(
-                harlod.sprite_sheet,
-                &harlod.sprite_rect,
-                map_surface,
-                &harlod.dest_rect
-            );
+        // if (!in_map1) {
+        SDL_BlitSurface(
+                        harlod.sprite_sheet,
+                        &harlod.sprite_rect,
+                        map_surface,
+                        &harlod.dest_rect
+                        );
+        // }
+
+        // Check Harlod/club collisions
+        if (overlaps(&harlod.bounding_box, &club_rect) && now < club_swing_timeout) {
+            SDL_FillRect(map_surface, &harlod.bounding_box, red);
+        }
+
+        // Draw hero club
+        if (now < club_swing_timeout) {
+            SDL_FillRect(map_surface, &club_rect, black);
         }
         // Draw portion of map visible to camera on the screen
         SDL_BlitSurface(map_surface, &camera, window_surface, NULL);
@@ -683,6 +794,12 @@ int main(int argc, char** argv) {
     // Cleanup
     SDL_FreeSurface(hero.sprite_sheet);
     SDL_FreeSurface(map_surface);
+
+    // for (int i = 0; i < hero.num_x_sprites * hero.num_y_sprites; ++i) {
+    //     delete[] hero.pixel_data[i];
+    // }
+    // delete[] hero.pixel_data;
+
     SDL_DestroyTexture(hero.sprite_texture);
     Mix_FreeChunk(mud_sound);
     Mix_Quit();
