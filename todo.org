@@ -1,23 +1,16 @@
 #+Startup: showall
  
 * Build
-** TODO Build SDL in debug mode
 ** TODO IMGUI
-** DONE SDL_mixer
-   CLOSED: [2018-03-23 Fri 16:19]
+** TODO [#C] Build SDL in debug mode
 * Gameplay
-** TODO Use time delta and velocity for updating movement
+** TODO [#A] Swing a club to destroy an enemy
+** TODO [#A] Use 2d acceleration.
+** TODO [#A] Pixel perfect collision
+** TODO [#A] One enemy with basic AI and collision
+** TODO [#A] Bounding boxes on sprites
+** TODO [#B] Use time delta and velocity for updating movement
 ** TODO Make tiles 8x8?
-** TODO Pixel perfect collision
-** DONE Basic audio
-   CLOSED: [2018-03-18 Sun 14:26]
-*** DONE Fix clipping sound
-    CLOSED: [2018-03-23 Fri 16:19]
-** DONE Basic animation
-   CLOSED: [2018-03-18 Sun 14:44]
-** DONE Slow animation down.
-   CLOSED: [2018-03-23 Fri 16:34]
-** TODO One enemy with basic AI and collision
-** TODO Base building screen
-** TODO base building gui
+** TODO [#C] Base building screen
+** TODO [#C] base building gui
 

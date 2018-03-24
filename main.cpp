@@ -78,6 +78,12 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
+    if (renderer == NULL) {
+        printf("Could not create renderer: %s\n", SDL_GetError());
+    }
+
     // Frame stats
     Uint32 frames = 0;
     Uint32 start = SDL_GetTicks();
@@ -100,7 +106,8 @@ int main(int argc, char** argv) {
     }
 
     struct Entity {
-        SDL_Surface *sprite_sheet;
+        SDL_Surface* sprite_sheet;
+        SDL_Texture* sprite_texture;
         int sprite_sheet_width;
         int sprite_sheet_height;
         int num_x_sprites;
@@ -113,12 +120,14 @@ int main(int argc, char** argv) {
         int current_frame;
         int speed;
 
+        SDL_Rect bounding_box;
         SDL_Rect dest_rect;
     };
 
     // Hero
     Entity hero;
     hero.sprite_sheet = IMG_Load("sprites/dude.png");
+    hero.sprite_texture = SDL_CreateTextureFromSurface(renderer, hero.sprite_sheet);
     hero.sprite_sheet_width = 256;
     hero.sprite_sheet_height = 256;
     hero.num_x_sprites = 4;
@@ -135,6 +144,10 @@ int main(int argc, char** argv) {
     hero.dest_rect.y = 85;
     hero.dest_rect.w = hero.w_increment;
     hero.dest_rect.h = hero.h_increment;
+    hero.bounding_box.x = 0;
+    hero.bounding_box.y = 0;
+    hero.bounding_box.w = 0;
+    hero.bounding_box.h = 0;
 
     SDL_Rect hero_starting_pos = hero.dest_rect;
     Point hero_collision_pt;
@@ -431,6 +444,12 @@ int main(int argc, char** argv) {
             hero.sprite_rect.x = 0;
         }
 
+        // Hero bounding box
+        hero.bounding_box.x = hero.dest_rect.x + 10;
+        hero.bounding_box.y = hero.dest_rect.y + 10;
+        hero.bounding_box.w = hero.dest_rect.w - 10;
+        hero.bounding_box.h = hero.dest_rect.h - 10;
+
         // Clamp camera
         camera.x = clamp(camera.x, 0, max_camera_x);
         camera.y = clamp(camera.y, 0, max_camera_y);
@@ -482,6 +501,10 @@ int main(int argc, char** argv) {
             camera = camera_starting_pos;
         }
 
+        // Center camera over the hero
+        // camera.x = hero.dest_rect.x + hero.dest_rect.w / 2;
+        // camera.y = hero.dest_rect.y + hero.dest_rect.h / 2;
+
         // Get tile under camera x,y
         int camera_tile_row = camera.y / tile_height;
         int camera_tile_col = camera.x / tile_width;
@@ -491,7 +514,9 @@ int main(int argc, char** argv) {
         tile_rect.h = tile_height;
 
         // Draw
+        // SDL_RenderClear(renderer);
         for (int row = camera_tile_row;
+
              row < tile_rows_per_screen + camera_tile_row;
              ++row) {
 
@@ -504,13 +529,27 @@ int main(int argc, char** argv) {
 
                 Uint32 fill_color = get_color_from_tile((*current_map)[row][col]);
                 SDL_FillRect(map_surface, &tile_rect, fill_color);
+                // SDL_SetRenderDrawColor(renderer, (fill_color & 0xFF00000) >> 4,
+                //                        (fill_color & 0xFF00) >> 2, fill_color & 0xFF, 255);
+                // SDL_Rect dest_rect;
+                // dest_rect.x = tile_rect.x - camera.x;
+                // dest_rect.y = tile_rect.y - camera.y;
+                // dest_rect.w = tile_rect.w;
+                // dest_rect.h = tile_rect.h;
+                // SDL_RenderFillRect(renderer, &dest_rect);
             }
         }
 
         // Highlight tile under player
-        SDL_FillRect(map_surface, &current_tile, yellow);
+        // SDL_FillRect(map_surface, &current_tile, yellow);
+        SDL_SetRenderDrawColor(renderer, 235, 245, 65, 255);
+        SDL_RenderFillRect(renderer, &current_tile);
+
+        // Draw hero bounding box
+
         // Draw sprites on map
         SDL_BlitSurface(hero.sprite_sheet, &hero.sprite_rect, map_surface, &hero.dest_rect);
+        // SDL_RenderCopy(renderer, hero.sprite_texture, &hero.sprite_rect, &hero.dest_rect);
         if (!in_map1) {
             SDL_BlitSurface(
                 harlod.sprite_sheet,
@@ -523,6 +562,7 @@ int main(int argc, char** argv) {
         SDL_BlitSurface(map_surface, &camera, window_surface, NULL);
 
         SDL_UpdateWindowSurface(window);
+        // SDL_RenderPresent(renderer);
 
         SDL_Delay(33);
         frames++;
@@ -532,9 +572,11 @@ int main(int argc, char** argv) {
     // Cleanup
     SDL_FreeSurface(hero.sprite_sheet);
     SDL_FreeSurface(map_surface);
+    SDL_DestroyTexture(hero.sprite_texture);
     Mix_FreeChunk(mud_sound);
     Mix_Quit();
     IMG_Quit();
+    SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
     return 0;
