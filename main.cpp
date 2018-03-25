@@ -664,7 +664,7 @@ int main(int argc, char** argv) {
                 Uint32 fill_color = get_color_from_tile(tp->as_u64());
                 SDL_FillRect(map_surface, &tile_rect, fill_color);
 
-                if (tp->sprite) {
+                if (tp->sprite && in_map1) {
                     SDL_Rect dest = {tile_rect.x, tile_rect.y, 64, 64};
                     SDL_BlitSurface(tp->sprite, NULL, map_surface, &dest);
                 }
