@@ -4,13 +4,8 @@
 #include "stdio.h"
 #include "stdlib.h"
 
-const Uint32 NONE = 0x0;
-const Uint32 SOLID = 0x01;
-const Uint32 WATER = 0x01 << 1;
-const Uint32 QUICKSAND = 0x01 << 2;
-const Uint32 STICKY = 0x01 << 3;
-const Uint32 REVERSE = 0x01 << 4;
-const Uint32 WARP = 0x01 << 5;
+#include "tile_map.cpp"
+
 
 struct Point {
     float x;
@@ -73,24 +68,6 @@ int clamp(int val, int min, int max) {
     }
 }
 
-bool is_solid_tile(Uint64 t) {
-    Uint32 flags = (Uint32)(t >> 32);
-    return flags & SOLID;
-}
-
-bool is_slow_tile(Uint64 t) {
-    Uint32 flags = (Uint32)(t >> 32);
-    return flags & QUICKSAND;
-}
-
-bool is_warp_tile(Uint64 t) {
-    Uint32 flags = (Uint32)(t >> 32);
-    return flags & WARP;
-}
-
-Uint32 get_color_from_tile(Uint64 t) {
-    return (Uint32)(t & 0xFFFFFFFF);
-}
 
 int main(int argc, char** argv) {
     (void)argc;
@@ -277,38 +254,29 @@ int main(int argc, char** argv) {
     current_tile.w = tile_width;
     current_tile.h = tile_height;
 
-    struct Tile {
-        Uint32 flags;
-        Uint32 color;
-        Uint64 as_u64() {
-            return (Uint64)flags << 32 | color;
-        }
-
-        SDL_Surface* sprite;
-    };
 
     Tile w;
-    w.flags = SOLID;
+    w.flags = Tile::SOLID;
     w.color = green;
     w.sprite = NULL;
 
     Tile f;
-    f.flags = NONE;
+    f.flags = Tile::NONE;
     f.color = blue;
     f.sprite = NULL;
 
     Tile m;
-    m.flags = QUICKSAND;
+    m.flags = Tile::QUICKSAND;
     m.color = brown;
     m.sprite = NULL;
 
     Tile wr;
-    wr.flags = WARP;
+    wr.flags = Tile::WARP;
     wr.color = rust;
     wr.sprite = NULL;
 
     Tile t;
-    t.flags = SOLID;
+    t.flags = Tile::SOLID;
     t.color = green;
     t.sprite = IMG_Load("sprites/TropicalTree.png");
 
@@ -600,15 +568,14 @@ int main(int argc, char** argv) {
         int map_coord_x = current_tile.y / tile_height;
         int map_coord_y = current_tile.x / tile_width;
         Tile* tile_at_hero_position_ptr = &(*current_map)[map_coord_x][map_coord_y];
-        Uint64 tile_at_hero_position = tile_at_hero_position_ptr->as_u64();
         // Handle all tiles
-        if (is_solid_tile(tile_at_hero_position)) {
+        if (tile_at_hero_position_ptr->is_solid()) {
             // Collisions. Reverse original state
             camera = saved_camera;
             hero.dest_rect = saved_position;
             current_tile = saved_tile;
         }
-        if (is_slow_tile(tile_at_hero_position) && !in_quicksand) {
+        if (tile_at_hero_position_ptr->is_slow() && !in_quicksand) {
             hero.speed -= 8;
             in_quicksand = true;
             if (SDL_GetTicks() > mud_sound_delay + 250 && hero_is_moving) {
@@ -621,7 +588,7 @@ int main(int argc, char** argv) {
             hero.speed += 8;
             in_quicksand = false;
         }
-        if (is_warp_tile(tile_at_hero_position)) {
+        if (tile_at_hero_position_ptr->is_warp()) {
             if (in_map1) {
                 current_map = &map2;
                 in_map1 = false;
@@ -661,7 +628,7 @@ int main(int argc, char** argv) {
                 tile_rect.y = row * tile_height;
 
                 Tile* tp = &(*current_map)[row][col];
-                Uint32 fill_color = get_color_from_tile(tp->as_u64());
+                Uint32 fill_color = tp->get_color();
                 SDL_FillRect(map_surface, &tile_rect, fill_color);
 
                 if (tp->sprite && in_map1) {
