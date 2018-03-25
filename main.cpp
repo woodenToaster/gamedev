@@ -484,7 +484,12 @@ int main(int argc, char** argv) {
             }
         }
         if (up_is_pressed) {
-            hero.dest_rect.y -= hero.speed;
+            if (left_is_pressed || right_is_pressed) {
+                hero.dest_rect.y -= 7;
+            }
+            else {
+                hero.dest_rect.y -= hero.speed;
+            }
             hero.sprite_rect.y = 3 * hero.h_increment;
             hero.sprite_rect.x = hero.current_frame * hero.h_increment;
             if (now > next_frame_delay + 125) {
@@ -502,7 +507,12 @@ int main(int argc, char** argv) {
             }
         }
         if (down_is_pressed) {
-            hero.dest_rect.y += hero.speed;
+            if (left_is_pressed || right_is_pressed) {
+                hero.dest_rect.y += 7;
+            }
+            else {
+                hero.dest_rect.y += hero.speed;
+            }
             hero.sprite_rect.y = 0 * hero.h_increment;
             hero.sprite_rect.x = hero.current_frame * hero.w_increment;
             if (now > next_frame_delay + 125) {
