@@ -10,6 +10,7 @@
 *** TODO [#A] Get pixel data from sprite sheet
 ** TODO [#A] One enemy with basic AI and collision
 ** TODO [#B] Use time delta and velocity for updating movement
+** TODO [#B] Slow down diagonal movement
 ** TODO Make tiles 8x8?
 ** TODO [#C] Base building screen
 ** TODO [#C] base building gui

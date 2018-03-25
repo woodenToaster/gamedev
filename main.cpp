@@ -283,50 +283,62 @@ int main(int argc, char** argv) {
         Uint64 as_u64() {
             return (Uint64)flags << 32 | color;
         }
+
+        SDL_Surface* sprite;
     };
 
-    Tile wall;
-    wall.flags = SOLID;
-    wall.color = green;
-    Uint64 w = wall.as_u64();
+    Tile w;
+    w.flags = SOLID;
+    w.color = green;
+    w.sprite = NULL;
 
-    Tile floor;
-    floor.flags = NONE;
-    floor.color = blue;
-    Uint64 f = floor.as_u64();
+    Tile f;
+    f.flags = NONE;
+    f.color = blue;
+    f.sprite = NULL;
 
-    Tile mud;
-    mud.flags = QUICKSAND;
-    mud.color = brown;
-    Uint64 m = mud.as_u64();
+    Tile m;
+    m.flags = QUICKSAND;
+    m.color = brown;
+    m.sprite = NULL;
 
-    Tile warp;
-    warp.flags = WARP;
-    warp.color = rust;
-    Uint64 wr = warp.as_u64();
+    Tile wr;
+    wr.flags = WARP;
+    wr.color = rust;
+    wr.sprite = NULL;
+
+    Tile t;
+    t.flags = SOLID;
+    t.color = green;
+    t.sprite = IMG_Load("sprites/TropicalTree.png");
+
+    if (t.sprite == NULL) {
+        printf("Couldn't load TropcialTree.png: %s\n", SDL_GetError());
+        exit(1);
+    }
 
     // Map
     const int map_cols = 12;
     const int map_rows = 10;
 
-    Uint64 map[map_rows][map_cols] = {
+    Tile map[map_rows][map_cols] = {
         {w, w, w, w, w, w, w, w, w, w, w, w},
-        {w, f, f, w, f, f, f, f, f, f, f, f},
-        {w, f, f, w, f, f, f, f, f, f, w, f},
+        {w, f, f, t, f, f, f, f, f, f, f, f},
+        {w, f, f, t, f, f, f, f, f, f, t, f},
         {w, f, f, f, f, f, f, f, f, f, f, m},
-        {w, f, f, w, f, f, f, f, f, f, f, f},
-        {w, f, f, w, w, w, w, f, f, w, f, wr},
-        {w, f, f, f, f, f, w, f, f, w, f, f},
-        {w, f, f, f, f, f, w, f, f, w, f, m},
-        {w, f, f, f, f, f, f, f, f, w, f, f},
+        {w, f, f, t, f, f, f, f, f, f, f, f},
+        {w, f, f, t, t, t, t, f, f, t, f, wr},
+        {w, f, f, f, f, f, t, f, f, t, f, f},
+        {w, f, f, f, f, f, t, f, f, t, f, m},
+        {w, f, f, f, f, f, f, f, f, t, f, f},
         {w, w, w, w, w, w, w, w, w, w, w, w}
     };
 
     bool in_map1 = true;
 
-    Uint64 (*current_map)[map_rows][map_cols] = &map;
+    Tile (*current_map)[map_rows][map_cols] = &map;
 
-    Uint64 map2[map_rows][map_cols] = {
+    Tile map2[map_rows][map_cols] = {
         {w, w, w, w, w, w, w, w, w, w, w, w},
         {w, f, f, f, f, f, f, f, f, f, f, w},
         {w, f, f, f, f, f, f, f, f, f, f, w},
@@ -577,8 +589,8 @@ int main(int argc, char** argv) {
 
         int map_coord_x = current_tile.y / tile_height;
         int map_coord_y = current_tile.x / tile_width;
-        Uint64 tile_at_hero_position = (*current_map)[map_coord_x][map_coord_y];
-
+        Tile* tile_at_hero_position_ptr = &(*current_map)[map_coord_x][map_coord_y];
+        Uint64 tile_at_hero_position = tile_at_hero_position_ptr->as_u64();
         // Handle all tiles
         if (is_solid_tile(tile_at_hero_position)) {
             // Collisions. Reverse original state
@@ -638,8 +650,15 @@ int main(int argc, char** argv) {
                 tile_rect.x = col * tile_width;
                 tile_rect.y = row * tile_height;
 
-                Uint32 fill_color = get_color_from_tile((*current_map)[row][col]);
+                Tile* tp = &(*current_map)[row][col];
+                Uint32 fill_color = get_color_from_tile(tp->as_u64());
                 SDL_FillRect(map_surface, &tile_rect, fill_color);
+
+                if (tp->sprite) {
+                    SDL_Rect dest = {tile_rect.x, tile_rect.y, 64, 64};
+                    SDL_BlitSurface(tp->sprite, NULL, map_surface, &dest);
+                }
+
                 // SDL_SetRenderDrawColor(renderer, (fill_color & 0xFF00000) >> 4,
                 //                        (fill_color & 0xFF00) >> 2, fill_color & 0xFF, 255);
                 // SDL_Rect dest_rect;
@@ -687,7 +706,6 @@ int main(int argc, char** argv) {
         bb_bottom.w = hero.bounding_box.w + 2;
         bb_bottom.h = 2;
 
-
         SDL_FillRect(map_surface, &bb_top, magenta);
         SDL_FillRect(map_surface, &bb_left, magenta);
         SDL_FillRect(map_surface, &bb_right, magenta);
@@ -718,7 +736,6 @@ int main(int argc, char** argv) {
         bb_bottom.y = harlod.bounding_box.y + harlod.bounding_box.h;
         bb_bottom.w = harlod.bounding_box.w + 2;
         bb_bottom.h = 2;
-
 
         SDL_FillRect(map_surface, &bb_top, magenta);
         SDL_FillRect(map_surface, &bb_left, magenta);
@@ -764,11 +781,11 @@ int main(int argc, char** argv) {
         // SDL_RenderCopy(renderer, hero.sprite_texture, &hero.sprite_rect, &hero.dest_rect);
         // if (!in_map1) {
         SDL_BlitSurface(
-                        harlod.sprite_sheet,
-                        &harlod.sprite_rect,
-                        map_surface,
-                        &harlod.dest_rect
-                        );
+            harlod.sprite_sheet,
+            &harlod.sprite_rect,
+            map_surface,
+            &harlod.dest_rect
+        );
         // }
 
         // Check Harlod/club collisions
@@ -793,13 +810,9 @@ int main(int argc, char** argv) {
 
     // Cleanup
     SDL_FreeSurface(hero.sprite_sheet);
+    SDL_FreeSurface(harlod.sprite_sheet);
+    SDL_FreeSurface(t.sprite);
     SDL_FreeSurface(map_surface);
-
-    // for (int i = 0; i < hero.num_x_sprites * hero.num_y_sprites; ++i) {
-    //     delete[] hero.pixel_data[i];
-    // }
-    // delete[] hero.pixel_data;
-
     SDL_DestroyTexture(hero.sprite_texture);
     Mix_FreeChunk(mud_sound);
     Mix_Quit();
