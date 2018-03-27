@@ -3,6 +3,7 @@
 #include "SDL_mixer.h"
 #include "stdio.h"
 #include "stdlib.h"
+#include "math.h"
 
 #include "tile_map.cpp"
 
@@ -11,6 +12,15 @@ struct Point {
     float x;
     float y;
 };
+
+struct Vec2 {
+    float x;
+    float y;
+};
+
+float vec2_magnitude(Vec2* v) {
+    return sqrtf(powf(v->x, 2) + powf(v->y, 2));
+}
 
 // Uint32 getpixel(SDL_Surface *surface, int x, int y) {
 //     int bpp = surface->format->BytesPerPixel;
@@ -403,6 +413,17 @@ int main(int argc, char** argv) {
                 if (key == SDL_SCANCODE_DOWN || key == SDL_SCANCODE_J) {
                     down_is_pressed = true;
                 }
+                break;
+            }
+            case SDL_MOUSEMOTION: {
+                // get vector from center of player to mouse cursor
+                Vec2 mouse_relative_to_hero;
+                // TODO: compute from center of hero sprite
+                mouse_relative_to_hero.x = (float)event.motion.x - hero.dest_rect.x;
+                mouse_relative_to_hero.y = (float)event.motion.y - hero.dest_rect.y;
+
+                float radius = vec2_magnitude(&mouse_relative_to_hero);
+                printf("%g\n", radius);
                 break;
             }
             }
