@@ -161,14 +161,30 @@ int main(int argc, char** argv) {
         SDL_Rect dest_rect;
     };
 
+    // Sprite sheet
+    struct SpriteSheet {
+        SDL_Surface sheet;
+        int width;
+        int height;
+        int num_x_sprites;
+        int num_y_sprites;
+    };
+
     // Hero
     Entity hero;
-    hero.sprite_sheet = IMG_Load("sprites/dude.png");
-    hero.sprite_texture = SDL_CreateTextureFromSurface(renderer, hero.sprite_sheet);
-    hero.sprite_sheet_width = 256;
-    hero.sprite_sheet_height = 256;
-    hero.num_x_sprites = 4;
-    hero.num_y_sprites = 4;
+    // hero.sprite_sheet = IMG_Load("sprites/dude.png");
+    // hero.sprite_texture = SDL_CreateTextureFromSurface(renderer, hero.sprite_sheet);
+    // hero.sprite_sheet_width = 256;
+    // hero.sprite_sheet_height = 256;
+    // hero.num_x_sprites = 4;
+    // hero.num_y_sprites = 4;
+
+    hero.sprite_sheet = IMG_Load("sprites/link_walking.png");
+    hero.sprite_sheet_width = 264;
+    hero.sprite_sheet_height = 160;
+    hero.num_x_sprites = 11;
+    hero.num_y_sprites = 5;
+
     hero.w_increment = hero.sprite_sheet_width / hero.num_x_sprites;
     hero.h_increment = hero.sprite_sheet_height / hero.num_y_sprites;
     hero.sprite_rect.x = 0;
@@ -441,6 +457,7 @@ int main(int argc, char** argv) {
                 // The radians start at 2*PI on (1, 0) and go to zero counter-clockwise
                 float direction_increment = (2.0f * PI) / 8.0f;
                 float half_increment = 0.5f * direction_increment;
+                int old_direction = hero.direction;
 
                 if (angle >= (3.0f * PI) / 2.0f - half_increment &&
                     angle < (3.0f * PI) / 2.0f + half_increment) {
@@ -474,7 +491,10 @@ int main(int argc, char** argv) {
                          angle < (3.0f * PI) / half_increment) {
                     hero.direction = 8;
                 }
-                // printf("%d\n", direction);
+                if (angle == 0) {
+                    hero.direction = old_direction;
+                }
+                // printf("%f\n", angle);
                 break;
             }
             }
@@ -489,15 +509,15 @@ int main(int argc, char** argv) {
 
         if (right_is_pressed) {
             hero.dest_rect.x += hero.speed;
-            hero.sprite_rect.y = 2 * hero.h_increment;
-            hero.sprite_rect.x = hero.current_frame * hero.w_increment;
-            if (now > next_frame_delay + 125) {
-                hero.current_frame++;
-                next_frame_delay = now;
-            }
-            if (hero.current_frame > hero.num_x_sprites - 1) {
-                hero.current_frame = 0;
-            }
+            // hero.sprite_rect.y = 2 * hero.h_increment;
+            // hero.sprite_rect.x = hero.current_frame * hero.w_increment;
+            // if (now > next_frame_delay + 125) {
+                // hero.current_frame++;
+                // next_frame_delay = now;
+            // }
+            // if (hero.current_frame > hero.num_x_sprites - 1) {
+                // hero.current_frame = 0;
+            // }
 
             if (hero.dest_rect.x > x_pixel_movement_threshold &&
                 camera.x < max_camera_x) {
@@ -506,16 +526,16 @@ int main(int argc, char** argv) {
         }
         if (left_is_pressed) {
             hero.dest_rect.x -= hero.speed;
-            hero.sprite_rect.y = 1 * hero.h_increment;
-            hero.sprite_rect.x = hero.current_frame * hero.w_increment;
+            // hero.sprite_rect.y = 1 * hero.h_increment;
+            // hero.sprite_rect.x = hero.current_frame * hero.w_increment;
 
-            if (now > next_frame_delay + 125) {
-                hero.current_frame++;
-                next_frame_delay = now;
-            }
-            if (hero.current_frame > hero.num_x_sprites - 1) {
-                hero.current_frame = 0;
-            }
+            // if (now > next_frame_delay + 125) {
+            //     hero.current_frame++;
+            //     next_frame_delay = now;
+            // }
+            // if (hero.current_frame > hero.num_x_sprites - 1) {
+            //     hero.current_frame = 0;
+            // }
 
             if (hero.dest_rect.x <
                 map_width_pixels - x_pixel_movement_threshold &&
@@ -530,15 +550,15 @@ int main(int argc, char** argv) {
             else {
                 hero.dest_rect.y -= hero.speed;
             }
-            hero.sprite_rect.y = 3 * hero.h_increment;
-            hero.sprite_rect.x = hero.current_frame * hero.h_increment;
-            if (now > next_frame_delay + 125) {
-                hero.current_frame++;
-                next_frame_delay = now;
-            }
-            if (hero.current_frame > hero.num_x_sprites - 1) {
-                hero.current_frame = 0;
-            }
+            // hero.sprite_rect.y = 3 * hero.h_increment;
+            // hero.sprite_rect.x = hero.current_frame * hero.h_increment;
+            // if (now > next_frame_delay + 125) {
+            //     hero.current_frame++;
+            //     next_frame_delay = now;
+            // }
+            // if (hero.current_frame > hero.num_x_sprites - 1) {
+            //     hero.current_frame = 0;
+            // }
 
             if (hero.dest_rect.y <
                 map_height_pixels - y_pixel_movement_threshold &&
@@ -553,16 +573,16 @@ int main(int argc, char** argv) {
             else {
                 hero.dest_rect.y += hero.speed;
             }
-            hero.sprite_rect.y = 0 * hero.h_increment;
-            hero.sprite_rect.x = hero.current_frame * hero.w_increment;
-            if (now > next_frame_delay + 125) {
-                hero.current_frame++;
-                next_frame_delay = now;
-            }
+            // hero.sprite_rect.y = 0 * hero.h_increment;
+            // hero.sprite_rect.x = hero.current_frame * hero.w_increment;
+            // if (now > next_frame_delay + 125) {
+            //     hero.current_frame++;
+            //     next_frame_delay = now;
+            // }
 
-            if (hero.current_frame > hero.num_x_sprites - 1) {
-                hero.current_frame = 0;
-            }
+            // if (hero.current_frame > hero.num_x_sprites - 1) {
+            //     hero.current_frame = 0;
+            // }
 
             if (hero.dest_rect.y > y_pixel_movement_threshold &&
                 camera.y < max_camera_y) {
@@ -825,8 +845,46 @@ int main(int argc, char** argv) {
             // do pixel collision
         }
 
+        // Set sprite based on hero.direction
+        switch (hero.direction) {
+        case 1:
+            hero.sprite_rect.x = 0;
+            hero.sprite_rect.y = hero.h_increment;
+            break;
+        case 2:
+            hero.sprite_rect.x = 8 * hero.w_increment;
+            hero.sprite_rect.y = 0;
+            break;
+        case 3:
+            hero.sprite_rect.x = 0;
+            hero.sprite_rect.y = 0;
+            break;
+        case 4:
+            hero.sprite_rect.x = 8 * hero.w_increment;
+            hero.sprite_rect.y = 4 * hero.h_increment;
+            break;
+        case 5:
+            hero.sprite_rect.x = 0;
+            hero.sprite_rect.y = 4 * hero.h_increment;
+            break;
+        case 6:
+            hero.sprite_rect.x = 8 * hero.w_increment;
+            hero.sprite_rect.y = 3 * hero.h_increment;
+            break;
+        case 7:
+            hero.sprite_rect.x = 0;
+            hero.sprite_rect.y = 3 * hero.h_increment;
+            break;
+        case 8:
+            hero.sprite_rect.x = 8 * hero.w_increment;
+            hero.sprite_rect.y = hero.h_increment;
+            break;
+        default:
+            break;
+        }
         // Draw sprites on map
         SDL_BlitSurface(hero.sprite_sheet, &hero.sprite_rect, map_surface, &hero.dest_rect);
+        // SDL_BlitScaled(hero.sprite_sheet, &hero.sprite_rect, map_surface, &hero.dest_rect);
         // SDL_RenderCopy(renderer, hero.sprite_texture, &hero.sprite_rect, &hero.dest_rect);
         // if (!in_map1) {
         SDL_BlitSurface(
