@@ -7,6 +7,7 @@
 
 #include "tile_map.cpp"
 
+const float PI = 3.14159f;
 
 struct Point {
     float x;
@@ -20,6 +21,10 @@ struct Vec2 {
 
 float vec2_magnitude(Vec2* v) {
     return sqrtf(powf(v->x, 2) + powf(v->y, 2));
+}
+
+float vec2_dot(Vec2* v1, Vec2* v2) {
+    return v1->x * v2->x + v1->y * v2->y;
 }
 
 // Uint32 getpixel(SDL_Surface *surface, int x, int y) {
@@ -150,6 +155,7 @@ int main(int argc, char** argv) {
         short** pixel_data;
         int current_frame;
         int speed;
+        int direction;
 
         SDL_Rect bounding_box;
         SDL_Rect dest_rect;
@@ -171,6 +177,7 @@ int main(int argc, char** argv) {
     hero.sprite_rect.h = hero.h_increment;
     hero.current_frame = 0;
     hero.speed = 10;
+    hero.direction = 0;
     hero.dest_rect.x = 85;
     hero.dest_rect.y = 85;
     hero.dest_rect.w = hero.w_increment;
@@ -232,6 +239,7 @@ int main(int argc, char** argv) {
     harlod.dest_rect.y = 150;
     harlod.dest_rect.w = harlod.w_increment;
     harlod.dest_rect.h = harlod.h_increment;
+    harlod.direction = 0;
 
     bool right_is_pressed = false;
     bool left_is_pressed = false;
@@ -417,13 +425,56 @@ int main(int argc, char** argv) {
             }
             case SDL_MOUSEMOTION: {
                 // get vector from center of player to mouse cursor
+                Point hero_center;
+                hero_center.x = hero.dest_rect.x + (0.5f * hero.dest_rect.w);
+                hero_center.y = hero.dest_rect.y + (0.5f * hero.dest_rect.h);
                 Vec2 mouse_relative_to_hero;
-                // TODO: compute from center of hero sprite
-                mouse_relative_to_hero.x = (float)event.motion.x - hero.dest_rect.x;
-                mouse_relative_to_hero.y = (float)event.motion.y - hero.dest_rect.y;
+                mouse_relative_to_hero.x = hero_center.x - ((float)event.motion.x + camera.x);
+                mouse_relative_to_hero.y = hero_center.y - ((float)event.motion.y + camera.y);
 
-                float radius = vec2_magnitude(&mouse_relative_to_hero);
-                printf("%g\n", radius);
+                float angle = 0;
+                if (mouse_relative_to_hero.x != 0 && mouse_relative_to_hero.y != 0) {
+                    angle = atan2f(mouse_relative_to_hero.y, mouse_relative_to_hero.x) + PI;
+                }
+
+                // Get direction. One piece of a circle split in 8 sections
+                // The radians start at 2*PI on (1, 0) and go to zero counter-clockwise
+                float direction_increment = (2.0f * PI) / 8.0f;
+                float half_increment = 0.5f * direction_increment;
+
+                if (angle >= (3.0f * PI) / 2.0f - half_increment &&
+                    angle < (3.0f * PI) / 2.0f + half_increment) {
+                    hero.direction = 1;
+                }
+                else if (angle >= (3.0f * PI) / 2.0f + half_increment &&
+                         angle < 2.0f * PI - half_increment) {
+                    hero.direction = 2;
+                }
+                else if (angle >= 2.0f * PI - half_increment ||
+                         angle < half_increment) {
+                    hero.direction = 3;
+                }
+                else if (angle >= half_increment &&
+                         angle < PI / 2.0f - half_increment) {
+                    hero.direction = 4;
+                }
+                else if (angle >= PI / 2.0f - half_increment &&
+                         angle < PI / 2.0f + half_increment) {
+                    hero.direction = 5;
+                }
+                else if (angle >= PI / 2.0f + half_increment &&
+                         angle < PI - half_increment) {
+                    hero.direction = 6;
+                }
+                else if (angle >= PI - half_increment &&
+                         angle < PI + half_increment) {
+                    hero.direction = 7;
+                }
+                else if (angle >= PI + half_increment &&
+                         angle < (3.0f * PI) / half_increment) {
+                    hero.direction = 8;
+                }
+                // printf("%d\n", direction);
                 break;
             }
             }
