@@ -4,11 +4,8 @@
 ** TODO [#C] IMGUI
 ** TODO [#C] Build SDL in debug mode
 * Gameplay
-** DONE [#A] Swing a club to destroy an enemy
-   CLOSED: [2018-03-25 Sun 10:21]
-** TODO 2d FPS controls.
-** TODO Zelda sprites for now
-** TODO [#A] Use 2d acceleration.
+** TODO [#A] Link swing sword animation
+** TODO [#A] Insert camp fire
 ** TODO [#A] Pixel perfect collision
 *** TODO [#A] Get pixel data from sprite sheet
 ** TODO [#A] One enemy with basic AI and collision
@@ -16,4 +13,7 @@
 ** TODO Make tiles 8x8?
 ** TODO [#C] Base building screen
 ** TODO [#C] base building gui
+* Graphics
+** TODO [#A] Use 2d acceleration.
+** TODO [#B] Enable OpenGL
 

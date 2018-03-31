@@ -5,84 +5,20 @@
 #include "stdlib.h"
 #include "math.h"
 
+#include "entity.cpp"
 #include "tile_map.cpp"
-
-const float PI = 3.14159f;
+#include "gamedev_math.h"
 
 struct Point {
     float x;
     float y;
 };
 
-struct Vec2 {
-    float x;
-    float y;
-};
-
-float vec2_magnitude(Vec2* v) {
-    return sqrtf(powf(v->x, 2) + powf(v->y, 2));
-}
-
-float vec2_dot(Vec2* v1, Vec2* v2) {
-    return v1->x * v2->x + v1->y * v2->y;
-}
-
-// Uint32 getpixel(SDL_Surface *surface, int x, int y) {
-//     int bpp = surface->format->BytesPerPixel;
-//     /* Here p is the address to the pixel we want to retrieve */
-//     Uint8 *p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
-
-//     switch(bpp) {
-//     case 1:
-//         return *p;
-//         break;
-
-//     case 2:
-//         return *(Uint16 *)p;
-//         break;
-
-//     case 3:
-//         if(SDL_BYTEORDER == SDL_BIG_ENDIAN)
-//             return p[0] << 16 | p[1] << 8 | p[2];
-//         else
-//             return p[0] | p[1] << 8 | p[2] << 16;
-//         break;
-
-//     case 4:
-//         return *(Uint32 *)p;
-//         break;
-
-//     default:
-//         return 0;       /* shouldn't happen, but avoids warnings */
-//     }
-// }
-
 bool overlaps(SDL_Rect* r1, SDL_Rect* r2) {
     bool x_overlap = r1->x + r1->w > r2->x && r1->x < r2->x + r2->w;
     bool y_overlap = r1->y + r1->h > r2->y && r1->y < r2->y + r2->h;
     return x_overlap && y_overlap;
 }
-
-int max(int a, int b) {
-    return a > b ? a : b;
-}
-
-int min(int a, int b) {
-    return a < b ? a : b;
-}
-
-int clamp(int val, int min, int max) {
-    if (val < min) {
-        return min;
-    }
-    else if (val > max) {
-        return max;
-    }
-    else {
-        return val;
-    }
-}
-
 
 int main(int argc, char** argv) {
     (void)argc;
@@ -122,7 +58,7 @@ int main(int argc, char** argv) {
 
     // Frame stats
     Uint32 frames = 0;
-    Uint32 start = SDL_GetTicks();
+    // Uint32 start = SDL_GetTicks();
     bool running = true;
 
     // Sound
@@ -141,26 +77,6 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    struct Entity {
-        SDL_Surface* sprite_sheet;
-        SDL_Texture* sprite_texture;
-        int sprite_sheet_width;
-        int sprite_sheet_height;
-        int num_x_sprites;
-        int num_y_sprites;
-        int w_increment;
-        int h_increment;
-
-        SDL_Rect sprite_rect;
-        short** pixel_data;
-        int current_frame;
-        int speed;
-        int direction;
-
-        SDL_Rect bounding_box;
-        SDL_Rect dest_rect;
-    };
-
     // Sprite sheet
     struct SpriteSheet {
         SDL_Surface sheet;
@@ -171,7 +87,7 @@ int main(int argc, char** argv) {
     };
 
     // Hero
-    Entity hero;
+    Entity hero = {};
     // hero.sprite_sheet = IMG_Load("sprites/dude.png");
     // hero.sprite_texture = SDL_CreateTextureFromSurface(renderer, hero.sprite_sheet);
     // hero.sprite_sheet_width = 256;
@@ -192,8 +108,8 @@ int main(int argc, char** argv) {
     hero.sprite_rect.w = hero.w_increment;
     hero.sprite_rect.h = hero.h_increment;
     hero.current_frame = 0;
-    hero.speed = 10;
-    hero.direction = 0;
+    hero.speed = 5;
+    hero.direction = DOWN;
     hero.dest_rect.x = 85;
     hero.dest_rect.y = 85;
     hero.dest_rect.w = hero.w_increment;
@@ -202,29 +118,6 @@ int main(int argc, char** argv) {
     hero.bounding_box.y = 0;
     hero.bounding_box.w = 0;
     hero.bounding_box.h = 0;
-    // hero.pixel_data = new short*[hero.num_y_sprites * hero.num_x_sprites];
-
-    // Create pixel data for each sprite
-    // SDL_LockSurface(hero.sprite_sheet);
-    // for (int i = 0; i < hero.num_x_sprites * hero.num_y_sprites; ++i) {
-    //         hero.pixel_data[i] = new short[hero.w_increment * hero.h_increment];
-
-    //         SDL_Rect sprite_rect;
-    //         sprite_rect.x = i * hero.w_increment;
-    //         sprite_rect.y = j * hero.h_increment;
-    //         sprite_rect.w = hero.w_increment;
-    //         sprite_rect.h = hero.h_increment;
-
-    //         for (int x = sprite_rect.x; x < sprite_rect.x + sprite_rect.w; ++x) {
-    //             for (int y = sprite_rect.y; y < sprite_rect.y + sprite_rect.h; ++y) {
-    //                 int pixel_index = sprite_rect.w * x + y;
-    //                 Uint32 pixel_value = getpixel(hero.sprite_sheet, x, y);
-    //                 hero.pixel_data[index][pixel_index] = pixel_value == 0 ? 0 : 1;
-    //             }
-    //         }
-    //     }
-    // }
-    // SDL_UnlockSurface(hero.sprite_sheet);
 
     SDL_Rect hero_starting_pos = hero.dest_rect;
     Point hero_collision_pt;
@@ -237,7 +130,7 @@ int main(int argc, char** argv) {
     Uint32 club_swing_timeout = SDL_GetTicks();
 
     // Enemy
-    Entity harlod;
+    Entity harlod = {};
     harlod.sprite_sheet = IMG_Load("sprites/Harlod_the_caveman.png");
     harlod.sprite_sheet_width = 64;
     harlod.sprite_sheet_height = 64;
@@ -255,7 +148,26 @@ int main(int argc, char** argv) {
     harlod.dest_rect.y = 150;
     harlod.dest_rect.w = harlod.w_increment;
     harlod.dest_rect.h = harlod.h_increment;
-    harlod.direction = 0;
+    harlod.direction = DOWN;
+
+    Entity buffalo = {};
+    buffalo.sprite_sheet = IMG_Load("sprites/Buffalo.png");
+    buffalo.sprite_sheet_width = 64 * 4;
+    buffalo.sprite_sheet_height = 64;
+    buffalo.num_x_sprites = 4;
+    buffalo.num_y_sprites = 1;
+    buffalo.w_increment = 64;
+    buffalo.h_increment = 64;
+    buffalo.sprite_rect.x = 0;
+    buffalo.sprite_rect.y = 0;
+    buffalo.sprite_rect.w = buffalo.w_increment;
+    buffalo.sprite_rect.h = buffalo.h_increment;
+    buffalo.current_frame = 0;
+    buffalo.speed = 3;
+    buffalo.dest_rect.x = 400;
+    buffalo.dest_rect.y = 400;
+    buffalo.dest_rect.w = buffalo.w_increment;
+    buffalo.dest_rect.h = buffalo.h_increment;
 
     bool right_is_pressed = false;
     bool left_is_pressed = false;
@@ -277,6 +189,7 @@ int main(int argc, char** argv) {
     Uint32 magenta = SDL_MapRGB(window_surface->format, 255, 0, 255);
     Uint32 black = SDL_MapRGB(window_surface->format, 0, 0, 0);
     Uint32 red = SDL_MapRGB(window_surface->format, 255, 0, 0);
+    Uint32 grey = SDL_MapRGB(window_surface->format, 135, 135, 135);
 
     // Tiles
     int tile_width = 80;
@@ -313,6 +226,20 @@ int main(int argc, char** argv) {
     t.flags = Tile::SOLID;
     t.color = green;
     t.sprite = IMG_Load("sprites/TropicalTree.png");
+    t.sprite_rect = {};
+    t.sprite_rect.w = 64;
+    t.sprite_rect.h = 64;
+
+    Tile fire;
+    fire.flags = Tile::FIRE;
+    fire.color = grey;
+    fire.sprite = IMG_Load("sprites/Campfire.png");
+    fire.sprite_rect = {};
+    fire.sprite_rect.w = 64;
+    fire.sprite_rect.h = 64;
+    fire.animation = {};
+    fire.animation.total_frames = 11;
+    fire.animation.delay = 100;
 
     if (t.sprite == NULL) {
         printf("Couldn't load TropcialTree.png: %s\n", SDL_GetError());
@@ -326,7 +253,7 @@ int main(int argc, char** argv) {
     Tile map[map_rows][map_cols] = {
         {w, w, w, w, w, w, w, w, w, w, w, w},
         {w, f, f, t, f, f, f, f, f, f, f, f},
-        {w, f, f, t, f, f, f, f, f, f, t, f},
+        {w, f, f, t, f, f, f, fire, f, f, t, f},
         {w, f, f, f, f, f, f, f, f, f, f, m},
         {w, f, f, t, f, f, f, f, f, f, f, f},
         {w, f, f, t, t, t, t, f, f, t, f, wr},
@@ -383,14 +310,16 @@ int main(int argc, char** argv) {
     int y_pixel_movement_threshold = screen_height / 2;
     int x_pixel_movement_threshold = screen_width / 2;
 
+    Uint32 last_frame_duration = 0;
+
     // Main loop
     while(running) {
-
-        if (SDL_GetTicks() > start + 1000) {
-            // printf("FPS: %d\n", frames);
-            frames = 0;
-            start = SDL_GetTicks();
-        }
+        Uint32 now = SDL_GetTicks();
+        // if (SDL_GetTicks() > start + 1000) {
+        //     printf("FPS: %d\n", frames);
+        //     frames = 0;
+        //     start = SDL_GetTicks();
+        // }
 
         // Input
         SDL_Event event;
@@ -402,16 +331,20 @@ int main(int argc, char** argv) {
                 if (key == SDL_SCANCODE_ESCAPE) {
                     running = false;
                 }
-                if (key == SDL_SCANCODE_RIGHT || key == SDL_SCANCODE_L) {
+                if (key == SDL_SCANCODE_RIGHT || key == SDL_SCANCODE_L ||
+                    key == SDL_SCANCODE_D) {
                     right_is_pressed = false;
                 }
-                if (key == SDL_SCANCODE_UP || key == SDL_SCANCODE_K) {
+                if (key == SDL_SCANCODE_UP || key == SDL_SCANCODE_K ||
+                    key == SDL_SCANCODE_W) {
                     up_is_pressed = false;
                 }
-                if (key == SDL_SCANCODE_DOWN || key == SDL_SCANCODE_J) {
+                if (key == SDL_SCANCODE_DOWN || key == SDL_SCANCODE_J ||
+                    key == SDL_SCANCODE_S) {
                     down_is_pressed = false;
                 }
-                if (key == SDL_SCANCODE_LEFT || key == SDL_SCANCODE_H) {
+                if (key == SDL_SCANCODE_LEFT || key == SDL_SCANCODE_H ||
+                    key == SDL_SCANCODE_A) {
                     left_is_pressed = false;
                 }
                 if (key == SDL_SCANCODE_F) {
@@ -425,16 +358,20 @@ int main(int argc, char** argv) {
             }
             case SDL_KEYDOWN: {
                 SDL_Scancode key = event.key.keysym.scancode;
-                if (key == SDL_SCANCODE_RIGHT || key == SDL_SCANCODE_L) {
+                if (key == SDL_SCANCODE_RIGHT || key == SDL_SCANCODE_L ||
+                    key == SDL_SCANCODE_D) {
                     right_is_pressed = true;
                 }
-                if (key == SDL_SCANCODE_LEFT || key == SDL_SCANCODE_H) {
+                if (key == SDL_SCANCODE_LEFT || key == SDL_SCANCODE_H ||
+                    key == SDL_SCANCODE_A) {
                     left_is_pressed = true;
                 }
-                if (key == SDL_SCANCODE_UP || key == SDL_SCANCODE_K) {
+                if (key == SDL_SCANCODE_UP || key == SDL_SCANCODE_K ||
+                    key == SDL_SCANCODE_W) {
                     up_is_pressed = true;
                 }
-                if (key == SDL_SCANCODE_DOWN || key == SDL_SCANCODE_J) {
+                if (key == SDL_SCANCODE_DOWN || key == SDL_SCANCODE_J ||
+                    key == SDL_SCANCODE_S) {
                     down_is_pressed = true;
                 }
                 break;
@@ -457,44 +394,49 @@ int main(int argc, char** argv) {
                 // The radians start at 2*PI on (1, 0) and go to zero counter-clockwise
                 float direction_increment = (2.0f * PI) / 8.0f;
                 float half_increment = 0.5f * direction_increment;
-                int old_direction = hero.direction;
+                Direction old_direction = hero.direction;
 
                 if (angle >= (3.0f * PI) / 2.0f - half_increment &&
                     angle < (3.0f * PI) / 2.0f + half_increment) {
-                    hero.direction = 1;
+                    hero.direction = UP;
                 }
                 else if (angle >= (3.0f * PI) / 2.0f + half_increment &&
                          angle < 2.0f * PI - half_increment) {
-                    hero.direction = 2;
+                    hero.direction = UP_RIGHT;
                 }
                 else if (angle >= 2.0f * PI - half_increment ||
                          angle < half_increment) {
-                    hero.direction = 3;
+                    hero.direction = RIGHT;
                 }
                 else if (angle >= half_increment &&
                          angle < PI / 2.0f - half_increment) {
-                    hero.direction = 4;
+                    hero.direction = DOWN_RIGHT;
                 }
                 else if (angle >= PI / 2.0f - half_increment &&
                          angle < PI / 2.0f + half_increment) {
-                    hero.direction = 5;
+                    hero.direction = DOWN;
                 }
                 else if (angle >= PI / 2.0f + half_increment &&
                          angle < PI - half_increment) {
-                    hero.direction = 6;
+                    hero.direction = DOWN_LEFT;
                 }
                 else if (angle >= PI - half_increment &&
                          angle < PI + half_increment) {
-                    hero.direction = 7;
+                    hero.direction = LEFT;
                 }
                 else if (angle >= PI + half_increment &&
                          angle < (3.0f * PI) / half_increment) {
-                    hero.direction = 8;
+                    hero.direction = UP_LEFT;
                 }
                 if (angle == 0) {
                     hero.direction = old_direction;
                 }
-                // printf("%f\n", angle);
+                break;
+            }
+            case SDL_MOUSEBUTTONUP: {
+                if (event.button.button == SDL_BUTTON_LEFT) {
+                    swing_club = true;
+                }
                 break;
             }
             }
@@ -504,8 +446,6 @@ int main(int argc, char** argv) {
         SDL_Rect saved_position = hero.dest_rect;
         SDL_Rect saved_camera = camera;
         SDL_Rect saved_tile = current_tile;
-
-        Uint32 now = SDL_GetTicks();
 
         if (right_is_pressed) {
             hero.dest_rect.x += hero.speed;
@@ -604,30 +544,28 @@ int main(int argc, char** argv) {
         }
 
         // Handle club
-        int facing_direction = hero.sprite_rect.y / hero.h_increment;
-
         club_rect.x = hero.dest_rect.x + hero.dest_rect.w / 2;
         club_rect.y = hero.dest_rect.y + hero.dest_rect.h / 2;
 
-        switch(facing_direction) {
-        case 0: // down
+        switch(hero.direction) {
+        case DOWN:
             club_rect.w = 8;
             club_rect.x -= 4;
             club_rect.h = 32;
             club_rect.y += 16;
             break;
-        case 1: // left
+        case LEFT:
             club_rect.w = 32;
             club_rect.h = 8;
             club_rect.y += 16;
             club_rect.x -= 32;
             break;
-        case 2: // right
+        case RIGHT:
             club_rect.y += 16;
             club_rect.w = 32;
             club_rect.h = 8;
             break;
-        case 3: // up
+        case UP:
             club_rect.x -= 4;
             club_rect.y -= 32;
             club_rect.w = 8;
@@ -720,14 +658,9 @@ int main(int argc, char** argv) {
                 tile_rect.y = row * tile_height;
 
                 Tile* tp = &(*current_map)[row][col];
-                Uint32 fill_color = tp->get_color();
-                SDL_FillRect(map_surface, &tile_rect, fill_color);
-
-                if (tp->sprite && in_map1) {
-                    SDL_Rect dest = {tile_rect.x, tile_rect.y, 64, 64};
-                    SDL_BlitSurface(tp->sprite, NULL, map_surface, &dest);
-                }
-
+                // TODO: Move this out of the draw section to the update section
+                tp->animation.update(last_frame_duration);
+                tp->draw(map_surface, &tile_rect);
                 // SDL_SetRenderDrawColor(renderer, (fill_color & 0xFF00000) >> 4,
                 //                        (fill_color & 0xFF00) >> 2, fill_color & 0xFF, 255);
                 // SDL_Rect dest_rect;
@@ -847,35 +780,35 @@ int main(int argc, char** argv) {
 
         // Set sprite based on hero.direction
         switch (hero.direction) {
-        case 1:
+        case UP:
             hero.sprite_rect.x = 0;
             hero.sprite_rect.y = hero.h_increment;
             break;
-        case 2:
+        case UP_RIGHT:
             hero.sprite_rect.x = 8 * hero.w_increment;
             hero.sprite_rect.y = 0;
             break;
-        case 3:
+        case RIGHT:
             hero.sprite_rect.x = 0;
             hero.sprite_rect.y = 0;
             break;
-        case 4:
+        case DOWN_RIGHT:
             hero.sprite_rect.x = 8 * hero.w_increment;
             hero.sprite_rect.y = 4 * hero.h_increment;
             break;
-        case 5:
+        case DOWN:
             hero.sprite_rect.x = 0;
             hero.sprite_rect.y = 4 * hero.h_increment;
             break;
-        case 6:
+        case DOWN_LEFT:
             hero.sprite_rect.x = 8 * hero.w_increment;
             hero.sprite_rect.y = 3 * hero.h_increment;
             break;
-        case 7:
+        case LEFT:
             hero.sprite_rect.x = 0;
             hero.sprite_rect.y = 3 * hero.h_increment;
             break;
-        case 8:
+        case UP_LEFT:
             hero.sprite_rect.x = 8 * hero.w_increment;
             hero.sprite_rect.y = hero.h_increment;
             break;
@@ -884,7 +817,6 @@ int main(int argc, char** argv) {
         }
         // Draw sprites on map
         SDL_BlitSurface(hero.sprite_sheet, &hero.sprite_rect, map_surface, &hero.dest_rect);
-        // SDL_BlitScaled(hero.sprite_sheet, &hero.sprite_rect, map_surface, &hero.dest_rect);
         // SDL_RenderCopy(renderer, hero.sprite_texture, &hero.sprite_rect, &hero.dest_rect);
         // if (!in_map1) {
         SDL_BlitSurface(
@@ -894,7 +826,12 @@ int main(int argc, char** argv) {
             &harlod.dest_rect
         );
         // }
-
+        SDL_BlitSurface(
+            buffalo.sprite_sheet,
+            &buffalo.sprite_rect,
+            map_surface,
+            &buffalo.dest_rect
+        );
         // Check Harlod/club collisions
         if (overlaps(&harlod.bounding_box, &club_rect) && now < club_swing_timeout) {
             SDL_FillRect(map_surface, &harlod.bounding_box, red);
@@ -913,14 +850,11 @@ int main(int argc, char** argv) {
         SDL_Delay(33);
         frames++;
         fflush(stdout);
+        last_frame_duration = SDL_GetTicks() - now;
     }
 
     // Cleanup
-    SDL_FreeSurface(hero.sprite_sheet);
-    SDL_FreeSurface(harlod.sprite_sheet);
-    SDL_FreeSurface(t.sprite);
     SDL_FreeSurface(map_surface);
-    SDL_DestroyTexture(hero.sprite_texture);
     Mix_FreeChunk(mud_sound);
     Mix_Quit();
     IMG_Quit();
