@@ -14,20 +14,24 @@ enum Direction {
     UP_LEFT
 };
 
+// Sprite sheet
+struct SpriteSheet {
+    SDL_Surface* sheet;
+    int width;
+    int height;
+    int num_x;
+    int num_y;
+    int sprite_width;
+    int sprite_height;
+
+    void load(const char* path, int sprite_width, int sprite_height);
+};
+
 struct Entity {
-    SDL_Surface* sprite_sheet;
-    SDL_Texture* sprite_texture;
-    int sprite_sheet_width;
-    int sprite_sheet_height;
-    int num_x_sprites;
-    int num_y_sprites;
-    int w_increment;
-    int h_increment;
+    SpriteSheet sprite_sheet;
 
     Animation animation;
     SDL_Rect sprite_rect;
-    short** pixel_data;
-    int current_frame;
     int speed;
     Direction direction;
 

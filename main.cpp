@@ -50,11 +50,11 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    // SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-    if (renderer == NULL) {
-        printf("Could not create renderer: %s\n", SDL_GetError());
-    }
+    // if (renderer == NULL) {
+    //     printf("Could not create renderer: %s\n", SDL_GetError());
+    // }
 
     // Frame stats
     Uint32 frames = 0;
@@ -77,47 +77,21 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    // Sprite sheet
-    struct SpriteSheet {
-        SDL_Surface sheet;
-        int width;
-        int height;
-        int num_x_sprites;
-        int num_y_sprites;
-    };
+
+    SpriteSheet sword = {};
+    sword.sheet = IMG_Load("data/sprites/sword.png");
 
     // Hero
     Entity hero = {};
-    // hero.sprite_sheet = IMG_Load("sprites/dude.png");
-    // hero.sprite_texture = SDL_CreateTextureFromSurface(renderer, hero.sprite_sheet);
-    // hero.sprite_sheet_width = 256;
-    // hero.sprite_sheet_height = 256;
-    // hero.num_x_sprites = 4;
-    // hero.num_y_sprites = 4;
-
-    hero.sprite_sheet = IMG_Load("sprites/link_walking.png");
-    hero.sprite_sheet_width = 264;
-    hero.sprite_sheet_height = 160;
-    hero.num_x_sprites = 11;
-    hero.num_y_sprites = 5;
-
-    hero.w_increment = hero.sprite_sheet_width / hero.num_x_sprites;
-    hero.h_increment = hero.sprite_sheet_height / hero.num_y_sprites;
-    hero.sprite_rect.x = 0;
-    hero.sprite_rect.y = 0;
-    hero.sprite_rect.w = hero.w_increment;
-    hero.sprite_rect.h = hero.h_increment;
-    hero.current_frame = 0;
-    hero.speed = 5;
+    hero.sprite_sheet.load("sprites/link_walking.png", 11, 5);
+    hero.sprite_rect.w = hero.sprite_sheet.sprite_width;
+    hero.sprite_rect.h = hero.sprite_sheet.sprite_height;
+    hero.speed = 10;
     hero.direction = DOWN;
     hero.dest_rect.x = 85;
     hero.dest_rect.y = 85;
-    hero.dest_rect.w = hero.w_increment;
-    hero.dest_rect.h = hero.h_increment;
-    hero.bounding_box.x = 0;
-    hero.bounding_box.y = 0;
-    hero.bounding_box.w = 0;
-    hero.bounding_box.h = 0;
+    hero.dest_rect.w = hero.sprite_sheet.sprite_width;
+    hero.dest_rect.h = hero.sprite_sheet.sprite_height;
 
     SDL_Rect hero_starting_pos = hero.dest_rect;
     Point hero_collision_pt;
@@ -131,43 +105,25 @@ int main(int argc, char** argv) {
 
     // Enemy
     Entity harlod = {};
-    harlod.sprite_sheet = IMG_Load("sprites/Harlod_the_caveman.png");
-    harlod.sprite_sheet_width = 64;
-    harlod.sprite_sheet_height = 64;
-    harlod.num_x_sprites = 1;
-    harlod.num_y_sprites = 1;
-    harlod.w_increment = harlod.sprite_sheet_width / harlod.num_x_sprites;
-    harlod.h_increment = harlod.sprite_sheet_height / harlod.num_y_sprites;
-    harlod.sprite_rect.x = 0;
-    harlod.sprite_rect.y = 0;
-    harlod.sprite_rect.w = harlod.w_increment;
-    harlod.sprite_rect.h = harlod.h_increment;
-    harlod.current_frame = 0;
-    harlod.speed = 5;
+    harlod.sprite_sheet.load("sprites/Harlod_the_caveman.png", 1, 1);
+    harlod.sprite_rect.w = harlod.sprite_sheet.sprite_width;
+    harlod.sprite_rect.h = harlod.sprite_sheet.sprite_height;
+    harlod.speed = 10;
     harlod.dest_rect.x = 150;
     harlod.dest_rect.y = 150;
-    harlod.dest_rect.w = harlod.w_increment;
-    harlod.dest_rect.h = harlod.h_increment;
+    harlod.dest_rect.w = harlod.sprite_sheet.sprite_width;
+    harlod.dest_rect.h = harlod.sprite_sheet.sprite_height;
     harlod.direction = DOWN;
 
     Entity buffalo = {};
-    buffalo.sprite_sheet = IMG_Load("sprites/Buffalo.png");
-    buffalo.sprite_sheet_width = 64 * 4;
-    buffalo.sprite_sheet_height = 64;
-    buffalo.num_x_sprites = 4;
-    buffalo.num_y_sprites = 1;
-    buffalo.w_increment = 64;
-    buffalo.h_increment = 64;
-    buffalo.sprite_rect.x = 0;
-    buffalo.sprite_rect.y = 0;
-    buffalo.sprite_rect.w = buffalo.w_increment;
-    buffalo.sprite_rect.h = buffalo.h_increment;
-    buffalo.current_frame = 0;
+    buffalo.sprite_sheet.load("sprites/Buffalo.png", 4, 1);
+    buffalo.sprite_rect.w = buffalo.sprite_sheet.sprite_width;
+    buffalo.sprite_rect.h = buffalo.sprite_sheet.sprite_height;
     buffalo.speed = 3;
     buffalo.dest_rect.x = 400;
     buffalo.dest_rect.y = 400;
-    buffalo.dest_rect.w = buffalo.w_increment;
-    buffalo.dest_rect.h = buffalo.h_increment;
+    buffalo.dest_rect.w = buffalo.sprite_sheet.sprite_width;
+    buffalo.dest_rect.h = buffalo.sprite_sheet.sprite_height;
 
     bool right_is_pressed = false;
     bool left_is_pressed = false;
@@ -175,10 +131,6 @@ int main(int argc, char** argv) {
     bool down_is_pressed = false;
 
     SDL_Surface* window_surface = SDL_GetWindowSurface(window);
-
-    if (!hero.sprite_sheet || !harlod.sprite_sheet) {
-        printf("Could not load sprite sheet: %s\n", SDL_GetError());
-    }
 
     // Colors
     Uint32 green = SDL_MapRGB(window_surface->format, 0, 255, 0);
@@ -449,8 +401,8 @@ int main(int argc, char** argv) {
 
         if (right_is_pressed) {
             hero.dest_rect.x += hero.speed;
-            // hero.sprite_rect.y = 2 * hero.h_increment;
-            // hero.sprite_rect.x = hero.current_frame * hero.w_increment;
+            // hero.sprite_rect.y = 2 * hero.sprite_sheet.sprite_height;
+            // hero.sprite_rect.x = hero.current_frame * hero.sprite_sheet.sprite_width;
             // if (now > next_frame_delay + 125) {
                 // hero.current_frame++;
                 // next_frame_delay = now;
@@ -466,8 +418,8 @@ int main(int argc, char** argv) {
         }
         if (left_is_pressed) {
             hero.dest_rect.x -= hero.speed;
-            // hero.sprite_rect.y = 1 * hero.h_increment;
-            // hero.sprite_rect.x = hero.current_frame * hero.w_increment;
+            // hero.sprite_rect.y = 1 * hero.sprite_sheet.sprite_height;
+            // hero.sprite_rect.x = hero.current_frame * hero.sprite_sheet.sprite_width;
 
             // if (now > next_frame_delay + 125) {
             //     hero.current_frame++;
@@ -490,8 +442,8 @@ int main(int argc, char** argv) {
             else {
                 hero.dest_rect.y -= hero.speed;
             }
-            // hero.sprite_rect.y = 3 * hero.h_increment;
-            // hero.sprite_rect.x = hero.current_frame * hero.h_increment;
+            // hero.sprite_rect.y = 3 * hero.sprite_sheet.sprite_height;
+            // hero.sprite_rect.x = hero.current_frame * hero.sprite_sheet.sprite_height;
             // if (now > next_frame_delay + 125) {
             //     hero.current_frame++;
             //     next_frame_delay = now;
@@ -513,8 +465,8 @@ int main(int argc, char** argv) {
             else {
                 hero.dest_rect.y += hero.speed;
             }
-            // hero.sprite_rect.y = 0 * hero.h_increment;
-            // hero.sprite_rect.x = hero.current_frame * hero.w_increment;
+            // hero.sprite_rect.y = 0 * hero.sprite_sheet.sprite_height;
+            // hero.sprite_rect.x = hero.current_frame * hero.sprite_sheet.sprite_width;
             // if (now > next_frame_delay + 125) {
             //     hero.current_frame++;
             //     next_frame_delay = now;
@@ -539,7 +491,7 @@ int main(int argc, char** argv) {
         }
 
         if (!hero_is_moving) {
-            hero.current_frame = 0;
+            hero.animation.current_frame = 0;
             hero.sprite_rect.x = 0;
         }
 
@@ -782,10 +734,10 @@ int main(int argc, char** argv) {
         switch (hero.direction) {
         case UP:
             hero.sprite_rect.x = 0;
-            hero.sprite_rect.y = hero.h_increment;
+            hero.sprite_rect.y = hero.sprite_sheet.sprite_height;
             break;
         case UP_RIGHT:
-            hero.sprite_rect.x = 8 * hero.w_increment;
+            hero.sprite_rect.x = 8 * hero.sprite_sheet.sprite_width;
             hero.sprite_rect.y = 0;
             break;
         case RIGHT:
@@ -793,41 +745,41 @@ int main(int argc, char** argv) {
             hero.sprite_rect.y = 0;
             break;
         case DOWN_RIGHT:
-            hero.sprite_rect.x = 8 * hero.w_increment;
-            hero.sprite_rect.y = 4 * hero.h_increment;
+            hero.sprite_rect.x = 8 * hero.sprite_sheet.sprite_width;
+            hero.sprite_rect.y = 4 * hero.sprite_sheet.sprite_height;
             break;
         case DOWN:
             hero.sprite_rect.x = 0;
-            hero.sprite_rect.y = 4 * hero.h_increment;
+            hero.sprite_rect.y = 4 * hero.sprite_sheet.sprite_height;
             break;
         case DOWN_LEFT:
-            hero.sprite_rect.x = 8 * hero.w_increment;
-            hero.sprite_rect.y = 3 * hero.h_increment;
+            hero.sprite_rect.x = 8 * hero.sprite_sheet.sprite_width;
+            hero.sprite_rect.y = 3 * hero.sprite_sheet.sprite_height;
             break;
         case LEFT:
             hero.sprite_rect.x = 0;
-            hero.sprite_rect.y = 3 * hero.h_increment;
+            hero.sprite_rect.y = 3 * hero.sprite_sheet.sprite_height;
             break;
         case UP_LEFT:
-            hero.sprite_rect.x = 8 * hero.w_increment;
-            hero.sprite_rect.y = hero.h_increment;
+            hero.sprite_rect.x = 8 * hero.sprite_sheet.sprite_width;
+            hero.sprite_rect.y = hero.sprite_sheet.sprite_height;
             break;
         default:
             break;
         }
         // Draw sprites on map
-        SDL_BlitSurface(hero.sprite_sheet, &hero.sprite_rect, map_surface, &hero.dest_rect);
+        SDL_BlitSurface(hero.sprite_sheet.sheet, &hero.sprite_rect, map_surface, &hero.dest_rect);
         // SDL_RenderCopy(renderer, hero.sprite_texture, &hero.sprite_rect, &hero.dest_rect);
         // if (!in_map1) {
         SDL_BlitSurface(
-            harlod.sprite_sheet,
+            harlod.sprite_sheet.sheet,
             &harlod.sprite_rect,
             map_surface,
             &harlod.dest_rect
         );
         // }
         SDL_BlitSurface(
-            buffalo.sprite_sheet,
+            buffalo.sprite_sheet.sheet,
             &buffalo.sprite_rect,
             map_surface,
             &buffalo.dest_rect
@@ -858,7 +810,7 @@ int main(int argc, char** argv) {
     Mix_FreeChunk(mud_sound);
     Mix_Quit();
     IMG_Quit();
-    SDL_DestroyRenderer(renderer);
+    // SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
     return 0;
