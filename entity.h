@@ -2,8 +2,10 @@
 #define ENTITY_H
 
 #include "tile_map.h"
+#include "sprite_sheet.h"
 
-enum Direction {
+enum Direction
+{
     UP,
     UP_RIGHT,
     RIGHT,
@@ -14,20 +16,8 @@ enum Direction {
     UP_LEFT
 };
 
-// Sprite sheet
-struct SpriteSheet {
-    SDL_Surface* sheet;
-    int width;
-    int height;
-    int num_x;
-    int num_y;
-    int sprite_width;
-    int sprite_height;
-
-    void load(const char* path, int sprite_width, int sprite_height);
-};
-
-struct Entity {
+struct Entity
+{
     SpriteSheet sprite_sheet;
 
     Animation animation;
@@ -38,7 +28,11 @@ struct Entity {
     SDL_Rect bounding_box;
     SDL_Rect dest_rect;
 
+    bool active;
+
     ~Entity();
+
+    void draw(SDL_Surface* map);
 };
 
 #endif

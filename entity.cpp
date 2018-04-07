@@ -1,25 +1,18 @@
 #include "entity.h"
 
-Entity::~Entity() {
-    if (sprite_sheet.sheet) {
+Entity::~Entity()
+{
+    if (sprite_sheet.sheet)
+    {
         SDL_FreeSurface(sprite_sheet.sheet);
+        sprite_sheet = NULL;
     }
-    // if (sprite_texture) {
-    //     SDL_DestroyTexture(sprite_texture);
-    // }
 }
 
-void SpriteSheet::load(const char* path, int sprite_w, int sprite_h) {
-    SDL_Surface* img = IMG_Load(path);
-    if (!img) {
-        printf("Failed to load image from %s: %s", path, SDL_GetError());
-        exit(1);
+void Entity::draw(SDL_Surface* map)
+{
+    if (active)
+    {
+        SDL_BlitSurface(sprite_sheet.sheet, &sprite_rect, map, &dest_rect);
     }
-    sheet = img;
-    width = sheet->w;
-    height = sheet->h;
-    this->sprite_width = sprite_w;
-    this->sprite_height = sprite_h;
-    this->num_x = width / sprite_w;
-    this->num_y = height / sprite_h;
 }
