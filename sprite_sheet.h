@@ -10,6 +10,7 @@ struct SpriteSheet {
     int sprite_width;
     int sprite_height;
 
+    ~SpriteSheet();
     void load(const char* path, int sprite_width, int sprite_height);
 };
 #endif

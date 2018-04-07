@@ -1,5 +1,14 @@
 #include "sprite_sheet.h"
 
+SpriteSheet::~SpriteSheet()
+{
+    if (sheet)
+    {
+        SDL_FreeSurface(sheet);
+        sheet = NULL;
+    }
+}
+
 void SpriteSheet::load(const char* path, int num_x_sprites, int num_y_sprites)
 {
     SDL_Surface* img = IMG_Load(path);

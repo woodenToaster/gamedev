@@ -10,13 +10,6 @@
 #include "entity.cpp"
 #include "tile_map.cpp"
 
-
-struct Point
-{
-    float x;
-    float y;
-};
-
 bool overlaps(SDL_Rect* r1, SDL_Rect* r2)
 {
     bool x_overlap = r1->x + r1->w > r2->x && r1->x < r2->x + r2->w;
@@ -24,42 +17,65 @@ bool overlaps(SDL_Rect* r1, SDL_Rect* r2)
     return x_overlap && y_overlap;
 }
 
+struct Game
+{
+    static const int screen_width = 640;
+    static const int screen_height = 480;
+
+    Uint32 frames = 0;
+    bool running = true;
+    SDL_Window* window;
+    SDL_Surface* window_surface;
+
+    Game();
+    ~Game();
+    void init();
+    void create_window();
+};
+
+Game::Game(): frames(0), running(true)
+{}
+
+Game::~Game()
+{
+    SDL_DestroyWindow(window);
+}
+
+void Game::init()
+{
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
+    {
+        printf("SDL failed to initialize: %s\n", SDL_GetError());
+        exit(1);
+    }
+    IMG_Init(IMG_INIT_PNG);
+}
+
+void Game::create_window()
+{
+    window = SDL_CreateWindow("gamedev",
+                              30,
+                              50,
+                              screen_width,
+                              screen_height,
+                              SDL_WINDOW_SHOWN);
+
+    if (window == NULL)
+    {
+        printf("Could not create window: %s\n", SDL_GetError());
+        exit(1);
+    }
+    window_surface = SDL_GetWindowSurface(window);
+}
+
 int main(int argc, char** argv)
 {
     (void)argc;
     (void)argv;
 
-    // Window
-    const int screen_width = 640;
-    const int screen_height = 480;
-
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
-    {
-        printf("SDL failed to initialize: %s\n", SDL_GetError());
-        return 1;
-    }
-
-    IMG_Init(IMG_INIT_PNG);
-
-    SDL_Window* window;
-    window = SDL_CreateWindow(
-        "gamedev",
-        30,
-        50,
-        screen_width,
-        screen_height,
-        SDL_WINDOW_SHOWN
-    );
-
-    if (window == NULL)
-    {
-        printf("Could not create window: %s\n", SDL_GetError());
-        return 1;
-    }
-
-    // Frame stats
-    Uint32 frames = 0;
-    bool running = true;
+    Game game;
+    game.init();
+    game.create_window();
 
     // Sound
     Mix_Chunk* mud_sound = NULL;
@@ -79,73 +95,40 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    SpriteSheet sword = {};
-    sword.sheet = IMG_Load("data/sprites/sword.png");
+    // SpriteSheet sword = {};
+    // sword.load("sprites/sword.png", 12, 4);
 
     // Hero
-    Entity hero = {};
-    hero.sprite_sheet.load("sprites/link_walking.png", 11, 5);
-    hero.sprite_rect.w = hero.sprite_sheet.sprite_width;
-    hero.sprite_rect.h = hero.sprite_sheet.sprite_height;
-    hero.speed = 10;
-    hero.direction = DOWN;
-    hero.dest_rect.x = 85;
-    hero.dest_rect.y = 85;
-    hero.dest_rect.w = hero.sprite_sheet.sprite_width;
-    hero.dest_rect.h = hero.sprite_sheet.sprite_height;
-    hero.active = true;
+    Entity hero("sprites/link_walking.png", 11, 5, 10, 85, 85, true);
 
-    SDL_Rect hero_starting_pos = hero.dest_rect;
     Point hero_collision_pt;
     bool hero_is_moving = false;
     bool in_quicksand = false;
-    Uint32 next_frame_delay = SDL_GetTicks();
+    // Uint32 next_frame_delay = SDL_GetTicks();
     Uint32 next_club_swing_delay = SDL_GetTicks();
     bool swing_club = false;
     SDL_Rect club_rect;
     Uint32 club_swing_timeout = SDL_GetTicks();
 
     // Enemy
-    Entity harlod = {};
-    harlod.sprite_sheet.load("sprites/Harlod_the_caveman.png", 1, 1);
-    harlod.sprite_rect.w = harlod.sprite_sheet.sprite_width;
-    harlod.sprite_rect.h = harlod.sprite_sheet.sprite_height;
-    harlod.speed = 10;
-    harlod.dest_rect.x = 150;
-    harlod.dest_rect.y = 150;
-    harlod.dest_rect.w = harlod.sprite_sheet.sprite_width;
-    harlod.dest_rect.h = harlod.sprite_sheet.sprite_height;
-    harlod.direction = DOWN;
-    harlod.active = true;
-
-    Entity buffalo = {};
-    buffalo.sprite_sheet.load("sprites/Buffalo.png", 4, 1);
-    buffalo.sprite_rect.w = buffalo.sprite_sheet.sprite_width;
-    buffalo.sprite_rect.h = buffalo.sprite_sheet.sprite_height;
-    buffalo.speed = 3;
-    buffalo.dest_rect.x = 400;
-    buffalo.dest_rect.y = 400;
-    buffalo.dest_rect.w = buffalo.sprite_sheet.sprite_width;
-    buffalo.dest_rect.h = buffalo.sprite_sheet.sprite_height;
-    buffalo.active = true;
+    Entity harlod("sprites/Harlod_the_caveman.png", 1, 1, 10, 150, 150, true);
+    Entity buffalo("sprites/Buffalo.png", 4, 1, 3, 400, 400, true);
 
     bool right_is_pressed = false;
     bool left_is_pressed = false;
     bool up_is_pressed = false;
     bool down_is_pressed = false;
 
-    SDL_Surface* window_surface = SDL_GetWindowSurface(window);
-
     // Colors
-    Uint32 green = SDL_MapRGB(window_surface->format, 0, 255, 0);
-    Uint32 blue = SDL_MapRGB(window_surface->format, 0, 0, 255);
-    // Uint32 yellow = SDL_MapRGB(window_surface->format, 235, 245, 65);
-    Uint32 brown = SDL_MapRGB(window_surface->format, 153, 102, 0);
-    Uint32 rust = SDL_MapRGB(window_surface->format, 153, 70, 77);
-    Uint32 magenta = SDL_MapRGB(window_surface->format, 255, 0, 255);
-    Uint32 black = SDL_MapRGB(window_surface->format, 0, 0, 0);
-    Uint32 red = SDL_MapRGB(window_surface->format, 255, 0, 0);
-    Uint32 grey = SDL_MapRGB(window_surface->format, 135, 135, 135);
+    Uint32 green = SDL_MapRGB(game.window_surface->format, 0, 255, 0);
+    Uint32 blue = SDL_MapRGB(game.window_surface->format, 0, 0, 255);
+    // Uint32 yellow = SDL_MapRGB(game.window_surface->format, 235, 245, 65);
+    Uint32 brown = SDL_MapRGB(game.window_surface->format, 153, 102, 0);
+    Uint32 rust = SDL_MapRGB(game.window_surface->format, 153, 70, 77);
+    Uint32 magenta = SDL_MapRGB(game.window_surface->format, 255, 0, 255);
+    Uint32 black = SDL_MapRGB(game.window_surface->format, 0, 0, 0);
+    Uint32 red = SDL_MapRGB(game.window_surface->format, 255, 0, 0);
+    Uint32 grey = SDL_MapRGB(game.window_surface->format, 135, 135, 135);
 
     // Tiles
     SDL_Rect current_tile;
@@ -208,8 +191,8 @@ int main(int argc, char** argv)
     int map_height_pixels = map_rows * Tile::tile_height;
 
     // Add 1 to each to account for displaying half a tile.
-    int tile_rows_per_screen = (screen_height / Tile::tile_height) + 1;
-    int tile_cols_per_screen = (screen_width / Tile::tile_width) + 1;
+    int tile_rows_per_screen = (Game::screen_height / Tile::tile_height) + 1;
+    int tile_cols_per_screen = (Game::screen_width / Tile::tile_width) + 1;
 
     SDL_Surface* map_surface = SDL_CreateRGBSurfaceWithFormat(
         0,
@@ -223,21 +206,21 @@ int main(int argc, char** argv)
     SDL_Rect camera;
     camera.x = 0;
     camera.y = 0;
-    camera.w = screen_width;
-    camera.h = screen_height;
+    camera.w = Game::screen_width;
+    camera.h = Game::screen_height;
 
     SDL_Rect camera_starting_pos = camera;
 
     int max_camera_x = map_width_pixels - camera.w;
     int max_camera_y = map_height_pixels - camera.h;
 
-    int y_pixel_movement_threshold = screen_height / 2;
-    int x_pixel_movement_threshold = screen_width / 2;
+    int y_pixel_movement_threshold = Game::screen_height / 2;
+    int x_pixel_movement_threshold = Game::screen_width / 2;
 
     Uint32 last_frame_duration = 0;
 
     // Main loop
-    while(running)
+    while(game.running)
     {
         Uint32 now = SDL_GetTicks();
         // if (SDL_GetTicks() > start + 1000) {
@@ -258,7 +241,7 @@ int main(int argc, char** argv)
 
                 if (key == SDL_SCANCODE_ESCAPE)
                 {
-                    running = false;
+                    game.running = false;
                 }
                 if (key == SDL_SCANCODE_RIGHT || key == SDL_SCANCODE_L ||
                     key == SDL_SCANCODE_D)
@@ -288,7 +271,7 @@ int main(int argc, char** argv)
             }
             case SDL_QUIT:
             {
-                running = false;
+                game.running = false;
                 break;
             }
             case SDL_KEYDOWN:
@@ -319,9 +302,8 @@ int main(int argc, char** argv)
             case SDL_MOUSEMOTION:
             {
                 // get vector from center of player to mouse cursor
-                Point hero_center;
-                hero_center.x = hero.dest_rect.x + (0.5f * hero.dest_rect.w);
-                hero_center.y = hero.dest_rect.y + (0.5f * hero.dest_rect.h);
+                Point hero_center(hero.dest_rect.x + (0.5f * hero.dest_rect.w),
+                                  hero.dest_rect.y + (0.5f * hero.dest_rect.h));
                 Vec2 mouse_relative_to_hero;
                 mouse_relative_to_hero.x = hero_center.x - ((float)event.motion.x + camera.x);
                 mouse_relative_to_hero.y = hero_center.y - ((float)event.motion.y + camera.y);
@@ -611,7 +593,8 @@ int main(int argc, char** argv)
                 fire.active = true;
                 buffalo.active = true;
             }
-            hero.dest_rect = hero_starting_pos;
+            hero.dest_rect.x = (int)hero.starting_pos.x;
+            hero.dest_rect.y = (int)hero.starting_pos.y;
             camera = camera_starting_pos;
         }
 
@@ -813,23 +796,23 @@ int main(int argc, char** argv)
         }
 
         // Draw portion of map visible to camera on the screen
-        SDL_BlitSurface(map_surface, &camera, window_surface, NULL);
+        SDL_BlitSurface(map_surface, &camera, game.window_surface, NULL);
 
-        SDL_UpdateWindowSurface(window);
+        SDL_UpdateWindowSurface(game.window);
 
         SDL_Delay(33);
-        frames++;
+        game.frames++;
         fflush(stdout);
         last_frame_duration = SDL_GetTicks() - now;
     }
 
     // Cleanup
     SDL_FreeSurface(map_surface);
+    map_surface = NULL;
     Mix_FreeChunk(mud_sound);
+    mud_sound = NULL;
     Mix_Quit();
     IMG_Quit();
-    SDL_DestroyWindow(window);
     SDL_Quit();
     return 0;
 }
-

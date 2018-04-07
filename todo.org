@@ -16,4 +16,5 @@
 * Graphics
 ** TODO [#A] Use 2d acceleration.
 ** TODO [#B] Enable OpenGL
+** TODO Need z layers for rendering
 

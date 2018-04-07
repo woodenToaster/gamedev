@@ -24,12 +24,19 @@ struct Entity
     SDL_Rect sprite_rect;
     int speed;
     Direction direction;
-
+    Point starting_pos;
     SDL_Rect bounding_box;
     SDL_Rect dest_rect;
 
     bool active;
 
+    Entity(const char* sprite_path,
+           int x_sprites,
+           int y_sprites,
+           int speed,
+           float starting_x,
+           float starting_y,
+           bool active=false);
     ~Entity();
 
     void draw(SDL_Surface* map);
