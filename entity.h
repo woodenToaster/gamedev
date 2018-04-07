@@ -27,7 +27,10 @@ struct Entity
     Point starting_pos;
     SDL_Rect bounding_box;
     SDL_Rect dest_rect;
-
+    int bb_x_offset;
+    int bb_y_offset;
+    int bb_w_offset;
+    int bb_h_offset;
     bool active;
 
     Entity(const char* sprite_path,
@@ -36,10 +39,15 @@ struct Entity
            int speed,
            float starting_x,
            float starting_y,
+           int bb_x,
+           int bb_y,
+           int bb_w,
+           int bb_h,
            bool active=false);
     ~Entity();
 
     void draw(SDL_Surface* map);
+    void update();
 };
 
 #endif

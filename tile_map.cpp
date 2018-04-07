@@ -36,11 +36,12 @@ Tile::Tile(Uint32 flags, Uint32 color, const char* sprite_path):
 
 Tile::~Tile()
 {
-    if (sprite)
-    {
-        SDL_FreeSurface(sprite);
-        sprite = NULL;
-    }
+    // TODO: Figure out crash 
+    // if (sprite)
+    // {
+    //     SDL_FreeSurface(sprite);
+    //     sprite = NULL;
+    // }
 }
 
 void Tile::set_sprite_size(int width, int height)
