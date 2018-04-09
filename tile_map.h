@@ -8,6 +8,7 @@ struct Animation
     Uint32 delay;
     Uint32 elapsed;
 
+    void init(int frames, int ms_delay);
     void update(Uint32 elapsed_last_frame);
 };
 

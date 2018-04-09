@@ -1,5 +1,11 @@
 #include "tile_map.h"
 
+void Animation::init(int frames, int ms_delay)
+{
+    this->total_frames = frames;
+    this->delay = ms_delay;
+}
+
 void Animation::update(Uint32 elapsed_last_frame)
 {
     elapsed += elapsed_last_frame;

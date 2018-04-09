@@ -82,7 +82,7 @@ int main(int argc, char** argv)
     bool mud_sound_playing = false;
     Uint32 mud_sound_delay = SDL_GetTicks();
 
-    if( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
+    if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
     {
         printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
         exit(1);
@@ -95,16 +95,12 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    // SpriteSheet sword = {};
-    // sword.load("sprites/sword.png", 12, 4);
-
     // Hero
     Entity hero("sprites/link_walking.png", 11, 5, 10, 85, 85, 6, 5, 12, 7, true);
 
     Point hero_collision_pt;
     bool hero_is_moving = false;
     bool in_quicksand = false;
-    // Uint32 next_frame_delay = SDL_GetTicks();
     Uint32 next_club_swing_delay = SDL_GetTicks();
     bool swing_club = false;
     SDL_Rect club_rect;
@@ -149,16 +145,27 @@ int main(int argc, char** argv)
 
     Tile fire(Tile::FIRE, grey, "sprites/Campfire.png");
     fire.set_sprite_size(64, 64);
-    fire.animation = {};
-    fire.animation.total_frames = 11;
-    fire.animation.delay = 100;
+    fire.animation.init(11, 100);
     fire.active = true;
 
     // Map
     const int map_cols = 12;
     const int map_rows = 10;
 
-    Tile map[map_rows][map_cols] = {
+    Tile* map[map_rows * map_cols] = {
+        &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w,
+        &w, &f, &f, &t, &f, &f, &f, &f, &f, &f, &f, &f,
+        &w, &f, &f, &t, &f, &f, &f, &fire, &f, &f, &t, &f,
+        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &m,
+        &w, &f, &f, &t, &f, &f, &f, &f, &f, &f, &f, &f,
+        &w, &f, &f, &t, &t, &t, &t, &f, &f, &t, &f, &wr,
+        &w, &f, &f, &f, &f, &f, &t, &f, &f, &t, &f, &f,
+        &w, &f, &f, &f, &f, &f, &t, &f, &f, &t, &f, &m,
+        &w, &f, &f, &f, &f, &f, &f, &f, &f, &t, &f, &f,
+        &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w
+    };
+
+    Tile mappp[map_rows][map_cols] = {
         {w, w, w, w, w, w, w, w, w, w, w, w},
         {w, f, f, t, f, f, f, f, f, f, f, f},
         {w, f, f, t, f, f, f, fire, f, f, t, f},
@@ -173,7 +180,7 @@ int main(int argc, char** argv)
 
     bool in_map1 = true;
 
-    Tile (*current_map)[map_rows][map_cols] = &map;
+    Tile** current_map = map;
 
     Tile map2[map_rows][map_cols] = {
         {w, w, w, w, w, w, w, w, w, w, w, w},
@@ -556,7 +563,8 @@ int main(int argc, char** argv)
 
         int map_coord_x = current_tile.y / Tile::tile_height;
         int map_coord_y = current_tile.x / Tile::tile_width;
-        Tile* tile_at_hero_position_ptr = &(*current_map)[map_coord_x][map_coord_y];
+        // Tile* tile_at_hero_position_ptr = &(*current_map)[map_coord_x][map_coord_y];
+        Tile* tile_at_hero_position_ptr = current_map[map_coord_x * map_coord_y + map_coord_x];
 
         // Handle all tiles
         if (tile_at_hero_position_ptr->is_solid())
@@ -584,20 +592,22 @@ int main(int argc, char** argv)
         }
         if (tile_at_hero_position_ptr->is_warp())
         {
-            if (in_map1)
-            {
-                current_map = &map2;
-                in_map1 = false;
-                fire.active = false;
-                buffalo.active = false;
-            }
-            else
-            {
-                current_map = &map;
-                in_map1 = true;
-                fire.active = true;
-                buffalo.active = true;
-            }
+            // if (in_map1)
+            // {
+            //     // current_map = &map2;
+            //     current_map = map2;
+            //     in_map1 = false;
+            //     fire.active = false;
+            //     buffalo.active = false;
+            // }
+            // else
+            // {
+            //     // current_map = &map;
+            //     current_map = map;
+            //     in_map1 = true;
+            //     fire.active = true;
+            //     buffalo.active = true;
+            // }
             hero.dest_rect.x = (int)hero.starting_pos.x;
             hero.dest_rect.y = (int)hero.starting_pos.y;
             camera = camera_starting_pos;
@@ -624,10 +634,11 @@ int main(int argc, char** argv)
                  col < tile_cols_per_screen + camera_tile_col;
                  ++col)
             {
-                tile_rect.x = col * Tile::tile_width;
-                tile_rect.y = row * Tile::tile_height;
+                tile_rect.x = row * Tile::tile_width;
+                tile_rect.y = col * Tile::tile_height;
 
-                Tile* tp = &(*current_map)[row][col];
+                // Tile* tp = &(*current_map)[row][col];
+                Tile* tp = current_map[row * col + col];
                 // TODO: Move this out of the draw section to the update section
                 tp->animation.update(last_frame_duration);
                 tp->draw(map_surface, &tile_rect);
