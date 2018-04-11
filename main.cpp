@@ -165,42 +165,29 @@ int main(int argc, char** argv)
         &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w
     };
 
-    Tile mappp[map_rows][map_cols] = {
-        {w, w, w, w, w, w, w, w, w, w, w, w},
-        {w, f, f, t, f, f, f, f, f, f, f, f},
-        {w, f, f, t, f, f, f, fire, f, f, t, f},
-        {w, f, f, f, f, f, f, f, f, f, f, m},
-        {w, f, f, t, f, f, f, f, f, f, f, f},
-        {w, f, f, t, t, t, t, f, f, t, f, wr},
-        {w, f, f, f, f, f, t, f, f, t, f, f},
-        {w, f, f, f, f, f, t, f, f, t, f, m},
-        {w, f, f, f, f, f, f, f, f, t, f, f},
-        {w, w, w, w, w, w, w, w, w, w, w, w}
-    };
-
     bool in_map1 = true;
 
     Tile** current_map = map;
 
-    Tile map2[map_rows][map_cols] = {
-        {w, w, w, w, w, w, w, w, w, w, w, w},
-        {w, f, f, f, f, f, f, f, f, f, f, w},
-        {w, f, f, f, f, f, f, f, f, f, f, w},
-        {w, f, f, f, f, f, f, f, f, f, f, w},
-        {w, f, f, f, f, f, f, f, f, f, f, w},
-        {w, f, f, f, f, wr, f, f, f, f, f, w},
-        {w, f, f, f, f, f, f, f, f, f, f, w},
-        {w, f, f, f, f, f, f, f, f, f, f, w},
-        {w, f, f, f, f, f, f, f, f, f, f, w},
-        {w, w, w, w, w, w, w, w, w, w, w, w}
+    Tile* map2[map_rows * map_cols] = {
+        &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w,
+        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
+        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
+        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
+        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
+        &w, &f, &f, &f, &f, &wr, &f, &f, &f, &f, &f, &w,
+        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
+        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
+        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
+        &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w
     };
 
     int map_width_pixels = map_cols * Tile::tile_width;
     int map_height_pixels = map_rows * Tile::tile_height;
 
     // Add 1 to each to account for displaying half a tile.
-    int tile_rows_per_screen = (Game::screen_height / Tile::tile_height) + 1;
-    int tile_cols_per_screen = (Game::screen_width / Tile::tile_width) + 1;
+    // int tile_rows_per_screen = (Game::screen_height / Tile::tile_height) + 1;
+    // int tile_cols_per_screen = (Game::screen_width / Tile::tile_width) + 1;
 
     SDL_Surface* map_surface = SDL_CreateRGBSurfaceWithFormat(
         0,
@@ -322,55 +309,9 @@ int main(int argc, char** argv)
                     angle = atan2f(mouse_relative_to_hero.y, mouse_relative_to_hero.x) + PI;
                 }
 
-                // Get direction. One piece of a circle split in 8 sections
-                // The radians start at 2*PI on (1, 0) and go to zero counter-clockwise
-                float direction_increment = (2.0f * PI) / 8.0f;
-                float half_increment = 0.5f * direction_increment;
-                Direction old_direction = hero.direction;
-
-                if (angle >= (3.0f * PI) / 2.0f - half_increment &&
-                    angle < (3.0f * PI) / 2.0f + half_increment)
+                if (angle != 0)
                 {
-                    hero.direction = UP;
-                }
-                else if (angle >= (3.0f * PI) / 2.0f + half_increment &&
-                         angle < 2.0f * PI - half_increment)
-                {
-                    hero.direction = UP_RIGHT;
-                }
-                else if (angle >= 2.0f * PI - half_increment ||
-                         angle < half_increment)
-                {
-                    hero.direction = RIGHT;
-                }
-                else if (angle >= half_increment &&
-                         angle < PI / 2.0f - half_increment)
-                {
-                    hero.direction = DOWN_RIGHT;
-                }
-                else if (angle >= PI / 2.0f - half_increment &&
-                         angle < PI / 2.0f + half_increment)
-                {
-                    hero.direction = DOWN;
-                }
-                else if (angle >= PI / 2.0f + half_increment &&
-                         angle < PI - half_increment)
-                {
-                    hero.direction = DOWN_LEFT;
-                }
-                else if (angle >= PI - half_increment &&
-                         angle < PI + half_increment)
-                {
-                    hero.direction = LEFT;
-                }
-                else if (angle >= PI + half_increment &&
-                         angle < (3.0f * PI) / half_increment)
-                {
-                    hero.direction = UP_LEFT;
-                }
-                if (angle == 0)
-                {
-                    hero.direction = old_direction;
+                    hero.direction = get_direction_from_angle(angle);
                 }
                 break;
             }
@@ -389,6 +330,13 @@ int main(int argc, char** argv)
         SDL_Rect saved_position = hero.dest_rect;
         SDL_Rect saved_camera = camera;
         SDL_Rect saved_tile = current_tile;
+
+        // Update map tiles
+        for (int i = 0; i < map_rows * map_cols; ++i)
+        {
+            Tile* tp = current_map[i];
+            tp->animation.update(last_frame_duration);
+        }
 
         if (right_is_pressed)
         {
@@ -563,8 +511,7 @@ int main(int argc, char** argv)
 
         int map_coord_x = current_tile.y / Tile::tile_height;
         int map_coord_y = current_tile.x / Tile::tile_width;
-        // Tile* tile_at_hero_position_ptr = &(*current_map)[map_coord_x][map_coord_y];
-        Tile* tile_at_hero_position_ptr = current_map[map_coord_x * map_coord_y + map_coord_x];
+        Tile* tile_at_hero_position_ptr = current_map[map_coord_x * map_cols + map_coord_y];
 
         // Handle all tiles
         if (tile_at_hero_position_ptr->is_solid())
@@ -592,22 +539,20 @@ int main(int argc, char** argv)
         }
         if (tile_at_hero_position_ptr->is_warp())
         {
-            // if (in_map1)
-            // {
-            //     // current_map = &map2;
-            //     current_map = map2;
-            //     in_map1 = false;
-            //     fire.active = false;
-            //     buffalo.active = false;
-            // }
-            // else
-            // {
-            //     // current_map = &map;
-            //     current_map = map;
-            //     in_map1 = true;
-            //     fire.active = true;
-            //     buffalo.active = true;
-            // }
+            if (in_map1)
+            {
+                current_map = map2;
+                in_map1 = false;
+                fire.active = false;
+                buffalo.active = false;
+            }
+            else
+            {
+                current_map = map;
+                in_map1 = true;
+                fire.active = true;
+                buffalo.active = true;
+            }
             hero.dest_rect.x = (int)hero.starting_pos.x;
             hero.dest_rect.y = (int)hero.starting_pos.y;
             camera = camera_starting_pos;
@@ -618,32 +563,13 @@ int main(int argc, char** argv)
         // camera.y = hero.dest_rect.y + hero.dest_rect.h / 2;
 
         // Get tile under camera x,y
-        int camera_tile_row = camera.y / Tile::tile_height;
-        int camera_tile_col = camera.x / Tile::tile_width;
+        // int camera_tile_row = camera.y / Tile::tile_height;
+        // int camera_tile_col = camera.x / Tile::tile_width;
 
         SDL_Rect tile_rect;
         tile_rect.w = Tile::tile_width;
         tile_rect.h = Tile::tile_height;
 
-        // Draw
-        for (int row = camera_tile_row;
-             row < tile_rows_per_screen + camera_tile_row;
-             ++row)
-        {
-            for (int col = camera_tile_col;
-                 col < tile_cols_per_screen + camera_tile_col;
-                 ++col)
-            {
-                tile_rect.x = row * Tile::tile_width;
-                tile_rect.y = col * Tile::tile_height;
-
-                // Tile* tp = &(*current_map)[row][col];
-                Tile* tp = current_map[row * col + col];
-                // TODO: Move this out of the draw section to the update section
-                tp->animation.update(last_frame_duration);
-                tp->draw(map_surface, &tile_rect);
-            }
-        }
 
         // Highlight tile under player
         // SDL_FillRect(map_surface, &current_tile, yellow);
@@ -727,10 +653,6 @@ int main(int argc, char** argv)
         default:
             break;
         }
-        // Draw sprites on map
-        hero.draw(map_surface);
-        harlod.draw(map_surface);
-        buffalo.draw(map_surface);
 
         // Check Harlod/club collisions
         if (overlaps(&harlod.bounding_box, &club_rect) && now < club_swing_timeout)
@@ -738,13 +660,37 @@ int main(int argc, char** argv)
             SDL_FillRect(map_surface, &harlod.bounding_box, red);
         }
 
+        // Draw
+        // TODO: Don't redraw the whole map on every frame
+        for (int row = 0; row < map_rows; ++row)
+            // for (int row = camera_tile_row;
+            //      row < tile_rows_per_screen + camera_tile_row;
+            //      ++row)
+        {
+            for (int col = 0; col < map_cols; ++col)
+                // for (int col = camera_tile_col;
+                //      col < tile_cols_per_screen + camera_tile_col;
+                //      ++col)
+            {
+                tile_rect.x = col * Tile::tile_width;
+                tile_rect.y = row * Tile::tile_height;
+                Tile* tp = current_map[row * map_cols + col];
+                tp->draw(map_surface, &tile_rect);
+            }
+        }
+
+        // Draw sprites on map
+        hero.draw(map_surface);
+        harlod.draw(map_surface);
+        buffalo.draw(map_surface);
+
         // Draw hero club
         if (now < club_swing_timeout)
         {
             SDL_FillRect(map_surface, &club_rect, black);
         }
 
-        // Draw portion of map visible to camera on the screen
+        // Draw map
         SDL_BlitSurface(map_surface, &camera, game.window_surface, NULL);
 
         SDL_UpdateWindowSurface(game.window);
