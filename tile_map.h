@@ -50,16 +50,14 @@ struct Tile
 
 struct Map
 {
-    int rows;
-    int cols;
-    Tile** tiles;
-    bool is_active;
+    u32 rows;
+    u32 cols;
     int width_pixels;
     int height_pixels;
-    int tile_rows_per_screen;
-    int tile_cols_per_screen;
-
-    Map::Map(int rows, int cols, Tile** tiles);
+    u64 tile_rows_per_screen;
+    u64 tile_cols_per_screen;
+    u8 current;
+    Tile** tiles;
 };
 
 #endif

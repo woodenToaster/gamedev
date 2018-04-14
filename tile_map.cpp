@@ -108,12 +108,3 @@ void Tile::draw(SDL_Surface* map_surface, SDL_Rect* tile_rect)
 }
 
 
-Map::Map(int rows, int cols, Tile** tiles):
-    rows(rows),
-    cols(cols),
-    tiles(tiles),
-    is_active(false)
-{
-    width_pixels = cols * Tile::tile_width;
-    height_pixels = rows * Tile::tile_height;
-}
