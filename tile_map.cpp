@@ -1,5 +1,11 @@
 #include "tile_map.h"
 
+void Animation::init(int frames, int ms_delay)
+{
+    this->total_frames = frames;
+    this->delay = ms_delay;
+}
+
 void Animation::update(Uint32 elapsed_last_frame)
 {
     elapsed += elapsed_last_frame;
@@ -36,12 +42,11 @@ Tile::Tile(Uint32 flags, Uint32 color, const char* sprite_path):
 
 Tile::~Tile()
 {
-    // TODO: Figure out crash 
-    // if (sprite)
-    // {
-    //     SDL_FreeSurface(sprite);
-    //     sprite = NULL;
-    // }
+    if (sprite)
+    {
+        SDL_FreeSurface(sprite);
+        sprite = NULL;
+    }
 }
 
 void Tile::set_sprite_size(int width, int height)
@@ -103,12 +108,3 @@ void Tile::draw(SDL_Surface* map_surface, SDL_Rect* tile_rect)
 }
 
 
-Map::Map(int rows, int cols, Tile** tiles):
-    rows(rows),
-    cols(cols),
-    tiles(tiles),
-    is_active(false)
-{
-    width_pixels = cols * Tile::tile_width;
-    height_pixels = rows * Tile::tile_height;
-}

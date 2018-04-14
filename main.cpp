@@ -1,9 +1,28 @@
 #include "SDL.h"
 #include "SDL_image.h"
 #include "SDL_mixer.h"
+#include "stdint.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "math.h"
+
+
+typedef uint8_t u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
+typedef int8_t i8;
+typedef int16_t i16;
+typedef int32_t i32;
+typedef int64_t i64;
+typedef float f32;
+typedef double f64;
+
+enum
+{
+    GD_FALSE,
+    GD_TRUE
+};
 
 #include "gamedev_math.h"
 #include "sprite_sheet.cpp"
@@ -38,6 +57,8 @@ Game::Game(): frames(0), running(true)
 
 Game::~Game()
 {
+    Mix_Quit();
+    IMG_Quit();
     SDL_DestroyWindow(window);
 }
 
@@ -49,6 +70,12 @@ void Game::init()
         exit(1);
     }
     IMG_Init(IMG_INIT_PNG);
+
+    if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
+    {
+        printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
+        exit(1);
+    }
 }
 
 void Game::create_window()
@@ -68,6 +95,34 @@ void Game::create_window()
     window_surface = SDL_GetWindowSurface(window);
 }
 
+struct Sound
+{
+    u8 is_playing;
+    u32 delay;
+    u64 last_play_time;
+    Mix_Chunk* chunk;
+};
+
+Mix_Chunk* sound_load_wav(const char* fname)
+{
+    Mix_Chunk * result = Mix_LoadWAV(fname);
+    if (result == NULL)
+    {
+        printf("Mix_LoadWAV error: %s\n", Mix_GetError());
+        return NULL;
+    }
+    return result;
+}
+
+void sound_play(Sound* s, u64 now)
+{
+    if (now > s->last_play_time + s->delay)
+    {
+        Mix_PlayChannel(-1, s->chunk, 0);
+        s->last_play_time = SDL_GetTicks();
+    }
+}
+
 int main(int argc, char** argv)
 {
     (void)argc;
@@ -78,25 +133,9 @@ int main(int argc, char** argv)
     game.create_window();
 
     // Sound
-    Mix_Chunk* mud_sound = NULL;
-    bool mud_sound_playing = false;
-    Uint32 mud_sound_delay = SDL_GetTicks();
-
-    if( Mix_OpenAudio( 44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
-    {
-        printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
-        exit(1);
-    }
-
-    mud_sound = Mix_LoadWAV("sounds/mud_walk.wav");
-    if (mud_sound == NULL)
-    {
-        printf("Mix_LoadWAV error: %s\n", Mix_GetError());
-        return 1;
-    }
-
-    // SpriteSheet sword = {};
-    // sword.load("sprites/sword.png", 12, 4);
+    Sound mud_sound = {};
+    mud_sound.delay = 250;
+    mud_sound.chunk = sound_load_wav("sounds/mud_walk.wav");
 
     // Hero
     Entity hero("sprites/link_walking.png", 11, 5, 10, 85, 85, 6, 5, 12, 7, true);
@@ -104,7 +143,6 @@ int main(int argc, char** argv)
     Point hero_collision_pt;
     bool hero_is_moving = false;
     bool in_quicksand = false;
-    // Uint32 next_frame_delay = SDL_GetTicks();
     Uint32 next_club_swing_delay = SDL_GetTicks();
     bool swing_club = false;
     SDL_Rect club_rect;
@@ -149,56 +187,62 @@ int main(int argc, char** argv)
 
     Tile fire(Tile::FIRE, grey, "sprites/Campfire.png");
     fire.set_sprite_size(64, 64);
-    fire.animation = {};
-    fire.animation.total_frames = 11;
-    fire.animation.delay = 100;
+    fire.animation.init(11, 100);
     fire.active = true;
 
     // Map
-    const int map_cols = 12;
-    const int map_rows = 10;
-
-    Tile map[map_rows][map_cols] = {
-        {w, w, w, w, w, w, w, w, w, w, w, w},
-        {w, f, f, t, f, f, f, f, f, f, f, f},
-        {w, f, f, t, f, f, f, fire, f, f, t, f},
-        {w, f, f, f, f, f, f, f, f, f, f, m},
-        {w, f, f, t, f, f, f, f, f, f, f, f},
-        {w, f, f, t, t, t, t, f, f, t, f, wr},
-        {w, f, f, f, f, f, t, f, f, t, f, f},
-        {w, f, f, f, f, f, t, f, f, t, f, m},
-        {w, f, f, f, f, f, f, f, f, t, f, f},
-        {w, w, w, w, w, w, w, w, w, w, w, w}
+    Tile* map1_tiles[] = {
+        &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w,
+        &w, &f, &f, &t, &f, &f, &f, &f, &f, &f, &f, &f,
+        &w, &f, &f, &t, &f, &f, &f, &fire, &f, &f, &t, &f,
+        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &m,
+        &w, &f, &f, &t, &f, &f, &f, &f, &f, &f, &f, &f,
+        &w, &f, &f, &t, &t, &t, &t, &f, &f, &t, &f, &wr,
+        &w, &f, &f, &f, &f, &f, &t, &f, &f, &t, &f, &f,
+        &w, &f, &f, &f, &f, &f, &t, &f, &f, &t, &f, &m,
+        &w, &f, &f, &f, &f, &f, &f, &f, &f, &t, &f, &f,
+        &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w
     };
 
-    bool in_map1 = true;
-
-    Tile (*current_map)[map_rows][map_cols] = &map;
-
-    Tile map2[map_rows][map_cols] = {
-        {w, w, w, w, w, w, w, w, w, w, w, w},
-        {w, f, f, f, f, f, f, f, f, f, f, w},
-        {w, f, f, f, f, f, f, f, f, f, f, w},
-        {w, f, f, f, f, f, f, f, f, f, f, w},
-        {w, f, f, f, f, f, f, f, f, f, f, w},
-        {w, f, f, f, f, wr, f, f, f, f, f, w},
-        {w, f, f, f, f, f, f, f, f, f, f, w},
-        {w, f, f, f, f, f, f, f, f, f, f, w},
-        {w, f, f, f, f, f, f, f, f, f, f, w},
-        {w, w, w, w, w, w, w, w, w, w, w, w}
+    Tile* map2_tiles[] = {
+        &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w,
+        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
+        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
+        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
+        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
+        &w, &f, &f, &f, &f, &wr, &f, &f, &f, &f, &f, &w,
+        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
+        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
+        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
+        &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w
     };
 
-    int map_width_pixels = map_cols * Tile::tile_width;
-    int map_height_pixels = map_rows * Tile::tile_height;
+    Map map1 = {};
+    map1.cols = 12;
+    map1.rows = 10;
+    map1.tiles = map1_tiles;
+    map1.current = GD_TRUE;
+    map1.width_pixels = map1.cols * Tile::tile_width;
+    map1.height_pixels = map1.rows * Tile::tile_height;
+
+    Map map2 = {};
+    map2.cols = 12;
+    map2.rows = 10;
+    map2.tiles = map2_tiles;
+    map2.width_pixels = map2.cols * Tile::tile_width;
+    map2.height_pixels = map2.rows * Tile::tile_height;
+
+    Map* current_map = &map1;
 
     // Add 1 to each to account for displaying half a tile.
-    int tile_rows_per_screen = (Game::screen_height / Tile::tile_height) + 1;
-    int tile_cols_per_screen = (Game::screen_width / Tile::tile_width) + 1;
+    // int tile_rows_per_screen = (Game::screen_height / Tile::tile_height) + 1;
+    // int tile_cols_per_screen = (Game::screen_width / Tile::tile_width) + 1;
 
+    // TODO: Need correctly sized surface for each map
     SDL_Surface* map_surface = SDL_CreateRGBSurfaceWithFormat(
         0,
-        map_width_pixels,
-        map_height_pixels,
+        map1.width_pixels,
+        map1.height_pixels,
         32,
         SDL_PIXELFORMAT_RGB888
     );
@@ -212,8 +256,8 @@ int main(int argc, char** argv)
 
     SDL_Rect camera_starting_pos = camera;
 
-    int max_camera_x = map_width_pixels - camera.w;
-    int max_camera_y = map_height_pixels - camera.h;
+    int max_camera_x = map1.width_pixels - camera.w;
+    int max_camera_y = map1.height_pixels - camera.h;
 
     int y_pixel_movement_threshold = Game::screen_height / 2;
     int x_pixel_movement_threshold = Game::screen_width / 2;
@@ -315,55 +359,9 @@ int main(int argc, char** argv)
                     angle = atan2f(mouse_relative_to_hero.y, mouse_relative_to_hero.x) + PI;
                 }
 
-                // Get direction. One piece of a circle split in 8 sections
-                // The radians start at 2*PI on (1, 0) and go to zero counter-clockwise
-                float direction_increment = (2.0f * PI) / 8.0f;
-                float half_increment = 0.5f * direction_increment;
-                Direction old_direction = hero.direction;
-
-                if (angle >= (3.0f * PI) / 2.0f - half_increment &&
-                    angle < (3.0f * PI) / 2.0f + half_increment)
+                if (angle != 0)
                 {
-                    hero.direction = UP;
-                }
-                else if (angle >= (3.0f * PI) / 2.0f + half_increment &&
-                         angle < 2.0f * PI - half_increment)
-                {
-                    hero.direction = UP_RIGHT;
-                }
-                else if (angle >= 2.0f * PI - half_increment ||
-                         angle < half_increment)
-                {
-                    hero.direction = RIGHT;
-                }
-                else if (angle >= half_increment &&
-                         angle < PI / 2.0f - half_increment)
-                {
-                    hero.direction = DOWN_RIGHT;
-                }
-                else if (angle >= PI / 2.0f - half_increment &&
-                         angle < PI / 2.0f + half_increment)
-                {
-                    hero.direction = DOWN;
-                }
-                else if (angle >= PI / 2.0f + half_increment &&
-                         angle < PI - half_increment)
-                {
-                    hero.direction = DOWN_LEFT;
-                }
-                else if (angle >= PI - half_increment &&
-                         angle < PI + half_increment)
-                {
-                    hero.direction = LEFT;
-                }
-                else if (angle >= PI + half_increment &&
-                         angle < (3.0f * PI) / half_increment)
-                {
-                    hero.direction = UP_LEFT;
-                }
-                if (angle == 0)
-                {
-                    hero.direction = old_direction;
+                    hero.direction = get_direction_from_angle(angle);
                 }
                 break;
             }
@@ -382,6 +380,13 @@ int main(int argc, char** argv)
         SDL_Rect saved_position = hero.dest_rect;
         SDL_Rect saved_camera = camera;
         SDL_Rect saved_tile = current_tile;
+
+        // Update map tiles
+        for (size_t i = 0; i < current_map->rows * current_map->cols; ++i)
+        {
+            Tile* tp = current_map->tiles[i];
+            tp->animation.update(last_frame_duration);
+        }
 
         if (right_is_pressed)
         {
@@ -419,7 +424,7 @@ int main(int argc, char** argv)
             // }
 
             if (hero.dest_rect.x <
-                map_width_pixels - x_pixel_movement_threshold &&
+                map1.width_pixels - x_pixel_movement_threshold &&
                 camera.x > 0)
             {
                 camera.x -= hero.speed;
@@ -446,7 +451,7 @@ int main(int argc, char** argv)
             // }
 
             if (hero.dest_rect.y <
-                map_height_pixels - y_pixel_movement_threshold &&
+                map1.height_pixels - y_pixel_movement_threshold &&
                 camera.y > 0)
             {
                 camera.y -= hero.speed;
@@ -541,8 +546,8 @@ int main(int argc, char** argv)
         camera.y = clamp(camera.y, 0, max_camera_y);
 
         // Clamp hero
-        hero.dest_rect.x = clamp(hero.dest_rect.x, 0, map_width_pixels - hero.dest_rect.w);
-        hero.dest_rect.y = clamp(hero.dest_rect.y, 0, map_height_pixels - hero.dest_rect.h);
+        hero.dest_rect.x = clamp(hero.dest_rect.x, 0, map1.width_pixels - hero.dest_rect.w);
+        hero.dest_rect.y = clamp(hero.dest_rect.y, 0, map1.height_pixels - hero.dest_rect.h);
 
         hero_collision_pt.y = (float)hero.dest_rect.y + hero.dest_rect.h - 10;
         hero_collision_pt.x = hero.dest_rect.x + hero.dest_rect.w / 2.0f;
@@ -556,7 +561,8 @@ int main(int argc, char** argv)
 
         int map_coord_x = current_tile.y / Tile::tile_height;
         int map_coord_y = current_tile.x / Tile::tile_width;
-        Tile* tile_at_hero_position_ptr = &(*current_map)[map_coord_x][map_coord_y];
+        int tile_index = map_coord_x * current_map->cols + map_coord_y;
+        Tile* tile_at_hero_position_ptr = current_map->tiles[tile_index];
 
         // Handle all tiles
         if (tile_at_hero_position_ptr->is_solid())
@@ -570,11 +576,9 @@ int main(int argc, char** argv)
         {
             hero.speed -= 8;
             in_quicksand = true;
-            if (SDL_GetTicks() > mud_sound_delay + 250 && hero_is_moving)
+            if (hero_is_moving)
             {
-                mud_sound_playing = true;
-                Mix_PlayChannel(-1, mud_sound, 0);
-                mud_sound_delay = SDL_GetTicks();
+                sound_play(&mud_sound, now);
             }
         }
         else if (in_quicksand)
@@ -584,17 +588,19 @@ int main(int argc, char** argv)
         }
         if (tile_at_hero_position_ptr->is_warp())
         {
-            if (in_map1)
+            if (map1.current)
             {
                 current_map = &map2;
-                in_map1 = false;
+                map1.current = GD_FALSE;
+                map2.current = GD_TRUE;
                 fire.active = false;
                 buffalo.active = false;
             }
             else
             {
-                current_map = &map;
-                in_map1 = true;
+                current_map = &map1;
+                map1.current = GD_TRUE;
+                map2.current = GD_FALSE;
                 fire.active = true;
                 buffalo.active = true;
             }
@@ -608,31 +614,13 @@ int main(int argc, char** argv)
         // camera.y = hero.dest_rect.y + hero.dest_rect.h / 2;
 
         // Get tile under camera x,y
-        int camera_tile_row = camera.y / Tile::tile_height;
-        int camera_tile_col = camera.x / Tile::tile_width;
+        // int camera_tile_row = camera.y / Tile::tile_height;
+        // int camera_tile_col = camera.x / Tile::tile_width;
 
         SDL_Rect tile_rect;
         tile_rect.w = Tile::tile_width;
         tile_rect.h = Tile::tile_height;
 
-        // Draw
-        for (int row = camera_tile_row;
-             row < tile_rows_per_screen + camera_tile_row;
-             ++row)
-        {
-            for (int col = camera_tile_col;
-                 col < tile_cols_per_screen + camera_tile_col;
-                 ++col)
-            {
-                tile_rect.x = col * Tile::tile_width;
-                tile_rect.y = row * Tile::tile_height;
-
-                Tile* tp = &(*current_map)[row][col];
-                // TODO: Move this out of the draw section to the update section
-                tp->animation.update(last_frame_duration);
-                tp->draw(map_surface, &tile_rect);
-            }
-        }
 
         // Highlight tile under player
         // SDL_FillRect(map_surface, &current_tile, yellow);
@@ -716,10 +704,6 @@ int main(int argc, char** argv)
         default:
             break;
         }
-        // Draw sprites on map
-        hero.draw(map_surface);
-        harlod.draw(map_surface);
-        buffalo.draw(map_surface);
 
         // Check Harlod/club collisions
         if (overlaps(&harlod.bounding_box, &club_rect) && now < club_swing_timeout)
@@ -727,13 +711,37 @@ int main(int argc, char** argv)
             SDL_FillRect(map_surface, &harlod.bounding_box, red);
         }
 
+        // Draw
+        // TODO: Don't redraw the whole map on every frame
+        for (size_t row = 0; row < current_map->rows; ++row)
+            // for (int row = camera_tile_row;
+            //      row < tile_rows_per_screen + camera_tile_row;
+            //      ++row)
+        {
+            for (size_t col = 0; col < current_map->cols; ++col)
+                // for (int col = camera_tile_col;
+                //      col < tile_cols_per_screen + camera_tile_col;
+                //      ++col)
+            {
+                tile_rect.x = (int)col * Tile::tile_width;
+                tile_rect.y = (int)row * Tile::tile_height;
+                Tile* tp = current_map->tiles[row * current_map->cols + col];
+                tp->draw(map_surface, &tile_rect);
+            }
+        }
+
+        // Draw sprites on map
+        hero.draw(map_surface);
+        harlod.draw(map_surface);
+        buffalo.draw(map_surface);
+
         // Draw hero club
         if (now < club_swing_timeout)
         {
             SDL_FillRect(map_surface, &club_rect, black);
         }
 
-        // Draw portion of map visible to camera on the screen
+        // Draw map
         SDL_BlitSurface(map_surface, &camera, game.window_surface, NULL);
 
         SDL_UpdateWindowSurface(game.window);
@@ -747,10 +755,7 @@ int main(int argc, char** argv)
     // Cleanup
     SDL_FreeSurface(map_surface);
     map_surface = NULL;
-    Mix_FreeChunk(mud_sound);
-    mud_sound = NULL;
-    Mix_Quit();
-    IMG_Quit();
+    Mix_FreeChunk(mud_sound.chunk);
     SDL_Quit();
     return 0;
 }
