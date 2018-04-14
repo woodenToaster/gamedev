@@ -107,4 +107,11 @@ void Tile::draw(SDL_Surface* map_surface, SDL_Rect* tile_rect)
     }
 }
 
-
+void map_update_tiles(Map* m, u64 last_frame_duration)
+{
+    for (size_t i = 0; i < m->rows * m->cols; ++i)
+    {
+        Tile* tp = m->tiles[i];
+        tp->animation.update(last_frame_duration);
+    }
+}

@@ -123,6 +123,11 @@ void sound_play(Sound* s, u64 now)
     }
 }
 
+struct Input
+{
+    // ...
+};
+
 int main(int argc, char** argv)
 {
     (void)argc;
@@ -224,6 +229,14 @@ int main(int argc, char** argv)
     map1.current = GD_TRUE;
     map1.width_pixels = map1.cols * Tile::tile_width;
     map1.height_pixels = map1.rows * Tile::tile_height;
+    map1.surface = SDL_CreateRGBSurfaceWithFormat(
+        0,
+        map1.width_pixels,
+        map1.height_pixels,
+        32,
+        SDL_PIXELFORMAT_RGB888
+    );
+
 
     Map map2 = {};
     map2.cols = 12;
@@ -231,21 +244,19 @@ int main(int argc, char** argv)
     map2.tiles = map2_tiles;
     map2.width_pixels = map2.cols * Tile::tile_width;
     map2.height_pixels = map2.rows * Tile::tile_height;
+    map2.surface = SDL_CreateRGBSurfaceWithFormat(
+        0,
+        map2.width_pixels,
+        map2.height_pixels,
+        32,
+        SDL_PIXELFORMAT_RGB888
+    );
 
     Map* current_map = &map1;
 
     // Add 1 to each to account for displaying half a tile.
     // int tile_rows_per_screen = (Game::screen_height / Tile::tile_height) + 1;
     // int tile_cols_per_screen = (Game::screen_width / Tile::tile_width) + 1;
-
-    // TODO: Need correctly sized surface for each map
-    SDL_Surface* map_surface = SDL_CreateRGBSurfaceWithFormat(
-        0,
-        map1.width_pixels,
-        map1.height_pixels,
-        32,
-        SDL_PIXELFORMAT_RGB888
-    );
 
     // Camera
     SDL_Rect camera;
@@ -381,12 +392,7 @@ int main(int argc, char** argv)
         SDL_Rect saved_camera = camera;
         SDL_Rect saved_tile = current_tile;
 
-        // Update map tiles
-        for (size_t i = 0; i < current_map->rows * current_map->cols; ++i)
-        {
-            Tile* tp = current_map->tiles[i];
-            tp->animation.update(last_frame_duration);
-        }
+        map_update_tiles(current_map, last_frame_duration);
 
         if (right_is_pressed)
         {
@@ -623,7 +629,7 @@ int main(int argc, char** argv)
 
 
         // Highlight tile under player
-        // SDL_FillRect(map_surface, &current_tile, yellow);
+        // SDL_FillRect(current_map->surface, &current_tile, yellow);
         // SDL_SetRenderDrawColor(renderer, 235, 245, 65, 255);
         // SDL_RenderFillRect(renderer, &current_tile);
 
@@ -661,54 +667,17 @@ int main(int argc, char** argv)
                     harlod.bounding_box.y;
                 overlap_box.h = min(overlap_box.h, harlod.bounding_box.h);
             }
-            SDL_FillRect(map_surface, &overlap_box, magenta);
+            SDL_FillRect(current_map->surface, &overlap_box, magenta);
 
             // do pixel collision
         }
 
-        // Set sprite based on hero.direction
-        switch (hero.direction)
-        {
-        case UP:
-            hero.sprite_rect.x = 0;
-            hero.sprite_rect.y = hero.sprite_sheet.sprite_height;
-            break;
-        case UP_RIGHT:
-            hero.sprite_rect.x = 8 * hero.sprite_sheet.sprite_width;
-            hero.sprite_rect.y = 0;
-            break;
-        case RIGHT:
-            hero.sprite_rect.x = 0;
-            hero.sprite_rect.y = 0;
-            break;
-        case DOWN_RIGHT:
-            hero.sprite_rect.x = 8 * hero.sprite_sheet.sprite_width;
-            hero.sprite_rect.y = 4 * hero.sprite_sheet.sprite_height;
-            break;
-        case DOWN:
-            hero.sprite_rect.x = 0;
-            hero.sprite_rect.y = 4 * hero.sprite_sheet.sprite_height;
-            break;
-        case DOWN_LEFT:
-            hero.sprite_rect.x = 8 * hero.sprite_sheet.sprite_width;
-            hero.sprite_rect.y = 3 * hero.sprite_sheet.sprite_height;
-            break;
-        case LEFT:
-            hero.sprite_rect.x = 0;
-            hero.sprite_rect.y = 3 * hero.sprite_sheet.sprite_height;
-            break;
-        case UP_LEFT:
-            hero.sprite_rect.x = 8 * hero.sprite_sheet.sprite_width;
-            hero.sprite_rect.y = hero.sprite_sheet.sprite_height;
-            break;
-        default:
-            break;
-        }
+        set_hero_sprite(&hero);
 
         // Check Harlod/club collisions
         if (overlaps(&harlod.bounding_box, &club_rect) && now < club_swing_timeout)
         {
-            SDL_FillRect(map_surface, &harlod.bounding_box, red);
+            SDL_FillRect(current_map->surface, &harlod.bounding_box, red);
         }
 
         // Draw
@@ -726,23 +695,23 @@ int main(int argc, char** argv)
                 tile_rect.x = (int)col * Tile::tile_width;
                 tile_rect.y = (int)row * Tile::tile_height;
                 Tile* tp = current_map->tiles[row * current_map->cols + col];
-                tp->draw(map_surface, &tile_rect);
+                tp->draw(current_map->surface, &tile_rect);
             }
         }
 
         // Draw sprites on map
-        hero.draw(map_surface);
-        harlod.draw(map_surface);
-        buffalo.draw(map_surface);
+        hero.draw(current_map->surface);
+        harlod.draw(current_map->surface);
+        buffalo.draw(current_map->surface);
 
         // Draw hero club
         if (now < club_swing_timeout)
         {
-            SDL_FillRect(map_surface, &club_rect, black);
+            SDL_FillRect(current_map->surface, &club_rect, black);
         }
 
         // Draw map
-        SDL_BlitSurface(map_surface, &camera, game.window_surface, NULL);
+        SDL_BlitSurface(current_map->surface, &camera, game.window_surface, NULL);
 
         SDL_UpdateWindowSurface(game.window);
 
@@ -753,8 +722,8 @@ int main(int argc, char** argv)
     }
 
     // Cleanup
-    SDL_FreeSurface(map_surface);
-    map_surface = NULL;
+    SDL_FreeSurface(map1.surface);
+    SDL_FreeSurface(map2.surface);
     Mix_FreeChunk(mud_sound.chunk);
     SDL_Quit();
     return 0;

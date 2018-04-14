@@ -58,6 +58,9 @@ struct Map
     u64 tile_cols_per_screen;
     u8 current;
     Tile** tiles;
+    SDL_Surface* surface;
 };
+
+void map_update_tiles(Map* m, u64 last_frame_duration);
 
 #endif

@@ -141,3 +141,44 @@ Direction get_direction_from_angle(float angle)
     }
     return result;
 }
+
+void set_hero_sprite(Entity* e)
+{
+    switch (e->direction)
+    {
+    case UP:
+        e->sprite_rect.x = 0;
+        e->sprite_rect.y = e->sprite_sheet.sprite_height;
+        break;
+    case UP_RIGHT:
+        e->sprite_rect.x = 8 * e->sprite_sheet.sprite_width;
+        e->sprite_rect.y = 0;
+        break;
+    case RIGHT:
+        e->sprite_rect.x = 0;
+        e->sprite_rect.y = 0;
+        break;
+    case DOWN_RIGHT:
+        e->sprite_rect.x = 8 * e->sprite_sheet.sprite_width;
+        e->sprite_rect.y = 4 * e->sprite_sheet.sprite_height;
+        break;
+    case DOWN:
+        e->sprite_rect.x = 0;
+        e->sprite_rect.y = 4 * e->sprite_sheet.sprite_height;
+        break;
+    case DOWN_LEFT:
+        e->sprite_rect.x = 8 * e->sprite_sheet.sprite_width;
+        e->sprite_rect.y = 3 * e->sprite_sheet.sprite_height;
+        break;
+    case LEFT:
+        e->sprite_rect.x = 0;
+        e->sprite_rect.y = 3 * e->sprite_sheet.sprite_height;
+        break;
+    case UP_LEFT:
+        e->sprite_rect.x = 8 * e->sprite_sheet.sprite_width;
+        e->sprite_rect.y = e->sprite_sheet.sprite_height;
+        break;
+    default:
+        break;
+    }
+}
