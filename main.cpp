@@ -1,6 +1,7 @@
 #include "SDL.h"
 #include "SDL_image.h"
 #include "SDL_mixer.h"
+#include "stdint.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "math.h"
@@ -9,6 +10,17 @@
 #include "sprite_sheet.cpp"
 #include "entity.cpp"
 #include "tile_map.cpp"
+
+typedef uint8_t u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
+typedef int8_t i8;
+typedef int16_t i16;
+typedef int32_t i32;
+typedef int64_t i64;
+typedef float f32;
+typedef double f64;
 
 bool overlaps(SDL_Rect* r1, SDL_Rect* r2)
 {
@@ -38,6 +50,8 @@ Game::Game(): frames(0), running(true)
 
 Game::~Game()
 {
+    Mix_Quit();
+    IMG_Quit();
     SDL_DestroyWindow(window);
 }
 
@@ -49,6 +63,12 @@ void Game::init()
         exit(1);
     }
     IMG_Init(IMG_INIT_PNG);
+
+    if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
+    {
+        printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
+        exit(1);
+    }
 }
 
 void Game::create_window()
@@ -68,6 +88,25 @@ void Game::create_window()
     window_surface = SDL_GetWindowSurface(window);
 }
 
+struct Sound
+{
+    u8 is_playing;
+    u32 delay;
+    u64 last_play_time;
+    Mix_Chunk* chunk;
+};
+
+Mix_Chunk* sound_load_wav(const char* fname)
+{
+    Mix_Chunk * result = Mix_LoadWAV(fname);
+    if (result == NULL)
+    {
+        printf("Mix_LoadWAV error: %s\n", Mix_GetError());
+        return NULL;
+    }
+    return result;
+}
+
 int main(int argc, char** argv)
 {
     (void)argc;
@@ -78,22 +117,9 @@ int main(int argc, char** argv)
     game.create_window();
 
     // Sound
-    Mix_Chunk* mud_sound = NULL;
-    bool mud_sound_playing = false;
-    Uint32 mud_sound_delay = SDL_GetTicks();
-
-    if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
-    {
-        printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
-        exit(1);
-    }
-
-    mud_sound = Mix_LoadWAV("sounds/mud_walk.wav");
-    if (mud_sound == NULL)
-    {
-        printf("Mix_LoadWAV error: %s\n", Mix_GetError());
-        return 1;
-    }
+    Sound mud_sound = {};
+    mud_sound.delay = 250;
+    mud_sound.chunk = sound_load_wav("sounds/mud_walk.wav");
 
     // Hero
     Entity hero("sprites/link_walking.png", 11, 5, 10, 85, 85, 6, 5, 12, 7, true);
@@ -525,11 +551,11 @@ int main(int argc, char** argv)
         {
             hero.speed -= 8;
             in_quicksand = true;
-            if (SDL_GetTicks() > mud_sound_delay + 250 && hero_is_moving)
+            if (now > mud_sound.last_play_time + mud_sound.delay && hero_is_moving)
             {
-                mud_sound_playing = true;
-                Mix_PlayChannel(-1, mud_sound, 0);
-                mud_sound_delay = SDL_GetTicks();
+                mud_sound.is_playing = true;
+                Mix_PlayChannel(-1, mud_sound.chunk, 0);
+                mud_sound.last_play_time = SDL_GetTicks();
             }
         }
         else if (in_quicksand)
@@ -704,10 +730,7 @@ int main(int argc, char** argv)
     // Cleanup
     SDL_FreeSurface(map_surface);
     map_surface = NULL;
-    Mix_FreeChunk(mud_sound);
-    mud_sound = NULL;
-    Mix_Quit();
-    IMG_Quit();
+    Mix_FreeChunk(mud_sound.chunk);
     SDL_Quit();
     return 0;
 }
