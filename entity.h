@@ -4,18 +4,6 @@
 #include "tile_map.h"
 #include "sprite_sheet.h"
 
-enum Direction
-{
-    UP,
-    UP_RIGHT,
-    RIGHT,
-    DOWN_RIGHT,
-    DOWN,
-    DOWN_LEFT,
-    LEFT,
-    UP_LEFT
-};
-
 struct Entity
 {
     SpriteSheet sprite_sheet;
@@ -31,23 +19,25 @@ struct Entity
     int bb_y_offset;
     int bb_w_offset;
     int bb_h_offset;
-    bool active;
+    u8 active;
+};
 
-    Entity(const char* sprite_path,
-           int x_sprites,
-           int y_sprites,
-           int speed,
-           float starting_x,
-           float starting_y,
-           int bb_x,
-           int bb_y,
-           int bb_w,
-           int bb_h,
-           bool active=false);
-    ~Entity();
+struct Hero
+{
+    Entity e;
+    u8 is_moving;
+    u8 in_quicksand;
+    u8 swing_club;
+    u32 next_club_swing_delay;
+    u32 club_swing_timeout;
+    SDL_Rect club_rect;
+    Point collision_pt;
+};
 
-    void draw(SDL_Surface* map);
-    void update();
+struct EntityList
+{
+    Entity** entities;
+    u32 count;
 };
 
 #endif

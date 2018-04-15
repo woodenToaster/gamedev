@@ -1,26 +1,26 @@
 #include "sprite_sheet.h"
 
-SpriteSheet::~SpriteSheet()
+void sprite_sheet_destroy(SpriteSheet* ss)
 {
-    if (sheet)
+    if (ss)
     {
-        SDL_FreeSurface(sheet);
-        sheet = NULL;
+        SDL_FreeSurface(ss->sheet);
+        ss->sheet = NULL;
     }
 }
 
-void SpriteSheet::load(const char* path, int num_x_sprites, int num_y_sprites)
+void sprite_sheet_load(SpriteSheet* ss, const char* path, int x_sprites, int y_sprites)
 {
     SDL_Surface* img = IMG_Load(path);
     if (!img) {
         printf("Failed to load image from %s: %s", path, SDL_GetError());
         exit(1);
     }
-    sheet = img;
-    width = sheet->w;
-    height = sheet->h;
-    this->sprite_width = width / num_x_sprites;
-    this->sprite_height = height / num_y_sprites;
-    this->num_x = num_x_sprites;
-    this->num_y = num_y_sprites;
+    ss->sheet = img;
+    ss->width = ss->sheet->w;
+    ss->height = ss->sheet->h;
+    ss->sprite_width = ss->width / x_sprites;
+    ss->sprite_height = ss->height / y_sprites;
+    ss->num_x = x_sprites;
+    ss->num_y = y_sprites;
 }

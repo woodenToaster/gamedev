@@ -5,7 +5,8 @@
 ** TODO [#C] Build SDL in debug mode
 * Gameplay
 ** TODO [#A] Link swing sword animation
-** TODO [#A] Insert camp fire
+** DONE [#A] Insert camp fire
+   CLOSED: [2018-04-15 Sun 11:34]
 ** TODO [#A] Pixel perfect collision
 *** TODO [#A] Get pixel data from sprite sheet
 ** TODO [#A] One enemy with basic AI and collision
@@ -14,6 +15,7 @@
 ** TODO [#C] Base building screen
 ** TODO [#C] base building gui
 * Graphics
+** TODO Print text on screen
 ** TODO [#A] Use 2d acceleration.
 ** TODO [#B] Enable OpenGL
 ** TODO Need z layers for rendering

@@ -6,10 +6,10 @@ struct Animation
     int total_frames;
     int current_frame;
     Uint32 delay;
-    Uint32 elapsed;
+    u32 elapsed;
 
     void init(int frames, int ms_delay);
-    void update(Uint32 elapsed_last_frame);
+    void update(u32 elapsed_last_frame);
 };
 
 struct Tile
@@ -61,6 +61,10 @@ struct Map
     SDL_Surface* surface;
 };
 
-void map_update_tiles(Map* m, u64 last_frame_duration);
+struct MapList
+{
+    Map** maps;
+    u32 count;
+};
 
 #endif

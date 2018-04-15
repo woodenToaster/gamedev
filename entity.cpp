@@ -1,45 +1,40 @@
 #include "entity.h"
 
-Entity::Entity(const char* sprite_path,
-               int x_sprites,
-               int y_sprites,
-               int speed,
-               float starting_x,
-               float starting_y,
-               int bb_x,
-               int bb_y,
-               int bb_w,
-               int bb_h,
-               bool active):
-    speed(speed),
-    starting_pos(starting_x, starting_y),
-    bb_x_offset(bb_x),
-    bb_y_offset(bb_y),
-    bb_w_offset(bb_w),
-    bb_h_offset(bb_h),
-    active(active),
-    sprite_sheet(),
-    direction(DOWN)
-
+void entity_init_sprite_sheet(Entity* e, const char* path, int num_x, int num_y)
 {
-    sprite_sheet.load(sprite_path, x_sprites, y_sprites);
-    sprite_rect.w = sprite_sheet.sprite_width;
-    sprite_rect.h = sprite_sheet.sprite_height;
-    dest_rect.x = (int)starting_pos.x;
-    dest_rect.y = (int)starting_pos.y;
-    dest_rect.w = sprite_sheet.sprite_width;
-    dest_rect.h = sprite_sheet.sprite_height;
+    sprite_sheet_load(&e->sprite_sheet, path, num_x, num_y);
+    e->sprite_rect.w = e->sprite_sheet.sprite_width;
+    e->sprite_rect.h = e->sprite_sheet.sprite_height;
 }
 
-Entity::~Entity()
-{}
+void entity_set_starting_pos(Entity* e, int x, int y)
+{
+    e->starting_pos.x = x;
+    e->starting_pos.y = y;
+}
 
-void Entity::draw(SDL_Surface* map)
+void entity_set_bounding_box_offset(Entity* e, int x, int y, int w, int h)
+{
+    e->bb_x_offset = x;
+    e->bb_y_offset = y;
+    e->bb_w_offset = w;
+    e->bb_h_offset = h;
+}
+
+void entity_init_dest(Entity* e)
+{
+    e->dest_rect.x = e->starting_pos.x;
+    e->dest_rect.y = e->starting_pos.y;
+    e->dest_rect.w = e->sprite_sheet.sprite_width;
+    e->dest_rect.h = e->sprite_sheet.sprite_height;
+}
+
+void entity_draw(Entity* e, SDL_Surface* map)
 {
     // Draw sprite
-    if (active)
+    if (e->active)
     {
-        SDL_BlitSurface(sprite_sheet.sheet, &sprite_rect, map, &dest_rect);
+        SDL_BlitSurface(e->sprite_sheet.sheet, &e->sprite_rect, map, &e->dest_rect);
     }
 
 #ifdef DEBUG
@@ -50,24 +45,24 @@ void Entity::draw(SDL_Surface* map)
     SDL_Rect bb_right;
     int bb_line_width = 2;
 
-    bb_top.x = bounding_box.x;
-    bb_top.y = bounding_box.y;
-    bb_top.w = bounding_box.w;
+    bb_top.x = e->bounding_box.x;
+    bb_top.y = e->bounding_box.y;
+    bb_top.w = e->bounding_box.w;
     bb_top.h = bb_line_width;
 
-    bb_left.x = bounding_box.x;
-    bb_left.y = bounding_box.y;
+    bb_left.x = e->bounding_box.x;
+    bb_left.y = e->bounding_box.y;
     bb_left.w = bb_line_width;
-    bb_left.h = bounding_box.h;
+    bb_left.h = e->bounding_box.h;
 
-    bb_right.x = bounding_box.x + bounding_box.w;
-    bb_right.y = bounding_box.y;
+    bb_right.x = e->bounding_box.x + e->bounding_box.w;
+    bb_right.y = e->bounding_box.y;
     bb_right.w =bb_line_width;
-    bb_right.h = bounding_box.h;
+    bb_right.h = e->bounding_box.h;
 
-    bb_bottom.x = bounding_box.x;
-    bb_bottom.y = bounding_box.y + bounding_box.h;
-    bb_bottom.w = bounding_box.w + bb_line_width;
+    bb_bottom.x = e->bounding_box.x;
+    bb_bottom.y = e->bounding_box.y + e->bounding_box.h;
+    bb_bottom.w = e->bounding_box.w + bb_line_width;
     bb_bottom.h = bb_line_width;
 
     // TODO: Need global access to colors
@@ -79,67 +74,17 @@ void Entity::draw(SDL_Surface* map)
 #endif
 }
 
-void Entity::update()
+void entity_update(Entity* e)
 {
-    bounding_box.x = dest_rect.x + bb_x_offset;
-    bounding_box.y = dest_rect.y + bb_y_offset;
-    bounding_box.w = dest_rect.w - bb_w_offset;
-    bounding_box.h = dest_rect.h - bb_h_offset;
+    e->bounding_box.x = e->dest_rect.x + e->bb_x_offset;
+    e->bounding_box.y = e->dest_rect.y + e->bb_y_offset;
+    e->bounding_box.w = e->dest_rect.w - e->bb_w_offset;
+    e->bounding_box.h = e->dest_rect.h - e->bb_h_offset;
 }
 
-// One piece of a circle split in 8 sections
-// The radians start at 2*PI on (1, 0) and go to zero counter-clockwise
-Direction get_direction_from_angle(float angle)
+void entity_destroy(Entity* e)
 {
-    float direction_increment = (2.0f * PI) / 8.0f;
-    float half_increment = 0.5f * direction_increment;
-    Direction result;
-
-    if (angle >= (3.0f * PI) / 2.0f - half_increment &&
-        angle < (3.0f * PI) / 2.0f + half_increment)
-    {
-        result = UP;
-    }
-    else if (angle >= (3.0f * PI) / 2.0f + half_increment &&
-             angle < 2.0f * PI - half_increment)
-    {
-        result = UP_RIGHT;
-    }
-    else if (angle >= 2.0f * PI - half_increment ||
-             angle < half_increment)
-    {
-        result = RIGHT;
-    }
-    else if (angle >= half_increment &&
-             angle < PI / 2.0f - half_increment)
-    {
-        result = DOWN_RIGHT;
-    }
-    else if (angle >= PI / 2.0f - half_increment &&
-             angle < PI / 2.0f + half_increment)
-    {
-        result = DOWN;
-    }
-    else if (angle >= PI / 2.0f + half_increment &&
-             angle < PI - half_increment)
-    {
-        result = DOWN_LEFT;
-    }
-    else if (angle >= PI - half_increment &&
-             angle < PI + half_increment)
-    {
-        result = LEFT;
-    }
-    else if (angle >= PI + half_increment &&
-             angle < (3.0f * PI) / half_increment)
-    {
-        result = UP_LEFT;
-    }
-    else
-    {
-        result = DOWN;
-    }
-    return result;
+    sprite_sheet_destroy(&e->sprite_sheet);
 }
 
 void set_hero_sprite(Entity* e)
@@ -180,5 +125,13 @@ void set_hero_sprite(Entity* e)
         break;
     default:
         break;
+    }
+}
+
+void entity_list_destroy(EntityList* el)
+{
+    for (u32 i = 0; i < el->count; ++i)
+    {
+        entity_destroy(el->entities[i]);
     }
 }

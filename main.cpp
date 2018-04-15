@@ -6,6 +6,8 @@
 #include "stdlib.h"
 #include "math.h"
 
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "stb_truetype.h"
 
 typedef uint8_t u8;
 typedef uint16_t u16;
@@ -24,10 +26,24 @@ enum
     GD_TRUE
 };
 
+enum Direction
+{
+    UP,
+    UP_RIGHT,
+    RIGHT,
+    DOWN_RIGHT,
+    DOWN,
+    DOWN_LEFT,
+    LEFT,
+    UP_LEFT
+};
+
 #include "gamedev_math.h"
 #include "sprite_sheet.cpp"
 #include "entity.cpp"
 #include "tile_map.cpp"
+
+char ttf_buffer[1 << 25];
 
 bool overlaps(SDL_Rect* r1, SDL_Rect* r2)
 {
@@ -41,28 +57,27 @@ struct Game
     static const int screen_width = 640;
     static const int screen_height = 480;
 
-    Uint32 frames = 0;
-    bool running = true;
+    u32 frames = 0;
+    bool running = GD_TRUE;
+    u8 initialized = GD_FALSE;
     SDL_Window* window;
     SDL_Surface* window_surface;
 
     Game();
-    ~Game();
-    void init();
-    void create_window();
 };
 
-Game::Game(): frames(0), running(true)
+Game::Game(): frames(0), running(GD_TRUE)
 {}
 
-Game::~Game()
+void game_destroy(Game* g)
 {
     Mix_Quit();
     IMG_Quit();
-    SDL_DestroyWindow(window);
+    SDL_DestroyWindow(g->window);
+    SDL_Quit();
 }
 
-void Game::init()
+void game_init(Game* g)
 {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
     {
@@ -76,23 +91,21 @@ void Game::init()
         printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
         exit(1);
     }
-}
 
-void Game::create_window()
-{
-    window = SDL_CreateWindow("gamedev",
-                              30,
-                              50,
-                              screen_width,
-                              screen_height,
-                              SDL_WINDOW_SHOWN);
+    g->window = SDL_CreateWindow("gamedev",
+                                 30,
+                                 50,
+                                 g->screen_width,
+                                 g->screen_height,
+                                 SDL_WINDOW_SHOWN);
 
-    if (window == NULL)
+    if (g->window == NULL)
     {
         printf("Could not create window: %s\n", SDL_GetError());
         exit(1);
     }
-    window_surface = SDL_GetWindowSurface(window);
+    g->window_surface = SDL_GetWindowSurface(g->window);
+    g->initialized = GD_TRUE;
 }
 
 struct Sound
@@ -123,6 +136,11 @@ void sound_play(Sound* s, u64 now)
     }
 }
 
+void sound_destroy(Sound* s)
+{
+    Mix_FreeChunk(s->chunk);
+}
+
 struct Input
 {
     // ...
@@ -134,33 +152,91 @@ int main(int argc, char** argv)
     (void)argv;
 
     Game game;
-    game.init();
-    game.create_window();
+    game_init(&game);
 
-    // Sound
+    if (!game.initialized)
+    {
+        fprintf(stderr, "Game was not initialized.\n");
+        exit(1);
+    }
+
+    // Font
+    stbtt_fontinfo font;
+    unsigned char* bitmap;
+    int font_char = 'a';
+    float font_size = 100;
+    size_t bytes_read = fread(ttf_buffer, 1, 1 << 25, fopen("fonts/arialbd.ttf", "rb"));
+
+    stbtt_InitFont(&font, (u8*)ttf_buffer, stbtt_GetFontOffsetForIndex((u8*)ttf_buffer, 0));
+    int font_width, font_height;
+    bitmap = stbtt_GetCodepointBitmap(&font, 0, stbtt_ScaleForPixelHeight(&font, font_size),
+                                      font_char, &font_width, &font_height, 0, 0);
+
+    u32* font_bitmap = (u32*)malloc(font_width * font_height * sizeof(u32));
+
+    for (int i = 0; i < font_width * font_height; ++i)
+    {
+        font_bitmap[i] = (u32)bitmap[i];
+    }
+
+	SDL_Surface* font_surface = SDL_CreateRGBSurfaceFrom(
+        (void*)bitmap,
+        font_width,
+        font_height,
+        8,
+        font_width,
+        0, 0, 0, 0
+    );
+
+    SDL_Color grayscale_colors[256];
+    for (int i = 0; i < 256; ++i)
+    {
+        grayscale_colors[i].r = i;
+        grayscale_colors[i].g = i;
+        grayscale_colors[i].b = i;
+    }
+    SDL_Palette* greyscale_palette;
+    free(font_bitmap);
+
+    if (!font_surface)
+    {
+        printf("%s\n", SDL_GetError());
+        exit(1);
+    }
+	// Sound
     Sound mud_sound = {};
     mud_sound.delay = 250;
     mud_sound.chunk = sound_load_wav("sounds/mud_walk.wav");
 
     // Hero
-    Entity hero("sprites/link_walking.png", 11, 5, 10, 85, 85, 6, 5, 12, 7, true);
-
-    Point hero_collision_pt;
-    bool hero_is_moving = false;
-    bool in_quicksand = false;
-    Uint32 next_club_swing_delay = SDL_GetTicks();
-    bool swing_club = false;
-    SDL_Rect club_rect;
-    Uint32 club_swing_timeout = SDL_GetTicks();
+    Hero hero = {};
+    entity_init_sprite_sheet(&hero.e, "sprites/link_walking.png", 11, 5);
+    entity_set_starting_pos(&hero.e, 85, 85);
+    entity_set_bounding_box_offset(&hero.e, 6, 5, 12, 7);
+    entity_init_dest(&hero.e);
+    hero.e.speed = 10;
+    hero.e.active = GD_TRUE;
 
     // Enemy
-    Entity harlod("sprites/Harlod_the_caveman.png", 1, 1, 10, 150, 150, 0, 0, 0, 0, true);
-    Entity buffalo("sprites/Buffalo.png", 4, 1, 3, 400, 400, 0, 0, 0, 0, true);
+    Entity harlod = {};
+    entity_init_sprite_sheet(&harlod, "sprites/Harlod_the_caveman.png", 1, 1);
+    entity_set_starting_pos(&harlod, 150, 150);
+    entity_set_bounding_box_offset(&harlod, 0, 0, 0, 0);
+    entity_init_dest(&harlod);
+    harlod.speed = 10;
+    harlod.active = GD_TRUE;
 
-    bool right_is_pressed = false;
-    bool left_is_pressed = false;
-    bool up_is_pressed = false;
-    bool down_is_pressed = false;
+    // Entity buffalo("sprites/Buffalo.png", 4, 1, 3, 400, 400, 0, 0, 0, 0, GD_TRUE);
+
+    EntityList entity_list = {};
+    Entity* _entities[] = {&hero.e, &harlod};
+    entity_list.entities = _entities;
+    entity_list.count = 2;
+
+    bool right_is_pressed = GD_FALSE;
+    bool left_is_pressed = GD_FALSE;
+    bool up_is_pressed = GD_FALSE;
+    bool down_is_pressed = GD_FALSE;
 
     // Colors
     SDL_PixelFormat* window_pixel_format = game.window_surface->format;
@@ -176,8 +252,8 @@ int main(int argc, char** argv)
 
     // Tiles
     SDL_Rect current_tile;
-    current_tile.x = hero.dest_rect.x / Tile::tile_width;
-    current_tile.y = hero.dest_rect.y / Tile::tile_height;
+    current_tile.x = hero.e.dest_rect.x / Tile::tile_width;
+    current_tile.y = hero.e.dest_rect.y / Tile::tile_height;
     current_tile.w = Tile::tile_width;
     current_tile.h = Tile::tile_height;
 
@@ -188,12 +264,12 @@ int main(int argc, char** argv)
 
     Tile t(Tile::SOLID, green, "sprites/TropicalTree.png");
     t.set_sprite_size(64, 64);
-    t.active = true;
+    t.active = GD_TRUE;
 
     Tile fire(Tile::FIRE, grey, "sprites/Campfire.png");
     fire.set_sprite_size(64, 64);
     fire.animation.init(11, 100);
-    fire.active = true;
+    fire.active = GD_TRUE;
 
     // Map
     Tile* map1_tiles[] = {
@@ -252,6 +328,11 @@ int main(int argc, char** argv)
         SDL_PIXELFORMAT_RGB888
     );
 
+    MapList map_list = {};
+    Map* _maps[] = {&map1, &map2};
+    map_list.maps = _maps;
+    map_list.count = 2;
+
     Map* current_map = &map1;
 
     // Add 1 to each to account for displaying half a tile.
@@ -297,37 +378,37 @@ int main(int argc, char** argv)
 
                 if (key == SDL_SCANCODE_ESCAPE)
                 {
-                    game.running = false;
+                    game.running = GD_FALSE;
                 }
                 if (key == SDL_SCANCODE_RIGHT || key == SDL_SCANCODE_L ||
                     key == SDL_SCANCODE_D)
                 {
-                    right_is_pressed = false;
+                    right_is_pressed = GD_FALSE;
                 }
                 if (key == SDL_SCANCODE_UP || key == SDL_SCANCODE_K ||
                     key == SDL_SCANCODE_W)
                 {
-                    up_is_pressed = false;
+                    up_is_pressed = GD_FALSE;
                 }
                 if (key == SDL_SCANCODE_DOWN || key == SDL_SCANCODE_J ||
                     key == SDL_SCANCODE_S)
                 {
-                    down_is_pressed = false;
+                    down_is_pressed = GD_FALSE;
                 }
                 if (key == SDL_SCANCODE_LEFT || key == SDL_SCANCODE_H ||
                     key == SDL_SCANCODE_A)
                 {
-                    left_is_pressed = false;
+                    left_is_pressed = GD_FALSE;
                 }
                 if (key == SDL_SCANCODE_F)
                 {
-                    swing_club = true;
+                    hero.swing_club = GD_TRUE;
                 }
                 break;
             }
             case SDL_QUIT:
             {
-                game.running = false;
+                game.running = GD_FALSE;
                 break;
             }
             case SDL_KEYDOWN:
@@ -336,30 +417,32 @@ int main(int argc, char** argv)
                 if (key == SDL_SCANCODE_RIGHT || key == SDL_SCANCODE_L ||
                     key == SDL_SCANCODE_D)
                 {
-                    right_is_pressed = true;
+                    right_is_pressed = GD_TRUE;
                 }
                 if (key == SDL_SCANCODE_LEFT || key == SDL_SCANCODE_H ||
                     key == SDL_SCANCODE_A)
                 {
-                    left_is_pressed = true;
+                    left_is_pressed = GD_TRUE;
                 }
                 if (key == SDL_SCANCODE_UP || key == SDL_SCANCODE_K ||
                     key == SDL_SCANCODE_W)
                 {
-                    up_is_pressed = true;
+                    up_is_pressed = GD_TRUE;
                 }
                 if (key == SDL_SCANCODE_DOWN || key == SDL_SCANCODE_J ||
                     key == SDL_SCANCODE_S)
                 {
-                    down_is_pressed = true;
+                    down_is_pressed = GD_TRUE;
                 }
                 break;
             }
             case SDL_MOUSEMOTION:
             {
                 // get vector from center of player to mouse cursor
-                Point hero_center(hero.dest_rect.x + (0.5f * hero.dest_rect.w),
-                                  hero.dest_rect.y + (0.5f * hero.dest_rect.h));
+                Point hero_center = {
+                    hero.e.dest_rect.x + (i32)(0.5 * hero.e.dest_rect.w),
+                    hero.e.dest_rect.y + (i32)(0.5 * hero.e.dest_rect.h)
+                };
                 Vec2 mouse_relative_to_hero;
                 mouse_relative_to_hero.x = hero_center.x - ((float)event.motion.x + camera.x);
                 mouse_relative_to_hero.y = hero_center.y - ((float)event.motion.y + camera.y);
@@ -372,7 +455,7 @@ int main(int argc, char** argv)
 
                 if (angle != 0)
                 {
-                    hero.direction = get_direction_from_angle(angle);
+                    hero.e.direction = get_direction_from_angle(angle);
                 }
                 break;
             }
@@ -380,7 +463,7 @@ int main(int argc, char** argv)
             {
                 if (event.button.button == SDL_BUTTON_LEFT)
                 {
-                    swing_club = true;
+                    hero.swing_club = GD_TRUE;
                 }
                 break;
             }
@@ -388,7 +471,7 @@ int main(int argc, char** argv)
         }
 
         // Update
-        SDL_Rect saved_position = hero.dest_rect;
+        SDL_Rect saved_position = hero.e.dest_rect;
         SDL_Rect saved_camera = camera;
         SDL_Rect saved_tile = current_tile;
 
@@ -396,7 +479,7 @@ int main(int argc, char** argv)
 
         if (right_is_pressed)
         {
-            hero.dest_rect.x += hero.speed;
+            hero.e.dest_rect.x += hero.e.speed;
             // hero.sprite_rect.y = 2 * hero.sprite_sheet.sprite_height;
             // hero.sprite_rect.x = hero.current_frame * hero.sprite_sheet.sprite_width;
             // if (now > next_frame_delay + 125)
@@ -409,15 +492,15 @@ int main(int argc, char** argv)
                 // hero.current_frame = 0;
             // }
 
-            if (hero.dest_rect.x > x_pixel_movement_threshold &&
+            if (hero.e.dest_rect.x > x_pixel_movement_threshold &&
                 camera.x < max_camera_x)
             {
-                camera.x += hero.speed;
+                camera.x += hero.e.speed;
             }
         }
         if (left_is_pressed)
         {
-            hero.dest_rect.x -= hero.speed;
+            hero.e.dest_rect.x -= hero.e.speed;
             // hero.sprite_rect.y = 1 * hero.sprite_sheet.sprite_height;
             // hero.sprite_rect.x = hero.current_frame * hero.sprite_sheet.sprite_width;
 
@@ -429,22 +512,22 @@ int main(int argc, char** argv)
             //     hero.current_frame = 0;
             // }
 
-            if (hero.dest_rect.x <
+            if (hero.e.dest_rect.x <
                 map1.width_pixels - x_pixel_movement_threshold &&
                 camera.x > 0)
             {
-                camera.x -= hero.speed;
+                camera.x -= hero.e.speed;
             }
         }
         if (up_is_pressed)
         {
             if (left_is_pressed || right_is_pressed)
             {
-                hero.dest_rect.y -= 7;
+                hero.e.dest_rect.y -= 7;
             }
             else
             {
-                hero.dest_rect.y -= hero.speed;
+                hero.e.dest_rect.y -= hero.e.speed;
             }
             // hero.sprite_rect.y = 3 * hero.sprite_sheet.sprite_height;
             // hero.sprite_rect.x = hero.current_frame * hero.sprite_sheet.sprite_height;
@@ -456,21 +539,21 @@ int main(int argc, char** argv)
             //     hero.current_frame = 0;
             // }
 
-            if (hero.dest_rect.y <
+            if (hero.e.dest_rect.y <
                 map1.height_pixels - y_pixel_movement_threshold &&
                 camera.y > 0)
             {
-                camera.y -= hero.speed;
+                camera.y -= hero.e.speed;
             }
         }
         if (down_is_pressed) {
             if (left_is_pressed || right_is_pressed)
             {
-                hero.dest_rect.y += 7;
+                hero.e.dest_rect.y += 7;
             }
             else
             {
-                hero.dest_rect.y += hero.speed;
+                hero.e.dest_rect.y += hero.e.speed;
             }
             // hero.sprite_rect.y = 0 * hero.sprite_sheet.sprite_height;
             // hero.sprite_rect.x = hero.current_frame * hero.sprite_sheet.sprite_width;
@@ -483,68 +566,68 @@ int main(int argc, char** argv)
             //     hero.current_frame = 0;
             // }
 
-            if (hero.dest_rect.y > y_pixel_movement_threshold &&
+            if (hero.e.dest_rect.y > y_pixel_movement_threshold &&
                 camera.y < max_camera_y)
             {
-                camera.y += hero.speed;
+                camera.y += hero.e.speed;
             }
         }
 
-        if (saved_position.x != hero.dest_rect.x ||
-            saved_position.y != hero.dest_rect.y)
+        if (saved_position.x != hero.e.dest_rect.x ||
+            saved_position.y != hero.e.dest_rect.y)
         {
-            hero_is_moving = true;
+            hero.is_moving = GD_TRUE;
         }
         else
         {
-            hero_is_moving = false;
+            hero.is_moving = GD_FALSE;
         }
 
-        if (!hero_is_moving)
+        if (!hero.is_moving)
         {
-            hero.animation.current_frame = 0;
-            hero.sprite_rect.x = 0;
+            hero.e.animation.current_frame = 0;
+            hero.e.sprite_rect.x = 0;
         }
 
         // Handle club
-        club_rect.x = hero.dest_rect.x + hero.dest_rect.w / 2;
-        club_rect.y = hero.dest_rect.y + hero.dest_rect.h / 2;
+        hero.club_rect.x = hero.e.dest_rect.x + hero.e.dest_rect.w / 2;
+        hero.club_rect.y = hero.e.dest_rect.y + hero.e.dest_rect.h / 2;
 
-        switch(hero.direction)
+        switch(hero.e.direction)
         {
         case DOWN:
-            club_rect.w = 8;
-            club_rect.x -= 4;
-            club_rect.h = 32;
-            club_rect.y += 16;
+            hero.club_rect.w = 8;
+            hero.club_rect.x -= 4;
+            hero.club_rect.h = 32;
+            hero.club_rect.y += 16;
             break;
         case LEFT:
-            club_rect.w = 32;
-            club_rect.h = 8;
-            club_rect.y += 16;
-            club_rect.x -= 32;
+            hero.club_rect.w = 32;
+            hero.club_rect.h = 8;
+            hero.club_rect.y += 16;
+            hero.club_rect.x -= 32;
             break;
         case RIGHT:
-            club_rect.y += 16;
-            club_rect.w = 32;
-            club_rect.h = 8;
+            hero.club_rect.y += 16;
+            hero.club_rect.w = 32;
+            hero.club_rect.h = 8;
             break;
         case UP:
-            club_rect.x -= 4;
-            club_rect.y -= 32;
-            club_rect.w = 8;
-            club_rect.h = 32;
+            hero.club_rect.x -= 4;
+            hero.club_rect.y -= 32;
+            hero.club_rect.w = 8;
+            hero.club_rect.h = 32;
             break;
         }
 
-        if (swing_club && now > next_club_swing_delay + 500)
+        if (hero.swing_club && now > hero.next_club_swing_delay + 500)
         {
-            next_club_swing_delay = now;
-            club_swing_timeout = now + 500;
+            hero.next_club_swing_delay = now;
+            hero.club_swing_timeout = now + 500;
         }
         else
         {
-            swing_club = false;
+            hero.swing_club = GD_FALSE;
         }
 
         // Clamp camera
@@ -552,18 +635,18 @@ int main(int argc, char** argv)
         camera.y = clamp(camera.y, 0, max_camera_y);
 
         // Clamp hero
-        hero.dest_rect.x = clamp(hero.dest_rect.x, 0, map1.width_pixels - hero.dest_rect.w);
-        hero.dest_rect.y = clamp(hero.dest_rect.y, 0, map1.height_pixels - hero.dest_rect.h);
+        hero.e.dest_rect.x = clamp(hero.e.dest_rect.x, 0, map1.width_pixels - hero.e.dest_rect.w);
+        hero.e.dest_rect.y = clamp(hero.e.dest_rect.y, 0, map1.height_pixels - hero.e.dest_rect.h);
 
-        hero_collision_pt.y = (float)hero.dest_rect.y + hero.dest_rect.h - 10;
-        hero_collision_pt.x = hero.dest_rect.x + hero.dest_rect.w / 2.0f;
+        hero.collision_pt.y = hero.e.dest_rect.y + hero.e.dest_rect.h - 10;
+        hero.collision_pt.x = hero.e.dest_rect.x + (i32)(hero.e.dest_rect.w / 2.0);
 
-        current_tile.x = ((int)hero_collision_pt.x / 80) * 80;
-        current_tile.y = ((int)hero_collision_pt.y / 80) * 80;
+        current_tile.x = (hero.collision_pt.x / 80) * 80;
+        current_tile.y = (hero.collision_pt.y / 80) * 80;
 
-        hero.update();
-        harlod.update();
-        buffalo.update();
+        entity_update(&hero.e);
+        entity_update(&harlod);
+        // entity_update(&buffalo);
 
         int map_coord_x = current_tile.y / Tile::tile_height;
         int map_coord_y = current_tile.x / Tile::tile_width;
@@ -575,22 +658,22 @@ int main(int argc, char** argv)
         {
             // Collisions. Revert to original state
             camera = saved_camera;
-            hero.dest_rect = saved_position;
+            hero.e.dest_rect = saved_position;
             current_tile = saved_tile;
         }
-        if (tile_at_hero_position_ptr->is_slow() && !in_quicksand)
+        if (tile_at_hero_position_ptr->is_slow() && !hero.in_quicksand)
         {
-            hero.speed -= 8;
-            in_quicksand = true;
-            if (hero_is_moving)
+            hero.e.speed -= 8;
+            hero.in_quicksand = GD_TRUE;
+            if (hero.is_moving)
             {
                 sound_play(&mud_sound, now);
             }
         }
-        else if (in_quicksand)
+        else if (hero.in_quicksand)
         {
-            hero.speed += 8;
-            in_quicksand = false;
+            hero.e.speed += 8;
+            hero.in_quicksand = GD_FALSE;
         }
         if (tile_at_hero_position_ptr->is_warp())
         {
@@ -599,25 +682,25 @@ int main(int argc, char** argv)
                 current_map = &map2;
                 map1.current = GD_FALSE;
                 map2.current = GD_TRUE;
-                fire.active = false;
-                buffalo.active = false;
+                fire.active = GD_FALSE;
+                // buffalo.active = GD_FALSE;
             }
             else
             {
                 current_map = &map1;
                 map1.current = GD_TRUE;
                 map2.current = GD_FALSE;
-                fire.active = true;
-                buffalo.active = true;
+                fire.active = GD_TRUE;
+                // buffalo.active = GD_TRUE;
             }
-            hero.dest_rect.x = (int)hero.starting_pos.x;
-            hero.dest_rect.y = (int)hero.starting_pos.y;
+            hero.e.dest_rect.x = (int)hero.e.starting_pos.x;
+            hero.e.dest_rect.y = (int)hero.e.starting_pos.y;
             camera = camera_starting_pos;
         }
 
         // Center camera over the hero
-        // camera.x = hero.dest_rect.x + hero.dest_rect.w / 2;
-        // camera.y = hero.dest_rect.y + hero.dest_rect.h / 2;
+        // camera.x = hero.e.dest_rect.x + hero.e.dest_rect.w / 2;
+        // camera.y = hero.e.dest_rect.y + hero.e.dest_rect.h / 2;
 
         // Get tile under camera x,y
         // int camera_tile_row = camera.y / Tile::tile_height;
@@ -634,36 +717,36 @@ int main(int argc, char** argv)
         // SDL_RenderFillRect(renderer, &current_tile);
 
         // Check hero/harlod collisions
-        if (overlaps(&hero.bounding_box, &harlod.bounding_box))
+        if (overlaps(&hero.e.bounding_box, &harlod.bounding_box))
         {
             // Draw overlapping bounding boxes
             SDL_Rect overlap_box;
-            if (hero.bounding_box.x > harlod.bounding_box.x)
+            if (hero.e.bounding_box.x > harlod.bounding_box.x)
             {
-                overlap_box.x = hero.bounding_box.x;
+                overlap_box.x = hero.e.bounding_box.x;
                 overlap_box.w = harlod.bounding_box.x + harlod.bounding_box.w -
-                    hero.bounding_box.x;
-                overlap_box.w = min(overlap_box.w, hero.bounding_box.w);
+                    hero.e.bounding_box.x;
+                overlap_box.w = min(overlap_box.w, hero.e.bounding_box.w);
             }
             else
             {
                 overlap_box.x = harlod.bounding_box.x;
-                overlap_box.w = hero.bounding_box.x + hero.bounding_box.w -
+                overlap_box.w = hero.e.bounding_box.x + hero.e.bounding_box.w -
                     harlod.bounding_box.x;
                 overlap_box.w = min(overlap_box.w, harlod.bounding_box.w);
             }
 
-            if (hero.bounding_box.y > harlod.bounding_box.y)
+            if (hero.e.bounding_box.y > harlod.bounding_box.y)
             {
-                overlap_box.y = hero.bounding_box.y;
+                overlap_box.y = hero.e.bounding_box.y;
                 overlap_box.h = harlod.bounding_box.y + harlod.bounding_box.h -
-                    hero.bounding_box.y;
-                overlap_box.h = min(overlap_box.h, hero.bounding_box.h);
+                    hero.e.bounding_box.y;
+                overlap_box.h = min(overlap_box.h, hero.e.bounding_box.h);
             }
             else
             {
                 overlap_box.y = harlod.bounding_box.y;
-                overlap_box.h = hero.bounding_box.y + hero.bounding_box.h -
+                overlap_box.h = hero.e.bounding_box.y + hero.e.bounding_box.h -
                     harlod.bounding_box.y;
                 overlap_box.h = min(overlap_box.h, harlod.bounding_box.h);
             }
@@ -672,10 +755,10 @@ int main(int argc, char** argv)
             // do pixel collision
         }
 
-        set_hero_sprite(&hero);
+        set_hero_sprite(&hero.e);
 
         // Check Harlod/club collisions
-        if (overlaps(&harlod.bounding_box, &club_rect) && now < club_swing_timeout)
+        if (overlaps(&harlod.bounding_box, &hero.club_rect) && now < hero.club_swing_timeout)
         {
             SDL_FillRect(current_map->surface, &harlod.bounding_box, red);
         }
@@ -700,19 +783,33 @@ int main(int argc, char** argv)
         }
 
         // Draw sprites on map
-        hero.draw(current_map->surface);
-        harlod.draw(current_map->surface);
-        buffalo.draw(current_map->surface);
+        entity_draw(&hero.e, current_map->surface);
+        entity_draw(&harlod, current_map->surface);
+        // buffalo.draw(current_map->surface);
 
         // Draw hero club
-        if (now < club_swing_timeout)
+        if (now < hero.club_swing_timeout)
         {
-            SDL_FillRect(current_map->surface, &club_rect, black);
+            SDL_FillRect(current_map->surface, &hero.club_rect, black);
         }
 
         // Draw map
+        // SDL_Rect font_dest = {camera.x, camera.y, font_width * 3, font_height * 3};
+        SDL_BlitSurface(font_surface, NULL, current_map->surface, NULL); //&font_dest);
         SDL_BlitSurface(current_map->surface, &camera, game.window_surface, NULL);
 
+        // Draw Debug text
+        // char* text = "I wrote text!";
+        // for (char* txt = text; *txt != '\0'; ++txt)
+        // {
+        //     stbtt_aligned_quad q;
+        //     stbtt_GetBakedQuad(cdata, 512, 512, *txt - 32, &x, &y, &q, 1);
+        //     int _w = q.x1 - q.x0;
+        //     int _h = q.y1 - q.y0;
+        //     SDL_Rect src = {q.s0 * 512, q.t0 * 512, _w, _h};
+        //     SDL_Rect dest = {camera.x, camera.y, _w, _h};
+        //     SDL_BlitSurface(glyph_surface, &src, current_map->surface, &dest);
+        // }
         SDL_UpdateWindowSurface(game.window);
 
         SDL_Delay(33);
@@ -722,9 +819,8 @@ int main(int argc, char** argv)
     }
 
     // Cleanup
-    SDL_FreeSurface(map1.surface);
-    SDL_FreeSurface(map2.surface);
-    Mix_FreeChunk(mud_sound.chunk);
-    SDL_Quit();
+    map_list_destroy(&map_list);
+    entity_list_destroy(&entity_list);
+    game_destroy(&game);
     return 0;
 }

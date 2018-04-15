@@ -5,14 +5,9 @@ const float PI = 3.14159f;
 
 struct Point
 {
-    float x;
-    float y;
-
-    Point() {}
-    Point(float x, float y);
+    i32 x;
+    i32 y;
 };
-
-Point::Point(float x, float y): x(x), y(y) {}
 
 struct Vec2
 {
@@ -54,5 +49,60 @@ int clamp(int val, int min, int max)
     {
         return val;
     }
+}
+
+// One piece of a circle split in 8 sections
+// The radians start at 2*PI on (1, 0) and go to zero counter-clockwise
+Direction get_direction_from_angle(float angle)
+{
+    float direction_increment = (2.0f * PI) / 8.0f;
+    float half_increment = 0.5f * direction_increment;
+    Direction result;
+
+    if (angle >= (3.0f * PI) / 2.0f - half_increment &&
+        angle < (3.0f * PI) / 2.0f + half_increment)
+    {
+        result = UP;
+    }
+    else if (angle >= (3.0f * PI) / 2.0f + half_increment &&
+             angle < 2.0f * PI - half_increment)
+    {
+        result = UP_RIGHT;
+    }
+    else if (angle >= 2.0f * PI - half_increment ||
+             angle < half_increment)
+    {
+        result = RIGHT;
+    }
+    else if (angle >= half_increment &&
+             angle < PI / 2.0f - half_increment)
+    {
+        result = DOWN_RIGHT;
+    }
+    else if (angle >= PI / 2.0f - half_increment &&
+             angle < PI / 2.0f + half_increment)
+    {
+        result = DOWN;
+    }
+    else if (angle >= PI / 2.0f + half_increment &&
+             angle < PI - half_increment)
+    {
+        result = DOWN_LEFT;
+    }
+    else if (angle >= PI - half_increment &&
+             angle < PI + half_increment)
+    {
+        result = LEFT;
+    }
+    else if (angle >= PI + half_increment &&
+             angle < (3.0f * PI) / half_increment)
+    {
+        result = UP_LEFT;
+    }
+    else
+    {
+        result = DOWN;
+    }
+    return result;
 }
 #endif
