@@ -3,10 +3,9 @@
 * Build
 ** TODO [#C] IMGUI
 ** TODO [#C] Build SDL in debug mode
+** TODO STB Image
 * Gameplay
 ** TODO [#A] Link swing sword animation
-** DONE [#A] Insert camp fire
-   CLOSED: [2018-04-15 Sun 11:34]
 ** TODO [#A] Pixel perfect collision
 *** TODO [#A] Get pixel data from sprite sheet
 ** TODO [#A] One enemy with basic AI and collision

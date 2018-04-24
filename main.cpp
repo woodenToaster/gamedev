@@ -1,3 +1,6 @@
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "stb_truetype.h"
+
 #include "SDL.h"
 #include "SDL_image.h"
 #include "SDL_mixer.h"
@@ -5,9 +8,6 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "math.h"
-
-#define STB_TRUETYPE_IMPLEMENTATION
-#include "stb_truetype.h"
 
 typedef uint8_t u8;
 typedef uint16_t u16;
@@ -43,7 +43,6 @@ enum Direction
 #include "entity.cpp"
 #include "tile_map.cpp"
 
-char ttf_buffer[1 << 25];
 
 bool overlaps(SDL_Rect* r1, SDL_Rect* r2)
 {
@@ -146,6 +145,83 @@ struct Input
     // ...
 };
 
+struct TTFFile
+{
+    char buf[1 << 25];
+    char* fname;
+    u8 initialized;
+};
+
+void ttf_file_read(TTFFile* t)
+{
+    FILE* f = fopen(t->fname, "rb");
+    fread(t->buf, 1, 1 << 25, f);
+    t->initialized = GD_TRUE;
+    fclose(f);
+}
+
+struct TTFFont
+{
+    stbtt_fontinfo font;
+    char* text;
+    f32 size;
+    f32 scale;
+    int width;
+    int height;
+    unsigned char* bitmap;
+    SDL_Surface* surface;
+    TTFFile* ttf_file;
+};
+
+void ttf_font_init(TTFFont* f, TTFFile* file, f32 size)
+{
+    if (!file->initialized)
+    {
+        ttf_file_read(file);
+    }
+
+    f->ttf_file = file;
+    f->size = size;
+
+    stbtt_InitFont(&f->font, (u8*)file->buf, stbtt_GetFontOffsetForIndex((u8*)file->buf, 0));
+    f->scale = stbtt_ScaleForPixelHeight(&f->font, f->size);
+}
+
+void ttf_font_create_bitmap(TTFFont* f, int character)
+{
+    f->bitmap = stbtt_GetCodepointBitmap(&f->font, 0, f->scale, character,
+                                         &f->width, &f->height, 0, 0);
+
+	f->surface = SDL_CreateRGBSurfaceFrom(
+        (void*)f->bitmap,
+        f->width, f->height,
+        8,
+        f->width,
+        0, 0, 0, 0
+    );
+
+    if (!f->surface)
+    {
+        printf("%s\n", SDL_GetError());
+        exit(1);
+    }
+
+    SDL_Color grayscale[256];
+    for(int i = 0; i < 256; i++){
+        grayscale[i].r = (u8)i;
+        grayscale[i].g = (u8)i;
+        grayscale[i].b = (u8)i;
+    }
+    SDL_SetPaletteColors(f->surface->format->palette, grayscale, 0, 256);
+    return f->surface;
+}
+
+void ttf_font_destroy(TTFFont* f)
+{
+    SDL_FreeSurface(f->surface);
+    stbtt_FreeBitmap(f->bitmap, NULL);
+}
+
 int main(int argc, char** argv)
 {
     (void)argc;
@@ -161,48 +237,20 @@ int main(int argc, char** argv)
     }
 
     // Font
-    stbtt_fontinfo font;
-    unsigned char* bitmap;
-    int font_char = 'a';
+    TTFFile ttf_file = {};
+    ttf_file.fname = "fonts/arialbd.ttf";
+
+    TTFFont ttf_font = {};
     float font_size = 100;
-    size_t bytes_read = fread(ttf_buffer, 1, 1 << 25, fopen("fonts/arialbd.ttf", "rb"));
+    ttf_font_init(&ttf_font, &ttf_file, font_size);
+    ttf_font_create_bitmap(&ttf_font, 'R');
 
-    stbtt_InitFont(&font, (u8*)ttf_buffer, stbtt_GetFontOffsetForIndex((u8*)ttf_buffer, 0));
-    int font_width, font_height;
-    bitmap = stbtt_GetCodepointBitmap(&font, 0, stbtt_ScaleForPixelHeight(&font, font_size),
-                                      font_char, &font_width, &font_height, 0, 0);
+    // SDL_Surface* letters[256];
+    // for(int i = 'a'; i <= 'z'; i++)
+    // {
+    //     letters[i] = ttf_font_create_bitmap(&ttf_font, i);
+    // }
 
-    u32* font_bitmap = (u32*)malloc(font_width * font_height * sizeof(u32));
-
-    for (int i = 0; i < font_width * font_height; ++i)
-    {
-        font_bitmap[i] = (u32)bitmap[i];
-    }
-
-	SDL_Surface* font_surface = SDL_CreateRGBSurfaceFrom(
-        (void*)bitmap,
-        font_width,
-        font_height,
-        8,
-        font_width,
-        0, 0, 0, 0
-    );
-
-    SDL_Color grayscale_colors[256];
-    for (int i = 0; i < 256; ++i)
-    {
-        grayscale_colors[i].r = i;
-        grayscale_colors[i].g = i;
-        grayscale_colors[i].b = i;
-    }
-    SDL_Palette* greyscale_palette;
-    free(font_bitmap);
-
-    if (!font_surface)
-    {
-        printf("%s\n", SDL_GetError());
-        exit(1);
-    }
 	// Sound
     Sound mud_sound = {};
     mud_sound.delay = 250;
@@ -240,7 +288,7 @@ int main(int argc, char** argv)
 
     // Colors
     SDL_PixelFormat* window_pixel_format = game.window_surface->format;
-    Uint32 green = SDL_MapRGB(window_pixel_format, 0, 255, 0);
+    Uint32 green = SDL_MapRGB(window_pixel_format, 37, 71, 0);
     Uint32 blue = SDL_MapRGB(window_pixel_format, 0, 0, 255);
     // Uint32 yellow = SDL_MapRGB(window_pixel_format, 235, 245, 65);
     Uint32 brown = SDL_MapRGB(window_pixel_format, 153, 102, 0);
@@ -795,21 +843,9 @@ int main(int argc, char** argv)
 
         // Draw map
         // SDL_Rect font_dest = {camera.x, camera.y, font_width * 3, font_height * 3};
-        SDL_BlitSurface(font_surface, NULL, current_map->surface, NULL); //&font_dest);
+        SDL_BlitSurface(ttf_font.surface, NULL, current_map->surface, NULL); //&font_dest);
         SDL_BlitSurface(current_map->surface, &camera, game.window_surface, NULL);
 
-        // Draw Debug text
-        // char* text = "I wrote text!";
-        // for (char* txt = text; *txt != '\0'; ++txt)
-        // {
-        //     stbtt_aligned_quad q;
-        //     stbtt_GetBakedQuad(cdata, 512, 512, *txt - 32, &x, &y, &q, 1);
-        //     int _w = q.x1 - q.x0;
-        //     int _h = q.y1 - q.y0;
-        //     SDL_Rect src = {q.s0 * 512, q.t0 * 512, _w, _h};
-        //     SDL_Rect dest = {camera.x, camera.y, _w, _h};
-        //     SDL_BlitSurface(glyph_surface, &src, current_map->surface, &dest);
-        // }
         SDL_UpdateWindowSurface(game.window);
 
         SDL_Delay(33);
@@ -819,6 +855,7 @@ int main(int argc, char** argv)
     }
 
     // Cleanup
+    ttf_font_destroy(&ttf_font);
     map_list_destroy(&map_list);
     entity_list_destroy(&entity_list);
     game_destroy(&game);
