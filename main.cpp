@@ -171,6 +171,7 @@ struct TTFFont
     unsigned char* bitmap;
     SDL_Surface* surface;
     TTFFile* ttf_file;
+    SDL_Rect dest;
 };
 
 void ttf_font_init(TTFFont* f, TTFFile* file, f32 size)
@@ -192,6 +193,13 @@ void ttf_font_create_bitmap(TTFFont* f, int character)
     f->bitmap = stbtt_GetCodepointBitmap(&f->font, 0, f->scale, character,
                                          &f->width, &f->height, 0, 0);
 
+    if (f->surface)
+    {
+        SDL_FreeSurface(f->surface);
+        f->surface = NULL;
+
+    }
+
 	f->surface = SDL_CreateRGBSurfaceFrom(
         (void*)f->bitmap,
         f->width, f->height,
@@ -206,6 +214,9 @@ void ttf_font_create_bitmap(TTFFont* f, int character)
         exit(1);
     }
 
+    f->dest.w = f->width;
+    f->dest.h = f->height;
+
     SDL_Color grayscale[256];
     for(int i = 0; i < 256; i++){
         grayscale[i].r = (u8)i;
@@ -213,7 +224,12 @@ void ttf_font_create_bitmap(TTFFont* f, int character)
         grayscale[i].b = (u8)i;
     }
     SDL_SetPaletteColors(f->surface->format->palette, grayscale, 0, 256);
-    return f->surface;
+}
+
+void ttf_font_update_pos(TTFFont* t, int x, int y)
+{
+    t->dest.x = x;
+    t->dest.y = y;
 }
 
 void ttf_font_destroy(TTFFont* f)
@@ -240,15 +256,17 @@ int main(int argc, char** argv)
     TTFFile ttf_file = {};
     ttf_file.fname = "fonts/arialbd.ttf";
 
-    TTFFont ttf_font = {};
-    float font_size = 100;
-    ttf_font_init(&ttf_font, &ttf_file, font_size);
-    ttf_font_create_bitmap(&ttf_font, 'R');
+    TTFFont ttf_tens = {};
+    float font_size = 32;
+    ttf_font_init(&ttf_tens, &ttf_file, font_size);
+
+    TTFFont ttf_ones = {};
+    ttf_font_init(&ttf_ones, &ttf_file, font_size);
 
     // SDL_Surface* letters[256];
     // for(int i = 'a'; i <= 'z'; i++)
     // {
-    //     letters[i] = ttf_font_create_bitmap(&ttf_font, i);
+    //     letters[i] = ttf_font_create_bitmap(&ttf_tens, i);
     // }
 
 	// Sound
@@ -407,12 +425,12 @@ int main(int argc, char** argv)
     // Main loop
     while(game.running)
     {
-        Uint32 now = SDL_GetTicks();
-        // if (SDL_GetTicks() > start + 1000) {
-        //     printf("FPS: %d\n", frames);
-        //     frames = 0;
-        //     start = SDL_GetTicks();
-        // }
+        u32 now = SDL_GetTicks();
+        f32 fps = (1.0f * 1000) / last_frame_duration;
+        char a[4];
+        sprintf(a, "%d\n", (u32)fps);
+        ttf_font_create_bitmap(&ttf_tens, a[0]);
+        ttf_font_create_bitmap(&ttf_ones, a[1]);
 
         // Input
         SDL_Event event;
@@ -754,6 +772,9 @@ int main(int argc, char** argv)
         // int camera_tile_row = camera.y / Tile::tile_height;
         // int camera_tile_col = camera.x / Tile::tile_width;
 
+        ttf_font_update_pos(&ttf_tens, camera.x, camera.y);
+        ttf_font_update_pos(&ttf_ones, camera.x + ((int)font_size / 2), camera.y);
+
         SDL_Rect tile_rect;
         tile_rect.w = Tile::tile_width;
         tile_rect.h = Tile::tile_height;
@@ -841,21 +862,24 @@ int main(int argc, char** argv)
             SDL_FillRect(current_map->surface, &hero.club_rect, black);
         }
 
+        // Draw FPS
+        SDL_BlitSurface(ttf_tens.surface, NULL, current_map->surface, &ttf_tens.dest);
+        SDL_BlitSurface(ttf_ones.surface, NULL, current_map->surface, &ttf_ones.dest);
+
         // Draw map
-        // SDL_Rect font_dest = {camera.x, camera.y, font_width * 3, font_height * 3};
-        SDL_BlitSurface(ttf_font.surface, NULL, current_map->surface, NULL); //&font_dest);
         SDL_BlitSurface(current_map->surface, &camera, game.window_surface, NULL);
 
         SDL_UpdateWindowSurface(game.window);
 
-        SDL_Delay(33);
+        SDL_Delay(26);
         game.frames++;
         fflush(stdout);
         last_frame_duration = SDL_GetTicks() - now;
     }
 
     // Cleanup
-    ttf_font_destroy(&ttf_font);
+    ttf_font_destroy(&ttf_tens);
+    ttf_font_destroy(&ttf_ones);
     map_list_destroy(&map_list);
     entity_list_destroy(&entity_list);
     game_destroy(&game);
