@@ -104,6 +104,27 @@ void Tile::draw(SDL_Surface* map_surface, SDL_Rect* tile_rect)
     }
 }
 
+void map_init(Map* m, u32 cols, u32 rows, Tile** tiles)
+{
+    m->cols = cols;
+    m->rows = rows;
+    m->tiles = tiles;
+    m->width_pixels = cols * Tile::tile_width;
+    m->height_pixels = rows * Tile::tile_height;
+    m->surface = SDL_CreateRGBSurfaceWithFormat(
+        0,
+        m->width_pixels,
+        m->height_pixels,
+        32,
+        SDL_PIXELFORMAT_RGB888
+    );
+    if (!m->surface)
+    {
+        printf("Failed to create surface: %s\n", SDL_GetError());
+        exit(1);
+    }
+}
+
 void map_update_tiles(Map* m, u32 last_frame_duration)
 {
     for (size_t i = 0; i < m->rows * m->cols; ++i)

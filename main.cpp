@@ -209,34 +209,11 @@ int main(int argc, char** argv)
     };
 
     Map map1 = {};
-    map1.cols = 12;
-    map1.rows = 10;
-    map1.tiles = map1_tiles;
+    map_init(&map1, 12, 10, map1_tiles);
     map1.current = GD_TRUE;
-    map1.width_pixels = map1.cols * Tile::tile_width;
-    map1.height_pixels = map1.rows * Tile::tile_height;
-    map1.surface = SDL_CreateRGBSurfaceWithFormat(
-        0,
-        map1.width_pixels,
-        map1.height_pixels,
-        32,
-        SDL_PIXELFORMAT_RGB888
-    );
-
 
     Map map2 = {};
-    map2.cols = 12;
-    map2.rows = 10;
-    map2.tiles = map2_tiles;
-    map2.width_pixels = map2.cols * Tile::tile_width;
-    map2.height_pixels = map2.rows * Tile::tile_height;
-    map2.surface = SDL_CreateRGBSurfaceWithFormat(
-        0,
-        map2.width_pixels,
-        map2.height_pixels,
-        32,
-        SDL_PIXELFORMAT_RGB888
-    );
+    map_init(&map2, 12, 10, map2_tiles);
 
     MapList map_list = {};
     Map* _maps[] = {&map1, &map2};
