@@ -1,44 +1,21 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 #include "SDL.h"
-#include "SDL_image.h"
 #include "SDL_mixer.h"
 #include "stdint.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "math.h"
 
-typedef uint8_t u8;
-typedef uint16_t u16;
-typedef uint32_t u32;
-typedef uint64_t u64;
-typedef int8_t i8;
-typedef int16_t i16;
-typedef int32_t i32;
-typedef int64_t i64;
-typedef float f32;
-typedef double f64;
-
-enum
-{
-    GD_FALSE,
-    GD_TRUE
-};
-
-enum Direction
-{
-    UP,
-    UP_RIGHT,
-    RIGHT,
-    DOWN_RIGHT,
-    DOWN,
-    DOWN_LEFT,
-    LEFT,
-    UP_LEFT
-};
-
+#include "gamedev_definitions.h"
 #include "gamedev_math.h"
+#include "gamedev_font.cpp"
+#include "gamedev_sound.cpp"
+#include "gamedev_asset_loading.cpp"
 #include "sprite_sheet.cpp"
 #include "entity.cpp"
 #include "tile_map.cpp"
@@ -71,7 +48,6 @@ Game::Game(): frames(0), running(GD_TRUE)
 void game_destroy(Game* g)
 {
     Mix_Quit();
-    IMG_Quit();
     SDL_DestroyWindow(g->window);
     SDL_Quit();
 }
@@ -83,7 +59,6 @@ void game_init(Game* g)
         printf("SDL failed to initialize: %s\n", SDL_GetError());
         exit(1);
     }
-    IMG_Init(IMG_INIT_PNG);
 
     if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
     {
@@ -107,136 +82,11 @@ void game_init(Game* g)
     g->initialized = GD_TRUE;
 }
 
-struct Sound
-{
-    u8 is_playing;
-    u32 delay;
-    u64 last_play_time;
-    Mix_Chunk* chunk;
-};
-
-Mix_Chunk* sound_load_wav(const char* fname)
-{
-    Mix_Chunk * result = Mix_LoadWAV(fname);
-    if (result == NULL)
-    {
-        printf("Mix_LoadWAV error: %s\n", Mix_GetError());
-        return NULL;
-    }
-    return result;
-}
-
-void sound_play(Sound* s, u64 now)
-{
-    if (now > s->last_play_time + s->delay)
-    {
-        Mix_PlayChannel(-1, s->chunk, 0);
-        s->last_play_time = SDL_GetTicks();
-    }
-}
-
-void sound_destroy(Sound* s)
-{
-    Mix_FreeChunk(s->chunk);
-}
-
 struct Input
 {
     // ...
 };
 
-struct TTFFile
-{
-    char buf[1 << 25];
-    char* fname;
-    u8 initialized;
-};
-
-void ttf_file_read(TTFFile* t)
-{
-    FILE* f = fopen(t->fname, "rb");
-    fread(t->buf, 1, 1 << 25, f);
-    t->initialized = GD_TRUE;
-    fclose(f);
-}
-
-struct TTFFont
-{
-    stbtt_fontinfo font;
-    char* text;
-    f32 size;
-    f32 scale;
-    int width;
-    int height;
-    unsigned char* bitmap;
-    SDL_Surface* surface;
-    TTFFile* ttf_file;
-    SDL_Rect dest;
-};
-
-void ttf_font_init(TTFFont* f, TTFFile* file, f32 size)
-{
-    if (!file->initialized)
-    {
-        ttf_file_read(file);
-    }
-
-    f->ttf_file = file;
-    f->size = size;
-
-    stbtt_InitFont(&f->font, (u8*)file->buf, stbtt_GetFontOffsetForIndex((u8*)file->buf, 0));
-    f->scale = stbtt_ScaleForPixelHeight(&f->font, f->size);
-}
-
-void ttf_font_create_bitmap(TTFFont* f, int character)
-{
-    f->bitmap = stbtt_GetCodepointBitmap(&f->font, 0, f->scale, character,
-                                         &f->width, &f->height, 0, 0);
-
-    if (f->surface)
-    {
-        SDL_FreeSurface(f->surface);
-        f->surface = NULL;
-
-    }
-
-	f->surface = SDL_CreateRGBSurfaceFrom(
-        (void*)f->bitmap,
-        f->width, f->height,
-        8,
-        f->width,
-        0, 0, 0, 0
-    );
-
-    if (!f->surface)
-    {
-        printf("%s\n", SDL_GetError());
-        exit(1);
-    }
-
-    f->dest.w = f->width;
-    f->dest.h = f->height;
-
-    SDL_Color grayscale[256];
-    for(int i = 0; i < 256; i++){
-        grayscale[i].r = (u8)i;
-        grayscale[i].g = (u8)i;
-        grayscale[i].b = (u8)i;
-    }
-    SDL_SetPaletteColors(f->surface->format->palette, grayscale, 0, 256);
-}
-
-void ttf_font_update_pos(TTFFont* t, int x, int y)
-{
-    t->dest.x = x;
-    t->dest.y = y;
-}
-
-void ttf_font_destroy(TTFFont* f)
-{
-    SDL_FreeSurface(f->surface);
-    stbtt_FreeBitmap(f->bitmap, NULL);
-}
 
 int main(int argc, char** argv)
 {
@@ -262,12 +112,6 @@ int main(int argc, char** argv)
 
     TTFFont ttf_ones = {};
     ttf_font_init(&ttf_ones, &ttf_file, font_size);
-
-    // SDL_Surface* letters[256];
-    // for(int i = 'a'; i <= 'z'; i++)
-    // {
-    //     letters[i] = ttf_font_create_bitmap(&ttf_tens, i);
-    // }
 
 	// Sound
     Sound mud_sound = {};

@@ -32,6 +32,7 @@ struct Tile
     SDL_Rect sprite_rect;
     Animation animation;
     bool active;
+    unsigned char* img_data;
 
     Tile::Tile(Uint32 flags, Uint32 color, const char* sprite_path=NULL);
     ~Tile();

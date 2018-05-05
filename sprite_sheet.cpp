@@ -6,16 +6,14 @@ void sprite_sheet_destroy(SpriteSheet* ss)
     {
         SDL_FreeSurface(ss->sheet);
         ss->sheet = NULL;
+        stbi_image_free(ss->data);
+        ss->data = NULL;
     }
 }
 
 void sprite_sheet_load(SpriteSheet* ss, const char* path, int x_sprites, int y_sprites)
 {
-    SDL_Surface* img = IMG_Load(path);
-    if (!img) {
-        printf("Failed to load image from %s: %s", path, SDL_GetError());
-        exit(1);
-    }
+    SDL_Surface* img = load_png(&ss->data, path);
     ss->sheet = img;
     ss->width = ss->sheet->w;
     ss->height = ss->sheet->h;

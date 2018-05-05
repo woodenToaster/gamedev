@@ -10,5 +10,6 @@ struct SpriteSheet
     int sprite_width;
     int sprite_height;
     SDL_Surface* sheet;
+    unsigned char* data;
 };
 #endif

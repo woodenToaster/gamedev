@@ -22,17 +22,12 @@ Tile::Tile(Uint32 flags, Uint32 color, const char* sprite_path):
     flags(flags),
     color(color),
     sprite_rect(),
-    active(false)
+    active(false),
+    img_data(NULL)
 {
     if (sprite_path)
     {
-        sprite = IMG_Load(sprite_path);
-
-        if (sprite == NULL)
-        {
-            printf("Couldn't load %s: %s\n", sprite_path, SDL_GetError());
-            exit(1);
-        }
+        sprite = load_png(&img_data, sprite_path);
     }
     else
     {
@@ -46,6 +41,8 @@ Tile::~Tile()
     {
         SDL_FreeSurface(sprite);
         sprite = NULL;
+        stbi_image_free(img_data);
+        img_data = NULL;
     }
 }
 

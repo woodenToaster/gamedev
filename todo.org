@@ -3,7 +3,8 @@
 * Build
 ** TODO [#C] IMGUI
 ** TODO [#C] Build SDL in debug mode
-** TODO STB Image
+** DONE STB Image
+   CLOSED: [2018-05-05 Sat 10:14]
 * Gameplay
 ** TODO [#A] Link swing sword animation
 ** TODO [#A] Pixel perfect collision
@@ -14,7 +15,8 @@
 ** TODO [#C] Base building screen
 ** TODO [#C] base building gui
 * Graphics
-** TODO Print text on screen
+** DONE Print text on screen
+   CLOSED: [2018-05-05 Sat 10:15]
 ** TODO [#A] Use 2d acceleration.
 ** TODO [#B] Enable OpenGL
 ** TODO Need z layers for rendering
