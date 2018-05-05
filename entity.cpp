@@ -38,7 +38,7 @@ void entity_draw(Entity* e, SDL_Surface* map)
         SDL_BlitSurface(e->sprite_sheet.sheet, &e->sprite_rect, map, &e->dest_rect);
     }
 
-#ifdef DEBUG
+#if 0
     // Draw bounding box
     SDL_Rect bb_top;
     SDL_Rect bb_bottom;

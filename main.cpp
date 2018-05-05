@@ -24,6 +24,20 @@
 #include "entity.cpp"
 #include "tile_map.cpp"
 
+enum Key
+{
+    KEY_UP,
+    KEY_DOWN,
+    KEY_LEFT,
+    KEY_RIGHT,
+    KEY_LAST
+};
+
+struct Input
+{
+    u8 is_pressed[KEY_LAST];
+};
+
 int main(int argc, char** argv)
 {
     (void)argc;
@@ -33,6 +47,9 @@ int main(int argc, char** argv)
     Game game = {};
     game.running = GD_TRUE;
     game_init(&game, 640, 480);
+
+    // Input
+    Input input = {};
 
     // Font
     TTFFile ttf_file = {};
@@ -59,7 +76,7 @@ int main(int argc, char** argv)
     hero.e.speed = 10;
     hero.e.active = GD_TRUE;
 
-    // Enemy
+    // Harlod
     Entity harlod = {};
     entity_init_sprite_sheet(&harlod, "sprites/Harlod_the_caveman.png", 1, 1);
     entity_set_starting_pos(&harlod, 150, 150);
@@ -68,7 +85,7 @@ int main(int argc, char** argv)
     harlod.speed = 10;
     harlod.active = GD_TRUE;
 
-    // Entity buffalo("sprites/Buffalo.png", 4, 1, 3, 400, 400, 0, 0, 0, 0, GD_TRUE);
+    // Buffalo
     Entity buffalo = {};
     entity_init_sprite_sheet(&buffalo, "sprites/Buffalo.png", 4, 1);
     entity_set_starting_pos(&buffalo, 400, 200);
@@ -83,23 +100,6 @@ int main(int argc, char** argv)
     entity_list.entities = _entities;
     entity_list.count = 2;
 
-    bool right_is_pressed = GD_FALSE;
-    bool left_is_pressed = GD_FALSE;
-    bool up_is_pressed = GD_FALSE;
-    bool down_is_pressed = GD_FALSE;
-
-    // Colors
-    SDL_PixelFormat* window_pixel_format = game.window_surface->format;
-    Uint32 green = SDL_MapRGB(window_pixel_format, 37, 71, 0);
-    Uint32 blue = SDL_MapRGB(window_pixel_format, 0, 0, 255);
-    // Uint32 yellow = SDL_MapRGB(window_pixel_format, 235, 245, 65);
-    Uint32 brown = SDL_MapRGB(window_pixel_format, 153, 102, 0);
-    Uint32 rust = SDL_MapRGB(window_pixel_format, 153, 70, 77);
-    Uint32 magenta = SDL_MapRGB(window_pixel_format, 255, 0, 255);
-    Uint32 black = SDL_MapRGB(window_pixel_format, 0, 0, 0);
-    Uint32 red = SDL_MapRGB(window_pixel_format, 255, 0, 0);
-    Uint32 grey = SDL_MapRGB(window_pixel_format, 135, 135, 135);
-
     // Tiles
     SDL_Rect current_tile;
     current_tile.x = hero.e.dest_rect.x / Tile::tile_width;
@@ -107,16 +107,16 @@ int main(int argc, char** argv)
     current_tile.w = Tile::tile_width;
     current_tile.h = Tile::tile_height;
 
-    Tile w(Tile::SOLID, green);
-    Tile f(Tile::NONE, blue);
-    Tile m(Tile::QUICKSAND, brown);
-    Tile wr(Tile::WARP, rust);
+    Tile w(Tile::SOLID, game.colors[GREEN]);
+    Tile f(Tile::NONE, game.colors[BLUE]);
+    Tile m(Tile::QUICKSAND, game.colors[BROWN]);
+    Tile wr(Tile::WARP, game.colors[RUST]);
 
-    Tile t(Tile::SOLID, green, "sprites/TropicalTree.png");
+    Tile t(Tile::SOLID, game.colors[GREEN], "sprites/TropicalTree.png");
     t.set_sprite_size(64, 64);
     t.active = GD_TRUE;
 
-    Tile fire(Tile::FIRE, grey, "sprites/Campfire.png");
+    Tile fire(Tile::FIRE, game.colors[GREY], "sprites/Campfire.png");
     fire.set_sprite_size(64, 64);
     animation_init(&fire.animation, 11, 100);
     fire.active = GD_TRUE;
@@ -210,22 +210,22 @@ int main(int argc, char** argv)
                 if (key == SDL_SCANCODE_RIGHT || key == SDL_SCANCODE_L ||
                     key == SDL_SCANCODE_D)
                 {
-                    right_is_pressed = GD_FALSE;
+                    input.is_pressed[KEY_RIGHT] = GD_FALSE;
                 }
                 if (key == SDL_SCANCODE_UP || key == SDL_SCANCODE_K ||
                     key == SDL_SCANCODE_W)
                 {
-                    up_is_pressed = GD_FALSE;
+                    input.is_pressed[KEY_UP] = GD_FALSE;
                 }
                 if (key == SDL_SCANCODE_DOWN || key == SDL_SCANCODE_J ||
                     key == SDL_SCANCODE_S)
                 {
-                    down_is_pressed = GD_FALSE;
+                    input.is_pressed[KEY_DOWN] = GD_FALSE;
                 }
                 if (key == SDL_SCANCODE_LEFT || key == SDL_SCANCODE_H ||
                     key == SDL_SCANCODE_A)
                 {
-                    left_is_pressed = GD_FALSE;
+                    input.is_pressed[KEY_LEFT] = GD_FALSE;
                 }
                 if (key == SDL_SCANCODE_F)
                 {
@@ -244,22 +244,22 @@ int main(int argc, char** argv)
                 if (key == SDL_SCANCODE_RIGHT || key == SDL_SCANCODE_L ||
                     key == SDL_SCANCODE_D)
                 {
-                    right_is_pressed = GD_TRUE;
+                    input.is_pressed[KEY_RIGHT] = GD_TRUE;
                 }
                 if (key == SDL_SCANCODE_LEFT || key == SDL_SCANCODE_H ||
                     key == SDL_SCANCODE_A)
                 {
-                    left_is_pressed = GD_TRUE;
+                    input.is_pressed[KEY_LEFT]= GD_TRUE;
                 }
                 if (key == SDL_SCANCODE_UP || key == SDL_SCANCODE_K ||
                     key == SDL_SCANCODE_W)
                 {
-                    up_is_pressed = GD_TRUE;
+                    input.is_pressed[KEY_UP]= GD_TRUE;
                 }
                 if (key == SDL_SCANCODE_DOWN || key == SDL_SCANCODE_J ||
                     key == SDL_SCANCODE_S)
                 {
-                    down_is_pressed = GD_TRUE;
+                    input.is_pressed[KEY_DOWN]= GD_TRUE;
                 }
                 break;
             }
@@ -304,7 +304,7 @@ int main(int argc, char** argv)
 
         map_update_tiles(current_map, last_frame_duration);
 
-        if (right_is_pressed)
+        if (input.is_pressed[KEY_RIGHT])
         {
             hero.e.dest_rect.x += hero.e.speed;
             // hero.sprite_rect.y = 2 * hero.sprite_sheet.sprite_height;
@@ -325,7 +325,7 @@ int main(int argc, char** argv)
                 camera.x += hero.e.speed;
             }
         }
-        if (left_is_pressed)
+        if (input.is_pressed[KEY_LEFT])
         {
             hero.e.dest_rect.x -= hero.e.speed;
             // hero.sprite_rect.y = 1 * hero.sprite_sheet.sprite_height;
@@ -346,9 +346,9 @@ int main(int argc, char** argv)
                 camera.x -= hero.e.speed;
             }
         }
-        if (up_is_pressed)
+        if (input.is_pressed[KEY_UP])
         {
-            if (left_is_pressed || right_is_pressed)
+            if (input.is_pressed[KEY_LEFT] || input.is_pressed[KEY_RIGHT])
             {
                 hero.e.dest_rect.y -= 7;
             }
@@ -373,8 +373,8 @@ int main(int argc, char** argv)
                 camera.y -= hero.e.speed;
             }
         }
-        if (down_is_pressed) {
-            if (left_is_pressed || right_is_pressed)
+        if (input.is_pressed[KEY_DOWN]) {
+            if (input.is_pressed[KEY_LEFT] || input.is_pressed[KEY_RIGHT])
             {
                 hero.e.dest_rect.y += 7;
             }
@@ -581,7 +581,7 @@ int main(int argc, char** argv)
                     harlod.bounding_box.y;
                 overlap_box.h = min(overlap_box.h, harlod.bounding_box.h);
             }
-            SDL_FillRect(current_map->surface, &overlap_box, magenta);
+            SDL_FillRect(current_map->surface, &overlap_box, game.colors[MAGENTA]);
 
             // do pixel collision
         }
@@ -591,7 +591,7 @@ int main(int argc, char** argv)
         // Check Harlod/club collisions
         if (overlaps(&harlod.bounding_box, &hero.club_rect) && now < hero.club_swing_timeout)
         {
-            SDL_FillRect(current_map->surface, &harlod.bounding_box, red);
+            SDL_FillRect(current_map->surface, &harlod.bounding_box, game.colors[RED]);
         }
 
         // Draw
@@ -621,7 +621,7 @@ int main(int argc, char** argv)
         // Draw hero club
         if (now < hero.club_swing_timeout)
         {
-            SDL_FillRect(current_map->surface, &hero.club_rect, black);
+            SDL_FillRect(current_map->surface, &hero.club_rect, game.colors[BLACK]);
         }
 
         // Draw FPS

@@ -1,6 +1,20 @@
 #ifndef GD_GAME_H
 #define GD_GAME_H
 
+enum Colors
+{
+    GREEN,
+    BLUE,
+    YELLOW,
+    BROWN,
+    RUST,
+    MAGENTA,
+    BLACK,
+    RED,
+    GREY,
+    COLOR_LAST
+};
+
 struct Game
 {
     int screen_width;
@@ -10,5 +24,6 @@ struct Game
     u8 initialized;
     SDL_Window* window;
     SDL_Surface* window_surface;
+    u32 colors[COLOR_LAST];
 };
 #endif
