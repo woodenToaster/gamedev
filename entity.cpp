@@ -34,6 +34,7 @@ void entity_draw(Entity* e, SDL_Surface* map)
     // Draw sprite
     if (e->active)
     {
+        e->sprite_rect.x = e->sprite_rect.w * e->animation.current_frame;
         SDL_BlitSurface(e->sprite_sheet.sheet, &e->sprite_rect, map, &e->dest_rect);
     }
 

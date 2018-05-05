@@ -20,29 +20,19 @@
 #include "gamedev_asset_loading.cpp"
 #include "gamedev_game.cpp"
 #include "sprite_sheet.cpp"
+#include "gamedev_animation.cpp"
 #include "entity.cpp"
 #include "tile_map.cpp"
-
-struct Input
-{
-    // ...
-};
 
 int main(int argc, char** argv)
 {
     (void)argc;
     (void)argv;
 
-    Game game;
-    game.frames = 0;
+    // Game
+    Game game = {};
     game.running = GD_TRUE;
     game_init(&game, 640, 480);
-
-    if (!game.initialized)
-    {
-        fprintf(stderr, "Game was not initialized.\n");
-        exit(1);
-    }
 
     // Font
     TTFFile ttf_file = {};
@@ -79,6 +69,14 @@ int main(int argc, char** argv)
     harlod.active = GD_TRUE;
 
     // Entity buffalo("sprites/Buffalo.png", 4, 1, 3, 400, 400, 0, 0, 0, 0, GD_TRUE);
+    Entity buffalo = {};
+    entity_init_sprite_sheet(&buffalo, "sprites/Buffalo.png", 4, 1);
+    entity_set_starting_pos(&buffalo, 400, 200);
+    entity_set_bounding_box_offset(&buffalo, 0, 0, 0, 0);
+    entity_init_dest(&buffalo);
+    buffalo.speed = 10;
+    buffalo.active = GD_TRUE;
+    animation_init(&buffalo.animation, 4, 100);
 
     EntityList entity_list = {};
     Entity* _entities[] = {&hero.e, &harlod};
@@ -120,7 +118,7 @@ int main(int argc, char** argv)
 
     Tile fire(Tile::FIRE, grey, "sprites/Campfire.png");
     fire.set_sprite_size(64, 64);
-    fire.animation.init(11, 100);
+    animation_init(&fire.animation, 11, 100);
     fire.active = GD_TRUE;
 
     // Map
@@ -475,7 +473,8 @@ int main(int argc, char** argv)
 
         entity_update(&hero.e);
         entity_update(&harlod);
-        // entity_update(&buffalo);
+        entity_update(&buffalo);
+        animation_update(&buffalo.animation, last_frame_duration);
 
         int map_coord_x = current_tile.y / Tile::tile_height;
         int map_coord_y = current_tile.x / Tile::tile_width;
@@ -512,7 +511,7 @@ int main(int argc, char** argv)
                 map1.current = GD_FALSE;
                 map2.current = GD_TRUE;
                 fire.active = GD_FALSE;
-                // buffalo.active = GD_FALSE;
+                buffalo.active = GD_FALSE;
             }
             else
             {
@@ -520,7 +519,7 @@ int main(int argc, char** argv)
                 map1.current = GD_TRUE;
                 map2.current = GD_FALSE;
                 fire.active = GD_TRUE;
-                // buffalo.active = GD_TRUE;
+                buffalo.active = GD_TRUE;
             }
             hero.e.dest_rect.x = (int)hero.e.starting_pos.x;
             hero.e.dest_rect.y = (int)hero.e.starting_pos.y;
@@ -617,7 +616,7 @@ int main(int argc, char** argv)
         // Draw sprites on map
         entity_draw(&hero.e, current_map->surface);
         entity_draw(&harlod, current_map->surface);
-        // buffalo.draw(current_map->surface);
+        entity_draw(&buffalo, current_map->surface);
 
         // Draw hero club
         if (now < hero.club_swing_timeout)

@@ -1,16 +1,6 @@
 #ifndef TILE_MAP_H
 #define TILE_MAP_H
 
-struct Animation
-{
-    int total_frames;
-    int current_frame;
-    Uint32 delay;
-    u32 elapsed;
-
-    void init(int frames, int ms_delay);
-    void update(u32 elapsed_last_frame);
-};
 
 struct Tile
 {

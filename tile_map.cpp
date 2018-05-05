@@ -1,22 +1,5 @@
 #include "tile_map.h"
 
-void Animation::init(int frames, int ms_delay)
-{
-    this->total_frames = frames;
-    this->delay = ms_delay;
-}
-
-void Animation::update(Uint32 elapsed_last_frame)
-{
-    elapsed += elapsed_last_frame;
-    if (elapsed > delay) {
-        current_frame++;
-        if (current_frame > total_frames - 1) {
-            current_frame = 0;
-        }
-        elapsed = 0;
-    }
-}
 
 Tile::Tile(Uint32 flags, Uint32 color, const char* sprite_path):
     flags(flags),
@@ -130,7 +113,7 @@ void map_update_tiles(Map* m, u32 last_frame_duration)
     for (size_t i = 0; i < m->rows * m->cols; ++i)
     {
         Tile* tp = m->tiles[i];
-        tp->animation.update(last_frame_duration);
+        animation_update(&tp->animation, last_frame_duration);
     }
 }
 
