@@ -16,77 +16,15 @@
 #include "gamedev_font.cpp"
 #include "gamedev_sound.cpp"
 #include "gamedev_asset_loading.cpp"
+#include "gamedev_game.cpp"
 #include "sprite_sheet.cpp"
 #include "entity.cpp"
 #include "tile_map.cpp"
-
-
-bool overlaps(SDL_Rect* r1, SDL_Rect* r2)
-{
-    bool x_overlap = r1->x + r1->w > r2->x && r1->x < r2->x + r2->w;
-    bool y_overlap = r1->y + r1->h > r2->y && r1->y < r2->y + r2->h;
-    return x_overlap && y_overlap;
-}
-
-struct Game
-{
-    static const int screen_width = 640;
-    static const int screen_height = 480;
-
-    u32 frames = 0;
-    bool running = GD_TRUE;
-    u8 initialized = GD_FALSE;
-    SDL_Window* window;
-    SDL_Surface* window_surface;
-
-    Game();
-};
-
-Game::Game(): frames(0), running(GD_TRUE)
-{}
-
-void game_destroy(Game* g)
-{
-    Mix_Quit();
-    SDL_DestroyWindow(g->window);
-    SDL_Quit();
-}
-
-void game_init(Game* g)
-{
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
-    {
-        printf("SDL failed to initialize: %s\n", SDL_GetError());
-        exit(1);
-    }
-
-    if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
-    {
-        printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
-        exit(1);
-    }
-
-    g->window = SDL_CreateWindow("gamedev",
-                                 30,
-                                 50,
-                                 g->screen_width,
-                                 g->screen_height,
-                                 SDL_WINDOW_SHOWN);
-
-    if (g->window == NULL)
-    {
-        printf("Could not create window: %s\n", SDL_GetError());
-        exit(1);
-    }
-    g->window_surface = SDL_GetWindowSurface(g->window);
-    g->initialized = GD_TRUE;
-}
 
 struct Input
 {
     // ...
 };
-
 
 int main(int argc, char** argv)
 {
@@ -94,7 +32,9 @@ int main(int argc, char** argv)
     (void)argv;
 
     Game game;
-    game_init(&game);
+    game.frames = 0;
+    game.running = GD_TRUE;
+    game_init(&game, 640, 480);
 
     if (!game.initialized)
     {
@@ -230,16 +170,16 @@ int main(int argc, char** argv)
     SDL_Rect camera;
     camera.x = 0;
     camera.y = 0;
-    camera.w = Game::screen_width;
-    camera.h = Game::screen_height;
+    camera.w = game.screen_width;
+    camera.h = game.screen_height;
 
     SDL_Rect camera_starting_pos = camera;
 
     int max_camera_x = map1.width_pixels - camera.w;
     int max_camera_y = map1.height_pixels - camera.h;
 
-    int y_pixel_movement_threshold = Game::screen_height / 2;
-    int x_pixel_movement_threshold = Game::screen_width / 2;
+    int y_pixel_movement_threshold = game.screen_height / 2;
+    int x_pixel_movement_threshold = game.screen_width / 2;
 
     Uint32 last_frame_duration = 0;
 
