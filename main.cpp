@@ -1,3 +1,5 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 
@@ -189,7 +191,7 @@ int main(int argc, char** argv)
         u32 now = SDL_GetTicks();
         f32 fps = (1.0f * 1000) / last_frame_duration;
         char a[4];
-        sprintf(a, "%d\n", (u32)fps);
+        snprintf(a, 4, "%d\n", (u32)fps);
         ttf_font_create_bitmap(&ttf_tens, a[0]);
         ttf_font_create_bitmap(&ttf_ones, a[1]);
 
