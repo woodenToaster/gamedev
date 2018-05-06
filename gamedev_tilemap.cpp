@@ -1,89 +1,98 @@
 #include "gamedev_tilemap.h"
 
-
-Tile::Tile(Uint32 flags, Uint32 color, const char* sprite_path):
-    flags(flags),
-    color(color),
-    sprite_rect(),
-    active(false),
-    img_data(NULL)
+void tile_init(Tile* t, u32 flags, u32 color, const char* sprite_path=NULL)
 {
+    t->flags = flags;
+    t->color = color;
+    t->sprite_rect = {};
+    t->active = GD_FALSE;
+    t->img_data = NULL;
+
     if (sprite_path)
     {
-        sprite = create_surface_from_png(&img_data, sprite_path);
+        t->sprite = create_surface_from_png(&t->img_data, sprite_path);
     }
     else
     {
-        sprite = NULL;
+        t->sprite = NULL;
     }
 }
 
-Tile::~Tile()
+void tile_set_sprite_size(Tile* t, int width, int height)
 {
-    if (sprite)
-    {
-        SDL_FreeSurface(sprite);
-        sprite = NULL;
-        stbi_image_free(img_data);
-        img_data = NULL;
-    }
+    t->sprite_rect.w = width;
+    t->sprite_rect.h = height;
 }
 
-void Tile::set_sprite_size(int width, int height)
+u64 tile_as_u64(Tile* t)
 {
-    sprite_rect.w = width;
-    sprite_rect.h = height;
+    return (u64)t->flags << 32 | t->color;
 }
 
-Uint64 Tile::as_u64()
+u32 tile_get_flags(Tile* t)
 {
-    return (Uint64)flags << 32 | color;
+    return (u32)(tile_as_u64(t) >> 32);
 }
 
-bool Tile::is_fire()
+u8 tile_is_fire(Tile* t)
 {
-    return get_flags() & FIRE;
+    return (u8)(tile_get_flags(t) & tile_properties[TP_FIRE]);
 }
 
-bool Tile::is_solid()
+u8 tile_is_solid(Tile* t)
 {
-    return get_flags() & SOLID;
+    return (u8)(tile_get_flags(t) & tile_properties[TP_SOLID]);
 }
 
-bool Tile::is_slow()
+u8 tile_is_slow(Tile* t)
 {
-    return get_flags() & QUICKSAND;
+    return (u8)(tile_get_flags(t) & tile_properties[TP_QUICKSAND]);
 }
 
-bool Tile::is_warp()
+u8 tile_is_warp(Tile* t)
 {
-    return get_flags() & WARP;
+    return (u8)(tile_get_flags(t) & tile_properties[TP_WARP]);
 }
 
-Uint32 Tile::get_flags()
+
+u32 tile_get_color(Tile* t)
 {
-    return (Uint32)(this->as_u64() >> 32);
+    return (u32)(tile_as_u64(t) & 0xFFFFFFFF);
 }
 
-Uint32 Tile::get_color()
+void tile_draw(Tile* t, SDL_Surface* map_surface, SDL_Rect* tile_rect)
 {
-    return (Uint32)(this->as_u64() & 0xFFFFFFFF);
-}
-
-void Tile::draw(SDL_Surface* map_surface, SDL_Rect* tile_rect)
-{
-    Uint32 fill_color = get_color();
+    u32 fill_color = tile_get_color(t);
     SDL_FillRect(map_surface, tile_rect, fill_color);
 
-    if (sprite && active)
+    if (t->sprite && t->active)
     {
+        // TODO: What is 64?
         SDL_Rect dest = {tile_rect->x, tile_rect->y, 64, 64};
-        // TODO: Hard coded tile dimensions
-        dest.x += (80 - sprite_rect.w) / 2;
-        dest.y += (80 - sprite_rect.h) / 2;
+        dest.x += (t->tile_width - t->sprite_rect.w) / 2;
+        dest.y += (t->tile_height - t->sprite_rect.h) / 2;
 
-        sprite_rect.x = sprite_rect.w * animation.current_frame;
-        SDL_BlitSurface(sprite, &sprite_rect, map_surface, &dest);
+        t->sprite_rect.x = t->sprite_rect.w * t->animation.current_frame;
+        SDL_BlitSurface(t->sprite, &t->sprite_rect, map_surface, &dest);
+    }
+}
+
+void tile_destroy(Tile* t)
+{
+    if (t->sprite)
+    {
+        SDL_FreeSurface(t->sprite);
+        t->sprite = NULL;
+        stbi_image_free(t->img_data);
+        t->img_data = NULL;
+    }
+}
+
+void tile_list_destroy(TileList* tl)
+{
+    for (u32 i = 0; i < tl->count; ++i)
+    {
+        tile_destroy(tl->tiles[i]);
     }
 }
 
@@ -92,8 +101,8 @@ void map_init(Map* m, u32 cols, u32 rows, Tile** tiles)
     m->cols = cols;
     m->rows = rows;
     m->tiles = tiles;
-    m->width_pixels = cols * Tile::tile_width;
-    m->height_pixels = rows * Tile::tile_height;
+    m->width_pixels = cols * tiles[0]->tile_width;
+    m->height_pixels = rows * tiles[0]->tile_height;
     m->surface = SDL_CreateRGBSurfaceWithFormat(
         0,
         m->width_pixels,

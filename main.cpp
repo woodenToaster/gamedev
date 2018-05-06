@@ -90,25 +90,50 @@ int main(int argc, char** argv)
     entity_list.count = 3;
 
     // Tiles
-    SDL_Rect current_tile;
-    current_tile.x = hero.e.dest_rect.x / Tile::tile_width;
-    current_tile.y = hero.e.dest_rect.y / Tile::tile_height;
-    current_tile.w = Tile::tile_width;
-    current_tile.h = Tile::tile_height;
 
-    Tile w(Tile::SOLID, game.colors[GREEN]);
-    Tile f(Tile::NONE, game.colors[BLUE]);
-    Tile m(Tile::QUICKSAND, game.colors[BROWN]);
-    Tile wr(Tile::WARP, game.colors[RUST]);
+    Tile w = {};
+    w.tile_width = w.tile_height = 80;
+    tile_init(&w, tile_properties[TP_SOLID], game.colors[GREEN]);
 
-    Tile t(Tile::SOLID, game.colors[GREEN], "sprites/TropicalTree.png");
-    t.set_sprite_size(64, 64);
+    Tile f = {};
+    f.tile_width = f.tile_height = 80;
+    tile_init(&f, tile_properties[TP_NONE], game.colors[BLUE]);
+
+    Tile m = {};
+    m.tile_width = m.tile_height = 80;
+    tile_init(&m, tile_properties[TP_QUICKSAND], game.colors[BROWN]);
+
+    Tile wr = {};
+    wr.tile_width = wr.tile_height = 80;
+    tile_init(&wr, tile_properties[TP_WARP], game.colors[RUST]);
+
+    Tile t = {};
+    t.tile_width = t.tile_height = 80;
+    tile_init(&t, tile_properties[TP_SOLID], game.colors[GREEN], "sprites/TropicalTree.png");
+    tile_set_sprite_size(&t, 64, 64);
     t.active = GD_TRUE;
 
-    Tile fire(Tile::FIRE, game.colors[GREY], "sprites/Campfire.png");
-    fire.set_sprite_size(64, 64);
+    Tile fire = {};
+    fire.tile_width = fire.tile_height = 80;
+    tile_init(&fire, tile_properties[TP_FIRE], game.colors[GREY], "sprites/Campfire.png");
+    tile_set_sprite_size(&fire, 64, 64);
     animation_init(&fire.animation, 11, 100);
     fire.active = GD_TRUE;
+
+    TileList tile_list = {};
+    Tile* _tiles[] = {&w, &f, &m, &wr, &t, &fire};
+    tile_list.tiles = _tiles;
+    tile_list.count = 6;
+
+    // Assumes every tile on every map is the same size
+    int world_tile_width =  w.tile_width;
+    int world_tile_height = w.tile_height;
+
+    SDL_Rect current_tile;
+    current_tile.x = hero.e.dest_rect.x / world_tile_width;
+    current_tile.y = hero.e.dest_rect.y / world_tile_height;
+    current_tile.w = w.tile_width;
+    current_tile.h = w.tile_height;
 
     // Map
     Tile* map1_tiles[] = {
@@ -465,20 +490,20 @@ int main(int argc, char** argv)
         entity_update(&buffalo);
         animation_update(&buffalo.animation, last_frame_duration);
 
-        int map_coord_x = current_tile.y / Tile::tile_height;
-        int map_coord_y = current_tile.x / Tile::tile_width;
+        int map_coord_x = current_tile.y / world_tile_height;
+        int map_coord_y = current_tile.x / world_tile_width;
         int tile_index = map_coord_x * current_map->cols + map_coord_y;
         Tile* tile_at_hero_position_ptr = current_map->tiles[tile_index];
 
         // Handle all tiles
-        if (tile_at_hero_position_ptr->is_solid())
+        if (tile_is_solid(tile_at_hero_position_ptr))
         {
             // Collisions. Revert to original state
             camera = saved_camera;
             hero.e.dest_rect = saved_position;
             current_tile = saved_tile;
         }
-        if (tile_at_hero_position_ptr->is_slow() && !hero.in_quicksand)
+        if (tile_is_slow(tile_at_hero_position_ptr) && !hero.in_quicksand)
         {
             hero.e.speed -= 8;
             hero.in_quicksand = GD_TRUE;
@@ -492,7 +517,7 @@ int main(int argc, char** argv)
             hero.e.speed += 8;
             hero.in_quicksand = GD_FALSE;
         }
-        if (tile_at_hero_position_ptr->is_warp())
+        if (tile_is_warp(tile_at_hero_position_ptr))
         {
             if (map1.current)
             {
@@ -527,8 +552,8 @@ int main(int argc, char** argv)
         ttf_font_update_pos(&ttf_ones, camera.x + ((int)font_size / 2), camera.y);
 
         SDL_Rect tile_rect;
-        tile_rect.w = Tile::tile_width;
-        tile_rect.h = Tile::tile_height;
+        tile_rect.w = world_tile_width;
+        tile_rect.h = world_tile_height;
 
 
         // Highlight tile under player
@@ -595,10 +620,10 @@ int main(int argc, char** argv)
                 //      col < tile_cols_per_screen + camera_tile_col;
                 //      ++col)
             {
-                tile_rect.x = (int)col * Tile::tile_width;
-                tile_rect.y = (int)row * Tile::tile_height;
+                tile_rect.x = (int)col * world_tile_width;
+                tile_rect.y = (int)row * world_tile_height;
                 Tile* tp = current_map->tiles[row * current_map->cols + col];
-                tp->draw(current_map->surface, &tile_rect);
+                tile_draw(tp, current_map->surface, &tile_rect);
             }
         }
 
@@ -631,6 +656,7 @@ int main(int argc, char** argv)
     // Cleanup
     ttf_font_destroy(&ttf_tens);
     ttf_font_destroy(&ttf_ones);
+    tile_list_destroy(&tile_list);
     map_list_destroy(&map_list);
     entity_list_destroy(&entity_list);
     game_destroy(&game);
