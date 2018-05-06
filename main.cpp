@@ -90,7 +90,6 @@ int main(int argc, char** argv)
     entity_list.count = 3;
 
     // Tiles
-
     Tile w = {};
     w.tile_width = w.tile_height = 80;
     tile_init(&w, tile_properties[TP_SOLID], game.colors[GREEN]);
@@ -177,13 +176,11 @@ int main(int argc, char** argv)
     Map* current_map = &map1;
 
     // Add 1 to each to account for displaying half a tile.
-    // int tile_rows_per_screen = (Game::screen_height / Tile::tile_height) + 1;
-    // int tile_cols_per_screen = (Game::screen_width / Tile::tile_width) + 1;
+    // int tile_rows_per_screen = (game.screen_height / world_tile_height) + 1;
+    // int tile_cols_per_screen = (game.screen_width / world_tile_width) + 1;
 
     // Camera
-    SDL_Rect camera;
-    camera.x = 0;
-    camera.y = 0;
+    SDL_Rect camera = {};
     camera.w = game.screen_width;
     camera.h = game.screen_height;
 
@@ -333,8 +330,7 @@ int main(int argc, char** argv)
                 // hero.current_frame = 0;
             // }
 
-            if (hero.e.dest_rect.x > x_pixel_movement_threshold &&
-                camera.x < max_camera_x)
+            if (hero.e.dest_rect.x > x_pixel_movement_threshold && camera.x < max_camera_x)
             {
                 camera.x += hero.e.speed;
             }
@@ -407,8 +403,7 @@ int main(int argc, char** argv)
             //     hero.current_frame = 0;
             // }
 
-            if (hero.e.dest_rect.y > y_pixel_movement_threshold &&
-                camera.y < max_camera_y)
+            if (hero.e.dest_rect.y > y_pixel_movement_threshold && camera.y < max_camera_y)
             {
                 camera.y += hero.e.speed;
             }
@@ -430,46 +425,7 @@ int main(int argc, char** argv)
             hero.e.sprite_rect.x = 0;
         }
 
-        // Handle club
-        hero.club_rect.x = hero.e.dest_rect.x + hero.e.dest_rect.w / 2;
-        hero.club_rect.y = hero.e.dest_rect.y + hero.e.dest_rect.h / 2;
-
-        switch(hero.e.direction)
-        {
-        case DOWN:
-            hero.club_rect.w = 8;
-            hero.club_rect.x -= 4;
-            hero.club_rect.h = 32;
-            hero.club_rect.y += 16;
-            break;
-        case LEFT:
-            hero.club_rect.w = 32;
-            hero.club_rect.h = 8;
-            hero.club_rect.y += 16;
-            hero.club_rect.x -= 32;
-            break;
-        case RIGHT:
-            hero.club_rect.y += 16;
-            hero.club_rect.w = 32;
-            hero.club_rect.h = 8;
-            break;
-        case UP:
-            hero.club_rect.x -= 4;
-            hero.club_rect.y -= 32;
-            hero.club_rect.w = 8;
-            hero.club_rect.h = 32;
-            break;
-        }
-
-        if (hero.swing_club && now > hero.next_club_swing_delay + 500)
-        {
-            hero.next_club_swing_delay = now;
-            hero.club_swing_timeout = now + 500;
-        }
-        else
-        {
-            hero.swing_club = GD_FALSE;
-        }
+        hero_update_club(&hero, now);
 
         // Clamp camera
         camera.x = clamp(camera.x, 0, max_camera_x);
@@ -482,13 +438,11 @@ int main(int argc, char** argv)
         hero.collision_pt.y = hero.e.dest_rect.y + hero.e.dest_rect.h - 10;
         hero.collision_pt.x = hero.e.dest_rect.x + (i32)(hero.e.dest_rect.w / 2.0);
 
-        current_tile.x = (hero.collision_pt.x / 80) * 80;
-        current_tile.y = (hero.collision_pt.y / 80) * 80;
+        current_tile.x = (hero.collision_pt.x / world_tile_width) * world_tile_width;
+        current_tile.y = (hero.collision_pt.y / world_tile_height) * world_tile_height;
 
-        entity_update(&hero.e);
-        entity_update(&harlod);
-        entity_update(&buffalo);
-        animation_update(&buffalo.animation, last_frame_duration);
+        // Update entities
+        entity_list_update(&entity_list, last_frame_duration);
 
         int map_coord_x = current_tile.y / world_tile_height;
         int map_coord_y = current_tile.x / world_tile_width;
@@ -540,26 +494,12 @@ int main(int argc, char** argv)
             camera = camera_starting_pos;
         }
 
-        // Center camera over the hero
-        // camera.x = hero.e.dest_rect.x + hero.e.dest_rect.w / 2;
-        // camera.y = hero.e.dest_rect.y + hero.e.dest_rect.h / 2;
-
-        // Get tile under camera x,y
-        // int camera_tile_row = camera.y / Tile::tile_height;
-        // int camera_tile_col = camera.x / Tile::tile_width;
-
         ttf_font_update_pos(&ttf_tens, camera.x, camera.y);
         ttf_font_update_pos(&ttf_ones, camera.x + ((int)font_size / 2), camera.y);
 
-        SDL_Rect tile_rect;
+        SDL_Rect tile_rect = {};
         tile_rect.w = world_tile_width;
         tile_rect.h = world_tile_height;
-
-
-        // Highlight tile under player
-        // SDL_FillRect(current_map->surface, &current_tile, yellow);
-        // SDL_SetRenderDrawColor(renderer, 235, 245, 65, 255);
-        // SDL_RenderFillRect(renderer, &current_tile);
 
         // Check hero/harlod collisions
         if (overlaps(&hero.e.bounding_box, &harlod.bounding_box))
@@ -611,14 +551,8 @@ int main(int argc, char** argv)
         // Draw
         // TODO: Don't redraw the whole map on every frame
         for (size_t row = 0; row < current_map->rows; ++row)
-            // for (int row = camera_tile_row;
-            //      row < tile_rows_per_screen + camera_tile_row;
-            //      ++row)
         {
             for (size_t col = 0; col < current_map->cols; ++col)
-                // for (int col = camera_tile_col;
-                //      col < tile_cols_per_screen + camera_tile_col;
-                //      ++col)
             {
                 tile_rect.x = (int)col * world_tile_width;
                 tile_rect.y = (int)row * world_tile_height;
@@ -627,16 +561,14 @@ int main(int argc, char** argv)
             }
         }
 
+        // Highlight tile under player
+        SDL_FillRect(current_map->surface, &current_tile, game.colors[YELLOW]);
+
         // Draw sprites on map
-        entity_draw(&hero.e, current_map->surface);
-        entity_draw(&harlod, current_map->surface);
-        entity_draw(&buffalo, current_map->surface);
+        entity_list_draw(&entity_list, current_map->surface);
 
         // Draw hero club
-        if (now < hero.club_swing_timeout)
-        {
-            SDL_FillRect(current_map->surface, &hero.club_rect, game.colors[BLACK]);
-        }
+        hero_draw_club(&hero, now, current_map->surface, game.colors[BLACK]);
 
         // Draw FPS
         SDL_BlitSurface(ttf_tens.surface, NULL, current_map->surface, &ttf_tens.dest);
@@ -660,5 +592,6 @@ int main(int argc, char** argv)
     map_list_destroy(&map_list);
     entity_list_destroy(&entity_list);
     game_destroy(&game);
+
     return 0;
 }

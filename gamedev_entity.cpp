@@ -75,12 +75,14 @@ void entity_draw(Entity* e, SDL_Surface* map)
 #endif
 }
 
-void entity_update(Entity* e)
+void entity_update(Entity* e, u32 last_frame_duration)
 {
     e->bounding_box.x = e->dest_rect.x + e->bb_x_offset;
     e->bounding_box.y = e->dest_rect.y + e->bb_y_offset;
     e->bounding_box.w = e->dest_rect.w - e->bb_w_offset;
     e->bounding_box.h = e->dest_rect.h - e->bb_h_offset;
+
+    animation_update(&e->animation, last_frame_duration);
 }
 
 void entity_destroy(Entity* e)
@@ -129,11 +131,78 @@ void set_hero_sprite(Entity* e)
     }
 }
 
+void entity_list_update(EntityList* el, u32 last_frame_duration)
+{
+    for (u32 i = 0; i < el->count; ++i)
+    {
+        entity_update(el->entities[i], last_frame_duration);
+    }
+}
+
+void entity_list_draw(EntityList* el, SDL_Surface* map_surface)
+{
+    for (u32 i = 0; i < el->count; ++i)
+    {
+        entity_draw(el->entities[i], map_surface);
+    }
+}
+
 void entity_list_destroy(EntityList* el)
 {
     for (u32 i = 0; i < el->count; ++i)
     {
         entity_destroy(el->entities[i]);
+    }
+}
+
+void hero_update_club(Hero* h, u32 now)
+{
+    h->club_rect.x = h->e.dest_rect.x + h->e.dest_rect.w / 2;
+    h->club_rect.y = h->e.dest_rect.y + h->e.dest_rect.h / 2;
+
+    switch(h->e.direction)
+    {
+    case DOWN:
+        h->club_rect.w = 8;
+        h->club_rect.x -= 4;
+        h->club_rect.h = 32;
+        h->club_rect.y += 16;
+        break;
+    case LEFT:
+        h->club_rect.w = 32;
+        h->club_rect.h = 8;
+        h->club_rect.y += 16;
+        h->club_rect.x -= 32;
+        break;
+    case RIGHT:
+        h->club_rect.y += 16;
+        h->club_rect.w = 32;
+        h->club_rect.h = 8;
+        break;
+    case UP:
+        h->club_rect.x -= 4;
+        h->club_rect.y -= 32;
+        h->club_rect.w = 8;
+        h->club_rect.h = 32;
+        break;
+    }
+
+    if (h->swing_club && now > h->next_club_swing_delay + 500)
+    {
+        h->next_club_swing_delay = now;
+        h->club_swing_timeout = now + 500;
+    }
+    else
+    {
+        h->swing_club = GD_FALSE;
+    }
+}
+
+void hero_draw_club(Hero* h, u32 now, SDL_Surface* map_surface, u32 color)
+{
+    if (now < h->club_swing_timeout)
+    {
+        SDL_FillRect(map_surface, &h->club_rect, color);
     }
 }
 
