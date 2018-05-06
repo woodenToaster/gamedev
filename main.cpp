@@ -22,10 +22,10 @@
 #include "gamedev_game.cpp"
 #include "gamedev_sprite_sheet.cpp"
 #include "gamedev_animation.cpp"
+#include "gamedev_input.h"
 #include "gamedev_entity.cpp"
 #include "gamedev_tilemap.cpp"
-
-#include "gamedev_input.h"
+#include "gamedev_camera.cpp"
 
 int main(int argc, char** argv)
 {
@@ -57,13 +57,22 @@ int main(int argc, char** argv)
     mud_sound.chunk = sound_load_wav("sounds/mud_walk.wav");
 
     // Hero
+    // Hero hero = {};
+    // entity_init_sprite_sheet(&hero.e, "sprites/link_walking.png", 11, 5);
+    // entity_set_starting_pos(&hero.e, 85, 85);
+    // entity_set_bounding_box_offset(&hero.e, 6, 5, 12, 7);
+    // entity_init_dest(&hero.e);
+    // hero.e.speed = 10;
+    // hero.e.active = GD_TRUE;
+
     Hero hero = {};
-    entity_init_sprite_sheet(&hero.e, "sprites/link_walking.png", 11, 5);
+    entity_init_sprite_sheet(&hero.e, "sprites/dude.png", 4, 4);
     entity_set_starting_pos(&hero.e, 85, 85);
     entity_set_bounding_box_offset(&hero.e, 6, 5, 12, 7);
     entity_init_dest(&hero.e);
     hero.e.speed = 10;
     hero.e.active = GD_TRUE;
+    animation_init(&hero.e.animation, 4, 100);
 
     // Harlod
     Entity harlod = {};
@@ -180,17 +189,15 @@ int main(int argc, char** argv)
     // int tile_cols_per_screen = (game.screen_width / world_tile_width) + 1;
 
     // Camera
-    SDL_Rect camera = {};
-    camera.w = game.screen_width;
-    camera.h = game.screen_height;
-
-    SDL_Rect camera_starting_pos = camera;
-
-    int max_camera_x = map1.width_pixels - camera.w;
-    int max_camera_y = map1.height_pixels - camera.h;
-
-    int y_pixel_movement_threshold = game.screen_height / 2;
-    int x_pixel_movement_threshold = game.screen_width / 2;
+    Camera camera = {};
+    camera.viewport = {};
+    camera.viewport.w = game.screen_width;
+    camera.viewport.h = game.screen_height;
+    camera.starting_pos = camera.viewport;
+    camera.max_x = map1.width_pixels - camera.viewport.w;
+    camera.max_y = map1.height_pixels - camera.viewport.h;
+    camera.y_pixel_movement_threshold = game.screen_height / 2;
+    camera.x_pixel_movement_threshold = game.screen_width / 2;
 
     Uint32 last_frame_duration = 0;
 
@@ -274,140 +281,48 @@ int main(int argc, char** argv)
                 }
                 break;
             }
-            case SDL_MOUSEMOTION:
-            {
-                // get vector from center of player to mouse cursor
-                Point hero_center = {
-                    hero.e.dest_rect.x + (i32)(0.5 * hero.e.dest_rect.w),
-                    hero.e.dest_rect.y + (i32)(0.5 * hero.e.dest_rect.h)
-                };
-                Vec2 mouse_relative_to_hero;
-                mouse_relative_to_hero.x = hero_center.x - ((float)event.motion.x + camera.x);
-                mouse_relative_to_hero.y = hero_center.y - ((float)event.motion.y + camera.y);
+            // case SDL_MOUSEMOTION:
+            // {
+            //     // get vector from center of player to mouse cursor
+            //     Point hero_center = {
+            //         hero.e.dest_rect.x + (i32)(0.5 * hero.e.dest_rect.w),
+            //         hero.e.dest_rect.y + (i32)(0.5 * hero.e.dest_rect.h)
+            //     };
+            //     Vec2 mouse_relative_to_hero;
+            //     mouse_relative_to_hero.x = hero_center.x - ((float)event.motion.x + camera.x);
+            //     mouse_relative_to_hero.y = hero_center.y - ((float)event.motion.y + camera.y);
 
-                float angle = 0;
-                if (mouse_relative_to_hero.x != 0 && mouse_relative_to_hero.y != 0)
-                {
-                    angle = atan2f(mouse_relative_to_hero.y, mouse_relative_to_hero.x) + PI;
-                }
+            //     float angle = 0;
+            //     if (mouse_relative_to_hero.x != 0 && mouse_relative_to_hero.y != 0)
+            //     {
+            //         angle = atan2f(mouse_relative_to_hero.y, mouse_relative_to_hero.x) + PI;
+            //     }
 
-                if (angle != 0)
-                {
-                    hero.e.direction = get_direction_from_angle(angle);
-                }
-                break;
-            }
-            case SDL_MOUSEBUTTONUP:
-            {
-                if (event.button.button == SDL_BUTTON_LEFT)
-                {
-                    hero.swing_club = GD_TRUE;
-                }
-                break;
-            }
+            //     if (angle != 0)
+            //     {
+            //         hero.e.direction = get_direction_from_angle(angle);
+            //     }
+            //     break;
+            // }
+            // case SDL_MOUSEBUTTONUP:
+            // {
+            //     if (event.button.button == SDL_BUTTON_LEFT)
+            //     {
+            //         hero.swing_club = GD_TRUE;
+            //     }
+            //     break;
+            // }
             }
         }
 
         // Update
         SDL_Rect saved_position = hero.e.dest_rect;
-        SDL_Rect saved_camera = camera;
+        SDL_Rect saved_camera = camera.viewport;
         SDL_Rect saved_tile = current_tile;
 
         map_update_tiles(current_map, last_frame_duration);
-
-        if (input.is_pressed[KEY_RIGHT])
-        {
-            hero.e.dest_rect.x += hero.e.speed;
-            // hero.sprite_rect.y = 2 * hero.sprite_sheet.sprite_height;
-            // hero.sprite_rect.x = hero.current_frame * hero.sprite_sheet.sprite_width;
-            // if (now > next_frame_delay + 125)
-            // {
-                // hero.current_frame++;
-                // next_frame_delay = now;
-            // }
-            // if (hero.current_frame > hero.num_x_sprites - 1)
-            // {
-                // hero.current_frame = 0;
-            // }
-
-            if (hero.e.dest_rect.x > x_pixel_movement_threshold && camera.x < max_camera_x)
-            {
-                camera.x += hero.e.speed;
-            }
-        }
-        if (input.is_pressed[KEY_LEFT])
-        {
-            hero.e.dest_rect.x -= hero.e.speed;
-            // hero.sprite_rect.y = 1 * hero.sprite_sheet.sprite_height;
-            // hero.sprite_rect.x = hero.current_frame * hero.sprite_sheet.sprite_width;
-
-            // if (now > next_frame_delay + 125) {
-            //     hero.current_frame++;
-            //     next_frame_delay = now;
-            // }
-            // if (hero.current_frame > hero.num_x_sprites - 1) {
-            //     hero.current_frame = 0;
-            // }
-
-            if (hero.e.dest_rect.x <
-                map1.width_pixels - x_pixel_movement_threshold &&
-                camera.x > 0)
-            {
-                camera.x -= hero.e.speed;
-            }
-        }
-        if (input.is_pressed[KEY_UP])
-        {
-            if (input.is_pressed[KEY_LEFT] || input.is_pressed[KEY_RIGHT])
-            {
-                hero.e.dest_rect.y -= 7;
-            }
-            else
-            {
-                hero.e.dest_rect.y -= hero.e.speed;
-            }
-            // hero.sprite_rect.y = 3 * hero.sprite_sheet.sprite_height;
-            // hero.sprite_rect.x = hero.current_frame * hero.sprite_sheet.sprite_height;
-            // if (now > next_frame_delay + 125) {
-            //     hero.current_frame++;
-            //     next_frame_delay = now;
-            // }
-            // if (hero.current_frame > hero.num_x_sprites - 1) {
-            //     hero.current_frame = 0;
-            // }
-
-            if (hero.e.dest_rect.y <
-                map1.height_pixels - y_pixel_movement_threshold &&
-                camera.y > 0)
-            {
-                camera.y -= hero.e.speed;
-            }
-        }
-        if (input.is_pressed[KEY_DOWN]) {
-            if (input.is_pressed[KEY_LEFT] || input.is_pressed[KEY_RIGHT])
-            {
-                hero.e.dest_rect.y += 7;
-            }
-            else
-            {
-                hero.e.dest_rect.y += hero.e.speed;
-            }
-            // hero.sprite_rect.y = 0 * hero.sprite_sheet.sprite_height;
-            // hero.sprite_rect.x = hero.current_frame * hero.sprite_sheet.sprite_width;
-            // if (now > next_frame_delay + 125) {
-            //     hero.current_frame++;
-            //     next_frame_delay = now;
-            // }
-
-            // if (hero.current_frame > hero.num_x_sprites - 1) {
-            //     hero.current_frame = 0;
-            // }
-
-            if (hero.e.dest_rect.y > y_pixel_movement_threshold && camera.y < max_camera_y)
-            {
-                camera.y += hero.e.speed;
-            }
-        }
+        hero_update(&hero, &input, &camera, current_map);
+        hero_update_club(&hero, now);
 
         if (saved_position.x != hero.e.dest_rect.x ||
             saved_position.y != hero.e.dest_rect.y)
@@ -425,24 +340,23 @@ int main(int argc, char** argv)
             hero.e.sprite_rect.x = 0;
         }
 
-        hero_update_club(&hero, now);
+        // Update camera
+        // camera_center_over_point(&camera, &hero.e.dest_rect);
+        camera.viewport.x = clamp(camera.viewport.x, 0, camera.max_x);
+        camera.viewport.y = clamp(camera.viewport.y, 0, camera.max_y);
 
-        // Clamp camera
-        camera.x = clamp(camera.x, 0, max_camera_x);
-        camera.y = clamp(camera.y, 0, max_camera_y);
-
-        // Clamp hero
-        hero.e.dest_rect.x = clamp(hero.e.dest_rect.x, 0, map1.width_pixels - hero.e.dest_rect.w);
-        hero.e.dest_rect.y = clamp(hero.e.dest_rect.y, 0, map1.height_pixels - hero.e.dest_rect.h);
-
-        hero.collision_pt.y = hero.e.dest_rect.y + hero.e.dest_rect.h - 10;
-        hero.collision_pt.x = hero.e.dest_rect.x + (i32)(hero.e.dest_rect.w / 2.0);
+        hero_clamp_to_map(&hero, current_map);
+        hero_set_collision_point(&hero);
 
         current_tile.x = (hero.collision_pt.x / world_tile_width) * world_tile_width;
         current_tile.y = (hero.collision_pt.y / world_tile_height) * world_tile_height;
 
         // Update entities
-        entity_list_update(&entity_list, last_frame_duration);
+        entity_list_update(&entity_list);
+
+        // Update animations
+        animation_update(&buffalo.animation, last_frame_duration, GD_TRUE);
+        animation_update(&hero.e.animation, last_frame_duration, hero.is_moving);
 
         int map_coord_x = current_tile.y / world_tile_height;
         int map_coord_y = current_tile.x / world_tile_width;
@@ -453,13 +367,13 @@ int main(int argc, char** argv)
         if (tile_is_solid(tile_at_hero_position_ptr))
         {
             // Collisions. Revert to original state
-            camera = saved_camera;
+            camera.viewport = saved_camera;
             hero.e.dest_rect = saved_position;
             current_tile = saved_tile;
         }
         if (tile_is_slow(tile_at_hero_position_ptr) && !hero.in_quicksand)
         {
-            hero.e.speed -= 8;
+            hero.e.speed -= 9;
             hero.in_quicksand = GD_TRUE;
             if (hero.is_moving)
             {
@@ -468,7 +382,7 @@ int main(int argc, char** argv)
         }
         else if (hero.in_quicksand)
         {
-            hero.e.speed += 8;
+            hero.e.speed += 9;
             hero.in_quicksand = GD_FALSE;
         }
         if (tile_is_warp(tile_at_hero_position_ptr))
@@ -491,11 +405,11 @@ int main(int argc, char** argv)
             }
             hero.e.dest_rect.x = (int)hero.e.starting_pos.x;
             hero.e.dest_rect.y = (int)hero.e.starting_pos.y;
-            camera = camera_starting_pos;
+            camera.viewport = camera.starting_pos;
         }
 
-        ttf_font_update_pos(&ttf_tens, camera.x, camera.y);
-        ttf_font_update_pos(&ttf_ones, camera.x + ((int)font_size / 2), camera.y);
+        ttf_font_update_pos(&ttf_tens, camera.viewport.x, camera.viewport.y);
+        ttf_font_update_pos(&ttf_ones, camera.viewport.x + ((int)font_size / 2), camera.viewport.y);
 
         SDL_Rect tile_rect = {};
         tile_rect.w = world_tile_width;
@@ -540,7 +454,7 @@ int main(int argc, char** argv)
             // do pixel collision
         }
 
-        set_hero_sprite(&hero.e);
+        // set_hero_sprite(&hero.e);
 
         // Check Harlod/club collisions
         if (overlaps(&harlod.bounding_box, &hero.club_rect) && now < hero.club_swing_timeout)
@@ -562,7 +476,7 @@ int main(int argc, char** argv)
         }
 
         // Highlight tile under player
-        SDL_FillRect(current_map->surface, &current_tile, game.colors[YELLOW]);
+        // SDL_FillRect(current_map->surface, &current_tile, game.colors[YELLOW]);
 
         // Draw sprites on map
         entity_list_draw(&entity_list, current_map->surface);
@@ -575,7 +489,7 @@ int main(int argc, char** argv)
         SDL_BlitSurface(ttf_ones.surface, NULL, current_map->surface, &ttf_ones.dest);
 
         // Draw map
-        SDL_BlitSurface(current_map->surface, &camera, game.window_surface, NULL);
+        SDL_BlitSurface(current_map->surface, &camera.viewport, game.window_surface, NULL);
 
         SDL_UpdateWindowSurface(game.window);
 

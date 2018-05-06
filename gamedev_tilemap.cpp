@@ -122,7 +122,7 @@ void map_update_tiles(Map* m, u32 last_frame_duration)
     for (size_t i = 0; i < m->rows * m->cols; ++i)
     {
         Tile* tp = m->tiles[i];
-        animation_update(&tp->animation, last_frame_duration);
+        animation_update(&tp->animation, last_frame_duration, tp->active);
     }
 }
 

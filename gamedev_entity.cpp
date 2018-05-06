@@ -1,4 +1,5 @@
 #include "gamedev_entity.h"
+#include "gamedev_camera.h"
 
 void entity_init_sprite_sheet(Entity* e, const char* path, int num_x, int num_y)
 {
@@ -75,14 +76,12 @@ void entity_draw(Entity* e, SDL_Surface* map)
 #endif
 }
 
-void entity_update(Entity* e, u32 last_frame_duration)
+void entity_update(Entity* e)
 {
     e->bounding_box.x = e->dest_rect.x + e->bb_x_offset;
     e->bounding_box.y = e->dest_rect.y + e->bb_y_offset;
     e->bounding_box.w = e->dest_rect.w - e->bb_w_offset;
     e->bounding_box.h = e->dest_rect.h - e->bb_h_offset;
-
-    animation_update(&e->animation, last_frame_duration);
 }
 
 void entity_destroy(Entity* e)
@@ -90,7 +89,32 @@ void entity_destroy(Entity* e)
     sprite_sheet_destroy(&e->sprite_sheet);
 }
 
-void set_hero_sprite(Entity* e)
+
+void entity_list_update(EntityList* el)
+{
+    for (u32 i = 0; i < el->count; ++i)
+    {
+        entity_update(el->entities[i]);
+    }
+}
+
+void entity_list_draw(EntityList* el, SDL_Surface* map_surface)
+{
+    for (u32 i = 0; i < el->count; ++i)
+    {
+        entity_draw(el->entities[i], map_surface);
+    }
+}
+
+void entity_list_destroy(EntityList* el)
+{
+    for (u32 i = 0; i < el->count; ++i)
+    {
+        entity_destroy(el->entities[i]);
+    }
+}
+
+void hero_set_sprite(Entity* e)
 {
     switch (e->direction)
     {
@@ -131,27 +155,66 @@ void set_hero_sprite(Entity* e)
     }
 }
 
-void entity_list_update(EntityList* el, u32 last_frame_duration)
+// TODO: Shouldn't need the camera and map width/height in here
+void hero_update(Hero* h, Input* input, Camera* camera, Map* map)
 {
-    for (u32 i = 0; i < el->count; ++i)
+    if (input->is_pressed[KEY_RIGHT])
     {
-        entity_update(el->entities[i], last_frame_duration);
-    }
-}
+        h->e.dest_rect.x += h->e.speed;
+        h->e.sprite_rect.y = 2 * h->e.sprite_sheet.sprite_height;
 
-void entity_list_draw(EntityList* el, SDL_Surface* map_surface)
-{
-    for (u32 i = 0; i < el->count; ++i)
-    {
-        entity_draw(el->entities[i], map_surface);
+        if (h->e.dest_rect.x > camera->x_pixel_movement_threshold &&
+            camera->viewport.x < camera->max_x)
+        {
+            camera->viewport.x += h->e.speed;
+        }
     }
-}
-
-void entity_list_destroy(EntityList* el)
-{
-    for (u32 i = 0; i < el->count; ++i)
+    if (input->is_pressed[KEY_LEFT])
     {
-        entity_destroy(el->entities[i]);
+        h->e.dest_rect.x -= h->e.speed;
+        h->e.sprite_rect.y = 1 * h->e.sprite_sheet.sprite_height;
+        if (h->e.dest_rect.x <
+            map->width_pixels - camera->x_pixel_movement_threshold &&
+            camera->viewport.x > 0)
+        {
+            camera->viewport.x -= h->e.speed;
+        }
+    }
+    if (input->is_pressed[KEY_UP])
+    {
+        if (input->is_pressed[KEY_LEFT] || input->is_pressed[KEY_RIGHT])
+        {
+            h->e.dest_rect.y -= 7;
+        }
+        else
+        {
+            h->e.dest_rect.y -= h->e.speed;
+        }
+        h->e.sprite_rect.y = 3 * h->e.sprite_sheet.sprite_height;
+
+        if (h->e.dest_rect.y <
+            map->height_pixels - camera->y_pixel_movement_threshold &&
+            camera->viewport.y > 0)
+        {
+            camera->viewport.y -= h->e.speed;
+        }
+    }
+    if (input->is_pressed[KEY_DOWN]) {
+        if (input->is_pressed[KEY_LEFT] || input->is_pressed[KEY_RIGHT])
+        {
+            h->e.dest_rect.y += 7;
+        }
+        else
+        {
+            h->e.dest_rect.y += h->e.speed;
+        }
+        h->e.sprite_rect.y = 0 * h->e.sprite_sheet.sprite_height;
+
+        if (h->e.dest_rect.y > camera->y_pixel_movement_threshold &&
+            camera->viewport.y < camera->max_y)
+        {
+            camera->viewport.y += h->e.speed;
+        }
     }
 }
 
@@ -196,6 +259,18 @@ void hero_update_club(Hero* h, u32 now)
     {
         h->swing_club = GD_FALSE;
     }
+}
+
+void hero_clamp_to_map(Hero* h, Map* map)
+{
+    h->e.dest_rect.x = clamp(h->e.dest_rect.x, 0, map->width_pixels - h->e.dest_rect.w);
+    h->e.dest_rect.y = clamp(h->e.dest_rect.y, 0, map->height_pixels - h->e.dest_rect.h);
+}
+
+void hero_set_collision_point(Hero* h)
+{
+    h->collision_pt.y = h->e.dest_rect.y + h->e.dest_rect.h - 10;
+    h->collision_pt.x = h->e.dest_rect.x + (i32)(h->e.dest_rect.w / 2.0);
 }
 
 void hero_draw_club(Hero* h, u32 now, SDL_Surface* map_surface, u32 color)
