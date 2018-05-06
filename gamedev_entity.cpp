@@ -39,7 +39,7 @@ void entity_draw(Entity* e, SDL_Surface* map)
         SDL_BlitSurface(e->sprite_sheet.sheet, &e->sprite_rect, map, &e->dest_rect);
     }
 
-#if 0
+#ifdef DEBUG
     // Draw bounding box
     SDL_Rect bb_top;
     SDL_Rect bb_bottom;
@@ -68,12 +68,51 @@ void entity_draw(Entity* e, SDL_Surface* map)
     bb_bottom.h = bb_line_width;
 
     // TODO: Need global access to colors
-    Uint32 magenta = 16711935;
-    SDL_FillRect(map, &bb_top, magenta);
-    SDL_FillRect(map, &bb_left, magenta);
-    SDL_FillRect(map, &bb_right, magenta);
-    SDL_FillRect(map, &bb_bottom, magenta);
+    u32 magenta = 16711935;
+    if (e->active)
+    {
+        SDL_FillRect(map, &bb_top, magenta);
+        SDL_FillRect(map, &bb_left, magenta);
+        SDL_FillRect(map, &bb_right, magenta);
+        SDL_FillRect(map, &bb_bottom, magenta);
+    }
 #endif
+}
+
+SDL_Rect entity_get_overlap_box(Entity* e1, Entity* e2)
+{
+    SDL_Rect overlap_box;
+    if (e1->bounding_box.x > e2->bounding_box.x)
+    {
+        overlap_box.x = e1->bounding_box.x;
+        overlap_box.w = e2->bounding_box.x + e2->bounding_box.w -
+            e1->bounding_box.x;
+        overlap_box.w = min(overlap_box.w, e1->bounding_box.w);
+    }
+    else
+    {
+        overlap_box.x = e2->bounding_box.x;
+        overlap_box.w = e1->bounding_box.x + e1->bounding_box.w -
+            e2->bounding_box.x;
+        overlap_box.w = min(overlap_box.w, e2->bounding_box.w);
+    }
+
+    if (e1->bounding_box.y > e2->bounding_box.y)
+    {
+        overlap_box.y = e1->bounding_box.y;
+        overlap_box.h = e2->bounding_box.y + e2->bounding_box.h -
+            e1->bounding_box.y;
+        overlap_box.h = min(overlap_box.h, e1->bounding_box.h);
+    }
+    else
+    {
+        overlap_box.y = e2->bounding_box.y;
+        overlap_box.h = e1->bounding_box.y + e1->bounding_box.h -
+            e2->bounding_box.y;
+        overlap_box.h = min(overlap_box.h, e2->bounding_box.h);
+    }
+
+    return overlap_box;
 }
 
 void entity_update(Entity* e)

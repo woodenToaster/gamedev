@@ -184,22 +184,11 @@ int main(int argc, char** argv)
 
     Map* current_map = &map1;
 
-    // Add 1 to each to account for displaying half a tile.
-    // int tile_rows_per_screen = (game.screen_height / world_tile_height) + 1;
-    // int tile_cols_per_screen = (game.screen_width / world_tile_width) + 1;
-
     // Camera
     Camera camera = {};
-    camera.viewport = {};
-    camera.viewport.w = game.screen_width;
-    camera.viewport.h = game.screen_height;
-    camera.starting_pos = camera.viewport;
-    camera.max_x = map1.width_pixels - camera.viewport.w;
-    camera.max_y = map1.height_pixels - camera.viewport.h;
-    camera.y_pixel_movement_threshold = game.screen_height / 2;
-    camera.x_pixel_movement_threshold = game.screen_width / 2;
+    camera_init(&camera, &game, current_map);
 
-    Uint32 last_frame_duration = 0;
+    u32 last_frame_duration = 0;
 
     // Main loop
     while(game.running)
@@ -415,45 +404,6 @@ int main(int argc, char** argv)
         tile_rect.w = world_tile_width;
         tile_rect.h = world_tile_height;
 
-        // Check hero/harlod collisions
-        if (overlaps(&hero.e.bounding_box, &harlod.bounding_box))
-        {
-            // Draw overlapping bounding boxes
-            SDL_Rect overlap_box;
-            if (hero.e.bounding_box.x > harlod.bounding_box.x)
-            {
-                overlap_box.x = hero.e.bounding_box.x;
-                overlap_box.w = harlod.bounding_box.x + harlod.bounding_box.w -
-                    hero.e.bounding_box.x;
-                overlap_box.w = min(overlap_box.w, hero.e.bounding_box.w);
-            }
-            else
-            {
-                overlap_box.x = harlod.bounding_box.x;
-                overlap_box.w = hero.e.bounding_box.x + hero.e.bounding_box.w -
-                    harlod.bounding_box.x;
-                overlap_box.w = min(overlap_box.w, harlod.bounding_box.w);
-            }
-
-            if (hero.e.bounding_box.y > harlod.bounding_box.y)
-            {
-                overlap_box.y = hero.e.bounding_box.y;
-                overlap_box.h = harlod.bounding_box.y + harlod.bounding_box.h -
-                    hero.e.bounding_box.y;
-                overlap_box.h = min(overlap_box.h, hero.e.bounding_box.h);
-            }
-            else
-            {
-                overlap_box.y = harlod.bounding_box.y;
-                overlap_box.h = hero.e.bounding_box.y + hero.e.bounding_box.h -
-                    harlod.bounding_box.y;
-                overlap_box.h = min(overlap_box.h, harlod.bounding_box.h);
-            }
-            SDL_FillRect(current_map->surface, &overlap_box, game.colors[MAGENTA]);
-
-            // do pixel collision
-        }
-
         // set_hero_sprite(&hero.e);
 
         // Check Harlod/club collisions
@@ -480,6 +430,19 @@ int main(int argc, char** argv)
 
         // Draw sprites on map
         entity_list_draw(&entity_list, current_map->surface);
+
+        // Check collisions
+        if (harlod.active && overlaps(&hero.e.bounding_box, &harlod.bounding_box))
+        {
+            SDL_Rect overlap_box = entity_get_overlap_box(&hero.e, &harlod);
+            SDL_FillRect(current_map->surface, &overlap_box, game.colors[MAGENTA]);
+            // TODO: pixel collision
+        }
+        if (buffalo.active && overlaps(&hero.e.bounding_box, &buffalo.bounding_box))
+        {
+            SDL_Rect overlap_box = entity_get_overlap_box(&hero.e, &buffalo);
+            SDL_FillRect(current_map->surface, &overlap_box, game.colors[MAGENTA]);
+        }
 
         // Draw hero club
         hero_draw_club(&hero, now, current_map->surface, game.colors[BLACK]);
