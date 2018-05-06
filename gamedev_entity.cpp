@@ -1,4 +1,4 @@
-#include "entity.h"
+#include "gamedev_entity.h"
 
 void entity_init_sprite_sheet(Entity* e, const char* path, int num_x, int num_y)
 {

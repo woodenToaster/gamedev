@@ -1,4 +1,4 @@
-#include "tile_map.h"
+#include "gamedev_tilemap.h"
 
 
 Tile::Tile(Uint32 flags, Uint32 color, const char* sprite_path):
@@ -10,7 +10,7 @@ Tile::Tile(Uint32 flags, Uint32 color, const char* sprite_path):
 {
     if (sprite_path)
     {
-        sprite = load_png(&img_data, sprite_path);
+        sprite = create_surface_from_png(&img_data, sprite_path);
     }
     else
     {

@@ -6,6 +6,7 @@ pushd build
 set DEV_PREFIX=C:\Users\Chris\dev\
 set INCLUDE=%DEV_PREFIX%\SDL2-2.0.8\include;%INCLUDE%;
 set INCLUDE=%DEV_PREFIX%\SDL2_mixer-2.0.2\include;%INCLUDE%;
+set INCLUDE=%DEV_PREFIX%/gamedev/stb;%INCLUDE%;
 set LIBPATH=%DEV_PREFIX%\SDL2-2.0.8\lib\x64;%LIBPATH%;
 set LIBPATH=%DEV_PREFIX%\SDL2_mixer-2.0.2\lib\x64;%LIBPATH%;
 set LIB=%LIBPATH%;%LIB%;

@@ -1,7 +1,5 @@
-#ifndef GD_ASSET_LOADING_H
-#define GD_ASSET_LOADING_H
 
-SDL_Surface* load_png(unsigned char** img_data, const char* fname)
+SDL_Surface* create_surface_from_png(unsigned char** img_data, const char* fname)
 {
     int width, height, channels_in_file;
     *img_data = stbi_load(fname, &width, &height, &channels_in_file, 0);
@@ -48,4 +46,3 @@ SDL_Surface* load_png(unsigned char** img_data, const char* fname)
 
     return surface;
 }
-#endif

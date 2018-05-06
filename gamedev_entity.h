@@ -1,8 +1,8 @@
-#ifndef ENTITY_H
-#define ENTITY_H
+#ifndef GD_ENTITY_H
+#define GD_ENTITY_H
 
-#include "tile_map.h"
-#include "sprite_sheet.h"
+#include "gamedev_tilemap.h"
+#include "gamedev_sprite_sheet.h"
 
 struct Entity
 {

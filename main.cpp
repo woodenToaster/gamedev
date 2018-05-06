@@ -8,6 +8,7 @@
 
 #include "SDL.h"
 #include "SDL_mixer.h"
+
 #include "stdint.h"
 #include "stdio.h"
 #include "stdlib.h"
@@ -19,24 +20,12 @@
 #include "gamedev_sound.cpp"
 #include "gamedev_asset_loading.cpp"
 #include "gamedev_game.cpp"
-#include "sprite_sheet.cpp"
+#include "gamedev_sprite_sheet.cpp"
 #include "gamedev_animation.cpp"
-#include "entity.cpp"
-#include "tile_map.cpp"
+#include "gamedev_entity.cpp"
+#include "gamedev_tilemap.cpp"
 
-enum Key
-{
-    KEY_UP,
-    KEY_DOWN,
-    KEY_LEFT,
-    KEY_RIGHT,
-    KEY_LAST
-};
-
-struct Input
-{
-    u8 is_pressed[KEY_LAST];
-};
+#include "gamedev_input.h"
 
 int main(int argc, char** argv)
 {
@@ -96,9 +85,9 @@ int main(int argc, char** argv)
     animation_init(&buffalo.animation, 4, 100);
 
     EntityList entity_list = {};
-    Entity* _entities[] = {&hero.e, &harlod};
+    Entity* _entities[] = {&hero.e, &harlod, &buffalo};
     entity_list.entities = _entities;
-    entity_list.count = 2;
+    entity_list.count = 3;
 
     // Tiles
     SDL_Rect current_tile;

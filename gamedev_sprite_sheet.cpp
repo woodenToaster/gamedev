@@ -1,4 +1,4 @@
-#include "sprite_sheet.h"
+#include "gamedev_sprite_sheet.h"
 
 void sprite_sheet_destroy(SpriteSheet* ss)
 {
@@ -13,7 +13,7 @@ void sprite_sheet_destroy(SpriteSheet* ss)
 
 void sprite_sheet_load(SpriteSheet* ss, const char* path, int x_sprites, int y_sprites)
 {
-    SDL_Surface* img = load_png(&ss->data, path);
+    SDL_Surface* img = create_surface_from_png(&ss->data, path);
     ss->sheet = img;
     ss->width = ss->sheet->w;
     ss->height = ss->sheet->h;

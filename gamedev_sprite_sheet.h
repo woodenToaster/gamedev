@@ -1,5 +1,5 @@
-#ifndef SPRITE_SHEET_H
-#define SPRITE_SHEET_H
+#ifndef GD_SPRITE_SHEET_H
+#define GD_SPRITE_SHEET_H
 
 struct SpriteSheet
 {

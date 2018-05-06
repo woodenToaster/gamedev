@@ -1,5 +1,5 @@
-#ifndef TILE_MAP_H
-#define TILE_MAP_H
+#ifndef GD_TILE_MAP_H
+#define GD_TILE_MAP_H
 
 
 struct Tile
