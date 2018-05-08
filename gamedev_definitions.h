@@ -18,6 +18,14 @@ enum
     GD_TRUE
 };
 
+enum CardinalDir
+{
+    CARDINAL_UP,
+    CARDINAL_DOWN,
+    CARDINAL_LEFT,
+    CARDINAL_RIGHT,
+};
+
 enum Direction
 {
     UP,

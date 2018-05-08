@@ -23,6 +23,7 @@
 #include "gamedev_sprite_sheet.cpp"
 #include "gamedev_animation.cpp"
 #include "gamedev_input.h"
+#include "gamedev_plan.cpp"
 #include "gamedev_entity.cpp"
 #include "gamedev_tilemap.cpp"
 #include "gamedev_camera.cpp"
@@ -84,19 +85,14 @@ int main(int argc, char** argv)
     harlod.active = GD_TRUE;
 
     // Buffalo
-    Entity buffalo = {};
-    entity_init_sprite_sheet(&buffalo, "sprites/Buffalo.png", 4, 1);
-    entity_set_starting_pos(&buffalo, 400, 200);
-    entity_set_bounding_box_offset(&buffalo, 0, 0, 0, 0);
-    entity_init_dest(&buffalo);
-    buffalo.speed = 10;
-    buffalo.active = GD_TRUE;
-    animation_init(&buffalo.animation, 4, 100);
+    Entity buffalo = create_buffalo(400, 200);
+    Entity buffalo2 = create_buffalo(500, 500);
+    Entity buffalo3 = create_buffalo(600, 100);
 
     EntityList entity_list = {};
-    Entity* _entities[] = {&hero.e, &harlod, &buffalo};
+    Entity* _entities[] = {&hero.e, &harlod, &buffalo, &buffalo2, &buffalo3};
     entity_list.entities = _entities;
-    entity_list.count = 3;
+    entity_list.count = 5;
 
     // Tiles
     Tile w = {};
@@ -341,10 +337,9 @@ int main(int argc, char** argv)
         current_tile.y = (hero.collision_pt.y / world_tile_height) * world_tile_height;
 
         // Update entities
-        entity_list_update(&entity_list);
+        entity_list_update(&entity_list, last_frame_duration);
 
         // Update animations
-        animation_update(&buffalo.animation, last_frame_duration, GD_TRUE);
         animation_update(&hero.e.animation, last_frame_duration, hero.is_moving);
 
         int map_coord_x = current_tile.y / world_tile_height;
@@ -378,19 +373,25 @@ int main(int argc, char** argv)
         {
             if (map1.current)
             {
+                // Transitioning to map2
                 current_map = &map2;
                 map1.current = GD_FALSE;
                 map2.current = GD_TRUE;
                 fire.active = GD_FALSE;
-                buffalo.active = GD_FALSE;
+                buffalo.active = GD_TRUE;
+                buffalo2.active = GD_TRUE;
+                buffalo3.active = GD_TRUE;
             }
             else
             {
+                // Transitioning to map1
                 current_map = &map1;
                 map1.current = GD_TRUE;
                 map2.current = GD_FALSE;
                 fire.active = GD_TRUE;
-                buffalo.active = GD_TRUE;
+                buffalo.active = GD_FALSE;
+                buffalo2.active = GD_FALSE;
+                buffalo3.active = GD_FALSE;
             }
             hero.e.dest_rect.x = (int)hero.e.starting_pos.x;
             hero.e.dest_rect.y = (int)hero.e.starting_pos.y;

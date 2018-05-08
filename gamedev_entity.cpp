@@ -1,5 +1,6 @@
 #include "gamedev_entity.h"
 #include "gamedev_camera.h"
+#include "gamedev_plan.h"
 
 void entity_init_sprite_sheet(Entity* e, const char* path, int num_x, int num_y)
 {
@@ -85,38 +86,63 @@ SDL_Rect entity_get_overlap_box(Entity* e1, Entity* e2)
     if (e1->bounding_box.x > e2->bounding_box.x)
     {
         overlap_box.x = e1->bounding_box.x;
-        overlap_box.w = e2->bounding_box.x + e2->bounding_box.w -
-            e1->bounding_box.x;
+        overlap_box.w = e2->bounding_box.x + e2->bounding_box.w - e1->bounding_box.x;
         overlap_box.w = min(overlap_box.w, e1->bounding_box.w);
     }
     else
     {
         overlap_box.x = e2->bounding_box.x;
-        overlap_box.w = e1->bounding_box.x + e1->bounding_box.w -
-            e2->bounding_box.x;
+        overlap_box.w = e1->bounding_box.x + e1->bounding_box.w - e2->bounding_box.x;
         overlap_box.w = min(overlap_box.w, e2->bounding_box.w);
     }
 
     if (e1->bounding_box.y > e2->bounding_box.y)
     {
         overlap_box.y = e1->bounding_box.y;
-        overlap_box.h = e2->bounding_box.y + e2->bounding_box.h -
-            e1->bounding_box.y;
+        overlap_box.h = e2->bounding_box.y + e2->bounding_box.h - e1->bounding_box.y;
         overlap_box.h = min(overlap_box.h, e1->bounding_box.h);
     }
     else
     {
         overlap_box.y = e2->bounding_box.y;
-        overlap_box.h = e1->bounding_box.y + e1->bounding_box.h -
-            e2->bounding_box.y;
+        overlap_box.h = e1->bounding_box.y + e1->bounding_box.h - e2->bounding_box.y;
         overlap_box.h = min(overlap_box.h, e2->bounding_box.h);
     }
 
     return overlap_box;
 }
 
-void entity_update(Entity* e)
+void entity_move_in_direction(Entity* e, CardinalDir d)
 {
+    switch(d)
+    {
+    case CARDINAL_UP:
+        e->dest_rect.y -= e->speed;
+        break;
+    case CARDINAL_DOWN:
+        e->dest_rect.y += e->speed;
+        break;
+    case CARDINAL_LEFT:
+        e->dest_rect.x -= e->speed;
+        break;
+    case CARDINAL_RIGHT:
+        e->dest_rect.x += e->speed;
+        break;
+    default:
+        return;
+    }
+}
+
+void entity_update(Entity* e, u32 last_frame_duration)
+{
+    if (e->has_plan) {
+        plan_update(e, last_frame_duration);
+        if (e->can_move && e->active)
+        {
+            entity_move_in_direction(e, e->plan.mv_dir);
+            animation_update(&e->animation, last_frame_duration, GD_TRUE);
+        }
+    }
     e->bounding_box.x = e->dest_rect.x + e->bb_x_offset;
     e->bounding_box.y = e->dest_rect.y + e->bb_y_offset;
     e->bounding_box.w = e->dest_rect.w - e->bb_w_offset;
@@ -129,11 +155,11 @@ void entity_destroy(Entity* e)
 }
 
 
-void entity_list_update(EntityList* el)
+void entity_list_update(EntityList* el, u32 last_frame_duration)
 {
     for (u32 i = 0; i < el->count; ++i)
     {
-        entity_update(el->entities[i]);
+        entity_update(el->entities[i], last_frame_duration);
     }
 }
 
@@ -318,6 +344,23 @@ void hero_draw_club(Hero* h, u32 now, SDL_Surface* map_surface, u32 color)
     {
         SDL_FillRect(map_surface, &h->club_rect, color);
     }
+}
+
+Entity create_buffalo(int starting_x, int starting_y)
+{
+    Entity buffalo = {};
+    entity_init_sprite_sheet(&buffalo, "sprites/Buffalo.png", 4, 1);
+    entity_set_starting_pos(&buffalo, starting_x, starting_y);
+    entity_set_bounding_box_offset(&buffalo, 0, 0, 0, 0);
+    entity_init_dest(&buffalo);
+    buffalo.speed = 3;
+    animation_init(&buffalo.animation, 4, 100);
+    buffalo.plan = {};
+    buffalo.has_plan = GD_TRUE;
+    buffalo.plan.move_delay = 2000;
+    buffalo.can_move = GD_TRUE;
+    buffalo.plan.mv_dir = (CardinalDir)(rand() % 4);
+    return buffalo;
 }
 
 bool overlaps(SDL_Rect* r1, SDL_Rect* r2)

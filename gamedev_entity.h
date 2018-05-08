@@ -7,8 +7,8 @@
 struct Entity
 {
     SpriteSheet sprite_sheet;
-
     Animation animation;
+    Plan plan;
     SDL_Rect sprite_rect;
     int speed;
     Direction direction;
@@ -20,6 +20,8 @@ struct Entity
     int bb_w_offset;
     int bb_h_offset;
     u8 active;
+    u8 has_plan;
+    u8 can_move;
 };
 
 struct Hero
