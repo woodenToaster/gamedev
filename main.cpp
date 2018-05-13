@@ -15,6 +15,7 @@
 #include "math.h"
 
 #include "gamedev_definitions.h"
+#include "gamedev_globals.h"
 #include "gamedev_math.h"
 #include "gamedev_font.cpp"
 #include "gamedev_sound.cpp"
@@ -56,6 +57,7 @@ int main(int argc, char** argv)
     Sound mud_sound = {};
     mud_sound.delay = 250;
     mud_sound.chunk = sound_load_wav("sounds/mud_walk.wav");
+    global_sounds[MUD_SOUND] = &mud_sound;
 
     // Hero
     // Hero hero = {};
@@ -110,6 +112,7 @@ int main(int argc, char** argv)
     Tile wr = {};
     wr.tile_width = wr.tile_height = 80;
     tile_init(&wr, tile_properties[TP_WARP], game.colors[RUST]);
+    wr.destination_map = 2;
 
     Tile t = {};
     t.tile_width = t.tile_height = 80;
@@ -128,16 +131,6 @@ int main(int argc, char** argv)
     Tile* _tiles[] = {&w, &f, &m, &wr, &t, &fire};
     tile_list.tiles = _tiles;
     tile_list.count = 6;
-
-    // Assumes every tile on every map is the same size
-    int world_tile_width =  w.tile_width;
-    int world_tile_height = w.tile_height;
-
-    SDL_Rect current_tile;
-    current_tile.x = hero.e.dest_rect.x / world_tile_width;
-    current_tile.y = hero.e.dest_rect.y / world_tile_height;
-    current_tile.w = w.tile_width;
-    current_tile.h = w.tile_height;
 
     // Map
     Tile* map1_tiles[] = {
@@ -179,6 +172,12 @@ int main(int argc, char** argv)
     map_list.count = 2;
 
     Map* current_map = &map1;
+
+    SDL_Rect current_tile;
+    current_tile.x = hero.e.dest_rect.x / current_map->tile_width;
+    current_tile.y = hero.e.dest_rect.y / current_map->tile_height;
+    current_tile.w = w.tile_width;
+    current_tile.h = w.tile_height;
 
     // Camera
     Camera camera = {};
@@ -333,19 +332,13 @@ int main(int argc, char** argv)
         hero_clamp_to_map(&hero, current_map);
         hero_set_collision_point(&hero);
 
-        current_tile.x = (hero.collision_pt.x / world_tile_width) * world_tile_width;
-        current_tile.y = (hero.collision_pt.y / world_tile_height) * world_tile_height;
-
         // Update entities
         entity_list_update(&entity_list, last_frame_duration);
 
         // Update animations
         animation_update(&hero.e.animation, last_frame_duration, hero.is_moving);
 
-        int map_coord_x = current_tile.y / world_tile_height;
-        int map_coord_y = current_tile.x / world_tile_width;
-        int tile_index = map_coord_x * current_map->cols + map_coord_y;
-        Tile* tile_at_hero_position_ptr = current_map->tiles[tile_index];
+        Tile* tile_at_hero_position_ptr = entity_get_tile_at_position(&hero.e, current_map);
 
         // Handle all tiles
         if (tile_is_solid(tile_at_hero_position_ptr))
@@ -361,7 +354,7 @@ int main(int argc, char** argv)
             hero.in_quicksand = GD_TRUE;
             if (hero.is_moving)
             {
-                sound_play(&mud_sound, now);
+                sound_play(global_sounds[MUD_SOUND], now);
             }
         }
         else if (hero.in_quicksand)
@@ -402,8 +395,8 @@ int main(int argc, char** argv)
         ttf_font_update_pos(&ttf_ones, camera.viewport.x + ((int)font_size / 2), camera.viewport.y);
 
         SDL_Rect tile_rect = {};
-        tile_rect.w = world_tile_width;
-        tile_rect.h = world_tile_height;
+        tile_rect.w = current_map->tile_width;
+        tile_rect.h = current_map->tile_height;
 
         // set_hero_sprite(&hero.e);
 
@@ -419,8 +412,8 @@ int main(int argc, char** argv)
         {
             for (size_t col = 0; col < current_map->cols; ++col)
             {
-                tile_rect.x = (int)col * world_tile_width;
-                tile_rect.y = (int)row * world_tile_height;
+                tile_rect.x = (int)col * current_map->tile_width;
+                tile_rect.y = (int)row * current_map->tile_height;
                 Tile* tp = current_map->tiles[row * current_map->cols + col];
                 tile_draw(tp, current_map->surface, &tile_rect);
             }

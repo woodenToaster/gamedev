@@ -18,6 +18,14 @@ enum
     GD_TRUE
 };
 
+enum EntityType
+{
+    ET_TILE,
+    ET_BUFFALO,
+    ET_HERO,
+    ET_NUM_TYPES
+};
+
 enum CardinalDir
 {
     CARDINAL_UP,
@@ -37,4 +45,11 @@ enum Direction
     LEFT,
     UP_LEFT
 };
+
+enum Sounds
+{
+    MUD_SOUND,
+    NUM_SOUNDS
+};
+
 #endif

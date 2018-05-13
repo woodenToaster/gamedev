@@ -7,7 +7,9 @@
 ** TODO [#A] Link swing sword animation
 ** TODO [#A] Pixel perfect collision
 *** TODO [#A] Get pixel data from sprite sheet
-** TODO [#A] One enemy with basic AI and collision
+** TODO [#A] Wandering buffalo basic AI and collision
+*** TODO random pause time
+*** TODO collison with other collidable entities
 ** TODO [#B] Use time delta and velocity for updating movement
 ** TODO Make tiles 8x8?
 ** TODO [#C] Base building screen

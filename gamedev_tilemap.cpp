@@ -100,6 +100,8 @@ void map_init(Map* m, u32 cols, u32 rows, Tile** tiles)
 {
     m->cols = cols;
     m->rows = rows;
+    m->tile_width = tiles[0][0].tile_width;
+    m->tile_height = tiles[0][0].tile_height;
     m->tiles = tiles;
     m->width_pixels = cols * tiles[0]->tile_width;
     m->height_pixels = rows * tiles[0]->tile_height;

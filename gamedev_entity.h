@@ -13,6 +13,7 @@ struct Entity
     int speed;
     Direction direction;
     Point starting_pos;
+    Point collision_pt;
     SDL_Rect bounding_box;
     SDL_Rect dest_rect;
     int bb_x_offset;
@@ -22,6 +23,7 @@ struct Entity
     u8 active;
     u8 has_plan;
     u8 can_move;
+    EntityType type;
 };
 
 struct Hero
@@ -33,7 +35,6 @@ struct Hero
     u32 next_club_swing_delay;
     u32 club_swing_timeout;
     SDL_Rect club_rect;
-    Point collision_pt;
 };
 
 struct EntityList

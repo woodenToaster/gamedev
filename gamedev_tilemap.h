@@ -44,6 +44,7 @@ struct Tile
     Animation animation;
     u8 active;
     unsigned char* img_data;
+    u32 destination_map;
 };
 
 struct TileList
@@ -56,6 +57,8 @@ struct Map
 {
     u32 rows;
     u32 cols;
+    u32 tile_width;
+    u32 tile_height;
     int width_pixels;
     int height_pixels;
     u64 tile_rows_per_screen;

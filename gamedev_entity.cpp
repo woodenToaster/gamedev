@@ -31,6 +31,11 @@ void entity_init_dest(Entity* e)
     e->dest_rect.h = e->sprite_sheet.sprite_height;
 }
 
+u8 entity_is_hero(Entity* e)
+{
+    return e->type == ET_HERO;
+}
+
 void entity_draw(Entity* e, SDL_Surface* map)
 {
     // Draw sprite
@@ -130,6 +135,74 @@ void entity_move_in_direction(Entity* e, CardinalDir d)
         break;
     default:
         return;
+    }
+}
+
+Tile* entity_get_tile_at_position(Entity* e, Map* map)
+{
+    SDL_Rect tile_under_entity = {
+        (int)((e->collision_pt.x / map->tile_width) * map->tile_width),
+        (int)((e->collision_pt.y / map->tile_height) * map->tile_height)
+    };
+    int map_coord_x = tile_under_entity.y / map->tile_height;
+    int map_coord_y = tile_under_entity.x / map->tile_width;
+    int tile_index = map_coord_x * map->cols + map_coord_y;
+
+    return map->tiles[tile_index];
+}
+
+void entity_check_collisions_with_tiles(Entity* e, Map* map)
+{
+    Tile* current_tile = entity_get_tile_at_position(e, map);
+
+    if (tile_is_solid(current_tile))
+    {
+        // Collisions. Revert to original state
+        camera.viewport = saved_camera;
+        hero.e.dest_rect = saved_position;
+        current_tile = saved_tile;
+    }
+    if (tile_is_slow(current_tile) && !e->in_quicksand)
+    {
+        e->speed -= 9;
+        e->in_quicksand = GD_TRUE;
+        if (e->is_moving && entity_is_hero(e))
+        {
+            sound_play(global_sounds[MUD_SOUND], now);
+        }
+    }
+    else if (hero.in_quicksand)
+    {
+        hero.e.speed += 9;
+        hero.in_quicksand = GD_FALSE;
+    }
+    if (tile_is_warp(current_tile))
+    {
+        if (map1.current)
+        {
+            // Transitioning to map2
+            current_map = &map2;
+            map1.current = GD_FALSE;
+            map2.current = GD_TRUE;
+            fire.active = GD_FALSE;
+            buffalo.active = GD_TRUE;
+            buffalo2.active = GD_TRUE;
+            buffalo3.active = GD_TRUE;
+        }
+        else
+        {
+            // Transitioning to map1
+            current_map = &map1;
+            map1.current = GD_TRUE;
+            map2.current = GD_FALSE;
+            fire.active = GD_TRUE;
+            buffalo.active = GD_FALSE;
+            buffalo2.active = GD_FALSE;
+            buffalo3.active = GD_FALSE;
+        }
+        hero.e.dest_rect.x = (int)hero.e.starting_pos.x;
+        hero.e.dest_rect.y = (int)hero.e.starting_pos.y;
+        camera.viewport = camera.starting_pos;
     }
 }
 
@@ -334,8 +407,8 @@ void hero_clamp_to_map(Hero* h, Map* map)
 
 void hero_set_collision_point(Hero* h)
 {
-    h->collision_pt.y = h->e.dest_rect.y + h->e.dest_rect.h - 10;
-    h->collision_pt.x = h->e.dest_rect.x + (i32)(h->e.dest_rect.w / 2.0);
+    h->e.collision_pt.y = h->e.dest_rect.y + h->e.dest_rect.h - 10;
+    h->e.collision_pt.x = h->e.dest_rect.x + (i32)(h->e.dest_rect.w / 2.0);
 }
 
 void hero_draw_club(Hero* h, u32 now, SDL_Surface* map_surface, u32 color)
@@ -357,7 +430,7 @@ Entity create_buffalo(int starting_x, int starting_y)
     animation_init(&buffalo.animation, 4, 100);
     buffalo.plan = {};
     buffalo.has_plan = GD_TRUE;
-    buffalo.plan.move_delay = 2000;
+    buffalo.plan.move_delay = (rand() % 2000) + 1000;
     buffalo.can_move = GD_TRUE;
     buffalo.plan.mv_dir = (CardinalDir)(rand() % 4);
     return buffalo;
