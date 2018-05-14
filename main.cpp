@@ -14,11 +14,16 @@
 #include "stdlib.h"
 #include "math.h"
 
+
 #include "gamedev_definitions.h"
-#include "gamedev_globals.h"
+
+struct Tile;
+u8 tile_is_solid(Tile* t);
+
 #include "gamedev_math.h"
 #include "gamedev_font.cpp"
 #include "gamedev_sound.cpp"
+#include "gamedev_globals.h"
 #include "gamedev_asset_loading.cpp"
 #include "gamedev_game.cpp"
 #include "gamedev_sprite_sheet.cpp"
@@ -75,6 +80,8 @@ int main(int argc, char** argv)
     entity_init_dest(&hero.e);
     hero.e.speed = 10;
     hero.e.active = GD_TRUE;
+    hero.e.type = ET_HERO;
+    hero.e.collision_pt_offset = 10;
     animation_init(&hero.e.animation, 4, 100);
 
     // Harlod
@@ -173,11 +180,11 @@ int main(int argc, char** argv)
 
     Map* current_map = &map1;
 
-    SDL_Rect current_tile;
-    current_tile.x = hero.e.dest_rect.x / current_map->tile_width;
-    current_tile.y = hero.e.dest_rect.y / current_map->tile_height;
-    current_tile.w = w.tile_width;
-    current_tile.h = w.tile_height;
+    // SDL_Rect current_tile;
+    // current_tile.x = hero.e.dest_rect.x / current_map->tile_width;
+    // current_tile.y = hero.e.dest_rect.y / current_map->tile_height;
+    // current_tile.w = w.tile_width;
+    // current_tile.h = w.tile_height;
 
     // Camera
     Camera camera = {};
@@ -299,10 +306,11 @@ int main(int argc, char** argv)
             }
         }
 
-        // Update
+        /*********************************************************************/
+        /* Update                                                            */
+        /*********************************************************************/
         SDL_Rect saved_position = hero.e.dest_rect;
         SDL_Rect saved_camera = camera.viewport;
-        SDL_Rect saved_tile = current_tile;
 
         map_update_tiles(current_map, last_frame_duration);
         hero_update(&hero, &input, &camera, current_map);
@@ -325,15 +333,14 @@ int main(int argc, char** argv)
         }
 
         // Update camera
-        // camera_center_over_point(&camera, &hero.e.dest_rect);
         camera.viewport.x = clamp(camera.viewport.x, 0, camera.max_x);
         camera.viewport.y = clamp(camera.viewport.y, 0, camera.max_y);
 
         hero_clamp_to_map(&hero, current_map);
-        hero_set_collision_point(&hero);
+        entity_set_collision_point(&hero.e);
 
         // Update entities
-        entity_list_update(&entity_list, last_frame_duration);
+        entity_list_update(&entity_list, current_map, last_frame_duration);
 
         // Update animations
         animation_update(&hero.e.animation, last_frame_duration, hero.is_moving);
@@ -346,7 +353,6 @@ int main(int argc, char** argv)
             // Collisions. Revert to original state
             camera.viewport = saved_camera;
             hero.e.dest_rect = saved_position;
-            current_tile = saved_tile;
         }
         if (tile_is_slow(tile_at_hero_position_ptr) && !hero.in_quicksand)
         {
@@ -392,13 +398,8 @@ int main(int argc, char** argv)
         }
 
         ttf_font_update_pos(&ttf_tens, camera.viewport.x, camera.viewport.y);
-        ttf_font_update_pos(&ttf_ones, camera.viewport.x + ((int)font_size / 2), camera.viewport.y);
-
-        SDL_Rect tile_rect = {};
-        tile_rect.w = current_map->tile_width;
-        tile_rect.h = current_map->tile_height;
-
-        // set_hero_sprite(&hero.e);
+        ttf_font_update_pos(&ttf_ones, camera.viewport.x + ((int)font_size / 2),
+                            camera.viewport.y);
 
         // Check Harlod/club collisions
         if (overlaps(&harlod.bounding_box, &hero.club_rect) && now < hero.club_swing_timeout)
@@ -408,6 +409,9 @@ int main(int argc, char** argv)
 
         // Draw
         // TODO: Don't redraw the whole map on every frame
+        SDL_Rect tile_rect = {};
+        tile_rect.w = current_map->tile_width;
+        tile_rect.h = current_map->tile_height;
         for (size_t row = 0; row < current_map->rows; ++row)
         {
             for (size_t col = 0; col < current_map->cols; ++col)

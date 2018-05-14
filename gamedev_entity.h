@@ -14,6 +14,7 @@ struct Entity
     Direction direction;
     Point starting_pos;
     Point collision_pt;
+    u32 collision_pt_offset;
     SDL_Rect bounding_box;
     SDL_Rect dest_rect;
     int bb_x_offset;

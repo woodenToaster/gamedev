@@ -28,10 +28,10 @@ enum EntityType
 
 enum CardinalDir
 {
-    CARDINAL_UP,
-    CARDINAL_DOWN,
-    CARDINAL_LEFT,
-    CARDINAL_RIGHT,
+    CARDINAL_NORTH,
+    CARDINAL_SOUTH,
+    CARDINAL_WEST,
+    CARDINAL_EAST,
 };
 
 enum Direction

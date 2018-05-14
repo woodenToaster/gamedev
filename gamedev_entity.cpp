@@ -121,16 +121,16 @@ void entity_move_in_direction(Entity* e, CardinalDir d)
 {
     switch(d)
     {
-    case CARDINAL_UP:
+    case CARDINAL_NORTH:
         e->dest_rect.y -= e->speed;
         break;
-    case CARDINAL_DOWN:
+    case CARDINAL_SOUTH:
         e->dest_rect.y += e->speed;
         break;
-    case CARDINAL_LEFT:
+    case CARDINAL_WEST:
         e->dest_rect.x -= e->speed;
         break;
-    case CARDINAL_RIGHT:
+    case CARDINAL_EAST:
         e->dest_rect.x += e->speed;
         break;
     default:
@@ -151,69 +151,107 @@ Tile* entity_get_tile_at_position(Entity* e, Map* map)
     return map->tiles[tile_index];
 }
 
-void entity_check_collisions_with_tiles(Entity* e, Map* map)
+void entity_reverse_direction(Entity* e)
+{
+    // TODO: Try to use entity direction directly instead of plan.mv_dir
+    switch (e->plan.mv_dir)
+    {
+    case CARDINAL_NORTH:
+        e->plan.mv_dir = CARDINAL_SOUTH;
+        break;
+    case CARDINAL_SOUTH:
+        e->plan.mv_dir = CARDINAL_NORTH;
+        break;
+    case CARDINAL_EAST:
+        e->plan.mv_dir = CARDINAL_WEST;
+        break;
+    case CARDINAL_WEST:
+        e->plan.mv_dir = CARDINAL_EAST;
+        break;
+    }
+}
+
+void entity_check_collisions_with_tiles(Entity* e, Map* map, SDL_Rect* saved_pos)
 {
     Tile* current_tile = entity_get_tile_at_position(e, map);
 
     if (tile_is_solid(current_tile))
     {
-        // Collisions. Revert to original state
-        camera.viewport = saved_camera;
-        hero.e.dest_rect = saved_position;
-        current_tile = saved_tile;
-    }
-    if (tile_is_slow(current_tile) && !e->in_quicksand)
-    {
-        e->speed -= 9;
-        e->in_quicksand = GD_TRUE;
-        if (e->is_moving && entity_is_hero(e))
+        // Collision with an impenetrable tile. Revert to original position
+        e->dest_rect = *saved_pos;
+        switch (e->type)
         {
-            sound_play(global_sounds[MUD_SOUND], now);
+        case ET_HERO:
+            // camera.viewport = saved_camera;
+            break;
+        case ET_BUFFALO:
+            entity_reverse_direction(e);
+            break;
+        default:
+            break;
         }
     }
-    else if (hero.in_quicksand)
-    {
-        hero.e.speed += 9;
-        hero.in_quicksand = GD_FALSE;
-    }
-    if (tile_is_warp(current_tile))
-    {
-        if (map1.current)
-        {
-            // Transitioning to map2
-            current_map = &map2;
-            map1.current = GD_FALSE;
-            map2.current = GD_TRUE;
-            fire.active = GD_FALSE;
-            buffalo.active = GD_TRUE;
-            buffalo2.active = GD_TRUE;
-            buffalo3.active = GD_TRUE;
-        }
-        else
-        {
-            // Transitioning to map1
-            current_map = &map1;
-            map1.current = GD_TRUE;
-            map2.current = GD_FALSE;
-            fire.active = GD_TRUE;
-            buffalo.active = GD_FALSE;
-            buffalo2.active = GD_FALSE;
-            buffalo3.active = GD_FALSE;
-        }
-        hero.e.dest_rect.x = (int)hero.e.starting_pos.x;
-        hero.e.dest_rect.y = (int)hero.e.starting_pos.y;
-        camera.viewport = camera.starting_pos;
-    }
+    // if (tile_is_slow(current_tile) && !e->in_quicksand)
+    // {
+    //     e->speed -= 9;
+    //     e->in_quicksand = GD_TRUE;
+    //     if (e->is_moving && entity_is_hero(e))
+    //     {
+    //         sound_play(global_sounds[MUD_SOUND], now);
+    //     }
+    // }
+    // else if (hero.in_quicksand)
+    // {
+    //     hero.e.speed += 9;
+    //     hero.in_quicksand = GD_FALSE;
+    // }
+    // if (tile_is_warp(current_tile))
+    // {
+    //     if (map1.current)
+    //     {
+    //         // Transitioning to map2
+    //         current_map = &map2;
+    //         map1.current = GD_FALSE;
+    //         map2.current = GD_TRUE;
+    //         fire.active = GD_FALSE;
+    //         buffalo.active = GD_TRUE;
+    //         buffalo2.active = GD_TRUE;
+    //         buffalo3.active = GD_TRUE;
+    //     }
+    //     else
+    //     {
+    //         // Transitioning to map1
+    //         current_map = &map1;
+    //         map1.current = GD_TRUE;
+    //         map2.current = GD_FALSE;
+    //         fire.active = GD_TRUE;
+    //         buffalo.active = GD_FALSE;
+    //         buffalo2.active = GD_FALSE;
+    //         buffalo3.active = GD_FALSE;
+    //     }
+    //     hero.e.dest_rect.x = (int)hero.e.starting_pos.x;
+    //     hero.e.dest_rect.y = (int)hero.e.starting_pos.y;
+    //     camera.viewport = camera.starting_pos;
+    // }
 }
 
-void entity_update(Entity* e, u32 last_frame_duration)
+void entity_set_collision_point(Entity* e)
+{
+    e->collision_pt.y = e->dest_rect.y + e->dest_rect.h - e->collision_pt_offset;
+    e->collision_pt.x = e->dest_rect.x + (i32)(e->dest_rect.w / 2.0);
+}
+
+void entity_update(Entity* e, Map* map, u32 last_frame_duration)
 {
     if (e->has_plan) {
         plan_update(e, last_frame_duration);
         if (e->can_move && e->active)
         {
+            SDL_Rect saved_position = e->dest_rect;
             entity_move_in_direction(e, e->plan.mv_dir);
             animation_update(&e->animation, last_frame_duration, GD_TRUE);
+            entity_check_collisions_with_tiles(e, map, &saved_position);
+            entity_set_collision_point(e);
         }
     }
     e->bounding_box.x = e->dest_rect.x + e->bb_x_offset;
@@ -228,11 +266,11 @@ void entity_destroy(Entity* e)
 }
 
 
-void entity_list_update(EntityList* el, u32 last_frame_duration)
+void entity_list_update(EntityList* el, Map* map, u32 last_frame_duration)
 {
     for (u32 i = 0; i < el->count; ++i)
     {
-        entity_update(el->entities[i], last_frame_duration);
+        entity_update(el->entities[i], map, last_frame_duration);
     }
 }
 
@@ -405,11 +443,6 @@ void hero_clamp_to_map(Hero* h, Map* map)
     h->e.dest_rect.y = clamp(h->e.dest_rect.y, 0, map->height_pixels - h->e.dest_rect.h);
 }
 
-void hero_set_collision_point(Hero* h)
-{
-    h->e.collision_pt.y = h->e.dest_rect.y + h->e.dest_rect.h - 10;
-    h->e.collision_pt.x = h->e.dest_rect.x + (i32)(h->e.dest_rect.w / 2.0);
-}
 
 void hero_draw_club(Hero* h, u32 now, SDL_Surface* map_surface, u32 color)
 {
@@ -427,11 +460,13 @@ Entity create_buffalo(int starting_x, int starting_y)
     entity_set_bounding_box_offset(&buffalo, 0, 0, 0, 0);
     entity_init_dest(&buffalo);
     buffalo.speed = 3;
+    buffalo.type = ET_BUFFALO;
+    buffalo.can_move = GD_TRUE;
+    buffalo.collision_pt_offset = 32;
     animation_init(&buffalo.animation, 4, 100);
     buffalo.plan = {};
     buffalo.has_plan = GD_TRUE;
     buffalo.plan.move_delay = (rand() % 2000) + 1000;
-    buffalo.can_move = GD_TRUE;
     buffalo.plan.mv_dir = (CardinalDir)(rand() % 4);
     return buffalo;
 }
