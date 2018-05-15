@@ -250,6 +250,7 @@ void entity_update(Entity* e, Map* map, u32 last_frame_duration)
             SDL_Rect saved_position = e->dest_rect;
             entity_move_in_direction(e, e->plan.mv_dir);
             animation_update(&e->animation, last_frame_duration, GD_TRUE);
+            entity_set_collision_point(e);
             entity_check_collisions_with_tiles(e, map, &saved_position);
             entity_set_collision_point(e);
         }
@@ -459,6 +460,7 @@ Entity create_buffalo(int starting_x, int starting_y)
     entity_set_starting_pos(&buffalo, starting_x, starting_y);
     entity_set_bounding_box_offset(&buffalo, 0, 0, 0, 0);
     entity_init_dest(&buffalo);
+    entity_set_collision_point(&buffalo);
     buffalo.speed = 3;
     buffalo.type = ET_BUFFALO;
     buffalo.can_move = GD_TRUE;

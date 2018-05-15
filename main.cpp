@@ -430,16 +430,17 @@ int main(int argc, char** argv)
         entity_list_draw(&entity_list, current_map->surface);
 
         // Check collisions
-        if (harlod.active && overlaps(&hero.e.bounding_box, &harlod.bounding_box))
-        {
-            SDL_Rect overlap_box = entity_get_overlap_box(&hero.e, &harlod);
-            SDL_FillRect(current_map->surface, &overlap_box, game.colors[MAGENTA]);
-            // TODO: pixel collision
-        }
-        if (buffalo.active && overlaps(&hero.e.bounding_box, &buffalo.bounding_box))
-        {
-            SDL_Rect overlap_box = entity_get_overlap_box(&hero.e, &buffalo);
-            SDL_FillRect(current_map->surface, &overlap_box, game.colors[MAGENTA]);
+        for (int i = 0; i < entity_list.count; ++i) {
+            Entity* e = entity_list.entities[i];
+            if (entity_is_hero(e)) {
+                continue;
+            }
+            if (e->active && overlaps(&hero.e.bounding_box, &e->bounding_box))
+            {
+                SDL_Rect overlap_box = entity_get_overlap_box(&hero.e, e);
+                SDL_FillRect(current_map->surface, &overlap_box, game.colors[MAGENTA]);
+                // TODO: pixel collision
+            }
         }
 
         // Draw hero club
