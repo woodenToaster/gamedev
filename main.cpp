@@ -71,15 +71,6 @@ int main(int argc, char** argv)
     mud_sound.chunk = sound_load_wav("sounds/mud_walk.wav");
     global_sounds[MUD_SOUND] = &mud_sound;
 
-    // Hero
-    // Hero hero = {};
-    // entity_init_sprite_sheet(&hero.e, "sprites/link_walking.png", 11, 5);
-    // entity_set_starting_pos(&hero.e, 85, 85);
-    // entity_set_bounding_box_offset(&hero.e, 6, 5, 12, 7);
-    // entity_init_dest(&hero.e);
-    // hero.e.speed = 10;
-    // hero.e.active = GD_TRUE;
-
     Hero hero = {};
     entity_init_sprite_sheet(&hero.e, "sprites/dude.png", 4, 4);
     entity_set_starting_pos(&hero.e, 85, 85);
@@ -196,7 +187,6 @@ int main(int argc, char** argv)
     {
         map3_tiles[i] = grass;
     }
-
 
     Map map1 = {};
     map_init(&map1, 12, 10, map1_tiles);

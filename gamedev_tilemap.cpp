@@ -132,6 +132,7 @@ void map_update_tiles(Map* m, u32 last_frame_duration)
 
 void map_draw(Map* m, Camera* c)
 {
+    // TODO: Only draw tiles that have changed
     size_t first_row = c->viewport.y / m->tile_height;
     size_t last_row = first_row + c->viewport.h / m->tile_height + 1;
     size_t first_col = c->viewport.x / m->tile_width;
