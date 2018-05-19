@@ -67,12 +67,14 @@ void tile_draw(Tile* t, SDL_Surface* map_surface, SDL_Rect* tile_rect)
 
     if (t->sprite && t->active)
     {
-        // TODO: What is 64?
-        SDL_Rect dest = {tile_rect->x, tile_rect->y, 64, 64};
+        SDL_Rect dest = *tile_rect;
         dest.x += (t->tile_width - t->sprite_rect.w) / 2;
         dest.y += (t->tile_height - t->sprite_rect.h) / 2;
 
-        t->sprite_rect.x = t->sprite_rect.w * t->animation.current_frame;
+        if (t->has_animation)
+        {
+            t->sprite_rect.x = t->sprite_rect.w * t->animation.current_frame;
+        }
         SDL_BlitSurface(t->sprite, &t->sprite_rect, map_surface, &dest);
     }
 }
@@ -125,6 +127,31 @@ void map_update_tiles(Map* m, u32 last_frame_duration)
     {
         Tile* tp = m->tiles[i];
         animation_update(&tp->animation, last_frame_duration, tp->active);
+    }
+}
+
+void map_draw(Map* m, Camera* c)
+{
+    size_t first_row = c->viewport.y / m->tile_height;
+    size_t last_row = first_row + c->viewport.h / m->tile_height + 1;
+    size_t first_col = c->viewport.x / m->tile_width;
+    size_t last_col = first_col + c->viewport.w / m->tile_width + 1;
+
+    clamp_size_t(&last_row, last_row, m->rows);
+    clamp_size_t(&last_col, last_col, m->cols);
+
+    SDL_Rect tile_rect = {};
+    tile_rect.w = m->tile_width;
+    tile_rect.h = m->tile_height;
+    for (size_t row = first_row; row < last_row; ++row)
+    {
+        for (size_t col = first_col; col < last_col; ++col)
+        {
+            tile_rect.x = (int)col * m->tile_width;
+            tile_rect.y = (int)row * m->tile_height;
+            Tile* tp = m->tiles[row * m->cols + col];
+            tile_draw(tp, m->surface, &tile_rect);
+        }
     }
 }
 

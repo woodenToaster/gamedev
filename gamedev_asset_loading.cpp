@@ -4,7 +4,7 @@ SDL_Surface* create_surface_from_png(unsigned char** img_data, const char* fname
     int width, height, channels_in_file;
     *img_data = stbi_load(fname, &width, &height, &channels_in_file, 0);
 
-    if (!img_data)
+    if (!*img_data)
     {
         printf("Loading image failed: %s\n", stbi_failure_reason());
         exit(1);

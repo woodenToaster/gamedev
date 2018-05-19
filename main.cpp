@@ -34,6 +34,13 @@ u8 tile_is_solid(Tile* t);
 #include "gamedev_tilemap.cpp"
 #include "gamedev_camera.cpp"
 
+struct Tileset
+{
+    Tile tiles[462];
+    SDL_Surface* surface;
+    unsigned char* img_data;
+};
+
 int main(int argc, char** argv)
 {
     (void)argc;
@@ -133,11 +140,29 @@ int main(int argc, char** argv)
     tile_set_sprite_size(&fire, 64, 64);
     animation_init(&fire.animation, 11, 100);
     fire.active = GD_TRUE;
+    fire.has_animation = GD_TRUE;
 
     TileList tile_list = {};
     Tile* _tiles[] = {&w, &f, &m, &wr, &t, &fire};
     tile_list.tiles = _tiles;
     tile_list.count = 6;
+
+    // Tileset
+    Tileset tiles = {};
+    tiles.surface = create_surface_from_png(&tiles.img_data, "sprites/jungle_tileset.png");
+
+    Tile* grass = &tiles.tiles[0];
+    grass->tile_width = 16;
+    grass->tile_height = 16;
+    grass->flags = tile_properties[TP_NONE];
+    grass->color = game.colors[GREEN];
+    grass->sprite = tiles.surface;
+    grass->sprite_rect = {16, 16, 16, 16};
+
+    Tile grass_warp = {};
+    grass_warp.tile_width = grass_warp.tile_height = 16;
+    tile_init(&grass_warp, tile_properties[TP_WARP], game.colors[RUST]);
+    grass_warp.destination_map = 1;
 
     // Map
     Tile* map1_tiles[] = {
@@ -166,6 +191,13 @@ int main(int argc, char** argv)
         &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w
     };
 
+    Tile* map3_tiles[3000];
+    for (int i = 0; i < 3000; ++i)
+    {
+        map3_tiles[i] = grass;
+    }
+
+
     Map map1 = {};
     map_init(&map1, 12, 10, map1_tiles);
     map1.current = GD_TRUE;
@@ -173,18 +205,25 @@ int main(int argc, char** argv)
     Map map2 = {};
     map_init(&map2, 12, 10, map2_tiles);
 
+    Map map3 = {};
+    map_init(&map3, 60, 50, map3_tiles);
+
+    // Draw warp out of 16 x 16 tiles
+    for (int i = 4; i < 8; ++i)
+    {
+        int row = map3.cols * i + 200;
+        map3_tiles[row] = &grass_warp;
+        map3_tiles[row + 1] = &grass_warp;
+        map3_tiles[row + 2] = &grass_warp;
+        map3_tiles[row + 3] = &grass_warp;
+    }
+
     MapList map_list = {};
-    Map* _maps[] = {&map1, &map2};
+    Map* _maps[] = {&map1, &map2, &map3};
     map_list.maps = _maps;
-    map_list.count = 2;
+    map_list.count = 3;
 
     Map* current_map = &map1;
-
-    // SDL_Rect current_tile;
-    // current_tile.x = hero.e.dest_rect.x / current_map->tile_width;
-    // current_tile.y = hero.e.dest_rect.y / current_map->tile_height;
-    // current_tile.w = w.tile_width;
-    // current_tile.h = w.tile_height;
 
     // Camera
     Camera camera = {};
@@ -348,6 +387,7 @@ int main(int argc, char** argv)
         Tile* tile_at_hero_position_ptr = entity_get_tile_at_position(&hero.e, current_map);
 
         // Handle all tiles
+        // TODO: Move to entity_check_collisions_with_tiles
         if (tile_is_solid(tile_at_hero_position_ptr))
         {
             // Collisions. Revert to original state
@@ -381,17 +421,27 @@ int main(int argc, char** argv)
                 buffalo2.active = GD_TRUE;
                 buffalo3.active = GD_TRUE;
             }
-            else
+            else if (map2.current)
+            {
+                // Transitioning to map3
+                current_map = &map3;
+                map2.current = GD_FALSE;
+                map3.current = GD_TRUE;
+                buffalo.active = GD_FALSE;
+                buffalo2.active = GD_FALSE;
+                buffalo3.active = GD_FALSE;
+                grass->active = GD_TRUE;
+            }
+            else if (map3.current)
             {
                 // Transitioning to map1
                 current_map = &map1;
                 map1.current = GD_TRUE;
-                map2.current = GD_FALSE;
+                map3.current = GD_FALSE;
                 fire.active = GD_TRUE;
-                buffalo.active = GD_FALSE;
-                buffalo2.active = GD_FALSE;
-                buffalo3.active = GD_FALSE;
+                grass->active = GD_FALSE;
             }
+
             hero.e.dest_rect.x = (int)hero.e.starting_pos.x;
             hero.e.dest_rect.y = (int)hero.e.starting_pos.y;
             camera.viewport = camera.starting_pos;
@@ -408,20 +458,7 @@ int main(int argc, char** argv)
         }
 
         // Draw
-        // TODO: Don't redraw the whole map on every frame
-        SDL_Rect tile_rect = {};
-        tile_rect.w = current_map->tile_width;
-        tile_rect.h = current_map->tile_height;
-        for (size_t row = 0; row < current_map->rows; ++row)
-        {
-            for (size_t col = 0; col < current_map->cols; ++col)
-            {
-                tile_rect.x = (int)col * current_map->tile_width;
-                tile_rect.y = (int)row * current_map->tile_height;
-                Tile* tp = current_map->tiles[row * current_map->cols + col];
-                tile_draw(tp, current_map->surface, &tile_rect);
-            }
-        }
+        map_draw(current_map, &camera);
 
         // Highlight tile under player
         // SDL_FillRect(current_map->surface, &current_tile, game.colors[YELLOW]);
@@ -430,7 +467,7 @@ int main(int argc, char** argv)
         entity_list_draw(&entity_list, current_map->surface);
 
         // Check collisions
-        for (int i = 0; i < entity_list.count; ++i) {
+        for (u32 i = 0; i < entity_list.count; ++i) {
             Entity* e = entity_list.entities[i];
             if (entity_is_hero(e)) {
                 continue;
@@ -468,6 +505,10 @@ int main(int argc, char** argv)
     map_list_destroy(&map_list);
     entity_list_destroy(&entity_list);
     game_destroy(&game);
+
+    // tileset_destroy
+    SDL_FreeSurface(tiles.surface);
+    stbi_image_free(tiles.img_data);
 
     return 0;
 }

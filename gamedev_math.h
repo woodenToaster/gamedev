@@ -51,6 +51,18 @@ int clamp(int val, int min, int max)
     }
 }
 
+void clamp_size_t(size_t* val, size_t min, size_t max)
+{
+    if (*val < min)
+    {
+        *val = min;
+    }
+    else if (*val > max)
+    {
+        *val = max;
+    }
+}
+
 // One piece of a circle split in 8 sections
 // The radians start at 2*PI on (1, 0) and go to zero counter-clockwise
 Direction get_direction_from_angle(float angle)

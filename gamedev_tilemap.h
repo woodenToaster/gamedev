@@ -43,6 +43,7 @@ struct Tile
     SDL_Rect sprite_rect;
     Animation animation;
     u8 active;
+    u8 has_animation;
     unsigned char* img_data;
     u32 destination_map;
 };
