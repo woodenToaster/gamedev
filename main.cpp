@@ -17,18 +17,33 @@
 
 #include "gamedev_definitions.h"
 
+// TODO: Get forward declarations out of here.
 struct Tile;
 u8 tile_is_solid(Tile* t);
+u8 tile_is_slow(Tile* t);
+u8 tile_is_warp(Tile* t);
 
 #include "gamedev_math.h"
+#include "gamedev_font.h"
+#include "gamedev_sound.h"
+#include "gamedev_globals.h"
+#include "gamedev_input.h"
+#include "gamedev_game.h"
+#include "gamedev_sprite_sheet.h"
+#include "gamedev_animation.h"
+#include "gamedev_plan.h"
+#include "gamedev_tilemap.h"
+#include "gamedev_entity.h"
+#include "gamedev_camera.h"
+
 #include "gamedev_font.cpp"
 #include "gamedev_sound.cpp"
 #include "gamedev_globals.h"
 #include "gamedev_asset_loading.cpp"
+#include "gamedev_input.cpp"
 #include "gamedev_game.cpp"
 #include "gamedev_sprite_sheet.cpp"
 #include "gamedev_animation.cpp"
-#include "gamedev_input.h"
 #include "gamedev_plan.cpp"
 #include "gamedev_entity.cpp"
 #include "gamedev_tilemap.cpp"
@@ -70,6 +85,8 @@ int main(int argc, char** argv)
     mud_sound.delay = 250;
     mud_sound.chunk = sound_load_wav("sounds/mud_walk.wav");
     global_sounds[MUD_SOUND] = &mud_sound;
+
+    SoundList sounds_to_play = {};
 
     Hero hero = {};
     entity_init_sprite_sheet(&hero.e, "sprites/dude.png", 4, 4);
@@ -191,12 +208,21 @@ int main(int argc, char** argv)
     Map map1 = {};
     map_init(&map1, 12, 10, map1_tiles);
     map1.current = GD_TRUE;
+    Entity* map1_entities[] = {&hero.e, &harlod};
+    map1.active_entities.entities = map1_entities;
+    map1.active_entities.count = 2;
 
     Map map2 = {};
     map_init(&map2, 12, 10, map2_tiles);
+    Entity* map2_entities[] = {&hero.e, &harlod, &buffalo, &buffalo2, &buffalo3,};
+    map2.active_entities.entities = map2_entities;
+    map2.active_entities.count = 5;
 
     Map map3 = {};
     map_init(&map3, 60, 50, map3_tiles);
+    Entity* map3_entities[] = {&hero.e, &harlod};
+    map3.active_entities.entities = map3_entities;
+    map3.active_entities.count = 2;
 
     // Draw warp out of 16 x 16 tiles
     for (int i = 4; i < 8; ++i)
@@ -238,106 +264,25 @@ int main(int argc, char** argv)
             switch (event.type)
             {
             case SDL_KEYUP:
-            {
-                SDL_Scancode key = event.key.keysym.scancode;
-
-                if (key == SDL_SCANCODE_ESCAPE)
-                {
-                    game.running = GD_FALSE;
-                }
-                if (key == SDL_SCANCODE_RIGHT || key == SDL_SCANCODE_L ||
-                    key == SDL_SCANCODE_D)
-                {
-                    input.is_pressed[KEY_RIGHT] = GD_FALSE;
-                }
-                if (key == SDL_SCANCODE_UP || key == SDL_SCANCODE_K ||
-                    key == SDL_SCANCODE_W)
-                {
-                    input.is_pressed[KEY_UP] = GD_FALSE;
-                }
-                if (key == SDL_SCANCODE_DOWN || key == SDL_SCANCODE_J ||
-                    key == SDL_SCANCODE_S)
-                {
-                    input.is_pressed[KEY_DOWN] = GD_FALSE;
-                }
-                if (key == SDL_SCANCODE_LEFT || key == SDL_SCANCODE_H ||
-                    key == SDL_SCANCODE_A)
-                {
-                    input.is_pressed[KEY_LEFT] = GD_FALSE;
-                }
-                if (key == SDL_SCANCODE_F)
-                {
-                    hero.swing_club = GD_TRUE;
-                }
+                input_update(&input, event.key.keysym.scancode, GD_FALSE);
                 break;
-            }
             case SDL_QUIT:
-            {
                 game.running = GD_FALSE;
                 break;
-            }
             case SDL_KEYDOWN:
-            {
-                SDL_Scancode key = event.key.keysym.scancode;
-                if (key == SDL_SCANCODE_RIGHT || key == SDL_SCANCODE_L ||
-                    key == SDL_SCANCODE_D)
-                {
-                    input.is_pressed[KEY_RIGHT] = GD_TRUE;
-                }
-                if (key == SDL_SCANCODE_LEFT || key == SDL_SCANCODE_H ||
-                    key == SDL_SCANCODE_A)
-                {
-                    input.is_pressed[KEY_LEFT]= GD_TRUE;
-                }
-                if (key == SDL_SCANCODE_UP || key == SDL_SCANCODE_K ||
-                    key == SDL_SCANCODE_W)
-                {
-                    input.is_pressed[KEY_UP]= GD_TRUE;
-                }
-                if (key == SDL_SCANCODE_DOWN || key == SDL_SCANCODE_J ||
-                    key == SDL_SCANCODE_S)
-                {
-                    input.is_pressed[KEY_DOWN]= GD_TRUE;
-                }
+                input_update(&input, event.key.keysym.scancode, GD_TRUE);
                 break;
-            }
             // case SDL_MOUSEMOTION:
-            // {
-            //     // get vector from center of player to mouse cursor
-            //     Point hero_center = {
-            //         hero.e.dest_rect.x + (i32)(0.5 * hero.e.dest_rect.w),
-            //         hero.e.dest_rect.y + (i32)(0.5 * hero.e.dest_rect.h)
-            //     };
-            //     Vec2 mouse_relative_to_hero;
-            //     mouse_relative_to_hero.x = hero_center.x - ((float)event.motion.x + camera.x);
-            //     mouse_relative_to_hero.y = hero_center.y - ((float)event.motion.y + camera.y);
-
-            //     float angle = 0;
-            //     if (mouse_relative_to_hero.x != 0 && mouse_relative_to_hero.y != 0)
-            //     {
-            //         angle = atan2f(mouse_relative_to_hero.y, mouse_relative_to_hero.x) + PI;
-            //     }
-
-            //     if (angle != 0)
-            //     {
-            //         hero.e.direction = get_direction_from_angle(angle);
-            //     }
+            //     input_handle_mouse(&input);
             //     break;
-            // }
-            // case SDL_MOUSEBUTTONUP:
-            // {
-            //     if (event.button.button == SDL_BUTTON_LEFT)
-            //     {
-            //         hero.swing_club = GD_TRUE;
-            //     }
-            //     break;
-            // }
             }
         }
 
         /*********************************************************************/
         /* Update                                                            */
         /*********************************************************************/
+        game_update(&game, &input);
+
         SDL_Rect saved_position = hero.e.dest_rect;
         SDL_Rect saved_camera = camera.viewport;
 
@@ -362,8 +307,7 @@ int main(int argc, char** argv)
         }
 
         // Update camera
-        camera.viewport.x = clamp(camera.viewport.x, 0, camera.max_x);
-        camera.viewport.y = clamp(camera.viewport.y, 0, camera.max_y);
+        camera_update(&camera);
 
         hero_clamp_to_map(&hero, current_map);
         entity_set_collision_point(&hero.e);
@@ -374,67 +318,20 @@ int main(int argc, char** argv)
         // Update animations
         animation_update(&hero.e.animation, last_frame_duration, hero.is_moving);
 
-        Tile* tile_at_hero_position_ptr = entity_get_tile_at_position(&hero.e, current_map);
-
-        // Handle all tiles
-        // TODO: Move to entity_check_collisions_with_tiles
-        if (tile_is_solid(tile_at_hero_position_ptr))
+        // Update hero/tile interactions
+        if (hero_check_collisions_with_tiles(&hero, current_map, &sounds_to_play))
         {
-            // Collisions. Revert to original state
             camera.viewport = saved_camera;
             hero.e.dest_rect = saved_position;
         }
-        if (tile_is_slow(tile_at_hero_position_ptr) && !hero.in_quicksand)
-        {
-            hero.e.speed -= 9;
-            hero.in_quicksand = GD_TRUE;
-            if (hero.is_moving)
-            {
-                sound_play(global_sounds[MUD_SOUND], now);
-            }
-        }
-        else if (hero.in_quicksand)
-        {
-            hero.e.speed += 9;
-            hero.in_quicksand = GD_FALSE;
-        }
-        if (tile_is_warp(tile_at_hero_position_ptr))
-        {
-            if (map1.current)
-            {
-                // Transitioning to map2
-                current_map = &map2;
-                map1.current = GD_FALSE;
-                map2.current = GD_TRUE;
-                fire.active = GD_FALSE;
-                buffalo.active = GD_TRUE;
-                buffalo2.active = GD_TRUE;
-                buffalo3.active = GD_TRUE;
-            }
-            else if (map2.current)
-            {
-                // Transitioning to map3
-                current_map = &map3;
-                map2.current = GD_FALSE;
-                map3.current = GD_TRUE;
-                buffalo.active = GD_FALSE;
-                buffalo2.active = GD_FALSE;
-                buffalo3.active = GD_FALSE;
-                grass->active = GD_TRUE;
-            }
-            else if (map3.current)
-            {
-                // Transitioning to map1
-                current_map = &map1;
-                map1.current = GD_TRUE;
-                map3.current = GD_FALSE;
-                fire.active = GD_TRUE;
-                grass->active = GD_FALSE;
-            }
 
+        if (hero.do_warp)
+        {
+            map_do_warp(&map_list, &current_map);
             hero.e.dest_rect.x = (int)hero.e.starting_pos.x;
             hero.e.dest_rect.y = (int)hero.e.starting_pos.y;
             camera.viewport = camera.starting_pos;
+            hero.do_warp = GD_FALSE;
         }
 
         ttf_font_update_pos(&ttf_tens, camera.viewport.x, camera.viewport.y);
@@ -442,19 +339,23 @@ int main(int argc, char** argv)
                             camera.viewport.y);
 
         // Check Harlod/club collisions
-        if (overlaps(&harlod.bounding_box, &hero.club_rect) && now < hero.club_swing_timeout)
-        {
-            SDL_FillRect(current_map->surface, &harlod.bounding_box, game.colors[RED]);
-        }
+        // if (overlaps(&harlod.bounding_box, &hero.club_rect) && now < hero.club_swing_timeout)
+        // {
+        //     SDL_FillRect(current_map->surface, &harlod.bounding_box, game.colors[RED]);
+        // }
 
-        // Draw
+        sound_play_all(&sounds_to_play, now);
+
+        /*********************************************************************/
+        /* Draw                                                              */
+        /*********************************************************************/
         map_draw(current_map, &camera);
 
         // Highlight tile under player
         // SDL_FillRect(current_map->surface, &current_tile, game.colors[YELLOW]);
 
         // Draw sprites on map
-        entity_list_draw(&entity_list, current_map->surface);
+        // entity_list_draw(&entity_list, current_map->surface);
 
         // Check collisions
         for (u32 i = 0; i < entity_list.count; ++i) {
@@ -477,7 +378,7 @@ int main(int argc, char** argv)
         SDL_BlitSurface(ttf_tens.surface, NULL, current_map->surface, &ttf_tens.dest);
         SDL_BlitSurface(ttf_ones.surface, NULL, current_map->surface, &ttf_ones.dest);
 
-        // Draw map
+        // Copy map surface to window surface
         SDL_BlitSurface(current_map->surface, &camera.viewport, game.window_surface, NULL);
 
         SDL_UpdateWindowSurface(game.window);

@@ -1,6 +1,8 @@
 #ifndef GD_TILE_MAP_H
 #define GD_TILE_MAP_H
 
+#include "gamedev_entity.h"
+
 enum TileProperty
 {
     TP_NONE,
@@ -67,6 +69,7 @@ struct Map
     u8 current;
     Tile** tiles;
     SDL_Surface* surface;
+    EntityList active_entities;
 };
 
 struct MapList

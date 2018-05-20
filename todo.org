@@ -4,12 +4,9 @@
 ** TODO [#C] IMGUI
 ** TODO [#C] Build SDL in debug mode
 * Gameplay
-** TODO [#A] Link swing sword animation
 ** TODO [#A] Pixel perfect collision
 *** TODO [#A] Get pixel data from sprite sheet
-** TODO [#A] Wandering buffalo basic AI and collision
-*** TODO random pause time
-*** TODO collison with other collidable entities
+** TODO [#A] Add entity lists to each map to draw
 ** TODO [#B] Use time delta and velocity for updating movement
 ** TODO Make tiles 8x8?
 ** TODO [#C] Base building screen

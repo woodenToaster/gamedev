@@ -54,3 +54,11 @@ void game_init(Game* g, u32 width, u32 height)
     game_init_colors(g);
     g->initialized = GD_TRUE;
 }
+
+void game_update(Game* g, Input* input)
+{
+    if (input->is_pressed[KEY_ESCAPE])
+    {
+        g->running = GD_FALSE;
+    }
+}

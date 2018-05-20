@@ -27,21 +27,21 @@ struct Entity
     EntityType type;
 };
 
-struct Hero
-{
-    Entity e;
-    u8 is_moving;
-    u8 in_quicksand;
-    u8 swing_club;
-    u32 next_club_swing_delay;
-    u32 club_swing_timeout;
-    SDL_Rect club_rect;
-};
-
 struct EntityList
 {
     Entity** entities;
     u32 count;
 };
 
+struct Hero
+{
+    Entity e;
+    u8 is_moving;
+    u8 in_quicksand;
+    u8 swing_club;
+    u8 do_warp;
+    u32 next_club_swing_delay;
+    u32 club_swing_timeout;
+    SDL_Rect club_rect;
+};
 #endif

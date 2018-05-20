@@ -20,6 +20,21 @@ void sound_play(Sound* s, u64 now)
     }
 }
 
+void sound_play_all(SoundList* sl, u64 now)
+{
+    for (u32 i = 0; i < sl->count; ++i)
+    {
+        sound_play(sl->items[i], now);
+        sl->items[i] = NULL;
+    }
+    sl->count = 0;
+}
+
+void sound_queue(Sound* s, SoundList* sl)
+{
+    sl->items[sl->count++] = s;
+}
+
 void sound_destroy(Sound* s)
 {
     Mix_FreeChunk(s->chunk);

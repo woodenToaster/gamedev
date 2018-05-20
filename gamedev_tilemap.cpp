@@ -154,6 +154,67 @@ void map_draw(Map* m, Camera* c)
             tile_draw(tp, m->surface, &tile_rect);
         }
     }
+
+    entity_list_draw(&m->active_entities, m->surface);
+}
+
+void map_activate_entities(Map* m)
+{
+    for (u32 i = 0; i < m->active_entities.count; ++i)
+    {
+        m->active_entities.entities[i]->active = GD_TRUE;
+    }
+}
+
+void map_deactivate_entities(Map* m)
+{
+    for (u32 i = 0; i < m->active_entities.count; ++i)
+    {
+        m->active_entities.entities[i]->active = GD_FALSE;
+    }
+}
+
+void map_do_warp(MapList* ml, Map** current_map)
+{
+    // TODO: Make this more generic
+    Map* map1 = ml->maps[0];
+    Map* map2 = ml->maps[1];
+    Map* map3 = ml->maps[2];
+
+    if (map1->current)
+    {
+        // Transitioning to map2
+        *current_map = map2;
+        map1->current = GD_FALSE;
+        map2->current = GD_TRUE;
+        // TODO: Need list of active tiles
+        // fire.active = GD_FALSE;
+
+        // TODO: Deactivate all active entties of previous map
+        map_deactivate_entities(map1);
+        map_activate_entities(map2);
+    }
+    else if (map2->current)
+    {
+        // Transitioning to map3
+        *current_map = map3;
+        map2->current = GD_FALSE;
+        map3->current = GD_TRUE;
+        // grass->active = GD_TRUE;
+        map_deactivate_entities(map2);
+        map_activate_entities(map3);
+    }
+    else if (map3->current)
+    {
+        // Transitioning to map1
+        *current_map = map1;
+        map1->current = GD_TRUE;
+        map3->current = GD_FALSE;
+        // fire.active = GD_TRUE;
+        // grass->active = GD_FALSE;
+        map_deactivate_entities(map3);
+        map_activate_entities(map1);
+    }
 }
 
 void map_destroy(Map* m)

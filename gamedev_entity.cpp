@@ -181,9 +181,6 @@ void entity_check_collisions_with_tiles(Entity* e, Map* map, SDL_Rect* saved_pos
         e->dest_rect = *saved_pos;
         switch (e->type)
         {
-        case ET_HERO:
-            // camera.viewport = saved_camera;
-            break;
         case ET_BUFFALO:
             entity_reverse_direction(e);
             break;
@@ -191,48 +188,6 @@ void entity_check_collisions_with_tiles(Entity* e, Map* map, SDL_Rect* saved_pos
             break;
         }
     }
-    // if (tile_is_slow(current_tile) && !e->in_quicksand)
-    // {
-    //     e->speed -= 9;
-    //     e->in_quicksand = GD_TRUE;
-    //     if (e->is_moving && entity_is_hero(e))
-    //     {
-    //         sound_play(global_sounds[MUD_SOUND], now);
-    //     }
-    // }
-    // else if (hero.in_quicksand)
-    // {
-    //     hero.e.speed += 9;
-    //     hero.in_quicksand = GD_FALSE;
-    // }
-    // if (tile_is_warp(current_tile))
-    // {
-    //     if (map1.current)
-    //     {
-    //         // Transitioning to map2
-    //         current_map = &map2;
-    //         map1.current = GD_FALSE;
-    //         map2.current = GD_TRUE;
-    //         fire.active = GD_FALSE;
-    //         buffalo.active = GD_TRUE;
-    //         buffalo2.active = GD_TRUE;
-    //         buffalo3.active = GD_TRUE;
-    //     }
-    //     else
-    //     {
-    //         // Transitioning to map1
-    //         current_map = &map1;
-    //         map1.current = GD_TRUE;
-    //         map2.current = GD_FALSE;
-    //         fire.active = GD_TRUE;
-    //         buffalo.active = GD_FALSE;
-    //         buffalo2.active = GD_FALSE;
-    //         buffalo3.active = GD_FALSE;
-    //     }
-    //     hero.e.dest_rect.x = (int)hero.e.starting_pos.x;
-    //     hero.e.dest_rect.y = (int)hero.e.starting_pos.y;
-    //     camera.viewport = camera.starting_pos;
-    // }
 }
 
 void entity_set_collision_point(Entity* e)
@@ -335,7 +290,8 @@ void hero_update(Hero* h, Input* input, Camera* camera, Map* map)
             camera->viewport.y -= h->e.speed;
         }
     }
-    if (input->is_pressed[KEY_DOWN]) {
+    if (input->is_pressed[KEY_DOWN])
+    {
         if (input->is_pressed[KEY_LEFT] || input->is_pressed[KEY_RIGHT])
         {
             h->e.dest_rect.y += 7;
@@ -352,6 +308,42 @@ void hero_update(Hero* h, Input* input, Camera* camera, Map* map)
             camera->viewport.y += h->e.speed;
         }
     }
+    if (input->is_pressed[KEY_F])
+    {
+        h->swing_club = GD_TRUE;
+    }
+}
+
+// TODO: Make SoundList a global?
+u8 hero_check_collisions_with_tiles(Hero* h, Map* map, SoundList* sl)
+{
+    Tile* current_tile = entity_get_tile_at_position(&h->e, map);
+    u8 restore_position = GD_FALSE;
+
+    if (tile_is_solid(current_tile))
+    {
+        restore_position  = GD_TRUE;
+    }
+    if (tile_is_slow(current_tile) && !h->in_quicksand)
+    {
+        h->e.speed -= 9;
+        h->in_quicksand = GD_TRUE;
+        if (h->is_moving)
+        {
+            sound_queue(global_sounds[MUD_SOUND], sl);
+        }
+    }
+    else if (h->in_quicksand)
+    {
+        h->e.speed += 9;
+        h->in_quicksand = GD_FALSE;
+    }
+    if (tile_is_warp(current_tile))
+    {
+        h->do_warp = GD_TRUE;
+    }
+
+    return restore_position;
 }
 
 void hero_update_club(Hero* h, u32 now)
