@@ -8,7 +8,7 @@ struct Entity
 {
     SpriteSheet sprite_sheet;
     Animation animation;
-    Plan plan;
+    Plan* plan;
     SDL_Rect sprite_rect;
     int speed;
     Direction direction;

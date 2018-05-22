@@ -2,6 +2,13 @@
 #include "gamedev_camera.h"
 #include "gamedev_plan.h"
 
+bool overlaps(SDL_Rect* r1, SDL_Rect* r2)
+{
+    bool x_overlap = r1->x + r1->w > r2->x && r1->x < r2->x + r2->w;
+    bool y_overlap = r1->y + r1->h > r2->y && r1->y < r2->y + r2->h;
+    return x_overlap && y_overlap;
+}
+
 void entity_init_sprite_sheet(Entity* e, const char* path, int num_x, int num_y)
 {
     sprite_sheet_load(&e->sprite_sheet, path, num_x, num_y);
@@ -154,19 +161,19 @@ Tile* entity_get_tile_at_position(Entity* e, Map* map)
 void entity_reverse_direction(Entity* e)
 {
     // TODO: Try to use entity direction directly instead of plan.mv_dir
-    switch (e->plan.mv_dir)
+    switch (e->plan->mv_dir)
     {
     case CARDINAL_NORTH:
-        e->plan.mv_dir = CARDINAL_SOUTH;
+        e->plan->mv_dir = CARDINAL_SOUTH;
         break;
     case CARDINAL_SOUTH:
-        e->plan.mv_dir = CARDINAL_NORTH;
+        e->plan->mv_dir = CARDINAL_NORTH;
         break;
     case CARDINAL_EAST:
-        e->plan.mv_dir = CARDINAL_WEST;
+        e->plan->mv_dir = CARDINAL_WEST;
         break;
     case CARDINAL_WEST:
-        e->plan.mv_dir = CARDINAL_EAST;
+        e->plan->mv_dir = CARDINAL_EAST;
         break;
     }
 }
@@ -203,7 +210,7 @@ void entity_update(Entity* e, Map* map, u32 last_frame_duration)
         if (e->can_move && e->active)
         {
             SDL_Rect saved_position = e->dest_rect;
-            entity_move_in_direction(e, e->plan.mv_dir);
+            entity_move_in_direction(e, e->plan->mv_dir);
             animation_update(&e->animation, last_frame_duration, GD_TRUE);
             entity_set_collision_point(e);
             entity_check_collisions_with_tiles(e, map, &saved_position);
@@ -247,17 +254,17 @@ void entity_list_destroy(EntityList* el)
 }
 
 // TODO: Shouldn't need the camera and map width/height in here
-void hero_update(Hero* h, Input* input, Camera* camera, Map* map)
+void hero_update(Hero* h, Input* input, Game* g)
 {
     if (input->is_pressed[KEY_RIGHT])
     {
         h->e.dest_rect.x += h->e.speed;
         h->e.sprite_rect.y = 2 * h->e.sprite_sheet.sprite_height;
 
-        if (h->e.dest_rect.x > camera->x_pixel_movement_threshold &&
-            camera->viewport.x < camera->max_x)
+        if (h->e.dest_rect.x > g->camera.x_pixel_movement_threshold &&
+            g->camera.viewport.x < g->camera.max_x)
         {
-            camera->viewport.x += h->e.speed;
+            g->camera.viewport.x += h->e.speed;
         }
     }
     if (input->is_pressed[KEY_LEFT])
@@ -265,10 +272,10 @@ void hero_update(Hero* h, Input* input, Camera* camera, Map* map)
         h->e.dest_rect.x -= h->e.speed;
         h->e.sprite_rect.y = 1 * h->e.sprite_sheet.sprite_height;
         if (h->e.dest_rect.x <
-            map->width_pixels - camera->x_pixel_movement_threshold &&
-            camera->viewport.x > 0)
+            g->current_map->width_pixels - g->camera.x_pixel_movement_threshold &&
+            g->camera.viewport.x > 0)
         {
-            camera->viewport.x -= h->e.speed;
+            g->camera.viewport.x -= h->e.speed;
         }
     }
     if (input->is_pressed[KEY_UP])
@@ -284,10 +291,10 @@ void hero_update(Hero* h, Input* input, Camera* camera, Map* map)
         h->e.sprite_rect.y = 3 * h->e.sprite_sheet.sprite_height;
 
         if (h->e.dest_rect.y <
-            map->height_pixels - camera->y_pixel_movement_threshold &&
-            camera->viewport.y > 0)
+            g->current_map->height_pixels - g->camera.y_pixel_movement_threshold &&
+            g->camera.viewport.y > 0)
         {
-            camera->viewport.y -= h->e.speed;
+            g->camera.viewport.y -= h->e.speed;
         }
     }
     if (input->is_pressed[KEY_DOWN])
@@ -302,10 +309,10 @@ void hero_update(Hero* h, Input* input, Camera* camera, Map* map)
         }
         h->e.sprite_rect.y = 0 * h->e.sprite_sheet.sprite_height;
 
-        if (h->e.dest_rect.y > camera->y_pixel_movement_threshold &&
-            camera->viewport.y < camera->max_y)
+        if (h->e.dest_rect.y > g->camera.y_pixel_movement_threshold &&
+            g->camera.viewport.y < g->camera.max_y)
         {
-            camera->viewport.y += h->e.speed;
+            g->camera.viewport.y += h->e.speed;
         }
     }
     if (input->is_pressed[KEY_F])
@@ -344,6 +351,22 @@ u8 hero_check_collisions_with_tiles(Hero* h, Map* map, SoundList* sl)
     }
 
     return restore_position;
+}
+
+void hero_check_collisions_with_entities(Hero* h, Game* game)
+{
+    for (u32 i = 0; i < game->current_map->active_entities.count; ++i) {
+        Entity* e = game->current_map->active_entities.entities[i];
+        if (entity_is_hero(e)) {
+            continue;
+        }
+        if (e->active && overlaps(&h->e.bounding_box, &e->bounding_box))
+        {
+            SDL_Rect overlap_box = entity_get_overlap_box(&h->e, e);
+            SDL_FillRect(game->current_map->surface, &overlap_box, game->colors[MAGENTA]);
+            // TODO: pixel collision
+        }
+    }
 }
 
 void hero_update_club(Hero* h, u32 now)
@@ -404,7 +427,7 @@ void hero_draw_club(Hero* h, u32 now, SDL_Surface* map_surface, u32 color)
     }
 }
 
-Entity create_buffalo(int starting_x, int starting_y)
+Entity create_buffalo(int starting_x, int starting_y, Plan* plan)
 {
     Entity buffalo = {};
     entity_init_sprite_sheet(&buffalo, "sprites/Buffalo.png", 4, 1);
@@ -417,16 +440,10 @@ Entity create_buffalo(int starting_x, int starting_y)
     buffalo.can_move = GD_TRUE;
     buffalo.collision_pt_offset = 32;
     animation_init(&buffalo.animation, 4, 100);
-    buffalo.plan = {};
+    buffalo.plan = plan;
     buffalo.has_plan = GD_TRUE;
-    buffalo.plan.move_delay = (rand() % 2000) + 1000;
-    buffalo.plan.mv_dir = (CardinalDir)(rand() % 4);
+    buffalo.plan->move_delay = (rand() % 2000) + 1000;
+    buffalo.plan->mv_dir = (CardinalDir)(rand() % 4);
     return buffalo;
 }
 
-bool overlaps(SDL_Rect* r1, SDL_Rect* r2)
-{
-    bool x_overlap = r1->x + r1->w > r2->x && r1->x < r2->x + r2->w;
-    bool y_overlap = r1->y + r1->h > r2->y && r1->y < r2->y + r2->h;
-    return x_overlap && y_overlap;
-}

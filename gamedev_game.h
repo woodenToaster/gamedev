@@ -1,6 +1,8 @@
 #ifndef GD_GAME_H
 #define GD_GAME_H
 
+#include "gamedev_tilemap.h"
+
 enum Colors
 {
     GREEN,
@@ -25,5 +27,7 @@ struct Game
     SDL_Window* window;
     SDL_Surface* window_surface;
     u32 colors[COLOR_LAST];
+    Camera camera;
+    Map* current_map;
 };
 #endif

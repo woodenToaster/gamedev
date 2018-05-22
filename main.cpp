@@ -14,7 +14,6 @@
 #include "stdlib.h"
 #include "math.h"
 
-
 #include "gamedev_definitions.h"
 
 // TODO: Get forward declarations out of here.
@@ -23,14 +22,18 @@ u8 tile_is_solid(Tile* t);
 u8 tile_is_slow(Tile* t);
 u8 tile_is_warp(Tile* t);
 
+struct Plan;
+
+#include "gamedev_animation.cpp"
+
 #include "gamedev_math.h"
 #include "gamedev_font.h"
 #include "gamedev_sound.h"
 #include "gamedev_globals.h"
 #include "gamedev_input.h"
+#include "gamedev_camera.cpp"
 #include "gamedev_game.h"
 #include "gamedev_sprite_sheet.h"
-#include "gamedev_animation.h"
 #include "gamedev_plan.h"
 #include "gamedev_tilemap.h"
 #include "gamedev_entity.h"
@@ -43,11 +46,9 @@ u8 tile_is_warp(Tile* t);
 #include "gamedev_input.cpp"
 #include "gamedev_game.cpp"
 #include "gamedev_sprite_sheet.cpp"
-#include "gamedev_animation.cpp"
 #include "gamedev_plan.cpp"
 #include "gamedev_entity.cpp"
 #include "gamedev_tilemap.cpp"
-#include "gamedev_camera.cpp"
 
 struct Tileset
 {
@@ -109,9 +110,13 @@ int main(int argc, char** argv)
     harlod.active = GD_TRUE;
 
     // Buffalo
-    Entity buffalo = create_buffalo(400, 200);
-    Entity buffalo2 = create_buffalo(500, 500);
-    Entity buffalo3 = create_buffalo(600, 100);
+    // TODO: :/
+    Plan plan1 = {};
+    Plan plan2 = {};
+    Plan plan3 = {};
+    Entity buffalo = create_buffalo(400, 200, &plan1);
+    Entity buffalo2 = create_buffalo(500, 500, &plan2);
+    Entity buffalo3 = create_buffalo(600, 100, &plan3);
 
     EntityList entity_list = {};
     Entity* _entities[] = {&hero.e, &harlod, &buffalo, &buffalo2, &buffalo3};
@@ -239,11 +244,8 @@ int main(int argc, char** argv)
     map_list.maps = _maps;
     map_list.count = 3;
 
-    Map* current_map = &map1;
-
-    // Camera
-    Camera camera = {};
-    camera_init(&camera, &game, current_map);
+    game.current_map = &map1;
+    game_init_camera(&game);
 
     u32 last_frame_duration = 0;
 
@@ -284,10 +286,10 @@ int main(int argc, char** argv)
         game_update(&game, &input);
 
         SDL_Rect saved_position = hero.e.dest_rect;
-        SDL_Rect saved_camera = camera.viewport;
+        SDL_Rect saved_camera = game.camera.viewport;
 
-        map_update_tiles(current_map, last_frame_duration);
-        hero_update(&hero, &input, &camera, current_map);
+        map_update_tiles(game.current_map, last_frame_duration);
+        hero_update(&hero, &input, &game);
         hero_update_club(&hero, now);
 
         if (saved_position.x != hero.e.dest_rect.x ||
@@ -306,81 +308,43 @@ int main(int argc, char** argv)
             hero.e.sprite_rect.x = 0;
         }
 
-        // Update camera
-        camera_update(&camera);
-
-        hero_clamp_to_map(&hero, current_map);
+        camera_update(&game.camera);
+        hero_clamp_to_map(&hero, game.current_map);
         entity_set_collision_point(&hero.e);
-
-        // Update entities
-        entity_list_update(&entity_list, current_map, last_frame_duration);
-
-        // Update animations
+        entity_list_update(&entity_list, game.current_map, last_frame_duration);
         animation_update(&hero.e.animation, last_frame_duration, hero.is_moving);
 
-        // Update hero/tile interactions
-        if (hero_check_collisions_with_tiles(&hero, current_map, &sounds_to_play))
+        if (hero_check_collisions_with_tiles(&hero, game.current_map, &sounds_to_play))
         {
-            camera.viewport = saved_camera;
+            game.camera.viewport = saved_camera;
             hero.e.dest_rect = saved_position;
         }
 
         if (hero.do_warp)
         {
-            map_do_warp(&map_list, &current_map);
+            map_do_warp(&map_list, &game.current_map);
             hero.e.dest_rect.x = (int)hero.e.starting_pos.x;
             hero.e.dest_rect.y = (int)hero.e.starting_pos.y;
-            camera.viewport = camera.starting_pos;
+            game.camera.viewport = game.camera.starting_pos;
             hero.do_warp = GD_FALSE;
         }
 
-        ttf_font_update_pos(&ttf_tens, camera.viewport.x, camera.viewport.y);
-        ttf_font_update_pos(&ttf_ones, camera.viewport.x + ((int)font_size / 2),
-                            camera.viewport.y);
-
-        // Check Harlod/club collisions
-        // if (overlaps(&harlod.bounding_box, &hero.club_rect) && now < hero.club_swing_timeout)
-        // {
-        //     SDL_FillRect(current_map->surface, &harlod.bounding_box, game.colors[RED]);
-        // }
+        ttf_font_update_pos(&ttf_tens, game.camera.viewport.x, game.camera.viewport.y);
+        ttf_font_update_pos(&ttf_ones, game.camera.viewport.x + ((int)font_size / 2),
+                            game.camera.viewport.y);
 
         sound_play_all(&sounds_to_play, now);
 
         /*********************************************************************/
         /* Draw                                                              */
         /*********************************************************************/
-        map_draw(current_map, &camera);
-
-        // Highlight tile under player
-        // SDL_FillRect(current_map->surface, &current_tile, game.colors[YELLOW]);
-
-        // Draw sprites on map
-        // entity_list_draw(&entity_list, current_map->surface);
-
-        // Check collisions
-        for (u32 i = 0; i < entity_list.count; ++i) {
-            Entity* e = entity_list.entities[i];
-            if (entity_is_hero(e)) {
-                continue;
-            }
-            if (e->active && overlaps(&hero.e.bounding_box, &e->bounding_box))
-            {
-                SDL_Rect overlap_box = entity_get_overlap_box(&hero.e, e);
-                SDL_FillRect(current_map->surface, &overlap_box, game.colors[MAGENTA]);
-                // TODO: pixel collision
-            }
-        }
-
-        // Draw hero club
-        hero_draw_club(&hero, now, current_map->surface, game.colors[BLACK]);
-
-        // Draw FPS
-        SDL_BlitSurface(ttf_tens.surface, NULL, current_map->surface, &ttf_tens.dest);
-        SDL_BlitSurface(ttf_ones.surface, NULL, current_map->surface, &ttf_ones.dest);
-
-        // Copy map surface to window surface
-        SDL_BlitSurface(current_map->surface, &camera.viewport, game.window_surface, NULL);
-
+        map_draw(game.current_map, &game.camera);
+        hero_check_collisions_with_entities(&hero, &game);
+        hero_draw_club(&hero, now, game.current_map->surface, game.colors[BLACK]);
+        SDL_BlitSurface(ttf_tens.surface, NULL, game.current_map->surface, &ttf_tens.dest);
+        SDL_BlitSurface(ttf_ones.surface, NULL, game.current_map->surface, &ttf_ones.dest);
+        SDL_BlitSurface(game.current_map->surface, &game.camera.viewport,
+                        game.window_surface, NULL);
         SDL_UpdateWindowSurface(game.window);
 
         SDL_Delay(26);
