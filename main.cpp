@@ -178,6 +178,7 @@ int main(int argc, char** argv)
     Tile grass_warp = {};
     grass_warp.tile_width = grass_warp.tile_height = 16;
     tile_init(&grass_warp, tile_properties[TP_WARP], game.colors[RUST]);
+    // TODO: Make destination work
     grass_warp.destination_map = 1;
 
     // Map
@@ -219,6 +220,9 @@ int main(int argc, char** argv)
     Entity* map1_entities[] = {&hero.e, &harlod};
     map1.active_entities.entities = map1_entities;
     map1.active_entities.count = 2;
+    Tile* map1_active_tiles[] = {&fire};
+    map1.active_tiles.tiles = map1_active_tiles;
+    map1.active_tiles.count = 1;
 
     Map map2 = {};
     map_init(&map2, 12, 10, map2_tiles);
@@ -231,6 +235,9 @@ int main(int argc, char** argv)
     Entity* map3_entities[] = {&hero.e, &harlod};
     map3.active_entities.entities = map3_entities;
     map3.active_entities.count = 2;
+    Tile* map3_active_tiles[] = {grass};
+    map3.active_tiles.tiles = map3_active_tiles;
+    map3.active_tiles.count = 1;
 
     // Draw warp out of 16 x 16 tiles
     for (int i = 4; i < 8; ++i)
@@ -331,12 +338,14 @@ int main(int argc, char** argv)
         ttf_font_update_pos(&ttf_ones, game.camera.viewport.x + ((int)font_size / 2),
                             game.camera.viewport.y);
 
-        sound_play_all(&sounds_to_play, now);
+        sound_play_all(game.sounds, now);
 
         /*********************************************************************/
         /* Draw                                                              */
         /*********************************************************************/
-        map_draw(game.current_map, &game.camera);
+        map_draw(&game);
+
+        // Only for drawing overlap boxes
         hero_check_collisions_with_entities(&hero, &game);
         hero_draw_club(&hero, now, game.current_map->surface, game.colors[BLACK]);
         SDL_BlitSurface(ttf_tens.surface, NULL, game.current_map->surface, &ttf_tens.dest);

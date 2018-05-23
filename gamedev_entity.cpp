@@ -43,9 +43,10 @@ u8 entity_is_hero(Entity* e)
     return e->type == ET_HERO;
 }
 
-void entity_draw(Entity* e, SDL_Surface* map)
+void entity_draw(Entity* e, Game* g)
 {
-    // Draw sprite
+    SDL_Surface* map = g->current_map->surface;
+
     if (e->active)
     {
         e->sprite_rect.x = e->sprite_rect.w * e->animation.current_frame;
@@ -80,8 +81,7 @@ void entity_draw(Entity* e, SDL_Surface* map)
     bb_bottom.w = e->bounding_box.w + bb_line_width;
     bb_bottom.h = bb_line_width;
 
-    // TODO: Need global access to colors
-    u32 magenta = 16711935;
+    u32 magenta = g->colors[MAGENTA];
     if (e->active)
     {
         SDL_FillRect(map, &bb_top, magenta);
@@ -237,11 +237,11 @@ void entity_list_update(EntityList* el, Map* map, u32 last_frame_duration)
     }
 }
 
-void entity_list_draw(EntityList* el, SDL_Surface* map_surface)
+void entity_list_draw(EntityList* el, Game* g)
 {
     for (u32 i = 0; i < el->count; ++i)
     {
-        entity_draw(el->entities[i], map_surface);
+        entity_draw(el->entities[i], g);
     }
 }
 
@@ -253,7 +253,6 @@ void entity_list_destroy(EntityList* el)
     }
 }
 
-// TODO: Shouldn't need the camera and map width/height in here
 void hero_update(Hero* h, Input* input, Game* g)
 {
     if (input->is_pressed[KEY_RIGHT])

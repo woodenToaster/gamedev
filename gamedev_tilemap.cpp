@@ -130,8 +130,11 @@ void map_update_tiles(Map* m, u32 last_frame_duration)
     }
 }
 
-void map_draw(Map* m, Camera* c)
+void map_draw(Game* g)
 {
+    Map* m = g->current_map;
+    Camera* c = &g->camera;
+
     // TODO: Only draw tiles that have changed
     size_t first_row = c->viewport.y / m->tile_height;
     size_t last_row = first_row + c->viewport.h / m->tile_height + 1;
@@ -155,7 +158,7 @@ void map_draw(Map* m, Camera* c)
         }
     }
 
-    entity_list_draw(&m->active_entities, m->surface);
+    entity_list_draw(&m->active_entities, g);
 }
 
 void map_activate_entities(Map* m)
@@ -174,6 +177,22 @@ void map_deactivate_entities(Map* m)
     }
 }
 
+void map_activate_tiles(Map* m)
+{
+    for (u32 i = 0; i < m->active_tiles.count; ++i)
+    {
+        m->active_tiles.tiles[i]->active = GD_TRUE;
+    }
+}
+
+void map_deactivate_tiles(Map* m)
+{
+    for (u32 i = 0; i < m->active_tiles.count; ++i)
+    {
+        m->active_tiles.tiles[i]->active = GD_FALSE;
+    }
+}
+
 void map_do_warp(Game* g)
 {
     // TODO: Make this more generic
@@ -187,11 +206,10 @@ void map_do_warp(Game* g)
         g->current_map = map2;
         map1->current = GD_FALSE;
         map2->current = GD_TRUE;
-        // TODO: Need list of active tiles
-        // fire.active = GD_FALSE;
-
         map_deactivate_entities(map1);
+        map_deactivate_tiles(map1);
         map_activate_entities(map2);
+        map_activate_tiles(map2);
     }
     else if (map2->current)
     {
@@ -199,9 +217,10 @@ void map_do_warp(Game* g)
         g->current_map = map3;
         map2->current = GD_FALSE;
         map3->current = GD_TRUE;
-        // grass->active = GD_TRUE;
         map_deactivate_entities(map2);
         map_activate_entities(map3);
+        map_deactivate_tiles(map2);
+        map_activate_tiles(map3);
     }
     else if (map3->current)
     {
@@ -209,10 +228,10 @@ void map_do_warp(Game* g)
         g->current_map = map1;
         map1->current = GD_TRUE;
         map3->current = GD_FALSE;
-        // fire.active = GD_TRUE;
-        // grass->active = GD_FALSE;
         map_deactivate_entities(map3);
         map_activate_entities(map1);
+        map_deactivate_tiles(map3);
+        map_activate_tiles(map1);
     }
 }
 

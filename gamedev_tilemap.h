@@ -17,6 +17,7 @@ enum TileProperty
 };
 
 static u32 tile_properties[TP_LAST] = {
+    // Designated initializer syntax only available in C
     /* [TP_NONE] = 0x0, */
     /* [TP_SOLID] = 0x01 << 0, */
     /* [TP_WATER] = 0x01 << 1, */
@@ -70,6 +71,7 @@ struct Map
     Tile** tiles;
     SDL_Surface* surface;
     EntityList active_entities;
+    TileList active_tiles;
 };
 
 struct MapList
