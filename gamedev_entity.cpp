@@ -321,10 +321,9 @@ void hero_update(Hero* h, Input* input, Game* g)
     }
 }
 
-// TODO: Make SoundList a global?
-u8 hero_check_collisions_with_tiles(Hero* h, Map* map, SoundList* sl)
+u8 hero_check_collisions_with_tiles(Hero* h, Game* game)
 {
-    Tile* current_tile = entity_get_tile_at_position(&h->e, map);
+    Tile* current_tile = entity_get_tile_at_position(&h->e, game->current_map);
     u8 restore_position = GD_FALSE;
 
     if (tile_is_solid(current_tile))
@@ -337,7 +336,7 @@ u8 hero_check_collisions_with_tiles(Hero* h, Map* map, SoundList* sl)
         h->in_quicksand = GD_TRUE;
         if (h->is_moving)
         {
-            sound_queue(global_sounds[MUD_SOUND], sl);
+            sound_queue(global_sounds[MUD_SOUND], game->sounds);
         }
     }
     else if (h->in_quicksand)
@@ -347,7 +346,10 @@ u8 hero_check_collisions_with_tiles(Hero* h, Map* map, SoundList* sl)
     }
     if (tile_is_warp(current_tile))
     {
-        h->do_warp = GD_TRUE;
+        map_do_warp(game);
+        h->e.dest_rect.x = (int)h->e.starting_pos.x;
+        h->e.dest_rect.y = (int)h->e.starting_pos.y;
+        game->camera.viewport = game->camera.starting_pos;
     }
 
     return restore_position;

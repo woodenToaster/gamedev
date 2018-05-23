@@ -174,30 +174,29 @@ void map_deactivate_entities(Map* m)
     }
 }
 
-void map_do_warp(MapList* ml, Map** current_map)
+void map_do_warp(Game* g)
 {
     // TODO: Make this more generic
-    Map* map1 = ml->maps[0];
-    Map* map2 = ml->maps[1];
-    Map* map3 = ml->maps[2];
+    Map* map1 = g->maps->maps[0];
+    Map* map2 = g->maps->maps[1];
+    Map* map3 = g->maps->maps[2];
 
     if (map1->current)
     {
         // Transitioning to map2
-        *current_map = map2;
+        g->current_map = map2;
         map1->current = GD_FALSE;
         map2->current = GD_TRUE;
         // TODO: Need list of active tiles
         // fire.active = GD_FALSE;
 
-        // TODO: Deactivate all active entties of previous map
         map_deactivate_entities(map1);
         map_activate_entities(map2);
     }
     else if (map2->current)
     {
         // Transitioning to map3
-        *current_map = map3;
+        g->current_map = map3;
         map2->current = GD_FALSE;
         map3->current = GD_TRUE;
         // grass->active = GD_TRUE;
@@ -207,7 +206,7 @@ void map_do_warp(MapList* ml, Map** current_map)
     else if (map3->current)
     {
         // Transitioning to map1
-        *current_map = map1;
+        g->current_map = map1;
         map1->current = GD_TRUE;
         map3->current = GD_FALSE;
         // fire.active = GD_TRUE;

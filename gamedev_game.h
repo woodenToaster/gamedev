@@ -29,5 +29,7 @@ struct Game
     u32 colors[COLOR_LAST];
     Camera camera;
     Map* current_map;
+    MapList* maps;
+    SoundList* sounds;
 };
 #endif

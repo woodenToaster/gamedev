@@ -24,6 +24,9 @@ u8 tile_is_warp(Tile* t);
 
 struct Plan;
 
+struct Game;
+void map_do_warp(Game* game);
+
 #include "gamedev_animation.cpp"
 
 #include "gamedev_math.h"
@@ -246,6 +249,8 @@ int main(int argc, char** argv)
 
     game.current_map = &map1;
     game_init_camera(&game);
+    game.maps = &map_list;
+    game.sounds = &sounds_to_play;
 
     u32 last_frame_duration = 0;
 
@@ -259,7 +264,9 @@ int main(int argc, char** argv)
         ttf_font_create_bitmap(&ttf_tens, a[0]);
         ttf_font_create_bitmap(&ttf_ones, a[1]);
 
-        // Input
+        /*********************************************************************/
+        /* Input                                                             */
+        /*********************************************************************/
         SDL_Event event;
         while(SDL_PollEvent(&event))
         {
@@ -314,19 +321,10 @@ int main(int argc, char** argv)
         entity_list_update(&entity_list, game.current_map, last_frame_duration);
         animation_update(&hero.e.animation, last_frame_duration, hero.is_moving);
 
-        if (hero_check_collisions_with_tiles(&hero, game.current_map, &sounds_to_play))
+        if (hero_check_collisions_with_tiles(&hero, &game))
         {
             game.camera.viewport = saved_camera;
             hero.e.dest_rect = saved_position;
-        }
-
-        if (hero.do_warp)
-        {
-            map_do_warp(&map_list, &game.current_map);
-            hero.e.dest_rect.x = (int)hero.e.starting_pos.x;
-            hero.e.dest_rect.y = (int)hero.e.starting_pos.y;
-            game.camera.viewport = game.camera.starting_pos;
-            hero.do_warp = GD_FALSE;
         }
 
         ttf_font_update_pos(&ttf_tens, game.camera.viewport.x, game.camera.viewport.y);
