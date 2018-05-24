@@ -98,6 +98,12 @@ void tile_list_destroy(TileList* tl)
     }
 }
 
+void tileset_destroy(Tileset* ts)
+{
+    SDL_FreeSurface(ts->surface);
+    stbi_image_free(ts->img_data);
+}
+
 void map_init(Map* m, u32 cols, u32 rows, Tile** tiles)
 {
     m->cols = cols;

@@ -6,7 +6,6 @@
 * Gameplay
 ** TODO [#A] Pixel perfect collision
 *** TODO [#A] Get pixel data from sprite sheet
-** TODO [#A] Add entity lists to each map to draw
 ** TODO [#B] Use time delta and velocity for updating movement
 ** TODO Make tiles 8x8?
 ** TODO [#C] Base building screen

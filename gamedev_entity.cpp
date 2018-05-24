@@ -253,8 +253,50 @@ void entity_list_destroy(EntityList* el)
     }
 }
 
+void hero_check_collisions_with_tiles(Hero* h, Game* game, SDL_Rect saved_position,
+                                      SDL_Rect saved_camera)
+{
+    Tile* current_tile = entity_get_tile_at_position(&h->e, game->current_map);
+
+    if (tile_is_solid(current_tile))
+    {
+        game->camera.viewport = saved_camera;
+        h->e.dest_rect = saved_position;
+    }
+    if (tile_is_slow(current_tile) && !h->in_quicksand)
+    {
+        h->e.speed -= 9;
+        h->in_quicksand = GD_TRUE;
+        if (h->is_moving)
+        {
+            sound_queue(global_sounds[MUD_SOUND], game->sounds);
+        }
+    }
+    else if (h->in_quicksand)
+    {
+        h->e.speed += 9;
+        h->in_quicksand = GD_FALSE;
+    }
+    if (tile_is_warp(current_tile))
+    {
+        map_do_warp(game);
+        h->e.dest_rect.x = (int)h->e.starting_pos.x;
+        h->e.dest_rect.y = (int)h->e.starting_pos.y;
+        game->camera.viewport = game->camera.starting_pos;
+    }
+}
+
+void hero_clamp_to_map(Hero* h, Map* map)
+{
+    h->e.dest_rect.x = clamp(h->e.dest_rect.x, 0, map->width_pixels - h->e.dest_rect.w);
+    h->e.dest_rect.y = clamp(h->e.dest_rect.y, 0, map->height_pixels - h->e.dest_rect.h);
+}
+
 void hero_update(Hero* h, Input* input, Game* g)
 {
+    SDL_Rect saved_position = h->e.dest_rect;
+    SDL_Rect saved_viewport = g->camera.viewport;
+
     if (input->is_pressed[KEY_RIGHT])
     {
         h->e.dest_rect.x += h->e.speed;
@@ -313,45 +355,32 @@ void hero_update(Hero* h, Input* input, Game* g)
         {
             g->camera.viewport.y += h->e.speed;
         }
+
     }
     if (input->is_pressed[KEY_F])
     {
         h->swing_club = GD_TRUE;
     }
-}
 
-u8 hero_check_collisions_with_tiles(Hero* h, Game* game)
-{
-    Tile* current_tile = entity_get_tile_at_position(&h->e, game->current_map);
-    u8 restore_position = GD_FALSE;
-
-    if (tile_is_solid(current_tile))
+    if (saved_position.x != h->e.dest_rect.x ||
+        saved_position.y != h->e.dest_rect.y)
     {
-        restore_position  = GD_TRUE;
+        h->is_moving = GD_TRUE;
     }
-    if (tile_is_slow(current_tile) && !h->in_quicksand)
+    else
     {
-        h->e.speed -= 9;
-        h->in_quicksand = GD_TRUE;
-        if (h->is_moving)
-        {
-            sound_queue(global_sounds[MUD_SOUND], game->sounds);
-        }
-    }
-    else if (h->in_quicksand)
-    {
-        h->e.speed += 9;
-        h->in_quicksand = GD_FALSE;
-    }
-    if (tile_is_warp(current_tile))
-    {
-        map_do_warp(game);
-        h->e.dest_rect.x = (int)h->e.starting_pos.x;
-        h->e.dest_rect.y = (int)h->e.starting_pos.y;
-        game->camera.viewport = game->camera.starting_pos;
+        h->is_moving = GD_FALSE;
     }
 
-    return restore_position;
+    if (!h->is_moving)
+    {
+        h->e.animation.current_frame = 0;
+        h->e.sprite_rect.x = 0;
+    }
+
+    hero_clamp_to_map(h, g->current_map);
+    entity_set_collision_point(&h->e);
+    hero_check_collisions_with_tiles(h, g, saved_position, saved_viewport);
 }
 
 void hero_check_collisions_with_entities(Hero* h, Game* game)
@@ -364,6 +393,7 @@ void hero_check_collisions_with_entities(Hero* h, Game* game)
         if (e->active && overlaps(&h->e.bounding_box, &e->bounding_box))
         {
             SDL_Rect overlap_box = entity_get_overlap_box(&h->e, e);
+            // TODO: Handle properly instead of just drawing the overlap.
             SDL_FillRect(game->current_map->surface, &overlap_box, game->colors[MAGENTA]);
             // TODO: pixel collision
         }
@@ -413,18 +443,11 @@ void hero_update_club(Hero* h, u32 now)
     }
 }
 
-void hero_clamp_to_map(Hero* h, Map* map)
-{
-    h->e.dest_rect.x = clamp(h->e.dest_rect.x, 0, map->width_pixels - h->e.dest_rect.w);
-    h->e.dest_rect.y = clamp(h->e.dest_rect.y, 0, map->height_pixels - h->e.dest_rect.h);
-}
-
-
-void hero_draw_club(Hero* h, u32 now, SDL_Surface* map_surface, u32 color)
+void hero_draw_club(Hero* h, u32 now, Game* g)
 {
     if (now < h->club_swing_timeout)
     {
-        SDL_FillRect(map_surface, &h->club_rect, color);
+        SDL_FillRect(g->current_map->surface, &h->club_rect, g->colors[BLACK]);
     }
 }
 

@@ -57,6 +57,13 @@ struct TileList
     u32 count;
 };
 
+struct Tileset
+{
+    Tile tiles[462];
+    SDL_Surface* surface;
+    unsigned char* img_data;
+};
+
 struct Map
 {
     u32 rows;

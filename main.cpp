@@ -53,12 +53,6 @@ void map_do_warp(Game* game);
 #include "gamedev_entity.cpp"
 #include "gamedev_tilemap.cpp"
 
-struct Tileset
-{
-    Tile tiles[462];
-    SDL_Surface* surface;
-    unsigned char* img_data;
-};
 
 int main(int argc, char** argv)
 {
@@ -261,7 +255,9 @@ int main(int argc, char** argv)
 
     u32 last_frame_duration = 0;
 
-    // Main loop
+    /**************************************************************************/
+    /* Main Loop                                                              */
+    /**************************************************************************/
     while(game.running)
     {
         u32 now = SDL_GetTicks();
@@ -274,70 +270,21 @@ int main(int argc, char** argv)
         /*********************************************************************/
         /* Input                                                             */
         /*********************************************************************/
-        SDL_Event event;
-        while(SDL_PollEvent(&event))
-        {
-            switch (event.type)
-            {
-            case SDL_KEYUP:
-                input_update(&input, event.key.keysym.scancode, GD_FALSE);
-                break;
-            case SDL_QUIT:
-                game.running = GD_FALSE;
-                break;
-            case SDL_KEYDOWN:
-                input_update(&input, event.key.keysym.scancode, GD_TRUE);
-                break;
-            // case SDL_MOUSEMOTION:
-            //     input_handle_mouse(&input);
-            //     break;
-            }
-        }
+        input_poll(&input, &game);
 
         /*********************************************************************/
         /* Update                                                            */
         /*********************************************************************/
         game_update(&game, &input);
-
-        SDL_Rect saved_position = hero.e.dest_rect;
-        SDL_Rect saved_camera = game.camera.viewport;
-
         map_update_tiles(game.current_map, last_frame_duration);
         hero_update(&hero, &input, &game);
         hero_update_club(&hero, now);
-
-        if (saved_position.x != hero.e.dest_rect.x ||
-            saved_position.y != hero.e.dest_rect.y)
-        {
-            hero.is_moving = GD_TRUE;
-        }
-        else
-        {
-            hero.is_moving = GD_FALSE;
-        }
-
-        if (!hero.is_moving)
-        {
-            hero.e.animation.current_frame = 0;
-            hero.e.sprite_rect.x = 0;
-        }
-
         camera_update(&game.camera);
-        hero_clamp_to_map(&hero, game.current_map);
-        entity_set_collision_point(&hero.e);
         entity_list_update(&entity_list, game.current_map, last_frame_duration);
         animation_update(&hero.e.animation, last_frame_duration, hero.is_moving);
-
-        if (hero_check_collisions_with_tiles(&hero, &game))
-        {
-            game.camera.viewport = saved_camera;
-            hero.e.dest_rect = saved_position;
-        }
-
         ttf_font_update_pos(&ttf_tens, game.camera.viewport.x, game.camera.viewport.y);
         ttf_font_update_pos(&ttf_ones, game.camera.viewport.x + ((int)font_size / 2),
                             game.camera.viewport.y);
-
         sound_play_all(game.sounds, now);
 
         /*********************************************************************/
@@ -347,7 +294,7 @@ int main(int argc, char** argv)
 
         // Only for drawing overlap boxes
         hero_check_collisions_with_entities(&hero, &game);
-        hero_draw_club(&hero, now, game.current_map->surface, game.colors[BLACK]);
+        hero_draw_club(&hero, now, &game);
         SDL_BlitSurface(ttf_tens.surface, NULL, game.current_map->surface, &ttf_tens.dest);
         SDL_BlitSurface(ttf_ones.surface, NULL, game.current_map->surface, &ttf_ones.dest);
         SDL_BlitSurface(game.current_map->surface, &game.camera.viewport,
@@ -360,17 +307,16 @@ int main(int argc, char** argv)
         last_frame_duration = SDL_GetTicks() - now;
     }
 
-    // Cleanup
+    /**************************************************************************/
+    /* Cleanup                                                                */
+    /**************************************************************************/
     ttf_font_destroy(&ttf_tens);
     ttf_font_destroy(&ttf_ones);
     tile_list_destroy(&tile_list);
+    tileset_destroy(&tiles);
     map_list_destroy(&map_list);
     entity_list_destroy(&entity_list);
     game_destroy(&game);
-
-    // tileset_destroy
-    SDL_FreeSurface(tiles.surface);
-    stbi_image_free(tiles.img_data);
 
     return 0;
 }

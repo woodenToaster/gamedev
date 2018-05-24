@@ -37,6 +37,29 @@ void input_update(Input* input, SDL_Scancode key, u8 pressed)
     }
 }
 
+void input_poll(Input* input, Game* game)
+{
+    SDL_Event event;
+    while(SDL_PollEvent(&event))
+    {
+        switch (event.type)
+        {
+        case SDL_KEYUP:
+            input_update(input, event.key.keysym.scancode, GD_FALSE);
+            break;
+        case SDL_QUIT:
+            game->running = GD_FALSE;
+            break;
+        case SDL_KEYDOWN:
+            input_update(input, event.key.keysym.scancode, GD_TRUE);
+            break;
+            // case SDL_MOUSEMOTION:
+            //     input_handle_mouse(&input);
+            //     break;
+        }
+    }
+}
+
 // void input_handle_mouse(Input* input)
 // {
 //     // get vector from center of player to mouse cursor
