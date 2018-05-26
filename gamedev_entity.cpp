@@ -197,6 +197,34 @@ void entity_check_collisions_with_tiles(Entity* e, Map* map, SDL_Rect* saved_pos
     }
 }
 
+void entity_check_collisions_with_entities(Entity* e, Game* game)
+{
+    for (u32 i = 0; i < game->current_map->active_entities.count; ++i) {
+        Entity* other_e = game->current_map->active_entities.entities[i];
+        if (e == other_e) {
+            continue;
+        }
+        if (other_e->active && overlaps(&e->bounding_box, &other_e->bounding_box))
+        {
+            if (entity_is_hero(e))
+            {
+                SDL_Rect overlap_box = entity_get_overlap_box(e, other_e);
+                // TODO: Handle properly instead of just drawing the overlap.
+                SDL_FillRect(game->current_map->surface, &overlap_box, game->colors[MAGENTA]);
+                // TODO: pixel collision
+            }
+            else if (e->type == ET_BUFFALO)
+            {
+                if (other_e->type == ET_BUFFALO)
+                {
+                    // e->dest_rect = *saved_pos;
+                    entity_reverse_direction(e);
+                }
+            }
+        }
+    }
+}
+
 void entity_set_collision_point(Entity* e)
 {
     e->collision_pt.y = e->dest_rect.y + e->dest_rect.h - e->collision_pt_offset;
@@ -214,6 +242,7 @@ void entity_update(Entity* e, Map* map, u32 last_frame_duration)
             animation_update(&e->animation, last_frame_duration, GD_TRUE);
             entity_set_collision_point(e);
             entity_check_collisions_with_tiles(e, map, &saved_position);
+            // entity_check_collisions_with_entities(e, map, &saved_position);
             entity_set_collision_point(e);
         }
     }
@@ -381,23 +410,6 @@ void hero_update(Hero* h, Input* input, Game* g)
     hero_clamp_to_map(h, g->current_map);
     entity_set_collision_point(&h->e);
     hero_check_collisions_with_tiles(h, g, saved_position, saved_viewport);
-}
-
-void hero_check_collisions_with_entities(Hero* h, Game* game)
-{
-    for (u32 i = 0; i < game->current_map->active_entities.count; ++i) {
-        Entity* e = game->current_map->active_entities.entities[i];
-        if (entity_is_hero(e)) {
-            continue;
-        }
-        if (e->active && overlaps(&h->e.bounding_box, &e->bounding_box))
-        {
-            SDL_Rect overlap_box = entity_get_overlap_box(&h->e, e);
-            // TODO: Handle properly instead of just drawing the overlap.
-            SDL_FillRect(game->current_map->surface, &overlap_box, game->colors[MAGENTA]);
-            // TODO: pixel collision
-        }
-    }
 }
 
 void hero_update_club(Hero* h, u32 now)

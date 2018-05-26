@@ -281,8 +281,14 @@ int main(int argc, char** argv)
         /*********************************************************************/
         map_draw(&game);
 
-        // Only for drawing overlap boxes
-        hero_check_collisions_with_entities(&hero, &game);
+        // Only for drawing overlap boxes. Move to update section once real
+        // collisions are being handled.
+        for (size_t i = 0; i < game.current_map->active_entities.count; ++i)
+        {
+            Entity* e = game.current_map->active_entities.entities[i];
+            entity_check_collisions_with_entities(e, &game);
+        }
+
         hero_draw_club(&hero, now, &game);
         SDL_BlitSurface(ttf_tens.surface, NULL, game.current_map->surface, &ttf_tens.dest);
         SDL_BlitSurface(ttf_ones.surface, NULL, game.current_map->surface, &ttf_ones.dest);

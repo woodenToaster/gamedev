@@ -7,9 +7,9 @@
 ** TODO [#A] Pixel perfect collision
 *** TODO [#A] Get pixel data from sprite sheet
 ** TODO [#B] Use time delta and velocity for updating movement
-** TODO Make tiles 8x8?
 ** TODO [#C] Base building screen
 ** TODO [#C] base building gui
+** TODO Make tiles 8x8?
 * Graphics
 ** TODO [#A] Use 2d acceleration.
 ** TODO [#B] Enable OpenGL
