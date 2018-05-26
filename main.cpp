@@ -15,18 +15,7 @@
 #include "math.h"
 
 #include "gamedev_definitions.h"
-
-// TODO: Get forward declarations out of here.
-struct Tile;
-u8 tile_is_solid(Tile* t);
-u8 tile_is_slow(Tile* t);
-u8 tile_is_warp(Tile* t);
-
-struct Plan;
-
-struct Game;
-void map_do_warp(Game* game);
-
+#include "gamedev_forward_declarations.h"
 #include "gamedev_animation.cpp"
 
 #include "gamedev_math.h"
@@ -253,7 +242,7 @@ int main(int argc, char** argv)
     game.maps = &map_list;
     game.sounds = &sounds_to_play;
 
-    u32 last_frame_duration = 0;
+    u32 dt = 0;
 
     /**************************************************************************/
     /* Main Loop                                                              */
@@ -261,7 +250,7 @@ int main(int argc, char** argv)
     while(game.running)
     {
         u32 now = SDL_GetTicks();
-        f32 fps = (1.0f * 1000) / last_frame_duration;
+        f32 fps = (1.0f * 1000) / dt;
         char a[4];
         snprintf(a, 4, "%d\n", (u32)fps);
         ttf_font_create_bitmap(&ttf_tens, a[0]);
@@ -276,12 +265,12 @@ int main(int argc, char** argv)
         /* Update                                                            */
         /*********************************************************************/
         game_update(&game, &input);
-        map_update_tiles(game.current_map, last_frame_duration);
+        map_update_tiles(game.current_map, dt);
         hero_update(&hero, &input, &game);
         hero_update_club(&hero, now);
         camera_update(&game.camera);
-        entity_list_update(&entity_list, game.current_map, last_frame_duration);
-        animation_update(&hero.e.animation, last_frame_duration, hero.is_moving);
+        entity_list_update(&entity_list, game.current_map, dt);
+        animation_update(&hero.e.animation, dt, hero.is_moving);
         ttf_font_update_pos(&ttf_tens, game.camera.viewport.x, game.camera.viewport.y);
         ttf_font_update_pos(&ttf_ones, game.camera.viewport.x + ((int)font_size / 2),
                             game.camera.viewport.y);
@@ -300,8 +289,8 @@ int main(int argc, char** argv)
         SDL_BlitSurface(game.current_map->surface, &game.camera.viewport,
                         game.window_surface, NULL);
 
-        last_frame_duration = SDL_GetTicks() - now;
-        game_fix_frame_rate(&game, &last_frame_duration);
+        dt = SDL_GetTicks() - now;
+        game_fix_frame_rate(&game, &dt);
 
         SDL_UpdateWindowSurface(game.window);
         fflush(stdout);
