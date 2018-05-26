@@ -36,6 +36,8 @@ void game_init(Game* g, u32 width, u32 height)
 {
     g->screen_width = width;
     g->screen_height = height;
+    g->target_fps = 30;
+    g->target_ms_per_frame = (u32)(1000.0f / (f32)g->target_fps);
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
     {
@@ -72,4 +74,23 @@ void game_update(Game* g, Input* input)
     {
         g->running = GD_FALSE;
     }
+}
+
+void game_fix_frame_rate(Game* g, u32* elapsed)
+{
+    if (*elapsed < g->target_ms_per_frame)
+    {
+        while (*elapsed < g->target_ms_per_frame)
+        {
+            u32 sleep_ms = g->target_ms_per_frame - *elapsed;
+            *elapsed += sleep_ms;
+            SDL_Delay(sleep_ms);
+        }
+    }
+    else
+    {
+        printf("Frame missed!\n");
+    }
+
+    g->total_frames_elapsed++;
 }

@@ -299,12 +299,12 @@ int main(int argc, char** argv)
         SDL_BlitSurface(ttf_ones.surface, NULL, game.current_map->surface, &ttf_ones.dest);
         SDL_BlitSurface(game.current_map->surface, &game.camera.viewport,
                         game.window_surface, NULL);
-        SDL_UpdateWindowSurface(game.window);
 
-        SDL_Delay(26);
-        game.frames++;
-        fflush(stdout);
         last_frame_duration = SDL_GetTicks() - now;
+        game_fix_frame_rate(&game, &last_frame_duration);
+
+        SDL_UpdateWindowSurface(game.window);
+        fflush(stdout);
     }
 
     /**************************************************************************/
