@@ -72,3 +72,9 @@ void ttf_font_destroy(TTFFont* f)
     SDL_FreeSurface(f->surface);
     stbtt_FreeBitmap(f->bitmap, NULL);
 }
+
+void text_draw(Game* g, TTFFont* tens, TTFFont* ones)
+{
+    SDL_BlitSurface(tens->surface, NULL, g->current_map->surface, &tens->dest);
+    SDL_BlitSurface(ones->surface, NULL, g->current_map->surface, &ones->dest);
+}

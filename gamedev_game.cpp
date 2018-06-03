@@ -66,6 +66,7 @@ void game_init(Game* g, u32 width, u32 height)
     g->window_surface = SDL_GetWindowSurface(g->window);
     game_init_colors(g);
     g->initialized = GD_TRUE;
+    g->running = GD_TRUE;
 }
 
 void game_update(Game* g, Input* input)
@@ -89,7 +90,9 @@ void game_fix_frame_rate(Game* g, u32* elapsed)
     }
     else
     {
+#ifdef DEBUG
         printf("Frame missed!\n");
+#endif
     }
 
     g->total_frames_elapsed++;

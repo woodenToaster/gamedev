@@ -50,7 +50,6 @@ int main(int argc, char** argv)
 
     // Game
     Game game = {};
-    game.running = GD_TRUE;
     game_init(&game, 640, 480);
 
     // Input
@@ -147,15 +146,26 @@ int main(int argc, char** argv)
     tile_list.count = 6;
 
     // Tileset
-    Tileset tiles = {};
-    tiles.surface = create_surface_from_png(&tiles.img_data, "sprites/jungle_tileset.png");
+    Tileset jungle_tiles = {};
+    jungle_tiles.surface = create_surface_from_png(&jungle_tiles.img_data, "sprites/jungle_tileset.png");
+    SDL_Surface* optimized_jungle_tiles = SDL_ConvertSurface(jungle_tiles.surface, game.window_surface->format, 0);
+    if (!optimized_jungle_tiles)
+    {
+        printf("Failed to create surface: %s", SDL_GetError());
+    }
+    else
+    {
+        SDL_FreeSurface(jungle_tiles.surface);
+        jungle_tiles.surface = optimized_jungle_tiles;
+        optimized_jungle_tiles = NULL;
+    }
 
-    Tile* grass = &tiles.tiles[0];
+    Tile* grass = &jungle_tiles.tiles[0];
     grass->tile_width = 16;
     grass->tile_height = 16;
     grass->flags = tile_properties[TP_NONE];
     grass->color = game.colors[GREEN];
-    grass->sprite = tiles.surface;
+    grass->sprite = jungle_tiles.surface;
     grass->sprite_rect = {16, 16, 16, 16};
 
     Tile grass_warp = {};
@@ -242,7 +252,7 @@ int main(int argc, char** argv)
     game.maps = &map_list;
     game.sounds = &sounds_to_play;
 
-    u32 dt = 0;
+    u32 dt = 33;
 
     /**************************************************************************/
     /* Main Loop                                                              */
@@ -250,7 +260,7 @@ int main(int argc, char** argv)
     while(game.running)
     {
         u32 now = SDL_GetTicks();
-        f32 fps = (1.0f * 1000) / dt;
+        f32 fps = 1000.0f / dt;
         char a[4];
         snprintf(a, 4, "%d\n", (u32)fps);
         ttf_font_create_bitmap(&ttf_tens, a[0]);
@@ -272,8 +282,7 @@ int main(int argc, char** argv)
         entity_list_update(&entity_list, game.current_map, dt);
         animation_update(&hero.e.animation, dt, hero.is_moving);
         ttf_font_update_pos(&ttf_tens, game.camera.viewport.x, game.camera.viewport.y);
-        ttf_font_update_pos(&ttf_ones, game.camera.viewport.x + ((int)font_size / 2),
-                            game.camera.viewport.y);
+        ttf_font_update_pos(&ttf_ones, game.camera.viewport.x + ((int)font_size / 2), game.camera.viewport.y);
         sound_play_all(game.sounds, now);
 
         /*********************************************************************/
@@ -290,10 +299,9 @@ int main(int argc, char** argv)
         }
 
         hero_draw_club(&hero, now, &game);
-        SDL_BlitSurface(ttf_tens.surface, NULL, game.current_map->surface, &ttf_tens.dest);
-        SDL_BlitSurface(ttf_ones.surface, NULL, game.current_map->surface, &ttf_ones.dest);
-        SDL_BlitSurface(game.current_map->surface, &game.camera.viewport,
-                        game.window_surface, NULL);
+        text_draw(&game, &ttf_tens, &ttf_ones);
+
+        SDL_BlitSurface(game.current_map->surface, &game.camera.viewport, game.window_surface, NULL);
 
         dt = SDL_GetTicks() - now;
         game_fix_frame_rate(&game, &dt);
@@ -308,7 +316,7 @@ int main(int argc, char** argv)
     ttf_font_destroy(&ttf_tens);
     ttf_font_destroy(&ttf_ones);
     tile_list_destroy(&tile_list);
-    tileset_destroy(&tiles);
+    tileset_destroy(&jungle_tiles);
     map_list_destroy(&map_list);
     entity_list_destroy(&entity_list);
     game_destroy(&game);
