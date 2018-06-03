@@ -23,19 +23,19 @@ void ttf_font_init(TTFFont* f, TTFFile* file, f32 size)
     f->scale = stbtt_ScaleForPixelHeight(&f->font, f->size);
 }
 
-void ttf_font_create_bitmap(TTFFont* f, int character)
+void ttf_font_create_bitmap(TTFFont* f, int character, SDL_Renderer* renderer)
 {
     f->bitmap = stbtt_GetCodepointBitmap(&f->font, 0, f->scale, character,
                                          &f->width, &f->height, 0, 0);
 
-    if (f->surface)
+    if (f->texture)
     {
-        SDL_FreeSurface(f->surface);
-        f->surface = NULL;
+        SDL_DestroyTexture(f->texture);
+        f->texture = NULL;
 
     }
 
-	f->surface = SDL_CreateRGBSurfaceFrom(
+	SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(
         (void*)f->bitmap,
         f->width, f->height,
         8,
@@ -43,7 +43,7 @@ void ttf_font_create_bitmap(TTFFont* f, int character)
         0, 0, 0, 0
     );
 
-    if (!f->surface)
+    if (!surface)
     {
         printf("%s\n", SDL_GetError());
         exit(1);
@@ -58,7 +58,10 @@ void ttf_font_create_bitmap(TTFFont* f, int character)
         grayscale[i].g = (u8)i;
         grayscale[i].b = (u8)i;
     }
-    SDL_SetPaletteColors(f->surface->format->palette, grayscale, 0, 256);
+    SDL_SetPaletteColors(surface->format->palette, grayscale, 0, 256);
+
+    f->texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
 }
 
 void ttf_font_update_pos(TTFFont* t, int x, int y)
@@ -69,12 +72,12 @@ void ttf_font_update_pos(TTFFont* t, int x, int y)
 
 void ttf_font_destroy(TTFFont* f)
 {
-    SDL_FreeSurface(f->surface);
+    SDL_DestroyTexture(f->texture);
     stbtt_FreeBitmap(f->bitmap, NULL);
 }
 
 void text_draw(Game* g, TTFFont* tens, TTFFont* ones)
 {
-    SDL_BlitSurface(tens->surface, NULL, g->current_map->surface, &tens->dest);
-    SDL_BlitSurface(ones->surface, NULL, g->current_map->surface, &ones->dest);
+    SDL_RenderCopy(g->renderer, tens->texture, NULL, &tens->dest);
+    SDL_RenderCopy(g->renderer, ones->texture, NULL, &ones->dest);
 }

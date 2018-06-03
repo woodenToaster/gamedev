@@ -42,7 +42,7 @@ struct Tile
     u32 tile_height;
     u32 flags;
     u32 color;
-    SDL_Surface* sprite;
+    SDL_Texture* sprite;
     SDL_Rect sprite_rect;
     Animation animation;
     u8 active;
@@ -60,7 +60,7 @@ struct TileList
 struct Tileset
 {
     Tile tiles[462];
-    SDL_Surface* surface;
+    SDL_Texture* texture;
     unsigned char* img_data;
 };
 
@@ -76,7 +76,7 @@ struct Map
     u64 tile_cols_per_screen;
     u8 current;
     Tile** tiles;
-    SDL_Surface* surface;
+    SDL_Texture* texture;
     EntityList active_entities;
     TileList active_tiles;
 };

@@ -75,7 +75,7 @@ int main(int argc, char** argv)
     SoundList sounds_to_play = {};
 
     Hero hero = {};
-    entity_init_sprite_sheet(&hero.e, "sprites/dude.png", 4, 4);
+    entity_init_sprite_sheet(&hero.e, "sprites/dude.png", 4, 4, game.renderer);
     entity_set_starting_pos(&hero.e, 85, 85);
     entity_set_bounding_box_offset(&hero.e, 6, 5, 12, 7);
     entity_init_dest(&hero.e);
@@ -87,7 +87,7 @@ int main(int argc, char** argv)
 
     // Harlod
     Entity harlod = {};
-    entity_init_sprite_sheet(&harlod, "sprites/Harlod_the_caveman.png", 1, 1);
+    entity_init_sprite_sheet(&harlod, "sprites/Harlod_the_caveman.png", 1, 1, game.renderer);
     entity_set_starting_pos(&harlod, 150, 150);
     entity_set_bounding_box_offset(&harlod, 0, 0, 0, 0);
     entity_init_dest(&harlod);
@@ -99,9 +99,9 @@ int main(int argc, char** argv)
     Plan plan1 = {};
     Plan plan2 = {};
     Plan plan3 = {};
-    Entity buffalo = create_buffalo(400, 200, &plan1);
-    Entity buffalo2 = create_buffalo(500, 500, &plan2);
-    Entity buffalo3 = create_buffalo(600, 100, &plan3);
+    Entity buffalo = create_buffalo(400, 200, &plan1, game.renderer);
+    Entity buffalo2 = create_buffalo(500, 500, &plan2, game.renderer);
+    Entity buffalo3 = create_buffalo(600, 100, &plan3, game.renderer);
 
     EntityList entity_list = {};
     Entity* _entities[] = {&hero.e, &harlod, &buffalo, &buffalo2, &buffalo3};
@@ -111,30 +111,30 @@ int main(int argc, char** argv)
     // Tiles
     Tile w = {};
     w.tile_width = w.tile_height = 80;
-    tile_init(&w, tile_properties[TP_SOLID], game.colors[GREEN]);
+    tile_init(&w, tile_properties[TP_SOLID], game.colors[GREEN], game.renderer);
 
     Tile f = {};
     f.tile_width = f.tile_height = 80;
-    tile_init(&f, tile_properties[TP_NONE], game.colors[BLUE]);
+    tile_init(&f, tile_properties[TP_NONE], game.colors[BLUE], game.renderer);
 
     Tile m = {};
     m.tile_width = m.tile_height = 80;
-    tile_init(&m, tile_properties[TP_QUICKSAND], game.colors[BROWN]);
+    tile_init(&m, tile_properties[TP_QUICKSAND], game.colors[BROWN], game.renderer);
 
     Tile wr = {};
     wr.tile_width = wr.tile_height = 80;
-    tile_init(&wr, tile_properties[TP_WARP], game.colors[RUST]);
+    tile_init(&wr, tile_properties[TP_WARP], game.colors[RUST], game.renderer);
     wr.destination_map = 2;
 
     Tile t = {};
     t.tile_width = t.tile_height = 80;
-    tile_init(&t, tile_properties[TP_SOLID], game.colors[GREEN], "sprites/TropicalTree.png");
+    tile_init(&t, tile_properties[TP_SOLID], game.colors[GREEN], game.renderer, "sprites/TropicalTree.png");
     tile_set_sprite_size(&t, 64, 64);
     t.active = GD_TRUE;
 
     Tile fire = {};
     fire.tile_width = fire.tile_height = 80;
-    tile_init(&fire, tile_properties[TP_FIRE], game.colors[GREY], "sprites/Campfire.png");
+    tile_init(&fire, tile_properties[TP_FIRE], game.colors[GREY], game.renderer, "sprites/Campfire.png");
     tile_set_sprite_size(&fire, 64, 64);
     animation_init(&fire.animation, 11, 100);
     fire.active = GD_TRUE;
@@ -147,30 +147,20 @@ int main(int argc, char** argv)
 
     // Tileset
     Tileset jungle_tiles = {};
-    jungle_tiles.surface = create_surface_from_png(&jungle_tiles.img_data, "sprites/jungle_tileset.png");
-    SDL_Surface* optimized_jungle_tiles = SDL_ConvertSurface(jungle_tiles.surface, game.window_surface->format, 0);
-    if (!optimized_jungle_tiles)
-    {
-        printf("Failed to create surface: %s", SDL_GetError());
-    }
-    else
-    {
-        SDL_FreeSurface(jungle_tiles.surface);
-        jungle_tiles.surface = optimized_jungle_tiles;
-        optimized_jungle_tiles = NULL;
-    }
+    SDL_Surface* jungle_tiles_surface = create_surface_from_png(&jungle_tiles.img_data, "sprites/jungle_tileset.png");
+    jungle_tiles.texture = SDL_CreateTextureFromSurface(game.renderer, jungle_tiles_surface);
 
     Tile* grass = &jungle_tiles.tiles[0];
     grass->tile_width = 16;
     grass->tile_height = 16;
     grass->flags = tile_properties[TP_NONE];
     grass->color = game.colors[GREEN];
-    grass->sprite = jungle_tiles.surface;
+    grass->sprite = jungle_tiles.texture;
     grass->sprite_rect = {16, 16, 16, 16};
 
     Tile grass_warp = {};
     grass_warp.tile_width = grass_warp.tile_height = 16;
-    tile_init(&grass_warp, tile_properties[TP_WARP], game.colors[RUST]);
+    tile_init(&grass_warp, tile_properties[TP_WARP], game.colors[RUST], game.renderer);
     // TODO: Make destination work
     grass_warp.destination_map = 1;
 
@@ -208,7 +198,7 @@ int main(int argc, char** argv)
     }
 
     Map map1 = {};
-    map_init(&map1, 12, 10, map1_tiles);
+    map_init(&map1, 12, 10, map1_tiles, game.renderer);
     map1.current = GD_TRUE;
     Entity* map1_entities[] = {&hero.e, &harlod};
     map1.active_entities.entities = map1_entities;
@@ -218,13 +208,13 @@ int main(int argc, char** argv)
     map1.active_tiles.count = 1;
 
     Map map2 = {};
-    map_init(&map2, 12, 10, map2_tiles);
+    map_init(&map2, 12, 10, map2_tiles, game.renderer);
     Entity* map2_entities[] = {&hero.e, &harlod, &buffalo, &buffalo2, &buffalo3,};
     map2.active_entities.entities = map2_entities;
     map2.active_entities.count = 5;
 
     Map map3 = {};
-    map_init(&map3, 60, 50, map3_tiles);
+    map_init(&map3, 60, 50, map3_tiles, game.renderer);
     Entity* map3_entities[] = {&hero.e, &harlod};
     map3.active_entities.entities = map3_entities;
     map3.active_entities.count = 2;
@@ -263,8 +253,8 @@ int main(int argc, char** argv)
         f32 fps = 1000.0f / dt;
         char a[4];
         snprintf(a, 4, "%d\n", (u32)fps);
-        ttf_font_create_bitmap(&ttf_tens, a[0]);
-        ttf_font_create_bitmap(&ttf_ones, a[1]);
+        ttf_font_create_bitmap(&ttf_tens, a[0], game.renderer);
+        ttf_font_create_bitmap(&ttf_ones, a[1], game.renderer);
 
         /*********************************************************************/
         /* Input                                                             */
@@ -288,6 +278,7 @@ int main(int argc, char** argv)
         /*********************************************************************/
         /* Draw                                                              */
         /*********************************************************************/
+        SDL_SetRenderTarget(game.renderer, game.current_map->texture);
         map_draw(&game);
 
         // Only for drawing overlap boxes. Move to update section once real
@@ -298,15 +289,16 @@ int main(int argc, char** argv)
             entity_check_collisions_with_entities(e, &game);
         }
 
-        hero_draw_club(&hero, now, &game);
+        // hero_draw_club(&hero, now, &game);
         text_draw(&game, &ttf_tens, &ttf_ones);
 
-        SDL_BlitSurface(game.current_map->surface, &game.camera.viewport, game.window_surface, NULL);
+        SDL_SetRenderTarget(game.renderer, NULL);
+        SDL_RenderCopy(game.renderer, game.current_map->texture, &game.camera.viewport, NULL);
 
         dt = SDL_GetTicks() - now;
         game_fix_frame_rate(&game, &dt);
 
-        SDL_UpdateWindowSurface(game.window);
+        SDL_RenderPresent(game.renderer);
         fflush(stdout);
     }
 

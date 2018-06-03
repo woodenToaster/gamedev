@@ -3,6 +3,7 @@
 void game_destroy(Game* g)
 {
     Mix_Quit();
+    SDL_DestroyRenderer(g->renderer);
     SDL_DestroyWindow(g->window);
     SDL_Quit();
 }
@@ -64,6 +65,14 @@ void game_init(Game* g, u32 width, u32 height)
         exit(1);
     }
     g->window_surface = SDL_GetWindowSurface(g->window);
+
+    g->renderer = SDL_CreateRenderer(g->window, -1, SDL_RENDERER_ACCELERATED);
+
+    if (g->renderer == NULL)
+    {
+        fprintf(stderr, "Could not create renderer: %s\n", SDL_GetError());
+        exit(1);
+    }
     game_init_colors(g);
     g->initialized = GD_TRUE;
     g->running = GD_TRUE;

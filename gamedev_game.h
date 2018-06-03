@@ -28,6 +28,7 @@ struct Game
     u8 initialized;
     SDL_Window* window;
     SDL_Surface* window_surface;
+    SDL_Renderer* renderer;
     u32 colors[COLOR_LAST];
     Camera camera;
     Map* current_map;
