@@ -17,7 +17,7 @@ struct TTFFont
     int width;
     int height;
     unsigned char* bitmap;
-    SDL_Surface* surface;
+    SDL_Texture* texture;
     TTFFile* ttf_file;
     SDL_Rect dest;
 };

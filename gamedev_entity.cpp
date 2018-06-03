@@ -2,6 +2,16 @@
 #include "gamedev_camera.h"
 #include "gamedev_plan.h"
 
+void renderer_fill_rect(SDL_Renderer* renderer, SDL_Rect* dest, u32 color)
+{
+    u8 r = (u8)((color & 0x00FF0000) >> 16);
+    u8 g = (u8)((color & 0x0000FF00) >> 8);
+    u8 b = (u8)((color & 0x000000FF) >> 0);
+
+    SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
+    SDL_RenderFillRect(renderer, dest);
+}
+
 bool overlaps(SDL_Rect* r1, SDL_Rect* r2)
 {
     bool x_overlap = r1->x + r1->w > r2->x && r1->x < r2->x + r2->w;
@@ -9,9 +19,9 @@ bool overlaps(SDL_Rect* r1, SDL_Rect* r2)
     return x_overlap && y_overlap;
 }
 
-void entity_init_sprite_sheet(Entity* e, const char* path, int num_x, int num_y)
+void entity_init_sprite_sheet(Entity* e, const char* path, int num_x, int num_y, SDL_Renderer* renderer)
 {
-    sprite_sheet_load(&e->sprite_sheet, path, num_x, num_y);
+    sprite_sheet_load(&e->sprite_sheet, path, num_x, num_y, renderer);
     e->sprite_rect.w = e->sprite_sheet.sprite_width;
     e->sprite_rect.h = e->sprite_sheet.sprite_height;
 }
@@ -45,12 +55,10 @@ u8 entity_is_hero(Entity* e)
 
 void entity_draw(Entity* e, Game* g)
 {
-    SDL_Surface* map = g->current_map->surface;
-
     if (e->active)
     {
         e->sprite_rect.x = e->sprite_rect.w * e->animation.current_frame;
-        SDL_BlitSurface(e->sprite_sheet.sheet, &e->sprite_rect, map, &e->dest_rect);
+        SDL_RenderCopy(g->renderer, e->sprite_sheet.sheet, &e->sprite_rect, &e->dest_rect);
     }
 
 #ifdef DEBUG
@@ -84,10 +92,10 @@ void entity_draw(Entity* e, Game* g)
     u32 magenta = g->colors[MAGENTA];
     if (e->active)
     {
-        SDL_FillRect(map, &bb_top, magenta);
-        SDL_FillRect(map, &bb_left, magenta);
-        SDL_FillRect(map, &bb_right, magenta);
-        SDL_FillRect(map, &bb_bottom, magenta);
+        renderer_fill_rect(g->renderer, &bb_top, magenta);
+        renderer_fill_rect(g->renderer, &bb_left, magenta);
+        renderer_fill_rect(g->renderer, &bb_right, magenta);
+        renderer_fill_rect(g->renderer, &bb_bottom, magenta);
     }
 #endif
 }
@@ -210,7 +218,7 @@ void entity_check_collisions_with_entities(Entity* e, Game* game)
             {
                 SDL_Rect overlap_box = entity_get_overlap_box(e, other_e);
                 // TODO: Handle properly instead of just drawing the overlap.
-                SDL_FillRect(game->current_map->surface, &overlap_box, game->colors[MAGENTA]);
+                renderer_fill_rect(game->renderer, &overlap_box, game->colors[MAGENTA]);
                 // TODO: pixel collision
             }
             else if (e->type == ET_BUFFALO)
@@ -455,18 +463,18 @@ void hero_update_club(Hero* h, u32 now)
     }
 }
 
-void hero_draw_club(Hero* h, u32 now, Game* g)
-{
-    if (now < h->club_swing_timeout)
-    {
-        SDL_FillRect(g->current_map->surface, &h->club_rect, g->colors[BLACK]);
-    }
-}
+// void hero_draw_club(Hero* h, u32 now, Game* g)
+// {
+//     if (now < h->club_swing_timeout)
+//     {
+//         SDL_FillRect(g->current_map->surface, &h->club_rect, g->colors[BLACK]);
+//     }
+// }
 
-Entity create_buffalo(int starting_x, int starting_y, Plan* plan)
+Entity create_buffalo(int starting_x, int starting_y, Plan* plan, SDL_Renderer* renderer)
 {
     Entity buffalo = {};
-    entity_init_sprite_sheet(&buffalo, "sprites/Buffalo.png", 4, 1);
+    entity_init_sprite_sheet(&buffalo, "sprites/Buffalo.png", 4, 1, renderer);
     entity_set_starting_pos(&buffalo, starting_x, starting_y);
     entity_set_bounding_box_offset(&buffalo, 0, 0, 0, 0);
     entity_init_dest(&buffalo);

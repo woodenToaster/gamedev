@@ -1,6 +1,6 @@
 #include "gamedev_tilemap.h"
 
-void tile_init(Tile* t, u32 flags, u32 color, const char* sprite_path=NULL)
+void tile_init(Tile* t, u32 flags, u32 color, SDL_Renderer* renderer, const char* sprite_path=NULL)
 {
     t->flags = flags;
     t->color = color;
@@ -10,7 +10,16 @@ void tile_init(Tile* t, u32 flags, u32 color, const char* sprite_path=NULL)
 
     if (sprite_path)
     {
-        t->sprite = create_surface_from_png(&t->img_data, sprite_path);
+        SDL_Surface* sprite_surface = create_surface_from_png(&t->img_data, sprite_path);
+        t->sprite = SDL_CreateTextureFromSurface(renderer, sprite_surface);
+
+        if (!t->sprite)
+        {
+            fprintf(stderr, "Could not create texture from surface: %s\n", SDL_GetError());
+            exit(1);
+        }
+
+        SDL_FreeSurface(sprite_surface);
     }
     else
     {
@@ -60,10 +69,15 @@ u32 tile_get_color(Tile* t)
     return (u32)(tile_as_u64(t) & 0xFFFFFFFF);
 }
 
-void tile_draw(Tile* t, SDL_Surface* map_surface, SDL_Rect* tile_rect)
+void tile_fill(Tile* t, SDL_Renderer* renderer, SDL_Rect* tile_rect)
 {
     u32 fill_color = tile_get_color(t);
-    SDL_FillRect(map_surface, tile_rect, fill_color);
+    renderer_fill_rect(renderer, tile_rect, fill_color);
+}
+
+void tile_draw(Tile* t, SDL_Renderer* renderer, SDL_Rect* tile_rect)
+{
+    tile_fill(t, renderer, tile_rect);
 
     if (t->sprite && t->active)
     {
@@ -75,7 +89,7 @@ void tile_draw(Tile* t, SDL_Surface* map_surface, SDL_Rect* tile_rect)
         {
             t->sprite_rect.x = t->sprite_rect.w * t->animation.current_frame;
         }
-        SDL_BlitSurface(t->sprite, &t->sprite_rect, map_surface, &dest);
+        SDL_RenderCopy(renderer, t->sprite, &t->sprite_rect, &dest);
     }
 }
 
@@ -83,7 +97,7 @@ void tile_destroy(Tile* t)
 {
     if (t->sprite)
     {
-        SDL_FreeSurface(t->sprite);
+        SDL_DestroyTexture(t->sprite);
         t->sprite = NULL;
         stbi_image_free(t->img_data);
         t->img_data = NULL;
@@ -100,11 +114,11 @@ void tile_list_destroy(TileList* tl)
 
 void tileset_destroy(Tileset* ts)
 {
-    SDL_FreeSurface(ts->surface);
+    SDL_DestroyTexture(ts->texture);
     stbi_image_free(ts->img_data);
 }
 
-void map_init(Map* m, u32 cols, u32 rows, Tile** tiles)
+void map_init(Map* m, u32 cols, u32 rows, Tile** tiles, SDL_Renderer* renderer)
 {
     m->cols = cols;
     m->rows = rows;
@@ -113,14 +127,16 @@ void map_init(Map* m, u32 cols, u32 rows, Tile** tiles)
     m->tiles = tiles;
     m->width_pixels = cols * tiles[0]->tile_width;
     m->height_pixels = rows * tiles[0]->tile_height;
-    m->surface = SDL_CreateRGBSurfaceWithFormat(
-        0,
+
+    m->texture = SDL_CreateTexture(
+        renderer,
+        SDL_PIXELFORMAT_RGB888,
+        SDL_TEXTUREACCESS_TARGET,
         m->width_pixels,
-        m->height_pixels,
-        32,
-        SDL_PIXELFORMAT_RGB888
+        m->height_pixels
     );
-    if (!m->surface)
+
+    if (!m->texture)
     {
         printf("Failed to create surface: %s\n", SDL_GetError());
         exit(1);
@@ -160,7 +176,7 @@ void map_draw(Game* g)
             tile_rect.x = (int)col * m->tile_width;
             tile_rect.y = (int)row * m->tile_height;
             Tile* tp = m->tiles[row * m->cols + col];
-            tile_draw(tp, m->surface, &tile_rect);
+            tile_draw(tp, g->renderer, &tile_rect);
         }
     }
 
@@ -243,7 +259,7 @@ void map_do_warp(Game* g)
 
 void map_destroy(Map* m)
 {
-    SDL_FreeSurface(m->surface);
+    SDL_DestroyTexture(m->texture);
 }
 
 void map_list_destroy(MapList* ml)
@@ -253,3 +269,4 @@ void map_list_destroy(MapList* ml)
         map_destroy(ml->maps[i]);
     }
 }
+
