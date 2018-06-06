@@ -268,7 +268,7 @@ int main(int argc, char** argv)
         map_update_tiles(game.current_map, dt);
         hero_update(&hero, &input, &game);
         hero_update_club(&hero, now);
-        camera_update(&game.camera);
+        camera_update(&game.camera, &hero.e.dest_rect);
         entity_list_update(&entity_list, game.current_map, dt);
         animation_update(&hero.e.animation, dt, hero.is_moving);
         ttf_font_update_pos(&ttf_tens, game.camera.viewport.x, game.camera.viewport.y);

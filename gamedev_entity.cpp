@@ -225,7 +225,6 @@ void entity_check_collisions_with_entities(Entity* e, Game* game)
             {
                 if (other_e->type == ET_BUFFALO)
                 {
-                    // e->dest_rect = *saved_pos;
                     entity_reverse_direction(e);
                 }
             }
@@ -338,23 +337,11 @@ void hero_update(Hero* h, Input* input, Game* g)
     {
         h->e.dest_rect.x += h->e.speed;
         h->e.sprite_rect.y = 2 * h->e.sprite_sheet.sprite_height;
-
-        if (h->e.dest_rect.x > g->camera.x_pixel_movement_threshold &&
-            g->camera.viewport.x < g->camera.max_x)
-        {
-            g->camera.viewport.x += h->e.speed;
-        }
     }
     if (input->is_pressed[KEY_LEFT])
     {
         h->e.dest_rect.x -= h->e.speed;
         h->e.sprite_rect.y = 1 * h->e.sprite_sheet.sprite_height;
-        if (h->e.dest_rect.x <
-            g->current_map->width_pixels - g->camera.x_pixel_movement_threshold &&
-            g->camera.viewport.x > 0)
-        {
-            g->camera.viewport.x -= h->e.speed;
-        }
     }
     if (input->is_pressed[KEY_UP])
     {
@@ -367,13 +354,6 @@ void hero_update(Hero* h, Input* input, Game* g)
             h->e.dest_rect.y -= h->e.speed;
         }
         h->e.sprite_rect.y = 3 * h->e.sprite_sheet.sprite_height;
-
-        if (h->e.dest_rect.y <
-            g->current_map->height_pixels - g->camera.y_pixel_movement_threshold &&
-            g->camera.viewport.y > 0)
-        {
-            g->camera.viewport.y -= h->e.speed;
-        }
     }
     if (input->is_pressed[KEY_DOWN])
     {
@@ -386,13 +366,6 @@ void hero_update(Hero* h, Input* input, Game* g)
             h->e.dest_rect.y += h->e.speed;
         }
         h->e.sprite_rect.y = 0 * h->e.sprite_sheet.sprite_height;
-
-        if (h->e.dest_rect.y > g->camera.y_pixel_movement_threshold &&
-            g->camera.viewport.y < g->camera.max_y)
-        {
-            g->camera.viewport.y += h->e.speed;
-        }
-
     }
     if (input->is_pressed[KEY_F])
     {
