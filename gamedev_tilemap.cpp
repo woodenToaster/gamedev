@@ -82,8 +82,8 @@ void tile_draw(Tile* t, SDL_Renderer* renderer, SDL_Rect* tile_rect)
     if (t->sprite && t->active)
     {
         SDL_Rect dest = *tile_rect;
-        dest.x += (t->tile_width - t->sprite_rect.w) / 2;
-        dest.y += (t->tile_height - t->sprite_rect.h) / 2;
+        // dest.x += (t->tile_width - t->sprite_rect.w) / 2;
+        // dest.y += (t->tile_height - t->sprite_rect.h) / 2;
 
         if (t->has_animation)
         {

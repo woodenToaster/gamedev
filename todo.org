@@ -1,5 +1,4 @@
 #+Startup: showall
- 
 * Build
 ** TODO [#C] IMGUI
 ** TODO [#C] Build SDL in debug mode
@@ -10,8 +9,9 @@
 ** TODO [#C] Base building screen
 ** TODO [#C] base building gui
 ** TODO Make tiles 8x8?
+* Architecture
+** TODO Memory arena/allocator
 * Graphics
-** TODO [#A] Use 2d acceleration.
 ** TODO [#B] Enable OpenGL
 ** TODO Need z layers for rendering
 
