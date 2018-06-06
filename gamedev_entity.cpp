@@ -225,7 +225,6 @@ void entity_check_collisions_with_entities(Entity* e, Game* game)
             {
                 if (other_e->type == ET_BUFFALO)
                 {
-                    // e->dest_rect = *saved_pos;
                     entity_reverse_direction(e);
                 }
             }
@@ -290,14 +289,12 @@ void entity_list_destroy(EntityList* el)
     }
 }
 
-void hero_check_collisions_with_tiles(Hero* h, Game* game, SDL_Rect saved_position,
-                                      SDL_Rect saved_camera)
+void hero_check_collisions_with_tiles(Hero* h, Game* game, SDL_Rect saved_position)
 {
     Tile* current_tile = entity_get_tile_at_position(&h->e, game->current_map);
 
     if (tile_is_solid(current_tile))
     {
-        game->camera.viewport = saved_camera;
         h->e.dest_rect = saved_position;
     }
     if (tile_is_slow(current_tile) && !h->in_quicksand)
@@ -319,7 +316,6 @@ void hero_check_collisions_with_tiles(Hero* h, Game* game, SDL_Rect saved_positi
         map_do_warp(game);
         h->e.dest_rect.x = (int)h->e.starting_pos.x;
         h->e.dest_rect.y = (int)h->e.starting_pos.y;
-        game->camera.viewport = game->camera.starting_pos;
     }
 }
 
@@ -329,32 +325,17 @@ void hero_clamp_to_map(Hero* h, Map* map)
     h->e.dest_rect.y = clamp(h->e.dest_rect.y, 0, map->height_pixels - h->e.dest_rect.h);
 }
 
-void hero_update(Hero* h, Input* input, Game* g)
+void hero_process_input(Hero* h, Input* input)
 {
-    SDL_Rect saved_position = h->e.dest_rect;
-    SDL_Rect saved_viewport = g->camera.viewport;
-
     if (input->is_pressed[KEY_RIGHT])
     {
         h->e.dest_rect.x += h->e.speed;
         h->e.sprite_rect.y = 2 * h->e.sprite_sheet.sprite_height;
-
-        if (h->e.dest_rect.x > g->camera.x_pixel_movement_threshold &&
-            g->camera.viewport.x < g->camera.max_x)
-        {
-            g->camera.viewport.x += h->e.speed;
-        }
     }
     if (input->is_pressed[KEY_LEFT])
     {
         h->e.dest_rect.x -= h->e.speed;
         h->e.sprite_rect.y = 1 * h->e.sprite_sheet.sprite_height;
-        if (h->e.dest_rect.x <
-            g->current_map->width_pixels - g->camera.x_pixel_movement_threshold &&
-            g->camera.viewport.x > 0)
-        {
-            g->camera.viewport.x -= h->e.speed;
-        }
     }
     if (input->is_pressed[KEY_UP])
     {
@@ -367,13 +348,6 @@ void hero_update(Hero* h, Input* input, Game* g)
             h->e.dest_rect.y -= h->e.speed;
         }
         h->e.sprite_rect.y = 3 * h->e.sprite_sheet.sprite_height;
-
-        if (h->e.dest_rect.y <
-            g->current_map->height_pixels - g->camera.y_pixel_movement_threshold &&
-            g->camera.viewport.y > 0)
-        {
-            g->camera.viewport.y -= h->e.speed;
-        }
     }
     if (input->is_pressed[KEY_DOWN])
     {
@@ -386,18 +360,18 @@ void hero_update(Hero* h, Input* input, Game* g)
             h->e.dest_rect.y += h->e.speed;
         }
         h->e.sprite_rect.y = 0 * h->e.sprite_sheet.sprite_height;
-
-        if (h->e.dest_rect.y > g->camera.y_pixel_movement_threshold &&
-            g->camera.viewport.y < g->camera.max_y)
-        {
-            g->camera.viewport.y += h->e.speed;
-        }
-
     }
     if (input->is_pressed[KEY_F])
     {
         h->swing_club = GD_TRUE;
     }
+}
+
+void hero_update(Hero* h, Input* input, Game* g)
+{
+    SDL_Rect saved_position = h->e.dest_rect;
+
+    hero_process_input(h, input);
 
     if (saved_position.x != h->e.dest_rect.x ||
         saved_position.y != h->e.dest_rect.y)
@@ -417,7 +391,7 @@ void hero_update(Hero* h, Input* input, Game* g)
 
     hero_clamp_to_map(h, g->current_map);
     entity_set_collision_point(&h->e);
-    hero_check_collisions_with_tiles(h, g, saved_position, saved_viewport);
+    hero_check_collisions_with_tiles(h, g, saved_position);
 }
 
 void hero_update_club(Hero* h, u32 now)
