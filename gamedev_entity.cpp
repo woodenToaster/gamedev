@@ -289,14 +289,12 @@ void entity_list_destroy(EntityList* el)
     }
 }
 
-void hero_check_collisions_with_tiles(Hero* h, Game* game, SDL_Rect saved_position,
-                                      SDL_Rect saved_camera)
+void hero_check_collisions_with_tiles(Hero* h, Game* game, SDL_Rect saved_position)
 {
     Tile* current_tile = entity_get_tile_at_position(&h->e, game->current_map);
 
     if (tile_is_solid(current_tile))
     {
-        game->camera.viewport = saved_camera;
         h->e.dest_rect = saved_position;
     }
     if (tile_is_slow(current_tile) && !h->in_quicksand)
@@ -318,7 +316,6 @@ void hero_check_collisions_with_tiles(Hero* h, Game* game, SDL_Rect saved_positi
         map_do_warp(game);
         h->e.dest_rect.x = (int)h->e.starting_pos.x;
         h->e.dest_rect.y = (int)h->e.starting_pos.y;
-        game->camera.viewport = game->camera.starting_pos;
     }
 }
 
@@ -331,7 +328,6 @@ void hero_clamp_to_map(Hero* h, Map* map)
 void hero_update(Hero* h, Input* input, Game* g)
 {
     SDL_Rect saved_position = h->e.dest_rect;
-    SDL_Rect saved_viewport = g->camera.viewport;
 
     if (input->is_pressed[KEY_RIGHT])
     {
@@ -390,7 +386,7 @@ void hero_update(Hero* h, Input* input, Game* g)
 
     hero_clamp_to_map(h, g->current_map);
     entity_set_collision_point(&h->e);
-    hero_check_collisions_with_tiles(h, g, saved_position, saved_viewport);
+    hero_check_collisions_with_tiles(h, g, saved_position);
 }
 
 void hero_update_club(Hero* h, u32 now)

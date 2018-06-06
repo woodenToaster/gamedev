@@ -21,6 +21,8 @@ struct Entity
     int bb_y_offset;
     int bb_w_offset;
     int bb_h_offset;
+    f32 velocity;
+    f32 acceleration;
     u8 active;
     u8 has_plan;
     u8 can_move;

@@ -79,6 +79,7 @@ int main(int argc, char** argv)
     entity_set_starting_pos(&hero.e, 85, 85);
     entity_set_bounding_box_offset(&hero.e, 6, 5, 12, 7);
     entity_init_dest(&hero.e);
+    hero.e.velocity = 10;
     hero.e.speed = 10;
     hero.e.active = GD_TRUE;
     hero.e.type = ET_HERO;
