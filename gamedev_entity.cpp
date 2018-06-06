@@ -325,10 +325,8 @@ void hero_clamp_to_map(Hero* h, Map* map)
     h->e.dest_rect.y = clamp(h->e.dest_rect.y, 0, map->height_pixels - h->e.dest_rect.h);
 }
 
-void hero_update(Hero* h, Input* input, Game* g)
+void hero_process_input(Hero* h, Input* input)
 {
-    SDL_Rect saved_position = h->e.dest_rect;
-
     if (input->is_pressed[KEY_RIGHT])
     {
         h->e.dest_rect.x += h->e.speed;
@@ -367,6 +365,13 @@ void hero_update(Hero* h, Input* input, Game* g)
     {
         h->swing_club = GD_TRUE;
     }
+}
+
+void hero_update(Hero* h, Input* input, Game* g)
+{
+    SDL_Rect saved_position = h->e.dest_rect;
+
+    hero_process_input(h, input);
 
     if (saved_position.x != h->e.dest_rect.x ||
         saved_position.y != h->e.dest_rect.y)
