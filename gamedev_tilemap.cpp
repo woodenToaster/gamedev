@@ -143,12 +143,13 @@ void map_init(Map* m, u32 cols, u32 rows, Tile** tiles, SDL_Renderer* renderer)
     }
 }
 
-void map_update_tiles(Map* m, u32 last_frame_duration)
+void map_update_tiles(Game* g)
 {
+    Map* m = g->current_map;
     for (size_t i = 0; i < m->rows * m->cols; ++i)
     {
         Tile* tp = m->tiles[i];
-        animation_update(&tp->animation, last_frame_duration, tp->active);
+        animation_update(&tp->animation, g->dt, tp->active);
     }
 }
 

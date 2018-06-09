@@ -296,9 +296,15 @@ void hero_check_collisions_with_tiles(Hero* h, Game* game, SDL_Rect saved_positi
     if (tile_is_solid(current_tile))
     {
         h->e.dest_rect = saved_position;
+        h->e.position.x = (f32)saved_position.x;
+        h->e.position.y = (f32)saved_position.y;
+
+        h->e.velocity.x = 0.0f;
+        h->e.velocity.y = 0.0f;
     }
     if (tile_is_slow(current_tile) && !h->in_quicksand)
     {
+        // TODO: Update velocity (or acceleration?)
         h->e.speed -= 9;
         h->in_quicksand = GD_TRUE;
         if (h->is_moving)
@@ -316,62 +322,82 @@ void hero_check_collisions_with_tiles(Hero* h, Game* game, SDL_Rect saved_positi
         map_do_warp(game);
         h->e.dest_rect.x = (int)h->e.starting_pos.x;
         h->e.dest_rect.y = (int)h->e.starting_pos.y;
+        h->e.position.x = (f32)h->e.starting_pos.x;
+        h->e.position.y = (f32)h->e.starting_pos.y;
     }
 }
 
 void hero_clamp_to_map(Hero* h, Map* map)
 {
+
     h->e.dest_rect.x = clamp(h->e.dest_rect.x, 0, map->width_pixels - h->e.dest_rect.w);
     h->e.dest_rect.y = clamp(h->e.dest_rect.y, 0, map->height_pixels - h->e.dest_rect.h);
+
+    if (h->e.dest_rect.x != (int)h->e.position.x || h->e.dest_rect.y != (int)h->e.position.y)
+    {
+        h->e.velocity.x = 0.0f;
+        h->e.velocity.y = 0.0f;
+    }
+    h->e.position.x = (f32)h->e.dest_rect.x;
+    h->e.position.y = (f32)h->e.dest_rect.y;
+
 }
 
-void hero_process_input(Hero* h, Input* input)
+void hero_process_input(Hero* h, Input* input, f32 dt)
 {
+    Vec2 acceleration = {};
+
     if (input->is_pressed[KEY_RIGHT])
     {
-        h->e.dest_rect.x += h->e.speed;
+        acceleration.x = 1.0f;
         h->e.sprite_rect.y = 2 * h->e.sprite_sheet.sprite_height;
     }
     if (input->is_pressed[KEY_LEFT])
     {
-        h->e.dest_rect.x -= h->e.speed;
+        acceleration.x = -1.0f;
         h->e.sprite_rect.y = 1 * h->e.sprite_sheet.sprite_height;
     }
     if (input->is_pressed[KEY_UP])
     {
-        if (input->is_pressed[KEY_LEFT] || input->is_pressed[KEY_RIGHT])
-        {
-            h->e.dest_rect.y -= 7;
-        }
-        else
-        {
-            h->e.dest_rect.y -= h->e.speed;
-        }
+        acceleration.y = -1.0f;
         h->e.sprite_rect.y = 3 * h->e.sprite_sheet.sprite_height;
     }
     if (input->is_pressed[KEY_DOWN])
     {
-        if (input->is_pressed[KEY_LEFT] || input->is_pressed[KEY_RIGHT])
-        {
-            h->e.dest_rect.y += 7;
-        }
-        else
-        {
-            h->e.dest_rect.y += h->e.speed;
-        }
+        acceleration.y = 1.0f;
         h->e.sprite_rect.y = 0 * h->e.sprite_sheet.sprite_height;
     }
+
+    if (acceleration.x != 0.0f && acceleration.y != 0.0f)
+    {
+        acceleration *= 0.707186781187f;
+    }
+
+    f32 speed = 1000.0f; // m/s^2
+    acceleration *= speed;
+
+    acceleration -= 4 * h->e.velocity;
+
+    h->e.position = 0.5 * acceleration * square(dt) +
+                    h->e.velocity * (f32)dt +
+                    h->e.position;
+
+    h->e.velocity = acceleration * (f32)dt + h->e.velocity;
+
     if (input->is_pressed[KEY_F])
     {
         h->swing_club = GD_TRUE;
     }
+
+    h->e.dest_rect.x = (int)h->e.position.x;
+    h->e.dest_rect.y = (int)h->e.position.y;
 }
 
 void hero_update(Hero* h, Input* input, Game* g)
 {
     SDL_Rect saved_position = h->e.dest_rect;
 
-    hero_process_input(h, input);
+    hero_process_input(h, input, (f32)g->dt / 1000.0f);
 
     if (saved_position.x != h->e.dest_rect.x ||
         saved_position.y != h->e.dest_rect.y)

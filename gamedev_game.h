@@ -19,6 +19,7 @@ enum Colors
 
 struct Game
 {
+    u32 dt;
     int screen_width;
     int screen_height;
     int target_fps;

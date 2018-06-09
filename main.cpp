@@ -77,9 +77,10 @@ int main(int argc, char** argv)
     Hero hero = {};
     entity_init_sprite_sheet(&hero.e, "sprites/dude.png", 4, 4, game.renderer);
     entity_set_starting_pos(&hero.e, 85, 85);
+    hero.e.position.x = (f32)hero.e.starting_pos.x;
+    hero.e.position.y = (f32)hero.e.starting_pos.y;
     entity_set_bounding_box_offset(&hero.e, 6, 5, 12, 7);
     entity_init_dest(&hero.e);
-    hero.e.velocity = 10;
     hero.e.speed = 10;
     hero.e.active = GD_TRUE;
     hero.e.type = ET_HERO;
@@ -243,15 +244,13 @@ int main(int argc, char** argv)
     game.maps = &map_list;
     game.sounds = &sounds_to_play;
 
-    u32 dt = 33;
-
     /**************************************************************************/
     /* Main Loop                                                              */
     /**************************************************************************/
     while(game.running)
     {
         u32 now = SDL_GetTicks();
-        f32 fps = 1000.0f / dt;
+        f32 fps = 1000.0f / game.dt;
         char a[4];
         snprintf(a, 4, "%d\n", (u32)fps);
         ttf_font_create_bitmap(&ttf_tens, a[0], game.renderer);
@@ -266,12 +265,12 @@ int main(int argc, char** argv)
         /* Update                                                            */
         /*********************************************************************/
         game_update(&game, &input);
-        map_update_tiles(game.current_map, dt);
+        map_update_tiles(&game);
         hero_update(&hero, &input, &game);
         hero_update_club(&hero, now);
         camera_update(&game.camera, &hero.e.dest_rect);
-        entity_list_update(&entity_list, game.current_map, dt);
-        animation_update(&hero.e.animation, dt, hero.is_moving);
+        entity_list_update(&entity_list, game.current_map, game.dt);
+        animation_update(&hero.e.animation, game.dt, hero.is_moving);
         ttf_font_update_pos(&ttf_tens, game.camera.viewport.x, game.camera.viewport.y);
         ttf_font_update_pos(&ttf_ones, game.camera.viewport.x + ((int)font_size / 2), game.camera.viewport.y);
         sound_play_all(game.sounds, now);
@@ -296,8 +295,8 @@ int main(int argc, char** argv)
         SDL_SetRenderTarget(game.renderer, NULL);
         SDL_RenderCopy(game.renderer, game.current_map->texture, &game.camera.viewport, NULL);
 
-        dt = SDL_GetTicks() - now;
-        game_fix_frame_rate(&game, &dt);
+        game.dt = SDL_GetTicks() - now;
+        game_fix_frame_rate(&game);
 
         SDL_RenderPresent(game.renderer);
         fflush(stdout);

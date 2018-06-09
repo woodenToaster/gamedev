@@ -15,6 +15,12 @@ struct Vec2
     float y;
 };
 
+Vec2 vec2(float x, float y)
+{
+    Vec2 v = {x, y};
+    return v;
+}
+
 float vec2_magnitude(Vec2* v)
 {
     return sqrtf(powf(v->x, 2) + powf(v->y, 2));
@@ -23,6 +29,57 @@ float vec2_magnitude(Vec2* v)
 float vec2_dot(Vec2* v1, Vec2* v2)
 {
     return v1->x * v2->x + v1->y * v2->y;
+}
+
+Vec2 operator+(Vec2 v1, Vec2 v2)
+{
+    Vec2 result = {};
+    result.x = v1.x + v2.x;
+    result.y = v1.y + v2.y;
+
+    return result;
+}
+
+Vec2& operator+=(Vec2& v1, Vec2 v2)
+{
+    v1 = v1 + v2;
+    return v1;
+}
+
+Vec2 operator-(Vec2 v1, Vec2 v2)
+{
+    Vec2 result = {};
+    result.x = v1.x - v2.x;
+    result.y = v1.y - v2.y;
+    return result;
+}
+
+Vec2& operator-=(Vec2& v1, Vec2 v2)
+{
+    v1 = v1 - v2;
+    return v1;
+}
+
+Vec2 operator*(f32 s, Vec2 v)
+{
+    Vec2 result = {};
+    result.x = v.x * s;
+    result.y = v.y * s;
+
+    return result;
+}
+
+Vec2 operator*(Vec2 v, f32 s)
+{
+    Vec2 result = s * v;
+    return result;
+}
+
+Vec2& operator*=(Vec2& v1, f32 s)
+{
+    v1 = s * v1;
+
+    return v1;
 }
 
 int max(int a, int b)
@@ -117,4 +174,10 @@ Direction get_direction_from_angle(float angle)
     }
     return result;
 }
+
+f32 square(f32 x)
+{
+    return x * x;
+}
+
 #endif

@@ -6,27 +6,33 @@
 
 struct Entity
 {
+    EntityType type;
+
     SpriteSheet sprite_sheet;
+    SDL_Rect sprite_rect;
     Animation animation;
     Plan* plan;
-    SDL_Rect sprite_rect;
+
     int speed;
     Direction direction;
     Point starting_pos;
     Point collision_pt;
     u32 collision_pt_offset;
-    SDL_Rect bounding_box;
+
+    Vec2 position;
+    Vec2 velocity;
+    Vec2 acceleration;
+
     SDL_Rect dest_rect;
+    SDL_Rect bounding_box;
     int bb_x_offset;
     int bb_y_offset;
     int bb_w_offset;
     int bb_h_offset;
-    f32 velocity;
-    f32 acceleration;
+
     u8 active;
     u8 has_plan;
     u8 can_move;
-    EntityType type;
 };
 
 struct EntityList
