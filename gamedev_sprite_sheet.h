@@ -9,6 +9,7 @@ struct SpriteSheet
     int num_y;
     int sprite_width;
     int sprite_height;
+    SDL_Surface* surface;
     SDL_Texture* sheet;
     unsigned char* data;
 };

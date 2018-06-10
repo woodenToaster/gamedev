@@ -19,11 +19,34 @@ bool overlaps(SDL_Rect* r1, SDL_Rect* r2)
     return x_overlap && y_overlap;
 }
 
+void entity_init_pixel_data(Entity* e)
+{
+    e->pixel_data = (u8*)malloc(sizeof(u8) * e->sprite_rect.w * e->sprite_rect.h);
+    SDL_Surface* s = e->sprite_sheet.surface;
+    for (int i = 0; i < e->sprite_rect.h; ++i)
+    {
+        for (int j = 0; j < e->sprite_rect.w; ++j)
+        {
+            int pd_idx = i * e->sprite_rect.w + j;
+            if ((((u32*)s->pixels)[i * s->w + j] & s->format->Amask) == 0)
+            {
+                e->pixel_data[pd_idx] = 0;
+            }
+            else
+            {
+                e->pixel_data[pd_idx] = 1;
+            }
+        }
+    }
+}
+
 void entity_init_sprite_sheet(Entity* e, const char* path, int num_x, int num_y, SDL_Renderer* renderer)
 {
     sprite_sheet_load(&e->sprite_sheet, path, num_x, num_y, renderer);
     e->sprite_rect.w = e->sprite_sheet.sprite_width;
     e->sprite_rect.h = e->sprite_sheet.sprite_height;
+    // TODO: Do this for each sprite in the sheet.
+    entity_init_pixel_data(e);
 }
 
 void entity_set_starting_pos(Entity* e, int x, int y)
@@ -205,6 +228,44 @@ void entity_check_collisions_with_tiles(Entity* e, Map* map, SDL_Rect* saved_pos
     }
 }
 
+u8 entity_check_pixel_collision(Entity* e1, Entity* e2, SDL_Rect* overlap_box)
+{
+    for (int i = overlap_box->y; i < overlap_box->y + overlap_box->h; ++i)
+    {
+        for (int j = overlap_box->x; j < overlap_box->x + overlap_box->w; ++j)
+        {
+            // Convert overlap_box coordinates to pixel coordinates within the sprites
+            int e1_index_x = j - e1->dest_rect.x;
+            int e1_index_y = i - e1->dest_rect.y;
+            int e1_index = e1_index_y * e1->sprite_rect.w + e1_index_x;
+
+            int e2_index_x = j - e2->dest_rect.x;
+            int e2_index_y = i - e2->dest_rect.y;
+            int e2_index = e2_index_y * e2->sprite_rect.w + e2_index_x;
+
+            if (e1->pixel_data[e1_index] == 1 && e2->pixel_data[e2_index] == 1)
+            {
+                return GL_TRUE;
+            }
+        }
+    }
+    return GL_FALSE;
+}
+
+#ifdef DEBUG
+void entity_print_pixels(Entity* e)
+{
+    for (int i = 0; i < e->sprite_rect.h; ++i)
+    {
+        for (int j = 0; j < e->sprite_rect.w; ++j)
+        {
+            printf("%x", e->pixel_data[i * e->sprite_rect.w + j]);
+        }
+        printf("\n");
+    }
+}
+#endif
+
 void entity_check_collisions_with_entities(Entity* e, Game* game)
 {
     for (u32 i = 0; i < game->current_map->active_entities.count; ++i) {
@@ -217,9 +278,12 @@ void entity_check_collisions_with_entities(Entity* e, Game* game)
             if (entity_is_hero(e))
             {
                 SDL_Rect overlap_box = entity_get_overlap_box(e, other_e);
-                // TODO: Handle properly instead of just drawing the overlap.
-                renderer_fill_rect(game->renderer, &overlap_box, game->colors[MAGENTA]);
-                // TODO: pixel collision
+                // renderer_fill_rect(game->renderer, &overlap_box, game->colors[MAGENTA]);
+                if (entity_check_pixel_collision(e, other_e, &overlap_box))
+                {
+                    // TODO: Handle properly instead of just drawing the overlap.
+                    renderer_fill_rect(game->renderer, &overlap_box, game->colors[MAGENTA]);
+                }
             }
             else if (e->type == ET_BUFFALO)
             {
@@ -262,6 +326,7 @@ void entity_update(Entity* e, Map* map, u32 last_frame_duration)
 void entity_destroy(Entity* e)
 {
     sprite_sheet_destroy(&e->sprite_sheet);
+    free(e->pixel_data);
 }
 
 

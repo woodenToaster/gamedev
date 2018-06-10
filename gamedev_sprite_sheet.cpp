@@ -13,9 +13,8 @@ void sprite_sheet_destroy(SpriteSheet* ss)
 
 void sprite_sheet_load(SpriteSheet* ss, const char* path, int x_sprites, int y_sprites, SDL_Renderer* renderer)
 {
-    SDL_Surface* img = create_surface_from_png(&ss->data, path);
-    ss->sheet = SDL_CreateTextureFromSurface(renderer, img);
-    SDL_FreeSurface(img);
+    ss->surface = create_surface_from_png(&ss->data, path);
+    ss->sheet = SDL_CreateTextureFromSurface(renderer, ss->surface);
 
     SDL_QueryTexture(ss->sheet, NULL, NULL, &ss->width, &ss->height);
     ss->sprite_width = ss->width / x_sprites;

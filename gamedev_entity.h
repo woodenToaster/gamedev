@@ -12,6 +12,7 @@ struct Entity
     SDL_Rect sprite_rect;
     Animation animation;
     Plan* plan;
+    u8* pixel_data;
 
     int speed;
     Direction direction;

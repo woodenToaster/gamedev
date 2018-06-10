@@ -7,6 +7,7 @@
 #include "stb_image.h"
 
 #include "SDL.h"
+#include "SDL_opengl.h"
 #include "SDL_mixer.h"
 
 #include "stdint.h"
@@ -51,6 +52,19 @@ int main(int argc, char** argv)
     // Game
     Game game = {};
     game_init(&game, 640, 480);
+
+    // OpenGL
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3 );
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3 );
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+
+    SDL_GLContext ogl_context = SDL_GL_CreateContext(game.window);
+
+    if (ogl_context == NULL)
+    {
+        fprintf(stderr, "Failed to create opengl context: %s\n", SDL_GetError());
+        exit(1);
+    }
 
     // Input
     Input input = {};

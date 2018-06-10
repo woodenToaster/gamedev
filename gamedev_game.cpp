@@ -58,7 +58,7 @@ void game_init(Game* g, u32 width, u32 height)
                                  50,
                                  g->screen_width,
                                  g->screen_height,
-                                 SDL_WINDOW_SHOWN);
+                                 SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
 
     if (g->window == NULL)
     {

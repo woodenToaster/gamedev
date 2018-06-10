@@ -11,5 +11,3 @@
 * Architecture
 ** TODO Memory arena/allocator
 * Graphics
-** TODO [#B] Enable OpenGL
-
