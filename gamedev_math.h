@@ -31,6 +31,14 @@ float vec2_dot(Vec2* v1, Vec2* v2)
     return v1->x * v2->x + v1->y * v2->y;
 }
 
+Vec2 operator*(Vec2 v1, Vec2 v2)
+{
+    Vec2 result = {};
+    result.x = v1.x * v2.x;
+    result.y = v1.y * v2.y;
+    return result;
+}
+
 Vec2 operator+(Vec2 v1, Vec2 v2)
 {
     Vec2 result = {};

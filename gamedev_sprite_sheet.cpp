@@ -6,6 +6,8 @@ void sprite_sheet_destroy(SpriteSheet* ss)
     {
         SDL_DestroyTexture(ss->sheet);
         ss->sheet = NULL;
+        SDL_FreeSurface(ss->surface);
+        ss->surface = NULL;
         stbi_image_free(ss->data);
         ss->data = NULL;
     }

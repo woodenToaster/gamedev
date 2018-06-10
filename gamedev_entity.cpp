@@ -278,7 +278,6 @@ void entity_check_collisions_with_entities(Entity* e, Game* game)
             if (entity_is_hero(e))
             {
                 SDL_Rect overlap_box = entity_get_overlap_box(e, other_e);
-                // renderer_fill_rect(game->renderer, &overlap_box, game->colors[MAGENTA]);
                 if (entity_check_pixel_collision(e, other_e, &overlap_box))
                 {
                     // TODO: Handle properly instead of just drawing the overlap.
@@ -443,11 +442,11 @@ void hero_process_input(Hero* h, Input* input, f32 dt)
 
     acceleration -= 4 * h->e.velocity;
 
-    h->e.position = 0.5 * acceleration * square(dt) +
-                    h->e.velocity * (f32)dt +
+    h->e.position = (0.5 * acceleration * square(dt)) +
+                    (h->e.velocity * dt) +
                     h->e.position;
 
-    h->e.velocity = acceleration * (f32)dt + h->e.velocity;
+    h->e.velocity = (acceleration * dt) + h->e.velocity;
 
     if (input->is_pressed[KEY_F])
     {

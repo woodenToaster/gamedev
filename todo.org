@@ -3,8 +3,7 @@
 ** TODO [#C] IMGUI
 ** TODO [#C] Build SDL in debug mode
 * Gameplay
-** TODO [#A] Pixel perfect collision
-*** TODO [#A] Get pixel data from sprite 
+** TODO Get pixel data for each sprite in a sheet.
 ** TODO Fix bug when moving up or left
 ** TODO [#C] Base building screen
 ** TODO [#C] base building gui
