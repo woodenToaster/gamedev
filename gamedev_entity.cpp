@@ -9,7 +9,10 @@ void renderer_fill_rect(SDL_Renderer* renderer, SDL_Rect* dest, u32 color)
     u8 b = (u8)((color & 0x000000FF) >> 0);
 
     SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
-    SDL_RenderFillRect(renderer, dest);
+    if (color != 0x00FF00FF)
+    {
+        SDL_RenderFillRect(renderer, dest);
+    }
 }
 
 bool overlaps(SDL_Rect* r1, SDL_Rect* r2)
@@ -112,7 +115,7 @@ void entity_draw(Entity* e, Game* g)
     bb_bottom.w = e->bounding_box.w + bb_line_width;
     bb_bottom.h = bb_line_width;
 
-    u32 magenta = g->colors[MAGENTA];
+    u32 magenta = g->colors[COLOR_MAGENTA];
     if (e->active)
     {
         renderer_fill_rect(g->renderer, &bb_top, magenta);
@@ -281,7 +284,7 @@ void entity_check_collisions_with_entities(Entity* e, Game* game)
                 if (entity_check_pixel_collision(e, other_e, &overlap_box))
                 {
                     // TODO: Handle properly instead of just drawing the overlap.
-                    renderer_fill_rect(game->renderer, &overlap_box, game->colors[MAGENTA]);
+                    renderer_fill_rect(game->renderer, &overlap_box, game->colors[COLOR_MAGENTA]);
                 }
             }
             else if (e->type == ET_BUFFALO)
@@ -453,8 +456,51 @@ void hero_process_input(Hero* h, Input* input, f32 dt)
         h->swing_club = GD_TRUE;
     }
 
+    h->harvest = input->is_pressed[KEY_SPACE];
+
     h->e.dest_rect.x = (int)h->e.position.x;
     h->e.dest_rect.y = (int)h->e.position.y;
+}
+
+void hero_harvest(Hero *h, Game *g)
+{
+    // get next tile in facing direction if it's close enough
+    i32 harvest_threshold = 10;
+    Point point_to_harvest = h->e.collision_pt;
+
+    switch (h->e.direction)
+    {
+    case DIR_UP:
+        point_to_harvest.y -= harvest_threshold;
+        break;
+    case DIR_DOWN:
+        point_to_harvest.y += harvest_threshold;
+        break;
+    case DIR_LEFT:
+        point_to_harvest.x -= harvest_threshold;
+        break;
+    case DIR_RIGHT:
+        point_to_harvest.x += harvest_threshold;
+        break;
+    default:
+        break;
+    }
+
+    Tile *tile_to_harvest = map_get_tile_at_point(g->current_map, point_to_harvest);
+
+    if (tile_to_harvest->is_harvestable)
+    {
+        // replace tile image with harvested version
+        tile_destroy(tile_to_harvest);
+        // TODO(chj): Don't re-init?
+        tile_init(tile_to_harvest, tile_properties[TP_NONE], g->colors[COLOR_MAGENTA],
+                  g->renderer, "sprites/tree_stump.png");
+        tile_to_harvest->active = GD_TRUE;
+        tile_set_sprite_size(tile_to_harvest, 64, 64);
+
+        // add item to inventory
+        // hero->inventory[INV_LEAVES]++;
+    }
 }
 
 void hero_update(Hero* h, Input* input, Game* g)
@@ -479,10 +525,15 @@ void hero_update(Hero* h, Input* input, Game* g)
         h->e.sprite_rect.x = 0;
     }
 
+    if (h->harvest)
+    {
+        hero_harvest(h, g);
+    }
     hero_clamp_to_map(h, g->current_map);
     entity_set_collision_point(&h->e);
     hero_check_collisions_with_tiles(h, g, saved_position);
 }
+
 
 void hero_update_club(Hero* h, u32 now)
 {
@@ -491,24 +542,24 @@ void hero_update_club(Hero* h, u32 now)
 
     switch(h->e.direction)
     {
-    case DOWN:
+    case DIR_DOWN:
         h->club_rect.w = 8;
         h->club_rect.x -= 4;
         h->club_rect.h = 32;
         h->club_rect.y += 16;
         break;
-    case LEFT:
+    case DIR_LEFT:
         h->club_rect.w = 32;
         h->club_rect.h = 8;
         h->club_rect.y += 16;
         h->club_rect.x -= 32;
         break;
-    case RIGHT:
+    case DIR_RIGHT:
         h->club_rect.y += 16;
         h->club_rect.w = 32;
         h->club_rect.h = 8;
         break;
-    case UP:
+    case DIR_UP:
         h->club_rect.x -= 4;
         h->club_rect.y -= 32;
         h->club_rect.w = 8;

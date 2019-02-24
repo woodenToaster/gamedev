@@ -133,34 +133,43 @@ int main(int argc, char** argv)
     // Tiles
     Tile w = {};
     w.tile_width = w.tile_height = 80;
-    tile_init(&w, tile_properties[TP_SOLID], game->colors[GREEN], game->renderer);
+    tile_init(&w, tile_properties[TP_SOLID], game->colors[COLOR_GREEN], game->renderer);
 
     Tile f = {};
     f.tile_width = f.tile_height = 80;
-    tile_init(&f, tile_properties[TP_NONE], game->colors[BLUE], game->renderer);
+    tile_init(&f, tile_properties[TP_NONE], game->colors[COLOR_BLUE], game->renderer);
 
     Tile m = {};
     m.tile_width = m.tile_height = 80;
-    tile_init(&m, tile_properties[TP_QUICKSAND], game->colors[BROWN], game->renderer);
+    tile_init(&m, tile_properties[TP_QUICKSAND], game->colors[COLOR_BROWN], game->renderer);
 
     Tile wr = {};
     wr.tile_width = wr.tile_height = 80;
-    tile_init(&wr, tile_properties[TP_WARP], game->colors[RUST], game->renderer);
+    tile_init(&wr, tile_properties[TP_WARP], game->colors[COLOR_RUST], game->renderer);
     wr.destination_map = 2;
 
     Tile t = {};
     t.tile_width = t.tile_height = 80;
-    tile_init(&t, tile_properties[TP_SOLID], game->colors[GREEN], game->renderer, "sprites/TropicalTree.png");
+    tile_init(&t, tile_properties[TP_SOLID], game->colors[COLOR_GREEN], game->renderer, "sprites/TropicalTree.png");
     tile_set_sprite_size(&t, 64, 64);
     t.active = GD_TRUE;
 
     Tile fire = {};
     fire.tile_width = fire.tile_height = 80;
-    tile_init(&fire, tile_properties[TP_FIRE], game->colors[GREY], game->renderer, "sprites/Campfire.png");
+    tile_init(&fire, tile_properties[TP_FIRE], game->colors[COLOR_GREY], game->renderer, "sprites/Campfire.png");
     tile_set_sprite_size(&fire, 64, 64);
     animation_init(&fire.animation, 11, 100);
     fire.active = GD_TRUE;
     fire.has_animation = GD_TRUE;
+
+    // Harvestable tree
+    Tile h_tree = {};
+    h_tree.tile_width = h_tree.tile_height = 80;
+    tile_init(&h_tree, tile_properties[TP_HARVEST] | tile_properties[TP_SOLID], game->colors[COLOR_MAGENTA],
+              game->renderer, "sprites/tree.png");
+    tile_set_sprite_size(&h_tree, 64, 64);
+    h_tree.active = GD_TRUE;
+    h_tree.is_harvestable = GD_TRUE;
 
     TileList tile_list = {};
     Tile* _tiles[] = {&w, &f, &m, &wr, &t, &fire};
@@ -176,13 +185,13 @@ int main(int argc, char** argv)
     grass->tile_width = 16;
     grass->tile_height = 16;
     grass->flags = tile_properties[TP_NONE];
-    grass->color = game->colors[GREEN];
+    grass->color = game->colors[COLOR_MAGENTA];
     grass->sprite = jungle_tiles.texture;
     grass->sprite_rect = {16, 16, 16, 16};
 
     Tile grass_warp = {};
     grass_warp.tile_width = grass_warp.tile_height = 16;
-    tile_init(&grass_warp, tile_properties[TP_WARP], game->colors[RUST], game->renderer);
+    tile_init(&grass_warp, tile_properties[TP_WARP], game->colors[COLOR_RUST], game->renderer);
     // TODO: Make destination work
     grass_warp.destination_map = 1;
 
@@ -192,7 +201,7 @@ int main(int argc, char** argv)
         &w, &f, &f, &t, &f, &f, &f, &f, &f, &f, &f, &f,
         &w, &f, &f, &t, &f, &f, &f, &fire, &f, &f, &t, &f,
         &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &m,
-        &w, &f, &f, &t, &f, &f, &f, &f, &f, &f, &f, &f,
+        &w, &f, &f, &h_tree, &f, &f, &f, &f, &f, &f, &f, &f,
         &w, &f, &f, &t, &t, &t, &t, &f, &f, &t, &f, &wr,
         &w, &f, &f, &f, &f, &f, &t, &f, &f, &t, &f, &f,
         &w, &f, &f, &f, &f, &f, &t, &f, &f, &t, &f, &m,

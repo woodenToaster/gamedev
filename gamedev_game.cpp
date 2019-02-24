@@ -11,15 +11,15 @@ void game_destroy(Game* g)
 void game_init_colors(Game* g)
 {
     SDL_PixelFormat* window_pixel_format = g->window_surface->format;
-    g->colors[GREEN] = SDL_MapRGB(window_pixel_format, 37, 71, 0);
-    g->colors[BLUE] = SDL_MapRGB(window_pixel_format, 0, 0, 255);
-    g->colors[YELLOW] = SDL_MapRGB(window_pixel_format, 235, 245, 65);
-    g->colors[BROWN] = SDL_MapRGB(window_pixel_format, 153, 102, 0);
-    g->colors[RUST] = SDL_MapRGB(window_pixel_format, 153, 70, 77);
-    g->colors[MAGENTA] = SDL_MapRGB(window_pixel_format, 255, 0, 255);
-    g->colors[BLACK] = SDL_MapRGB(window_pixel_format, 0, 0, 0);
-    g->colors[RED] = SDL_MapRGB(window_pixel_format, 255, 0, 0);
-    g->colors[GREY] = SDL_MapRGB(window_pixel_format, 135, 135, 135);
+    g->colors[COLOR_GREEN] = SDL_MapRGB(window_pixel_format, 37, 71, 0);
+    g->colors[COLOR_BLUE] = SDL_MapRGB(window_pixel_format, 0, 0, 255);
+    g->colors[COLOR_YELLOW] = SDL_MapRGB(window_pixel_format, 235, 245, 65);
+    g->colors[COLOR_BROWN] = SDL_MapRGB(window_pixel_format, 153, 102, 0);
+    g->colors[COLOR_RUST] = SDL_MapRGB(window_pixel_format, 153, 70, 77);
+    g->colors[COLOR_MAGENTA] = SDL_MapRGB(window_pixel_format, 255, 0, 255);
+    g->colors[COLOR_BLACK] = SDL_MapRGB(window_pixel_format, 0, 0, 0);
+    g->colors[COLOR_RED] = SDL_MapRGB(window_pixel_format, 255, 0, 0);
+    g->colors[COLOR_GREY] = SDL_MapRGB(window_pixel_format, 135, 135, 135);
 }
 
 void game_init_camera(Game* g)

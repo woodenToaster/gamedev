@@ -139,46 +139,46 @@ Direction get_direction_from_angle(float angle)
     if (angle >= (3.0f * PI) / 2.0f - half_increment &&
         angle < (3.0f * PI) / 2.0f + half_increment)
     {
-        result = UP;
+        result = DIR_UP;
     }
     else if (angle >= (3.0f * PI) / 2.0f + half_increment &&
              angle < 2.0f * PI - half_increment)
     {
-        result = UP_RIGHT;
+        result = DIR_UP_RIGHT;
     }
     else if (angle >= 2.0f * PI - half_increment ||
              angle < half_increment)
     {
-        result = RIGHT;
+        result = DIR_RIGHT;
     }
     else if (angle >= half_increment &&
              angle < PI / 2.0f - half_increment)
     {
-        result = DOWN_RIGHT;
+        result = DIR_DOWN_RIGHT;
     }
     else if (angle >= PI / 2.0f - half_increment &&
              angle < PI / 2.0f + half_increment)
     {
-        result = DOWN;
+        result = DIR_DOWN;
     }
     else if (angle >= PI / 2.0f + half_increment &&
              angle < PI - half_increment)
     {
-        result = DOWN_LEFT;
+        result = DIR_DOWN_LEFT;
     }
     else if (angle >= PI - half_increment &&
              angle < PI + half_increment)
     {
-        result = LEFT;
+        result = DIR_LEFT;
     }
     else if (angle >= PI + half_increment &&
              angle < (3.0f * PI) / half_increment)
     {
-        result = UP_LEFT;
+        result = DIR_UP_LEFT;
     }
     else
     {
-        result = DOWN;
+        result = DIR_DOWN;
     }
     return result;
 }

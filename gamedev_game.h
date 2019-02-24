@@ -5,15 +5,15 @@
 
 enum Colors
 {
-    GREEN,
-    BLUE,
-    YELLOW,
-    BROWN,
-    RUST,
-    MAGENTA,
-    BLACK,
-    RED,
-    GREY,
+    COLOR_GREEN,
+    COLOR_BLUE,
+    COLOR_YELLOW,
+    COLOR_BROWN,
+    COLOR_RUST,
+    COLOR_MAGENTA,
+    COLOR_BLACK,
+    COLOR_RED,
+    COLOR_GREY,
     COLOR_LAST
 };
 

@@ -1,6 +1,6 @@
 #include "gamedev_tilemap.h"
 
-void tile_init(Tile* t, u32 flags, u32 color, SDL_Renderer* renderer, const char* sprite_path=NULL)
+void tile_init(Tile* t, u32 flags, u32 color, SDL_Renderer* renderer, const char* sprite_path)
 {
     t->flags = flags;
     t->color = color;
@@ -141,6 +141,19 @@ void map_init(Map* m, u32 cols, u32 rows, Tile** tiles, SDL_Renderer* renderer)
         printf("Failed to create surface: %s\n", SDL_GetError());
         exit(1);
     }
+}
+
+Tile *map_get_tile_at_point(Map *m, Point p)
+{
+    SDL_Rect tile_at_point = {
+        (int)((p.x / m->tile_width) * m->tile_width),
+        (int)((p.y / m->tile_height) * m->tile_height)
+    };
+    int map_coord_x = tile_at_point.y / m->tile_height;
+    int map_coord_y = tile_at_point.x / m->tile_width;
+    int tile_index = map_coord_x * m->cols + map_coord_y;
+
+    return m->tiles[tile_index];
 }
 
 void map_update_tiles(Game* g)

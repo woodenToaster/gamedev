@@ -13,10 +13,11 @@ enum TileProperty
     TP_REVERSE,
     TP_WARP,
     TP_FIRE,
-    TP_LAST
+    TP_HARVEST,
+    TP_COUNT
 };
 
-static u32 tile_properties[TP_LAST] = {
+static u32 tile_properties[TP_COUNT] = {
     // Designated initializer syntax only available in C
     /* [TP_NONE] = 0x0, */
     /* [TP_SOLID] = 0x01 << 0, */
@@ -34,6 +35,7 @@ static u32 tile_properties[TP_LAST] = {
     0x01 << 4,
     0x01 << 5,
     0x01 << 6,
+    0x01 << 7
 };
 
 struct Tile
@@ -49,6 +51,8 @@ struct Tile
     u8 has_animation;
     unsigned char* img_data;
     u32 destination_map;
+    u8 is_harvestable;
+    u8 harvested;
 };
 
 struct TileList
@@ -86,5 +90,10 @@ struct MapList
     Map** maps;
     u32 count;
 };
+
+void tile_init(Tile* t, u32 flags, u32 color, SDL_Renderer* renderer, const char* sprite_path=NULL);
+void tile_destroy(Tile* t);
+void tile_set_sprite_size(Tile* t, int width, int height);
+Tile *map_get_tile_at_point(Map *m, Point p);
 
 #endif

@@ -9,6 +9,7 @@ enum Key
     KEY_RIGHT,
     KEY_ESCAPE,
     KEY_F,
+    KEY_SPACE,
     KEY_LAST
 };
 

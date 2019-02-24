@@ -45,11 +45,12 @@ struct EntityList
 struct Hero
 {
     Entity e;
+    SDL_Rect club_rect;
+    u32 next_club_swing_delay;
+    u32 club_swing_timeout;
     u8 is_moving;
     u8 in_quicksand;
     u8 swing_club;
-    u32 next_club_swing_delay;
-    u32 club_swing_timeout;
-    SDL_Rect club_rect;
+    u8 harvest;
 };
 #endif

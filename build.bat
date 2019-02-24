@@ -18,6 +18,6 @@ cl "%COMPILERFLAGS%" ..\main.cpp /link %LINK_LIBS% /SUBSYSTEM:CONSOLE
 popd
 if %errorlevel% neq 0 exit /b %errorlevel%
 
-pushd data
-..\build\main.exe
-popd
+rem pushd data
+rem ..\build\main.exe
+rem popd

@@ -30,6 +30,8 @@ void input_update(Input* input, SDL_Scancode key, u8 pressed)
     case SDL_SCANCODE_F:
         input->is_pressed[KEY_F] = pressed;
         break;
+    case SDL_SCANCODE_SPACE:
+        input->is_pressed[KEY_SPACE] = pressed;
     default:
         char* action = pressed ? "pressed" : "released";
         printf("Key %s: %s\n", action, SDL_GetKeyName(SDL_GetKeyFromScancode(key)));

@@ -1,12 +1,16 @@
 #+Startup: showall
+#+Startup: nologdone
+
 * Build
 ** TODO [#C] IMGUI
-** TODO [#C] Build SDL in debug mode
 * Gameplay
+** TODO Create harvestable tiles
+** TODO Crafting inventory screen
 ** TODO Get pixel data for each sprite in a sheet.
 ** TODO Fix bug when moving up or left
 ** TODO [#C] Base building screen
 ** TODO [#C] base building gui
 * Architecture
-** TODO Memory arena/allocator
+** DONE Memory arena/allocator
+** TODO Use arena instead of stack
 * Graphics

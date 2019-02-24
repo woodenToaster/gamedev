@@ -36,14 +36,14 @@ enum CardinalDir
 
 enum Direction
 {
-    UP,
-    UP_RIGHT,
-    RIGHT,
-    DOWN_RIGHT,
-    DOWN,
-    DOWN_LEFT,
-    LEFT,
-    UP_LEFT
+    DIR_UP,
+    DIR_UP_RIGHT,
+    DIR_RIGHT,
+    DIR_DOWN_RIGHT,
+    DIR_DOWN,
+    DIR_DOWN_LEFT,
+    DIR_LEFT,
+    DIR_UP_LEFT
 };
 
 enum Sounds
