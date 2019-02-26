@@ -11,6 +11,7 @@ void game_destroy(Game* g)
 void game_init_colors(Game* g)
 {
     SDL_PixelFormat* window_pixel_format = g->window_surface->format;
+    g->colors[COLOR_NONE] = 0;
     g->colors[COLOR_GREEN] = SDL_MapRGB(window_pixel_format, 37, 71, 0);
     g->colors[COLOR_BLUE] = SDL_MapRGB(window_pixel_format, 0, 0, 255);
     g->colors[COLOR_YELLOW] = SDL_MapRGB(window_pixel_format, 235, 245, 65);

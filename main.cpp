@@ -53,7 +53,7 @@ int main(int argc, char** argv)
     (void)argv;
 
     Arena arena = {};
-    arena_init(&arena, (size_t)2 * 1024 * 1024 * 1024);
+    arena_init(&arena, (size_t)1 * 1024 * 1024 * 1024);
 
     // Game
     Game* game = aalloc(Game);
@@ -90,7 +90,7 @@ int main(int argc, char** argv)
     Sound mud_sound = {};
     mud_sound.delay = 250;
     mud_sound.chunk = sound_load_wav("sounds/mud_walk.wav");
-    global_sounds[MUD_SOUND] = &mud_sound;
+    global_sounds[SOUND_MUD] = &mud_sound;
 
     SoundList sounds_to_play = {};
 
@@ -165,8 +165,8 @@ int main(int argc, char** argv)
     // Harvestable tree
     Tile h_tree = {};
     h_tree.tile_width = h_tree.tile_height = 80;
-    tile_init(&h_tree, tile_properties[TP_HARVEST] | tile_properties[TP_SOLID], game->colors[COLOR_MAGENTA],
-              game->renderer, "sprites/tree.png");
+    tile_init(&h_tree, tile_properties[TP_HARVEST] | tile_properties[TP_SOLID],
+              game->colors[COLOR_NONE], game->renderer, "sprites/tree.png");
     tile_set_sprite_size(&h_tree, 64, 64);
     h_tree.active = GD_TRUE;
     h_tree.is_harvestable = GD_TRUE;
@@ -185,7 +185,7 @@ int main(int argc, char** argv)
     grass->tile_width = 16;
     grass->tile_height = 16;
     grass->flags = tile_properties[TP_NONE];
-    grass->color = game->colors[COLOR_MAGENTA];
+    grass->color = game->colors[COLOR_NONE];
     grass->sprite = jungle_tiles.texture;
     grass->sprite_rect = {16, 16, 16, 16};
 

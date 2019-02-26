@@ -4,13 +4,14 @@
 
 void renderer_fill_rect(SDL_Renderer* renderer, SDL_Rect* dest, u32 color)
 {
-    u8 r = (u8)((color & 0x00FF0000) >> 16);
-    u8 g = (u8)((color & 0x0000FF00) >> 8);
-    u8 b = (u8)((color & 0x000000FF) >> 0);
-
-    SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
-    if (color != 0x00FF00FF)
+    // COLOR_NONE is 0. Set a tile's background color to COLOR_NONE to avoid
+    // extra rendering.
+    if (color)
     {
+        u8 r = (u8)((color & 0x00FF0000) >> 16);
+        u8 g = (u8)((color & 0x0000FF00) >> 8);
+        u8 b = (u8)((color & 0x000000FF) >> 0);
+        SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
         SDL_RenderFillRect(renderer, dest);
     }
 }
@@ -376,7 +377,7 @@ void hero_check_collisions_with_tiles(Hero* h, Game* game, SDL_Rect saved_positi
         h->in_quicksand = GD_TRUE;
         if (h->is_moving)
         {
-            sound_queue(global_sounds[MUD_SOUND], game->sounds);
+            sound_queue(global_sounds[SOUND_MUD], game->sounds);
         }
     }
     else if (h->in_quicksand)
@@ -443,7 +444,13 @@ void hero_process_input(Hero* h, Input* input, f32 dt)
     f32 speed = 1000.0f; // m/s^2
     acceleration *= speed;
 
-    acceleration -= 4 * h->e.velocity;
+    acceleration.x -= 4 * h->e.velocity;
+
+    if (h->e.velocity.x != 0 || h->e.velocity.y != 0)
+    {
+        printf("v: {%f, %f}\n", h->e.velocity.x, h->e.velocity.y);
+        printf("a: {%f, %f}\n", acceleration.x, acceleration.y);
+    }
 
     h->e.position = (0.5 * acceleration * square(dt)) +
                     (h->e.velocity * dt) +
@@ -451,6 +458,15 @@ void hero_process_input(Hero* h, Input* input, f32 dt)
 
     h->e.velocity = (acceleration * dt) + h->e.velocity;
 
+
+    // if (h->e.velocity.x < 15 && h->e.velocity.x > -15)
+    // {
+    //     h->e.velocity.x = 0;
+    // }
+    // if (h->e.velocity.y < 15 && h->e.velocity.y > -15)
+    // {
+    //     h->e.velocity.y = 0;
+    // }
     if (input->is_pressed[KEY_F])
     {
         h->swing_club = GD_TRUE;
@@ -458,8 +474,8 @@ void hero_process_input(Hero* h, Input* input, f32 dt)
 
     h->harvest = input->is_pressed[KEY_SPACE];
 
-    h->e.dest_rect.x = (int)h->e.position.x;
-    h->e.dest_rect.y = (int)h->e.position.y;
+    h->e.dest_rect.x = floor(h->e.position.x);
+    h->e.dest_rect.y =floor(h->e.position.y);
 }
 
 void hero_harvest(Hero *h, Game *g)
@@ -490,15 +506,14 @@ void hero_harvest(Hero *h, Game *g)
 
     if (tile_to_harvest->is_harvestable)
     {
-        // replace tile image with harvested version
         tile_destroy(tile_to_harvest);
         // TODO(chj): Don't re-init?
-        tile_init(tile_to_harvest, tile_properties[TP_NONE], g->colors[COLOR_MAGENTA],
+        tile_init(tile_to_harvest, tile_properties[TP_NONE], g->colors[COLOR_NONE],
                   g->renderer, "sprites/tree_stump.png");
         tile_to_harvest->active = GD_TRUE;
         tile_set_sprite_size(tile_to_harvest, 64, 64);
 
-        // add item to inventory
+        // TODO(chj): Add item to inventory
         // hero->inventory[INV_LEAVES]++;
     }
 }
@@ -533,7 +548,6 @@ void hero_update(Hero* h, Input* input, Game* g)
     entity_set_collision_point(&h->e);
     hero_check_collisions_with_tiles(h, g, saved_position);
 }
-
 
 void hero_update_club(Hero* h, u32 now)
 {

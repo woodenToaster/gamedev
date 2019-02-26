@@ -5,6 +5,7 @@
 
 enum Colors
 {
+    COLOR_NONE,
     COLOR_GREEN,
     COLOR_BLUE,
     COLOR_YELLOW,

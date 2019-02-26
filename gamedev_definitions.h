@@ -32,6 +32,7 @@ enum CardinalDir
     CARDINAL_SOUTH,
     CARDINAL_WEST,
     CARDINAL_EAST,
+    CARDINAL_COUNT,
 };
 
 enum Direction
@@ -43,13 +44,14 @@ enum Direction
     DIR_DOWN,
     DIR_DOWN_LEFT,
     DIR_LEFT,
-    DIR_UP_LEFT
+    DIR_UP_LEFT,
+    DIR_COUNT
 };
 
 enum Sounds
 {
-    MUD_SOUND,
-    NUM_SOUNDS
+    SOUND_MUD,
+    SOUND_COUNT
 };
 
 #endif
