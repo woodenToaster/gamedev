@@ -10,6 +10,7 @@
 #include "SDL_opengl.h"
 #include "SDL_mixer.h"
 
+// TODO(chj): Remove standard library dependency
 #include "stdint.h"
 #include "stdio.h"
 #include "stdlib.h"
@@ -80,11 +81,14 @@ int main(int argc, char** argv)
     ttf_file.fname = "fonts/arialbd.ttf";
 
     TTFFont ttf_tens = {};
-    float font_size = 32;
+    float font_size = 64;
     ttf_font_init(&ttf_tens, &ttf_file, font_size);
 
     TTFFont ttf_ones = {};
     ttf_font_init(&ttf_ones, &ttf_file, font_size);
+
+    TTFFont ttf_hundreds = {};
+    ttf_font_init(&ttf_hundreds, &ttf_file, font_size);
 
 	// Sound
     Sound mud_sound = {};
@@ -172,9 +176,9 @@ int main(int argc, char** argv)
     h_tree.is_harvestable = GD_TRUE;
 
     TileList tile_list = {};
-    Tile* _tiles[] = {&w, &f, &m, &wr, &t, &fire};
+    Tile* _tiles[] = {&w, &f, &m, &wr, &t, &fire, &h_tree};
     tile_list.tiles = _tiles;
-    tile_list.count = 6;
+    tile_list.count = 7;
 
     // Tileset
     Tileset jungle_tiles = {};
@@ -198,7 +202,7 @@ int main(int argc, char** argv)
     // Map
     Tile* map1_tiles[] = {
         &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w,
-        &w, &f, &f, &t, &f, &f, &f, &f, &f, &f, &f, &f,
+        &w, &f, &f, &h_tree, &f, &f, &f, &f, &f, &f, &f, &f,
         &w, &f, &f, &t, &f, &f, &f, &fire, &f, &f, &t, &f,
         &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &m,
         &w, &f, &f, &h_tree, &f, &f, &f, &f, &f, &f, &f, &f,
@@ -280,10 +284,12 @@ int main(int argc, char** argv)
     {
         u32 now = SDL_GetTicks();
         f32 fps = 1000.0f / game->dt;
-        char a[4];
-        snprintf(a, 4, "%d\n", (u32)fps);
-        ttf_font_create_bitmap(&ttf_tens, a[0], game->renderer);
-        ttf_font_create_bitmap(&ttf_ones, a[1], game->renderer);
+        char a[4] = {0};
+        snprintf(a, 4, "%03d", (u32)fps);
+        // TODO(chj): Don't do this on every frame
+        ttf_font_create_bitmap(&ttf_hundreds, a[0], game->renderer);
+        ttf_font_create_bitmap(&ttf_tens, a[1], game->renderer);
+        ttf_font_create_bitmap(&ttf_ones, a[2], game->renderer);
 
         /*********************************************************************/
         /* Input                                                             */
@@ -300,8 +306,9 @@ int main(int argc, char** argv)
         camera_update(&game->camera, &hero.e.dest_rect);
         entity_list_update(&entity_list, game->current_map, game->dt);
         animation_update(&hero.e.animation, game->dt, hero.is_moving);
-        ttf_font_update_pos(&ttf_tens, game->camera.viewport.x, game->camera.viewport.y);
-        ttf_font_update_pos(&ttf_ones, game->camera.viewport.x + ((int)font_size / 2), game->camera.viewport.y);
+        ttf_font_update_pos(&ttf_hundreds, game->camera.viewport.x, game->camera.viewport.y);
+        ttf_font_update_pos(&ttf_tens, game->camera.viewport.x + ((int)font_size / 2), game->camera.viewport.y);
+        ttf_font_update_pos(&ttf_ones, game->camera.viewport.x + (int)font_size, game->camera.viewport.y);
         sound_play_all(game->sounds, now);
 
         /*********************************************************************/
@@ -319,7 +326,7 @@ int main(int argc, char** argv)
         }
 
         // hero_draw_club(&hero, now, game);
-        text_draw(game, &ttf_tens, &ttf_ones);
+        text_draw(game, &ttf_hundreds, &ttf_tens, &ttf_ones);
 
         SDL_SetRenderTarget(game->renderer, NULL);
         SDL_RenderCopy(game->renderer, game->current_map->texture, &game->camera.viewport, NULL);
@@ -334,6 +341,7 @@ int main(int argc, char** argv)
     /**************************************************************************/
     /* Cleanup                                                                */
     /**************************************************************************/
+    ttf_font_destroy(&ttf_hundreds);
     ttf_font_destroy(&ttf_tens);
     ttf_font_destroy(&ttf_ones);
     tile_list_destroy(&tile_list);

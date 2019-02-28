@@ -4,13 +4,23 @@
 * Build
 ** TODO [#C] IMGUI
 * Gameplay
-** TODO Create harvestable tiles
+** TODO Harvestable tiles all get harvested when one is picked
+** TODO Fix bug when moving up or left
 ** TODO Crafting inventory screen
 ** TODO Get pixel data for each sprite in a sheet.
-** TODO Fix bug when moving up or left
 ** TODO [#C] Base building screen
 ** TODO [#C] base building gui
 * Architecture
-** DONE Memory arena/allocator
+** TODO Debug system
+*** TODO Fonts
 ** TODO Use arena instead of stack
 * Graphics
+* Design
+** TODO Dark Souls style combat
+*** TODO Normal/heavy swing
+*** TODO Shield
+*** TODO Parry/backstab
+*** TODO Dodge
+*** TODO Each move takes time, and the longer it takes, the more damage it does.
+** TODO Dark Souls atmosphere
+*** TODO See far away parts of the level that you eventually reach

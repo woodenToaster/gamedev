@@ -414,7 +414,7 @@ void hero_clamp_to_map(Hero* h, Map* map)
 void hero_process_input(Hero* h, Input* input, f32 dt)
 {
     Vec2 acceleration = {};
-
+    u8 use_floor = 1;
     if (input->is_pressed[KEY_RIGHT])
     {
         acceleration.x = 1.0f;
@@ -423,11 +423,13 @@ void hero_process_input(Hero* h, Input* input, f32 dt)
     if (input->is_pressed[KEY_LEFT])
     {
         acceleration.x = -1.0f;
+        use_floor = 0;
         h->e.sprite_rect.y = 1 * h->e.sprite_sheet.sprite_height;
     }
     if (input->is_pressed[KEY_UP])
     {
         acceleration.y = -1.0f;
+        use_floor = 0;
         h->e.sprite_rect.y = 3 * h->e.sprite_sheet.sprite_height;
     }
     if (input->is_pressed[KEY_DOWN])
@@ -444,7 +446,7 @@ void hero_process_input(Hero* h, Input* input, f32 dt)
     f32 speed = 1000.0f; // m/s^2
     acceleration *= speed;
 
-    acceleration.x -= 4 * h->e.velocity;
+    acceleration -= 4 * h->e.velocity;
 
     if (h->e.velocity.x != 0 || h->e.velocity.y != 0)
     {
@@ -474,8 +476,8 @@ void hero_process_input(Hero* h, Input* input, f32 dt)
 
     h->harvest = input->is_pressed[KEY_SPACE];
 
-    h->e.dest_rect.x = floor(h->e.position.x);
-    h->e.dest_rect.y =floor(h->e.position.y);
+    h->e.dest_rect.x = (int)h->e.position.x;
+    h->e.dest_rect.y = (int)h->e.position.y;
 }
 
 void hero_harvest(Hero *h, Game *g)
