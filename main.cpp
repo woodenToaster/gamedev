@@ -77,18 +77,69 @@ int main(int argc, char** argv)
     Input input = {};
 
     // Font
-    TTFFile ttf_file = {};
-    ttf_file.fname = "fonts/arialbd.ttf";
+    // TTFFile ttf_file = {};
+    // ttf_file.fname = "fonts/arialbd.ttf";
 
-    TTFFont ttf_tens = {};
-    float font_size = 64;
-    ttf_font_init(&ttf_tens, &ttf_file, font_size);
+    // TTFFont ttf_tens = {};
+    // float font_size = 64;
+    // ttf_font_init(&ttf_tens, &ttf_file, font_size);
 
-    TTFFont ttf_ones = {};
-    ttf_font_init(&ttf_ones, &ttf_file, font_size);
+    // TTFFont ttf_ones = {};
+    // ttf_font_init(&ttf_ones, &ttf_file, font_size);
 
-    TTFFont ttf_hundreds = {};
-    ttf_font_init(&ttf_hundreds, &ttf_file, font_size);
+    // TTFFont ttf_hundreds = {};
+    // ttf_font_init(&ttf_hundreds, &ttf_file, font_size);
+
+    char fontBuffer[1 << 25];
+    FILE* fontFile = fopen("fonts/arialbd.ttf", "rb");
+    fread(fontBuffer, 1, 1 << 25, fontFile);
+    fclose(fontFile);
+
+    f32 fontSize = 64;
+    stbtt_fontinfo fontInfo;
+    stbtt_InitFont(&fontInfo, (u8*)fontBuffer, stbtt_GetFontOffsetForIndex((u8*)fontBuffer, 0));
+    f32 fontScale = stbtt_ScaleForPixelHeight(&fontInfo, fontSize);
+
+    SDL_Texture *fontTextures[128];
+    for (char codepoint = '!'; codepoint <= '~'; ++codepoint)
+    {
+        i32 bitmapWidth;
+        i32 bitmapHeight;
+        unsigned char *stb_bitmap = stbtt_GetCodepointBitmap(&fontInfo, 0, fontScale, codepoint,
+                                                             &bitmapWidth, &bitmapHeight, 0, 0);
+        u8 *srcPixel = stb_bitmap;
+        u32* bitmapMemory = (u32*)malloc(sizeof(u32) * bitmapWidth * bitmapHeight * 4);
+        u32 *destPixel = bitmapMemory;
+
+        for (int i = 0; i < bitmapHeight * bitmapWidth; ++i)
+        {
+            u8 val = *srcPixel++;
+            *destPixel++ = ((val << 24) | (val << 16) | (val << 8) | (val << 0));
+        }
+
+        SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(
+            (void*)bitmapMemory,
+            bitmapWidth, bitmapHeight,
+            32,
+            4 * bitmapWidth,
+            0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF
+         );
+
+        if (!surface)
+        {
+            printf("%s\n", SDL_GetError());
+            exit(1);
+        }
+
+        // f->dest.w = bitmapWidth;
+        // f->dest.h = bitmapHeight;
+
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(game->renderer, surface);
+        fontTextures[codepoint] = texture;
+        stbtt_FreeBitmap(stb_bitmap, 0);
+        SDL_FreeSurface(surface);
+        free(bitmapMemory);
+    }
 
 	// Sound
     Sound mud_sound = {};
@@ -287,9 +338,9 @@ int main(int argc, char** argv)
         char a[4] = {0};
         snprintf(a, 4, "%03d", (u32)fps);
         // TODO(chj): Don't do this on every frame
-        ttf_font_create_bitmap(&ttf_hundreds, a[0], game->renderer);
-        ttf_font_create_bitmap(&ttf_tens, a[1], game->renderer);
-        ttf_font_create_bitmap(&ttf_ones, a[2], game->renderer);
+        // ttf_font_create_bitmap(&ttf_hundreds, a[0], game->renderer);
+        // ttf_font_create_bitmap(&ttf_tens, a[1], game->renderer);
+        // ttf_font_create_bitmap(&ttf_ones, a[2], game->renderer);
 
         /*********************************************************************/
         /* Input                                                             */
@@ -306,9 +357,9 @@ int main(int argc, char** argv)
         camera_update(&game->camera, &hero.e.dest_rect);
         entity_list_update(&entity_list, game->current_map, game->dt);
         animation_update(&hero.e.animation, game->dt, hero.is_moving);
-        ttf_font_update_pos(&ttf_hundreds, game->camera.viewport.x, game->camera.viewport.y);
-        ttf_font_update_pos(&ttf_tens, game->camera.viewport.x + ((int)font_size / 2), game->camera.viewport.y);
-        ttf_font_update_pos(&ttf_ones, game->camera.viewport.x + (int)font_size, game->camera.viewport.y);
+        // ttf_font_update_pos(&ttf_hundreds, game->camera.viewport.x, game->camera.viewport.y);
+        // ttf_font_update_pos(&ttf_tens, game->camera.viewport.x + ((int)font_size / 2), game->camera.viewport.y);
+        // ttf_font_update_pos(&ttf_ones, game->camera.viewport.x + (int)font_size, game->camera.viewport.y);
         sound_play_all(game->sounds, now);
 
         /*********************************************************************/
@@ -326,7 +377,8 @@ int main(int argc, char** argv)
         }
 
         // hero_draw_club(&hero, now, game);
-        text_draw(game, &ttf_hundreds, &ttf_tens, &ttf_ones);
+        // text_draw(game, &ttf_hundreds, &ttf_tens, &ttf_ones);
+        text_draw(game, fontTextures, "Lorem ipsum dolor sit amet, consectetur adipiscing elit\n", 0, 0, 24, 24);
 
         SDL_SetRenderTarget(game->renderer, NULL);
         SDL_RenderCopy(game->renderer, game->current_map->texture, &game->camera.viewport, NULL);
@@ -341,9 +393,13 @@ int main(int argc, char** argv)
     /**************************************************************************/
     /* Cleanup                                                                */
     /**************************************************************************/
-    ttf_font_destroy(&ttf_hundreds);
-    ttf_font_destroy(&ttf_tens);
-    ttf_font_destroy(&ttf_ones);
+    // ttf_font_destroy(&ttf_hundreds);
+    // ttf_font_destroy(&ttf_tens);
+    // ttf_font_destroy(&ttf_ones);
+    for (int i = '!'; i <= '~'; ++i)
+    {
+        SDL_DestroyTexture(fontTextures[i]);
+    }
     tile_list_destroy(&tile_list);
     tileset_destroy(&jungle_tiles);
     map_list_destroy(&map_list);

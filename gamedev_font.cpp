@@ -27,8 +27,6 @@ void ttf_font_create_bitmap(TTFFont* f, int character, SDL_Renderer* renderer)
 {
     unsigned char *stb_bitmap = stbtt_GetCodepointBitmap(&f->font, 0, f->scale, character,
                                                          &f->width, &f->height, 0, 0);
-    // TODO(chj): Convert the bitmap to an RGBA 32 bit value and make a surface.
-    // Then we can free f->bitmap right away.
     if (f->texture)
     {
         SDL_DestroyTexture(f->texture);
@@ -39,14 +37,12 @@ void ttf_font_create_bitmap(TTFFont* f, int character, SDL_Renderer* renderer)
     f->bitmap = (u32*)malloc(sizeof(u32) * f->width * f->height * 4);
     u32 *tmp = f->bitmap;
 
-    for (int i = 0; i < f->height; ++i)
+    for (int i = 0; i < f->height * f->width; ++i)
     {
-        for (int j = 0; j < f->width; ++j)
-        {
-            u8 val = *pixel++;
-            *tmp++ = ((val << 24) | (val << 16) | (val << 8) | (val << 0));
-        }
+        u8 val = *pixel++;
+        *tmp++ = ((val << 24) | (val << 16) | (val << 8) | (val << 0));
     }
+
 	SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(
         (void*)f->bitmap,
         f->width, f->height,
@@ -67,6 +63,7 @@ void ttf_font_create_bitmap(TTFFont* f, int character, SDL_Renderer* renderer)
     f->texture = SDL_CreateTextureFromSurface(renderer, surface);
     stbtt_FreeBitmap(stb_bitmap, 0);
     SDL_FreeSurface(surface);
+    free(f->bitmap);
 }
 
 void ttf_font_update_pos(TTFFont* t, int x, int y)
@@ -78,7 +75,20 @@ void ttf_font_update_pos(TTFFont* t, int x, int y)
 void ttf_font_destroy(TTFFont* f)
 {
     SDL_DestroyTexture(f->texture);
-    free(f->bitmap);
+}
+
+void text_draw(Game* g, SDL_Texture *codepointTextures[], char* text, i32 x, i32 y, i32 width, i32 height)
+{
+    SDL_Rect dest = {x, y, width, height};
+    char *at = text;
+
+    while (*at)
+    {
+        SDL_Texture *t = codepointTextures[*at];
+        SDL_RenderCopy(g->renderer, t, NULL, &dest);
+        at++;
+        dest.x += 24;
+    }
 }
 
 void text_draw(Game* g, TTFFont* hundreds, TTFFont* tens, TTFFont* ones)
