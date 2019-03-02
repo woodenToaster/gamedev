@@ -476,8 +476,8 @@ void hero_process_input(Hero* h, Input* input, f32 dt)
 
     h->harvest = input->is_pressed[KEY_SPACE];
 
-    h->e.dest_rect.x = (int)h->e.position.x;
-    h->e.dest_rect.y = (int)h->e.position.y;
+    h->e.dest_rect.x = (int)(h->e.position.x);
+    h->e.dest_rect.y = (int)(h->e.position.y);
 }
 
 void hero_harvest(Hero *h, Game *g)

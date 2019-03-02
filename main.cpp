@@ -49,6 +49,68 @@
 #define aalloc(type) ((type*)arena_push(&arena, sizeof(type)))
 #define MEGABYTES(n) ((n) * 1024 * 1024)
 
+static SDL_Texture *fontTextures[128];
+static CodepointMetadata codepointMetadata[128];
+
+void generateFontData(Game *game, FontMetadata *fontMetadata)
+{
+    char fontBuffer[1 << 25];
+    FILE* fontFile = fopen("fonts/arialbd.ttf", "rb");
+    fread(fontBuffer, 1, 1 << 25, fontFile);
+    fclose(fontFile);
+
+    fontMetadata->size = 64;
+    stbtt_InitFont(&fontMetadata->info, (u8*)fontBuffer, 0);
+    fontMetadata->scale = stbtt_ScaleForPixelHeight(&fontMetadata->info, fontMetadata->size);
+    stbtt_GetFontVMetrics(&fontMetadata->info, &fontMetadata->ascent, &fontMetadata->descent ,
+                          &fontMetadata->lineGap);
+    fontMetadata->baseline = (int)(fontMetadata->ascent * fontMetadata->scale);
+    // i32 xpos = 2;
+
+    for (char codepoint = '!'; codepoint <= '~'; ++codepoint)
+    {
+        CodepointMetadata *cpMeta = &codepointMetadata[codepoint];
+        // f32 x_shift = xpos - (f32)floor(xpos);
+
+        stbtt_GetCodepointHMetrics(&fontMetadata->info, codepoint, &cpMeta->advance, &cpMeta->leftSideBearing);
+        stbtt_GetCodepointBitmapBoxSubpixel(&fontMetadata->info, codepoint, fontMetadata->scale,
+                                            fontMetadata->scale, /* x_shift */ 0, 0,
+                                            &cpMeta->x0, &cpMeta->y0, &cpMeta->x1, &cpMeta->y1);
+        i32 bitmapWidth = cpMeta->x1 - cpMeta->x0;
+        i32 bitmapHeight = cpMeta->y1 - cpMeta->y0;
+        u8* stb_bitmap = (u8*)malloc(sizeof(u8) * bitmapWidth * bitmapHeight);
+        stbtt_MakeCodepointBitmapSubpixel(&fontMetadata->info, stb_bitmap, bitmapWidth, bitmapHeight, bitmapWidth,
+                                          fontMetadata->scale, fontMetadata->scale, /* x_shift */ 0, 0, codepoint);
+
+        SDL_Surface* surface = SDL_CreateRGBSurface(0, bitmapWidth, bitmapHeight, 32,
+                                                    0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF);
+        if (!surface)
+        {
+            printf("%s\n", SDL_GetError());
+            exit(1);
+        }
+
+        SDL_LockSurface(surface);
+        u8 *srcPixel = stb_bitmap;
+        u32 *destPixel = (u32*)surface->pixels;
+
+        for (int i = 0; i < bitmapHeight * bitmapWidth; ++i)
+        {
+            u8 val = *srcPixel++;
+            *destPixel++ = ((val << 24) | (val << 16) | (val << 8) | (val << 0));
+        }
+        SDL_UnlockSurface(surface);
+
+        // f->dest.w = bitmapWidth;
+        // f->dest.h = bitmapHeight;
+
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(game->renderer, surface);
+        fontTextures[codepoint] = texture;
+        stbtt_FreeBitmap(stb_bitmap, 0);
+        SDL_FreeSurface(surface);
+    }
+}
+
 int main(int argc, char** argv)
 {
     (void)argc;
@@ -91,66 +153,8 @@ int main(int argc, char** argv)
     // TTFFont ttf_hundreds = {};
     // ttf_font_init(&ttf_hundreds, &ttf_file, font_size);
 
-    char fontBuffer[1 << 25];
-    FILE* fontFile = fopen("fonts/arialbd.ttf", "rb");
-    fread(fontBuffer, 1, 1 << 25, fontFile);
-    fclose(fontFile);
-
-    f32 fontSize = 64;
-    stbtt_fontinfo fontInfo;
-    stbtt_InitFont(&fontInfo, (u8*)fontBuffer, stbtt_GetFontOffsetForIndex((u8*)fontBuffer, 0));
-    f32 fontScale = stbtt_ScaleForPixelHeight(&fontInfo, fontSize);
-    i32 ascent;
-    i32 descent;
-    i32 lineGap;
-    stbtt_GetFontVMetrics(&fontInfo, &ascent, &descent , &lineGap);
-    f32 fontAscent = fontScale * ascent;
-    f32 fontDescent = fontScale * descent;
-    f32 fontLineGap = fontScale * lineGap;
-    i32 baseline = (int)fontAscent;
-
-    SDL_Texture *fontTextures[128];
-    for (char codepoint = '!'; codepoint <= '~'; ++codepoint)
-    {
-        i32 bitmapWidth;
-        i32 bitmapHeight;
-        i32 xoff;
-        i32 yoff;
-        unsigned char *stb_bitmap = stbtt_GetCodepointBitmap(&fontInfo, 0, fontScale, codepoint,
-                                                             &bitmapWidth, &bitmapHeight, &xoff, &yoff);
-        u8 *srcPixel = stb_bitmap;
-        u32* bitmapMemory = (u32*)malloc(sizeof(u32) * bitmapWidth * bitmapHeight * 4);
-        u32 *destPixel = bitmapMemory;
-
-        for (int i = 0; i < bitmapHeight * bitmapWidth; ++i)
-        {
-            u8 val = *srcPixel++;
-            *destPixel++ = ((val << 24) | (val << 16) | (val << 8) | (val << 0));
-        }
-
-        SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(
-            (void*)bitmapMemory,
-            bitmapWidth, bitmapHeight,
-            32,
-            4 * bitmapWidth,
-            0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF
-         );
-
-        if (!surface)
-        {
-            printf("%s\n", SDL_GetError());
-            exit(1);
-        }
-
-        // f->dest.w = bitmapWidth;
-        // f->dest.h = bitmapHeight;
-
-        SDL_Texture *texture = SDL_CreateTextureFromSurface(game->renderer, surface);
-        fontTextures[codepoint] = texture;
-        stbtt_FreeBitmap(stb_bitmap, 0);
-        SDL_FreeSurface(surface);
-        free(bitmapMemory);
-    }
+    FontMetadata fontMetadata = {};
+    generateFontData(game, &fontMetadata);
 
 	// Sound
     Sound mud_sound = {};
@@ -237,10 +241,19 @@ int main(int argc, char** argv)
     h_tree.active = GD_TRUE;
     h_tree.is_harvestable = GD_TRUE;
 
+    Tile h_tree1 = {};
+    h_tree1.tile_width = h_tree1.tile_height = 80;
+    tile_init(&h_tree1, tile_properties[TP_HARVEST] | tile_properties[TP_SOLID],
+              game->colors[COLOR_NONE], game->renderer, "sprites/tree.png");
+    tile_set_sprite_size(&h_tree1, 64, 64);
+    h_tree1.active = GD_TRUE;
+    h_tree1.is_harvestable = GD_TRUE;
+
     TileList tile_list = {};
-    Tile* _tiles[] = {&w, &f, &m, &wr, &t, &fire, &h_tree};
+    Tile* _tiles[] = {&w, &f, &m, &wr, &t, &fire, &h_tree1};
     tile_list.tiles = _tiles;
-    tile_list.count = 7;
+
+    tile_list.count = 8;
 
     // Tileset
     Tileset jungle_tiles = {};
@@ -264,7 +277,7 @@ int main(int argc, char** argv)
     // Map
     Tile* map1_tiles[] = {
         &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w,
-        &w, &f, &f, &h_tree, &f, &f, &f, &f, &f, &f, &f, &f,
+        &w, &f, &f, &h_tree1, &f, &f, &f, &f, &f, &f, &f, &f,
         &w, &f, &f, &t, &f, &f, &f, &fire, &f, &f, &t, &f,
         &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &m,
         &w, &f, &f, &h_tree, &f, &f, &f, &f, &f, &f, &f, &f,
@@ -389,7 +402,10 @@ int main(int argc, char** argv)
 
         // hero_draw_club(&hero, now, game);
         // text_draw(game, &ttf_hundreds, &ttf_tens, &ttf_ones);
-        text_draw(game, fontTextures, "Lorem ipsum dolor sit amet, consectetur adipiscing elit\n", 0, 0, 24, 24);
+        text_draw(game, fontTextures, &fontMetadata, codepointMetadata,
+                  "Lorem ipsum dolor sit amet,", game->camera.viewport.x, game->camera.viewport.y);
+        // text_draw(game, fontTextures, "consectetur adipiscing elit",
+        //           game->camera.viewport.x, game->camera.viewport.y + 24, 24, 24);
 
         SDL_SetRenderTarget(game->renderer, NULL);
         SDL_RenderCopy(game->renderer, game->current_map->texture, &game->camera.viewport, NULL);
