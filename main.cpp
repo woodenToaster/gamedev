@@ -47,6 +47,7 @@
 
 
 #define aalloc(type) ((type*)arena_push(&arena, sizeof(type)))
+#define MEGABYTES(n) ((n) * 1024 * 1024)
 
 int main(int argc, char** argv)
 {
@@ -54,7 +55,7 @@ int main(int argc, char** argv)
     (void)argv;
 
     Arena arena = {};
-    arena_init(&arena, (size_t)1 * 1024 * 1024 * 1024);
+    arena_init(&arena, (size_t)MEGABYTES(1));
 
     // Game
     Game* game = aalloc(Game);
@@ -99,14 +100,24 @@ int main(int argc, char** argv)
     stbtt_fontinfo fontInfo;
     stbtt_InitFont(&fontInfo, (u8*)fontBuffer, stbtt_GetFontOffsetForIndex((u8*)fontBuffer, 0));
     f32 fontScale = stbtt_ScaleForPixelHeight(&fontInfo, fontSize);
+    i32 ascent;
+    i32 descent;
+    i32 lineGap;
+    stbtt_GetFontVMetrics(&fontInfo, &ascent, &descent , &lineGap);
+    f32 fontAscent = fontScale * ascent;
+    f32 fontDescent = fontScale * descent;
+    f32 fontLineGap = fontScale * lineGap;
+    i32 baseline = (int)fontAscent;
 
     SDL_Texture *fontTextures[128];
     for (char codepoint = '!'; codepoint <= '~'; ++codepoint)
     {
         i32 bitmapWidth;
         i32 bitmapHeight;
+        i32 xoff;
+        i32 yoff;
         unsigned char *stb_bitmap = stbtt_GetCodepointBitmap(&fontInfo, 0, fontScale, codepoint,
-                                                             &bitmapWidth, &bitmapHeight, 0, 0);
+                                                             &bitmapWidth, &bitmapHeight, &xoff, &yoff);
         u8 *srcPixel = stb_bitmap;
         u32* bitmapMemory = (u32*)malloc(sizeof(u32) * bitmapWidth * bitmapHeight * 4);
         u32 *destPixel = bitmapMemory;
@@ -405,6 +416,7 @@ int main(int argc, char** argv)
     map_list_destroy(&map_list);
     entity_list_destroy(&entity_list);
     game_destroy(game);
+    arena_destroy(&arena);
 
     return 0;
 }
