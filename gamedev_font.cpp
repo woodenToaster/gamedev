@@ -1,6 +1,6 @@
 #include "gamedev_font.h"
 
-void generateFontData(Game *game, FontMetadata *fontMetadata)
+void generateFontData(FontMetadata *fontMetadata, Game *game)
 {
     char fontBuffer[1 << 25];
     FILE* fontFile = fopen("fonts/arialbd.ttf", "rb");

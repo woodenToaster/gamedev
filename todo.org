@@ -4,15 +4,13 @@
 * Build
 ** TODO [#C] IMGUI
 * Gameplay
-** TODO Harvestable tiles all get harvested when one is picked
-** TODO Fix bug when moving up or left
+** TODO Get PS4 controller working
 ** TODO Crafting inventory screen
 ** TODO Get pixel data for each sprite in a sheet.
 ** TODO [#C] Base building screen
 ** TODO [#C] base building gui
 * Architecture
 ** TODO Debug system
-*** TODO Fonts
 ** TODO Use arena instead of stack
 * Graphics
 * Design

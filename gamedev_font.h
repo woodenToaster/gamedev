@@ -24,25 +24,4 @@ struct FontMetadata
     SDL_Texture *textures[128];
     CodepointMetadata codepointMetadata[128];
 };
-
-struct TTFFile
-{
-    char buf[1 << 25];
-    char* fname;
-    u8 initialized;
-};
-
-struct TTFFont
-{
-    stbtt_fontinfo font;
-    char* text;
-    f32 size;
-    f32 scale;
-    int width;
-    int height;
-    u32* bitmap;
-    SDL_Texture* texture;
-    TTFFile* ttf_file;
-    SDL_Rect dest;
-};
 #endif

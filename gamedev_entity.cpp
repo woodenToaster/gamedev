@@ -372,7 +372,6 @@ void hero_check_collisions_with_tiles(Hero* h, Game* game, SDL_Rect saved_positi
     }
     if (tile_is_slow(current_tile) && !h->in_quicksand)
     {
-        // TODO: Update velocity (or acceleration?)
         h->speed -= 990;
         h->in_quicksand = GD_TRUE;
         if (h->is_moving)
@@ -444,22 +443,8 @@ void hero_process_input(Hero* h, Input* input, f32 dt)
     h->swing_club = input->is_pressed[KEY_F];
     h->harvest = input->is_pressed[KEY_SPACE];
 
-    if (h->e.velocity.x < 0)
-    {
-        h->e.dest_rect.x = (int)ceilf(h->e.position.x);
-    }
-    else
-    {
-        h->e.dest_rect.x = (int)(h->e.position.x);
-    }
-    if (h->e.velocity.y < 0)
-    {
-        h->e.dest_rect.y = (int)ceilf(h->e.position.y);
-    }
-    else
-    {
-        h->e.dest_rect.y = (int)(h->e.position.y);
-    }
+    h->e.dest_rect.x = (int)(h->e.position.x);
+    h->e.dest_rect.y = (int)(h->e.position.y);
 }
 
 void hero_harvest(Hero *h, Game *g)

@@ -77,21 +77,8 @@ int main(int argc, char** argv)
     Input input = {};
 
     // Font
-    // TTFFile ttf_file = {};
-    // ttf_file.fname = "fonts/arialbd.ttf";
-
-    // TTFFont ttf_tens = {};
-    // float font_size = 64;
-    // ttf_font_init(&ttf_tens, &ttf_file, font_size);
-
-    // TTFFont ttf_ones = {};
-    // ttf_font_init(&ttf_ones, &ttf_file, font_size);
-
-    // TTFFont ttf_hundreds = {};
-    // ttf_font_init(&ttf_hundreds, &ttf_file, font_size);
-
     FontMetadata fontMetadata = {};
-    generateFontData(game, &fontMetadata);
+    generateFontData(&fontMetadata, game);
 
 	// Sound
     Sound mud_sound = {};
@@ -331,20 +318,18 @@ int main(int argc, char** argv)
 
         // hero_draw_club(&hero, now, game);
 
-#ifdef DEBUG
         // Draw FPS
         f32 fps = 1000.0f / game->dt;
         char fps_str[9] = {0};
         snprintf(fps_str, 9, "FPS: %03d", (u32)fps);
         drawText(game, &fontMetadata, fps_str, game->camera.viewport.x, game->camera.viewport.y);
 
-        char v[30];
-        snprintf(v, 30, "v: {%.6f, %.6f}", hero.e.velocity.x, hero.e.velocity.y);
-        drawText(game, &fontMetadata, v, game->camera.viewport.x, game->camera.viewport.y + 24);
-        char p[30];
-        snprintf(p, 30, "p: {%.6f, %.6f}", hero.e.position.x, hero.e.position.y);
-        drawText(game, &fontMetadata, p, game->camera.viewport.x, game->camera.viewport.y + 48);
-#endif
+        // char v[30];
+        // snprintf(v, 30, "v: {%.6f, %.6f}", hero.e.velocity.x, hero.e.velocity.y);
+        // drawText(game, &fontMetadata, v, game->camera.viewport.x, game->camera.viewport.y + 24);
+        // char p[30];
+        // snprintf(p, 30, "p: {%.6f, %.6f}", hero.e.position.x, hero.e.position.y);
+        // drawText(game, &fontMetadata, p, game->camera.viewport.x, game->camera.viewport.y + 48);
 
         SDL_SetRenderTarget(game->renderer, NULL);
         SDL_RenderCopy(game->renderer, game->current_map->texture, &game->camera.viewport, NULL);
