@@ -116,6 +116,22 @@ i32 clamp(i32 val, i32 min, i32 max)
     }
 }
 
+f32 clampFloat(f32 val, f32 min, f32 max)
+{
+    if (val < min)
+    {
+        return min;
+    }
+    else if (val > max)
+    {
+        return max;
+    }
+    else
+    {
+        return val;
+    }
+}
+
 void clamp_size_t(size_t* val, size_t min, size_t max)
 {
     if (*val < min)

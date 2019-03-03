@@ -108,6 +108,8 @@ int main(int argc, char** argv)
     hero.e.position.y = (f32)hero.e.starting_pos.y;
     entity_set_bounding_box_offset(&hero.e, 6, 5, 12, 7);
     entity_init_dest(&hero.e);
+    hero.speed = 1000; // m/s^2
+    // TODO(chj): Replace entity speed with f32 and use that for hero
     hero.e.speed = 10;
     hero.e.active = GD_TRUE;
     hero.e.type = ET_HERO;
@@ -332,13 +334,16 @@ int main(int argc, char** argv)
 #ifdef DEBUG
         // Draw FPS
         f32 fps = 1000.0f / game->dt;
-        char a[9] = {0};
-        snprintf(a, 9, "FPS: %03d", (u32)fps);
-        drawText(game, &fontMetadata, a, game->camera.viewport.x, game->camera.viewport.y);
+        char fps_str[9] = {0};
+        snprintf(fps_str, 9, "FPS: %03d", (u32)fps);
+        drawText(game, &fontMetadata, fps_str, game->camera.viewport.x, game->camera.viewport.y);
 
         char v[30];
         snprintf(v, 30, "v: {%.6f, %.6f}", hero.e.velocity.x, hero.e.velocity.y);
         drawText(game, &fontMetadata, v, game->camera.viewport.x, game->camera.viewport.y + 24);
+        char p[30];
+        snprintf(p, 30, "p: {%.6f, %.6f}", hero.e.position.x, hero.e.position.y);
+        drawText(game, &fontMetadata, p, game->camera.viewport.x, game->camera.viewport.y + 48);
 #endif
 
         SDL_SetRenderTarget(game->renderer, NULL);

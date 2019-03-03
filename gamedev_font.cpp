@@ -7,7 +7,7 @@ void generateFontData(Game *game, FontMetadata *fontMetadata)
     fread(fontBuffer, 1, 1 << 25, fontFile);
     fclose(fontFile);
 
-    fontMetadata->size = 24;
+    fontMetadata->size = 20;
     stbtt_InitFont(&fontMetadata->info, (u8*)fontBuffer, 0);
     fontMetadata->scale = stbtt_ScaleForPixelHeight(&fontMetadata->info, fontMetadata->size);
     stbtt_GetFontVMetrics(&fontMetadata->info, &fontMetadata->ascent, &fontMetadata->descent ,

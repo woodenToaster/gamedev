@@ -373,7 +373,7 @@ void hero_check_collisions_with_tiles(Hero* h, Game* game, SDL_Rect saved_positi
     if (tile_is_slow(current_tile) && !h->in_quicksand)
     {
         // TODO: Update velocity (or acceleration?)
-        h->e.speed -= 9;
+        h->speed -= 990;
         h->in_quicksand = GD_TRUE;
         if (h->is_moving)
         {
@@ -382,7 +382,7 @@ void hero_check_collisions_with_tiles(Hero* h, Game* game, SDL_Rect saved_positi
     }
     else if (h->in_quicksand)
     {
-        h->e.speed += 9;
+        h->speed += 990;
         h->in_quicksand = GD_FALSE;
     }
     if (tile_is_warp(current_tile))
@@ -397,24 +397,13 @@ void hero_check_collisions_with_tiles(Hero* h, Game* game, SDL_Rect saved_positi
 
 void hero_clamp_to_map(Hero* h, Map* map)
 {
-
-    h->e.dest_rect.x = clamp(h->e.dest_rect.x, 0, map->width_pixels - h->e.dest_rect.w);
-    h->e.dest_rect.y = clamp(h->e.dest_rect.y, 0, map->height_pixels - h->e.dest_rect.h);
-
-    if (h->e.dest_rect.x != (int)h->e.position.x || h->e.dest_rect.y != (int)h->e.position.y)
-    {
-        h->e.velocity.x = 0.0f;
-        h->e.velocity.y = 0.0f;
-    }
-    h->e.position.x = (f32)h->e.dest_rect.x;
-    h->e.position.y = (f32)h->e.dest_rect.y;
-
+    h->e.position.x = clampFloat(h->e.position.x, 0, (f32)map->width_pixels - h->e.dest_rect.w);
+    h->e.position.y = clampFloat(h->e.position.y, 0, (f32)map->height_pixels - h->e.dest_rect.h);
 }
 
 void hero_process_input(Hero* h, Input* input, f32 dt)
 {
     Vec2 acceleration = {};
-    u8 use_floor = 1;
     if (input->is_pressed[KEY_RIGHT])
     {
         acceleration.x = 1.0f;
@@ -423,13 +412,11 @@ void hero_process_input(Hero* h, Input* input, f32 dt)
     if (input->is_pressed[KEY_LEFT])
     {
         acceleration.x = -1.0f;
-        use_floor = 0;
         h->e.sprite_rect.y = 1 * h->e.sprite_sheet.sprite_height;
     }
     if (input->is_pressed[KEY_UP])
     {
         acceleration.y = -1.0f;
-        use_floor = 0;
         h->e.sprite_rect.y = 3 * h->e.sprite_sheet.sprite_height;
     }
     if (input->is_pressed[KEY_DOWN])
@@ -443,9 +430,9 @@ void hero_process_input(Hero* h, Input* input, f32 dt)
         acceleration *= 0.707186781187f;
     }
 
-    f32 speed = 1000.0f; // m/s^2
-    acceleration *= speed;
+    acceleration *= h->speed;
 
+    // Friction
     acceleration -= 4 * h->e.velocity;
 
     h->e.position = (0.5 * acceleration * square(dt)) +
@@ -454,24 +441,25 @@ void hero_process_input(Hero* h, Input* input, f32 dt)
 
     h->e.velocity = (acceleration * dt) + h->e.velocity;
 
-
-    // if (h->e.velocity.x < 15 && h->e.velocity.x > -15)
-    // {
-    //     h->e.velocity.x = 0;
-    // }
-    // if (h->e.velocity.y < 15 && h->e.velocity.y > -15)
-    // {
-    //     h->e.velocity.y = 0;
-    // }
-    if (input->is_pressed[KEY_F])
-    {
-        h->swing_club = GD_TRUE;
-    }
-
+    h->swing_club = input->is_pressed[KEY_F];
     h->harvest = input->is_pressed[KEY_SPACE];
 
-    h->e.dest_rect.x = (int)(h->e.position.x);
-    h->e.dest_rect.y = (int)(h->e.position.y);
+    if (h->e.velocity.x < 0)
+    {
+        h->e.dest_rect.x = (int)ceilf(h->e.position.x);
+    }
+    else
+    {
+        h->e.dest_rect.x = (int)(h->e.position.x);
+    }
+    if (h->e.velocity.y < 0)
+    {
+        h->e.dest_rect.y = (int)ceilf(h->e.position.y);
+    }
+    else
+    {
+        h->e.dest_rect.y = (int)(h->e.position.y);
+    }
 }
 
 void hero_harvest(Hero *h, Game *g)
