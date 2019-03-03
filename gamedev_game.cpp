@@ -39,7 +39,7 @@ void game_init(Game* g, u32 width, u32 height)
     g->screen_width = width;
     g->screen_height = height;
     g->target_fps = 60;
-    g->dt = 16;
+    g->dt = (i32)((1.0f / (f32)g->target_fps) * 1000);
     g->target_ms_per_frame = (u32)(1000.0f / (f32)g->target_fps);
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)

@@ -1,6 +1,7 @@
 #ifndef GD_DEFINITIONS_H
 #define GD_DEFINITIONS_H
 
+
 typedef uint8_t u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
@@ -11,7 +12,10 @@ typedef int32_t i32;
 typedef int64_t i64;
 typedef float f32;
 typedef double f64;
+// TODO(chj): Change use of u8 as bool to bool32
 typedef int32_t bool32;
+
+#define MEGABYTES(n) ((n) * 1024 * 1024)
 
 enum
 {

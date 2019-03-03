@@ -1,85 +1,68 @@
 #include "gamedev_font.h"
 
-void ttf_file_read(TTFFile* t)
+void generateFontData(Game *game, FontMetadata *fontMetadata)
 {
-    FILE* f = fopen(t->fname, "rb");
-    fread(t->buf, 1, 1 << 25, f);
-    t->initialized = GD_TRUE;
-    fclose(f);
+    char fontBuffer[1 << 25];
+    FILE* fontFile = fopen("fonts/arialbd.ttf", "rb");
+    fread(fontBuffer, 1, 1 << 25, fontFile);
+    fclose(fontFile);
+
+    fontMetadata->size = 24;
+    stbtt_InitFont(&fontMetadata->info, (u8*)fontBuffer, 0);
+    fontMetadata->scale = stbtt_ScaleForPixelHeight(&fontMetadata->info, fontMetadata->size);
+    stbtt_GetFontVMetrics(&fontMetadata->info, &fontMetadata->ascent, &fontMetadata->descent ,
+                          &fontMetadata->lineGap);
+    fontMetadata->baseline = (int)(fontMetadata->ascent * fontMetadata->scale);
+
+    for (char codepoint = '!'; codepoint <= '~'; ++codepoint)
+    {
+        CodepointMetadata *cpMeta = &fontMetadata->codepointMetadata[codepoint];
+        stbtt_GetCodepointHMetrics(&fontMetadata->info, codepoint, &cpMeta->advance, &cpMeta->leftSideBearing);
+        stbtt_GetCodepointBitmapBoxSubpixel(&fontMetadata->info, codepoint, fontMetadata->scale,
+                                            fontMetadata->scale, /* x_shift */ 0, 0,
+                                            &cpMeta->x0, &cpMeta->y0, &cpMeta->x1, &cpMeta->y1);
+        i32 bitmapWidth = cpMeta->x1 - cpMeta->x0;
+        i32 bitmapHeight = cpMeta->y1 - cpMeta->y0;
+        u8* stb_bitmap = (u8*)malloc(sizeof(u8) * bitmapWidth * bitmapHeight);
+        stbtt_MakeCodepointBitmapSubpixel(&fontMetadata->info, stb_bitmap, bitmapWidth, bitmapHeight, bitmapWidth,
+                                          fontMetadata->scale, fontMetadata->scale, /* x_shift */ 0, 0, codepoint);
+
+        SDL_Surface* surface = SDL_CreateRGBSurface(0, bitmapWidth, bitmapHeight, 32,
+                                                    0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF);
+        if (!surface)
+        {
+            printf("%s\n", SDL_GetError());
+            exit(1);
+        }
+
+        SDL_LockSurface(surface);
+        u8 *srcPixel = stb_bitmap;
+        u32 *destPixel = (u32*)surface->pixels;
+
+        for (int i = 0; i < bitmapHeight * bitmapWidth; ++i)
+        {
+            u8 val = *srcPixel++;
+            *destPixel++ = ((val << 24) | (val << 16) | (val << 8) | (val << 0));
+        }
+        SDL_UnlockSurface(surface);
+
+        SDL_Texture *texture = SDL_CreateTextureFromSurface(game->renderer, surface);
+        fontMetadata->textures[codepoint] = texture;
+        stbtt_FreeBitmap(stb_bitmap, 0);
+        SDL_FreeSurface(surface);
+    }
 }
 
-
-void ttf_font_init(TTFFont* f, TTFFile* file, f32 size)
+void destroyFontMetadata(FontMetadata *fmd)
 {
-    if (!file->initialized)
+    for (int i = '!'; i <= '~'; ++i)
     {
-        ttf_file_read(file);
+        SDL_DestroyTexture(fmd->textures[i]);
     }
-
-    f->ttf_file = file;
-    f->size = size;
-
-    stbtt_InitFont(&f->font, (u8*)file->buf, stbtt_GetFontOffsetForIndex((u8*)file->buf, 0));
-    f->scale = stbtt_ScaleForPixelHeight(&f->font, f->size);
-}
-
-void ttf_font_create_bitmap(TTFFont* f, int character, SDL_Renderer* renderer)
-{
-    unsigned char *stb_bitmap = stbtt_GetCodepointBitmap(&f->font, 0, f->scale, character,
-                                                         &f->width, &f->height, 0, 0);
-    if (f->texture)
-    {
-        SDL_DestroyTexture(f->texture);
-        f->texture = NULL;
-    }
-
-    u8 *pixel = stb_bitmap;
-    f->bitmap = (u32*)malloc(sizeof(u32) * f->width * f->height * 4);
-    u32 *tmp = f->bitmap;
-
-    for (int i = 0; i < f->height * f->width; ++i)
-    {
-        u8 val = *pixel++;
-        *tmp++ = ((val << 24) | (val << 16) | (val << 8) | (val << 0));
-    }
-
-	SDL_Surface* surface = SDL_CreateRGBSurfaceFrom(
-        (void*)f->bitmap,
-        f->width, f->height,
-        32,
-        4 * f->width,
-        0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF
-    );
-
-    if (!surface)
-    {
-        printf("%s\n", SDL_GetError());
-        exit(1);
-    }
-
-    f->dest.w = f->width;
-    f->dest.h = f->height;
-
-    f->texture = SDL_CreateTextureFromSurface(renderer, surface);
-    stbtt_FreeBitmap(stb_bitmap, 0);
-    SDL_FreeSurface(surface);
-    free(f->bitmap);
-}
-
-void ttf_font_update_pos(TTFFont* t, int x, int y)
-{
-    t->dest.x = x;
-    t->dest.y = y;
-}
-
-void ttf_font_destroy(TTFFont* f)
-{
-    SDL_DestroyTexture(f->texture);
 }
 
 // TODO(chj): Account for wrapping off the viewport
-void text_draw(Game* g, SDL_Texture *codepointTextures[], FontMetadata *fontMetadata,
-               CodepointMetadata *codepointMetadata, char* text, i32 x=0, i32 y=0)
+void drawText(Game* g, FontMetadata *fontMetadata, char* text, i32 x=0, i32 y=0)
 {
     // Leave a little padding in case the character extends left
     i32 xpos = 2 + x;
@@ -87,7 +70,7 @@ void text_draw(Game* g, SDL_Texture *codepointTextures[], FontMetadata *fontMeta
     u32 at = 0;
     while (text[at])
     {
-        CodepointMetadata *cpm = &codepointMetadata[text[at]];
+        CodepointMetadata *cpm = &fontMetadata->codepointMetadata[text[at]];
         i32 width = cpm->x1 - cpm->x0;
         i32 height = cpm->y1 - cpm->y0;
         SDL_Rect source = {cpm->x0, cpm->y0, width, height};
@@ -95,7 +78,7 @@ void text_draw(Game* g, SDL_Texture *codepointTextures[], FontMetadata *fontMeta
 
         if (text[at] != ' ')
         {
-            SDL_Texture *t = codepointTextures[text[at]];
+            SDL_Texture *t = fontMetadata->textures[text[at]];
             SDL_RenderCopy(g->renderer, t, NULL, &dest);
             xpos += (int)(cpm->advance * fontMetadata->scale);
         }
@@ -114,11 +97,4 @@ void text_draw(Game* g, SDL_Texture *codepointTextures[], FontMetadata *fontMeta
         }
         ++at;
     }
-}
-
-void text_draw(Game* g, TTFFont* hundreds, TTFFont* tens, TTFFont* ones)
-{
-    SDL_RenderCopy(g->renderer, hundreds->texture, NULL, &hundreds->dest);
-    SDL_RenderCopy(g->renderer, tens->texture, NULL, &tens->dest);
-    SDL_RenderCopy(g->renderer, ones->texture, NULL, &ones->dest);
 }

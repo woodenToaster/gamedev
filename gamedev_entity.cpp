@@ -448,12 +448,6 @@ void hero_process_input(Hero* h, Input* input, f32 dt)
 
     acceleration -= 4 * h->e.velocity;
 
-    if (h->e.velocity.x != 0 || h->e.velocity.y != 0)
-    {
-        printf("v: {%f, %f}\n", h->e.velocity.x, h->e.velocity.y);
-        printf("a: {%f, %f}\n", acceleration.x, acceleration.y);
-    }
-
     h->e.position = (0.5 * acceleration * square(dt)) +
                     (h->e.velocity * dt) +
                     h->e.position;

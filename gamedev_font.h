@@ -1,17 +1,6 @@
 #ifndef GD_FONT_H
 #define GD_FONT_H
 
-struct FontMetadata
-{
-    i32 baseline;
-    f32 size;
-    f32 scale;
-    i32 ascent;
-    i32 descent;
-    i32 lineGap;
-    stbtt_fontinfo info;
-};
-
 struct CodepointMetadata
 {
     i32 advance;
@@ -21,6 +10,19 @@ struct CodepointMetadata
     i32 x1;
     i32 y1;
     f32 xShift;
+};
+
+struct FontMetadata
+{
+    i32 baseline;
+    f32 size;
+    f32 scale;
+    i32 ascent;
+    i32 descent;
+    i32 lineGap;
+    stbtt_fontinfo info;
+    SDL_Texture *textures[128];
+    CodepointMetadata codepointMetadata[128];
 };
 
 struct TTFFile
