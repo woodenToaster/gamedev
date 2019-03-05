@@ -76,7 +76,7 @@ void drawText(Game* g, FontMetadata *fontMetadata, char* text, i32 x=0, i32 y=0)
         SDL_Rect source = {cpm->x0, cpm->y0, width, height};
         SDL_Rect dest = {xpos, baseline + cpm->y0, width, height};
 
-        if (text[at] != ' ')
+	    if (text[at] != ' ')
         {
             SDL_Texture *t = fontMetadata->textures[text[at]];
             SDL_RenderCopy(g->renderer, t, NULL, &dest);

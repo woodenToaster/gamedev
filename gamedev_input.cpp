@@ -7,31 +7,31 @@ void input_update(Input* input, SDL_Scancode key, u8 pressed)
     case SDL_SCANCODE_RIGHT:
     case SDL_SCANCODE_L:
     case SDL_SCANCODE_D:
-        input->is_pressed[KEY_RIGHT] = pressed;
+        input->key_pressed[KEY_RIGHT] = pressed;
         break;
     case SDL_SCANCODE_UP:
     case SDL_SCANCODE_K:
     case SDL_SCANCODE_W:
-        input->is_pressed[KEY_UP] = pressed;
+        input->key_pressed[KEY_UP] = pressed;
         break;
     case SDL_SCANCODE_DOWN:
     case SDL_SCANCODE_J:
     case SDL_SCANCODE_S:
-        input->is_pressed[KEY_DOWN] = pressed;
+        input->key_pressed[KEY_DOWN] = pressed;
         break;
     case SDL_SCANCODE_LEFT:
     case SDL_SCANCODE_H:
     case SDL_SCANCODE_A:
-        input->is_pressed[KEY_LEFT] = pressed;
+        input->key_pressed[KEY_LEFT] = pressed;
         break;
     case SDL_SCANCODE_ESCAPE:
-        input->is_pressed[KEY_ESCAPE] = pressed;
+        input->key_pressed[KEY_ESCAPE] = pressed;
         break;
     case SDL_SCANCODE_F:
-        input->is_pressed[KEY_F] = pressed;
+        input->key_pressed[KEY_F] = pressed;
         break;
     case SDL_SCANCODE_SPACE:
-        input->is_pressed[KEY_SPACE] = pressed;
+        input->key_pressed[KEY_SPACE] = pressed;
     default:
         char* action = pressed ? "pressed" : "released";
         printf("Key %s: %s\n", action, SDL_GetKeyName(SDL_GetKeyFromScancode(key)));
@@ -39,7 +39,7 @@ void input_update(Input* input, SDL_Scancode key, u8 pressed)
     }
 }
 
-void input_poll(Input* input, Game* game)
+void input_poll(Input* input, Game* game, SDL_GameController **controllerHandles)
 {
     SDL_Event event;
     while(SDL_PollEvent(&event))
@@ -58,6 +58,59 @@ void input_poll(Input* input, Game* game)
             // case SDL_MOUSEMOTION:
             //     input_handle_mouse(&input);
             //     break;
+        }
+    }
+    // Check controller input
+    // TODO(chj): Should we use events for this? What's the difference?
+    for (int controllerIndex = 0; controllerIndex < MAX_CONTROLLERS; ++controllerIndex)
+    {
+        SDL_GameController *controller = controllerHandles[controllerIndex];
+        if(controller && SDL_GameControllerGetAttached(controller))
+        {
+            // TODO(chj): Handle remaining buttons
+            bool32 *pressed = input->button_pressed;
+            pressed[BUTTON_UP] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_UP);
+            pressed[BUTTON_DOWN] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_DOWN);
+            pressed[BUTTON_LEFT] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_LEFT);
+            pressed[BUTTON_RIGHT] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
+            // bool start = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_START);
+            // bool back = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_BACK);
+            // bool leftShoulder = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
+            // bool rightShoulder = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
+            pressed[BUTTON_A] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A);
+            pressed[BUTTON_B] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_B);
+            pressed[BUTTON_X] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_X);
+            pressed[BUTTON_Y] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_Y);
+
+            i16 sdlStickX = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTX);
+            i16 sdlStickY = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTY);
+
+            f32 stickX = 0;
+            f32 stickY = 0;
+            if (sdlStickX < 0)
+            {
+                stickX = (f32)sdlStickX / 32768.0f;
+            }
+            else
+            {
+                stickX = (f32)sdlStickX / 32767.0f;
+            }
+            if (sdlStickY < 0)
+            {
+                stickY = (f32)sdlStickY / 32768.0f;
+            }
+            else
+            {
+                stickY = (f32)sdlStickY / 32767.0f;
+            }
+
+            // Account for dead zone
+            input->stickX = (stickX > -0.1f && stickX < 0.1f) ? 0.0f : stickX;
+            input->stickY = (stickY > -0.1f && stickY < 0.1f) ? 0.0f : stickY;
+        }
+        else
+        {
+            // TODO: This controller is not plugged in.
         }
     }
 }

@@ -10,6 +10,9 @@
 #include "SDL_opengl.h"
 #include "SDL_mixer.h"
 
+// TODO(chj): Move this
+#define MAX_CONTROLLERS 2
+
 // TODO(chj): Remove standard library dependency
 #include "stdint.h"
 #include "stdio.h"
@@ -47,6 +50,11 @@
 
 #define aalloc(type) ((type*)arena_push(&arena, sizeof(type)))
 
+// Global dumping ground: Everything goes here first while I'm figuring out the
+// structure, but should eventually be moved out.
+static SDL_GameController *controllerHandles[MAX_CONTROLLERS];
+// End global dumping ground
+
 
 int main(int argc, char** argv)
 {
@@ -75,6 +83,22 @@ int main(int argc, char** argv)
 
     // Input
     Input input = {};
+    // Initialize controllers
+    // TODO(chj): Handle SDL_CONTROLLERDEVICEADDED, SDL_CONTROLLERDEVICEREMOVED, and SDL_CONTROLLERDEVICEREMAPPED
+    int maxJoysticks = SDL_NumJoysticks();
+    for (int joystickIndex = 0; joystickIndex < maxJoysticks; ++joystickIndex)
+    {
+        if (joystickIndex >= MAX_CONTROLLERS)
+        {
+            break;
+        }
+        if (!SDL_IsGameController(joystickIndex))
+        {
+            continue;
+        }
+        controllerHandles[joystickIndex] = SDL_GameControllerOpen(joystickIndex);
+    }
+
 
     // Font
     FontMetadata fontMetadata = {};
@@ -288,7 +312,7 @@ int main(int argc, char** argv)
         /*********************************************************************/
         /* Input                                                             */
         /*********************************************************************/
-        input_poll(&input, game);
+        input_poll(&input, game, controllerHandles);
 
         /*********************************************************************/
         /* Update                                                            */
@@ -324,9 +348,9 @@ int main(int argc, char** argv)
         snprintf(fps_str, 9, "FPS: %03d", (u32)fps);
         drawText(game, &fontMetadata, fps_str, game->camera.viewport.x, game->camera.viewport.y);
 
-        // char v[30];
-        // snprintf(v, 30, "v: {%.6f, %.6f}", hero.e.velocity.x, hero.e.velocity.y);
-        // drawText(game, &fontMetadata, v, game->camera.viewport.x, game->camera.viewport.y + 24);
+        char v[30];
+        snprintf(v, 30, "v: {%.6f, %.6f}", input.stickX, input.stickY);
+        drawText(game, &fontMetadata, v, game->camera.viewport.x, game->camera.viewport.y + 24);
         // char p[30];
         // snprintf(p, 30, "p: {%.6f, %.6f}", hero.e.position.x, hero.e.position.y);
         // drawText(game, &fontMetadata, p, game->camera.viewport.x, game->camera.viewport.y + 48);
@@ -349,6 +373,13 @@ int main(int argc, char** argv)
     tileset_destroy(&jungle_tiles);
     map_list_destroy(&map_list);
     entity_list_destroy(&entity_list);
+    for(int controllerIndex = 0; controllerIndex < MAX_CONTROLLERS; ++controllerIndex)
+    {
+        if (controllerHandles[controllerIndex])
+        {
+            SDL_GameControllerClose(controllerHandles[controllerIndex]);
+        }
+    }
     game_destroy(game);
     arena_destroy(&arena);
 

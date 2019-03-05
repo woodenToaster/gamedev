@@ -403,27 +403,45 @@ void hero_clamp_to_map(Hero* h, Map* map)
 void hero_process_input(Hero* h, Input* input, f32 dt)
 {
     Vec2 acceleration = {};
-    if (input->is_pressed[KEY_RIGHT])
+    acceleration.x = input->stickX;
+    acceleration.y = input->stickY;
+
+    if (input->key_pressed[KEY_RIGHT])
     {
         acceleration.x = 1.0f;
-        h->e.sprite_rect.y = 2 * h->e.sprite_sheet.sprite_height;
     }
-    if (input->is_pressed[KEY_LEFT])
+    if (input->key_pressed[KEY_LEFT])
     {
         acceleration.x = -1.0f;
-        h->e.sprite_rect.y = 1 * h->e.sprite_sheet.sprite_height;
     }
-    if (input->is_pressed[KEY_UP])
+    if (input->key_pressed[KEY_UP])
     {
         acceleration.y = -1.0f;
-        h->e.sprite_rect.y = 3 * h->e.sprite_sheet.sprite_height;
     }
-    if (input->is_pressed[KEY_DOWN])
+    if (input->key_pressed[KEY_DOWN])
     {
         acceleration.y = 1.0f;
+    }
+
+    // TODO(chj): Sprite selection doesn't belong in here
+    if (acceleration.x > 0)
+    {
+        h->e.sprite_rect.y = 2 * h->e.sprite_sheet.sprite_height;
+    }
+    if (acceleration.x < 0)
+    {
+        h->e.sprite_rect.y = 1 * h->e.sprite_sheet.sprite_height;
+    }
+    if (acceleration.y < 0)
+    {
+        h->e.sprite_rect.y = 3 * h->e.sprite_sheet.sprite_height;
+    }
+    if (acceleration.y > 0)
+    {
         h->e.sprite_rect.y = 0 * h->e.sprite_sheet.sprite_height;
     }
 
+    // Diagonal movement
     if (acceleration.x != 0.0f && acceleration.y != 0.0f)
     {
         acceleration *= 0.707186781187f;
@@ -440,8 +458,8 @@ void hero_process_input(Hero* h, Input* input, f32 dt)
 
     h->e.velocity = (acceleration * dt) + h->e.velocity;
 
-    h->swing_club = input->is_pressed[KEY_F];
-    h->harvest = input->is_pressed[KEY_SPACE];
+    h->swing_club = input->key_pressed[KEY_F];
+    h->harvest = input->key_pressed[KEY_SPACE] || input->button_pressed[BUTTON_A];
 
     h->e.dest_rect.x = (int)(h->e.position.x);
     h->e.dest_rect.y = (int)(h->e.position.y);

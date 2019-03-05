@@ -6,6 +6,7 @@ void game_destroy(Game* g)
     SDL_DestroyRenderer(g->renderer);
     SDL_DestroyWindow(g->window);
     SDL_Quit();
+
 }
 
 void game_init_colors(Game* g)
@@ -42,7 +43,7 @@ void game_init(Game* g, u32 width, u32 height)
     g->dt = (i32)((1.0f / (f32)g->target_fps) * 1000);
     g->target_ms_per_frame = (u32)(1000.0f / (f32)g->target_fps);
 
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) < 0)
     {
         printf("SDL failed to initialize: %s\n", SDL_GetError());
         exit(1);
@@ -82,7 +83,7 @@ void game_init(Game* g, u32 width, u32 height)
 
 void game_update(Game* g, Input* input)
 {
-    if (input->is_pressed[KEY_ESCAPE])
+    if (input->key_pressed[KEY_ESCAPE])
     {
         g->running = GD_FALSE;
     }
