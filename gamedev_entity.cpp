@@ -196,19 +196,19 @@ Tile* entity_get_tile_at_position(Entity* e, Map* map)
 void entity_reverse_direction(Entity* e)
 {
     // TODO: Try to use entity direction directly instead of plan.mv_dir
-    switch (e->plan->mv_dir)
+    switch (e->plan.mv_dir)
     {
     case CARDINAL_NORTH:
-        e->plan->mv_dir = CARDINAL_SOUTH;
+        e->plan.mv_dir = CARDINAL_SOUTH;
         break;
     case CARDINAL_SOUTH:
-        e->plan->mv_dir = CARDINAL_NORTH;
+        e->plan.mv_dir = CARDINAL_NORTH;
         break;
     case CARDINAL_EAST:
-        e->plan->mv_dir = CARDINAL_WEST;
+        e->plan.mv_dir = CARDINAL_WEST;
         break;
     case CARDINAL_WEST:
-        e->plan->mv_dir = CARDINAL_EAST;
+        e->plan.mv_dir = CARDINAL_EAST;
         break;
     }
 }
@@ -312,7 +312,7 @@ void entity_update(Entity* e, Map* map, u32 last_frame_duration)
         if (e->can_move && e->active)
         {
             SDL_Rect saved_position = e->dest_rect;
-            entity_move_in_direction(e, e->plan->mv_dir);
+            entity_move_in_direction(e, e->plan.mv_dir);
             animation_update(&e->animation, last_frame_duration, GD_TRUE);
             entity_set_collision_point(e);
             entity_check_collisions_with_tiles(e, map, &saved_position);
@@ -469,6 +469,8 @@ void hero_harvest(Hero *h, Game *g)
 {
     // get next tile in facing direction if it's close enough
     i32 harvest_threshold = 10;
+    // TODO(chj): This is based on the bottom center of the sprite. Not very accurate
+    // We want to test on a 10 pixel box outside the bounding box
     Point point_to_harvest = h->e.collision_pt;
 
     switch (h->e.direction)
@@ -491,7 +493,29 @@ void hero_harvest(Hero *h, Game *g)
 
     Tile *tile_to_harvest = map_get_tile_at_point(g->current_map, point_to_harvest);
 
-    if (tile_to_harvest->is_harvestable)
+    // TODO(chj): Make a general interaction function that dispatches to harvest when nescessary
+    // See if there is an entity there
+    for (u32 entityIndex = 0; entityIndex < g->current_map->active_entities.count; ++entityIndex)
+    {
+        Entity *e = g->current_map->active_entities.entities[entityIndex];
+        // TODO(chj): Downcast function
+
+        if (!entity_is_hero(e))
+        {
+            Harlod *harlod = (Harlod*)e;
+            SDL_Rect shiftedBoundingBox = {point_to_harvest.x, point_to_harvest.y,
+                                        (int)g->current_map->tile_width, (int)g->current_map->tile_height};
+            if(harlod && overlaps(&harlod->e.bounding_box, &shiftedBoundingBox))
+            {
+                if(harlod->onHeroInteract)
+                {
+                    harlod->onHeroInteract(&harlod->e, &h->e);
+                }
+            }
+        }
+    }
+
+    if (tile_to_harvest && tile_to_harvest->is_harvestable)
     {
         tile_destroy(tile_to_harvest);
         // TODO(chj): Don't re-init?
@@ -587,7 +611,7 @@ void hero_update_club(Hero* h, u32 now)
 //     }
 // }
 
-Entity create_buffalo(int starting_x, int starting_y, Plan* plan, SDL_Renderer* renderer)
+Entity create_buffalo(int starting_x, int starting_y, SDL_Renderer* renderer)
 {
     Entity buffalo = {};
     entity_init_sprite_sheet(&buffalo, "sprites/Buffalo.png", 4, 1, renderer);
@@ -600,10 +624,10 @@ Entity create_buffalo(int starting_x, int starting_y, Plan* plan, SDL_Renderer* 
     buffalo.can_move = GD_TRUE;
     buffalo.collision_pt_offset = 32;
     animation_init(&buffalo.animation, 4, 100);
-    buffalo.plan = plan;
+    buffalo.plan = {};
     buffalo.has_plan = GD_TRUE;
-    buffalo.plan->move_delay = (rand() % 2000) + 1000;
-    buffalo.plan->mv_dir = (CardinalDir)(rand() % 4);
+    buffalo.plan.move_delay = (rand() % 2000) + 1000;
+    buffalo.plan.mv_dir = (CardinalDir)(rand() % 4);
     return buffalo;
 }
 

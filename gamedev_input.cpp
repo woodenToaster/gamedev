@@ -1,5 +1,34 @@
 #include "gamedev_input.h"
 
+void initControllers(Input *input)
+{
+    // TODO(chj): Handle SDL_CONTROLLERDEVICEADDED, SDL_CONTROLLERDEVICEREMOVED, and SDL_CONTROLLERDEVICEREMAPPED
+    int maxJoysticks = SDL_NumJoysticks();
+    for (int joystickIndex = 0; joystickIndex < maxJoysticks; ++joystickIndex)
+    {
+        if (joystickIndex >= MAX_CONTROLLERS)
+        {
+            break;
+        }
+        if (!SDL_IsGameController(joystickIndex))
+        {
+            continue;
+        }
+        input->controllerHandles[joystickIndex] = SDL_GameControllerOpen(joystickIndex);
+    }
+}
+
+void destroyControllers(Input *input)
+{
+    for(int controllerIndex = 0; controllerIndex < MAX_CONTROLLERS; ++controllerIndex)
+    {
+        if (input->controllerHandles[controllerIndex])
+        {
+            SDL_GameControllerClose(input->controllerHandles[controllerIndex]);
+        }
+    }
+}
+
 void input_update(Input* input, SDL_Scancode key, u8 pressed)
 {
     switch (key)
@@ -33,13 +62,13 @@ void input_update(Input* input, SDL_Scancode key, u8 pressed)
     case SDL_SCANCODE_SPACE:
         input->key_pressed[KEY_SPACE] = pressed;
     default:
-        char* action = pressed ? "pressed" : "released";
-        printf("Key %s: %s\n", action, SDL_GetKeyName(SDL_GetKeyFromScancode(key)));
+        // char* action = pressed ? "pressed" : "released";
+        // printf("Key %s: %s\n", action, SDL_GetKeyName(SDL_GetKeyFromScancode(key)));
         break;
     }
 }
 
-void input_poll(Input* input, Game* game, SDL_GameController **controllerHandles)
+void input_poll(Input* input, Game* game)
 {
     SDL_Event event;
     while(SDL_PollEvent(&event))
@@ -64,7 +93,7 @@ void input_poll(Input* input, Game* game, SDL_GameController **controllerHandles
     // TODO(chj): Should we use events for this? What's the difference?
     for (int controllerIndex = 0; controllerIndex < MAX_CONTROLLERS; ++controllerIndex)
     {
-        SDL_GameController *controller = controllerHandles[controllerIndex];
+        SDL_GameController *controller = input->controllerHandles[controllerIndex];
         if(controller && SDL_GameControllerGetAttached(controller))
         {
             // TODO(chj): Handle remaining buttons

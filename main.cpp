@@ -10,9 +10,6 @@
 #include "SDL_opengl.h"
 #include "SDL_mixer.h"
 
-// TODO(chj): Move this
-#define MAX_CONTROLLERS 2
-
 // TODO(chj): Remove standard library dependency
 #include "stdint.h"
 #include "stdio.h"
@@ -23,6 +20,7 @@
 #include "gamedev_forward_declarations.h"
 #include "gamedev_animation.cpp"
 
+#include "gamedev_plan.h"
 #include "gamedev_math.h"
 #include "gamedev_font.h"
 #include "gamedev_sound.h"
@@ -31,7 +29,6 @@
 #include "gamedev_camera.cpp"
 #include "gamedev_game.h"
 #include "gamedev_sprite_sheet.h"
-#include "gamedev_plan.h"
 #include "gamedev_tilemap.h"
 #include "gamedev_entity.h"
 #include "gamedev_camera.h"
@@ -50,11 +47,14 @@
 
 #define aalloc(type) ((type*)arena_push(&arena, sizeof(type)))
 
-// Global dumping ground: Everything goes here first while I'm figuring out the
-// structure, but should eventually be moved out.
-static SDL_GameController *controllerHandles[MAX_CONTROLLERS];
-// End global dumping ground
-
+void harlodInteractWithHero(Entity *e, Entity *h)
+{
+    (void)e;
+    (void)h;
+    // drawText((Game*)data, &fontMetadata, "Hey dude.",
+    //          ((Game*)data)->camera.viewport.x, ((Game*)data)->camera.viewport.y + 24);
+    printf("Hey dude.\n");
+}
 
 int main(int argc, char** argv)
 {
@@ -83,32 +83,17 @@ int main(int argc, char** argv)
 
     // Input
     Input input = {};
-    // Initialize controllers
-    // TODO(chj): Handle SDL_CONTROLLERDEVICEADDED, SDL_CONTROLLERDEVICEREMOVED, and SDL_CONTROLLERDEVICEREMAPPED
-    int maxJoysticks = SDL_NumJoysticks();
-    for (int joystickIndex = 0; joystickIndex < maxJoysticks; ++joystickIndex)
-    {
-        if (joystickIndex >= MAX_CONTROLLERS)
-        {
-            break;
-        }
-        if (!SDL_IsGameController(joystickIndex))
-        {
-            continue;
-        }
-        controllerHandles[joystickIndex] = SDL_GameControllerOpen(joystickIndex);
-    }
-
+    initControllers(&input);
 
     // Font
     FontMetadata fontMetadata = {};
     generateFontData(&fontMetadata, game);
 
 	// Sound
-    Sound mud_sound = {};
-    mud_sound.delay = 250;
-    mud_sound.chunk = sound_load_wav("sounds/mud_walk.wav");
-    global_sounds[SOUND_MUD] = &mud_sound;
+    Sound mudSound = {};
+    mudSound.delay = 250;
+    mudSound.chunk = sound_load_wav("sounds/mud_walk.wav");
+    global_sounds[SOUND_MUD] = &mudSound;
 
     SoundList sounds_to_play = {};
 
@@ -119,7 +104,7 @@ int main(int argc, char** argv)
     hero.e.position.y = (f32)hero.e.starting_pos.y;
     entity_set_bounding_box_offset(&hero.e, 6, 5, 12, 7);
     entity_init_dest(&hero.e);
-    hero.speed = 1000; // m/s^2
+    hero.speed = 2000; // m/s^2
     // TODO(chj): Replace entity speed with f32 and use that for hero
     hero.e.speed = 10;
     hero.e.active = GD_TRUE;
@@ -128,25 +113,23 @@ int main(int argc, char** argv)
     animation_init(&hero.e.animation, 4, 100);
 
     // Harlod
-    Entity harlod = {};
-    entity_init_sprite_sheet(&harlod, "sprites/Harlod_the_caveman.png", 1, 1, game->renderer);
-    entity_set_starting_pos(&harlod, 150, 150);
-    entity_set_bounding_box_offset(&harlod, 0, 0, 0, 0);
-    entity_init_dest(&harlod);
-    harlod.speed = 10;
-    harlod.active = GD_TRUE;
+    Harlod harlod = {};
+    entity_init_sprite_sheet(&harlod.e, "sprites/Harlod_the_caveman.png", 1, 1, game->renderer);
+    entity_set_starting_pos(&harlod.e, 150, 150);
+    entity_set_bounding_box_offset(&harlod.e, 0, 0, 0, 0);
+    entity_init_dest(&harlod.e);
+    harlod.e.speed = 10;
+    harlod.e.type = ET_HARLOD;
+    harlod.onHeroInteract = &harlodInteractWithHero;
+    harlod.e.active = GD_TRUE;
 
     // Buffalo
-    // TODO: :/
-    Plan plan1 = {};
-    Plan plan2 = {};
-    Plan plan3 = {};
-    Entity buffalo = create_buffalo(400, 200, &plan1, game->renderer);
-    Entity buffalo2 = create_buffalo(500, 500, &plan2, game->renderer);
-    Entity buffalo3 = create_buffalo(600, 100, &plan3, game->renderer);
+    Entity buffalo = create_buffalo(400, 200, game->renderer);
+    Entity buffalo2 = create_buffalo(500, 500, game->renderer);
+    Entity buffalo3 = create_buffalo(600, 100, game->renderer);
 
     EntityList entity_list = {};
-    Entity* _entities[] = {&hero.e, &harlod, &buffalo, &buffalo2, &buffalo3};
+    Entity* _entities[] = {&hero.e, &harlod.e, &buffalo, &buffalo2, &buffalo3};
     entity_list.entities = _entities;
     entity_list.count = 5;
 
@@ -221,7 +204,6 @@ int main(int argc, char** argv)
     Tile grass_warp = {};
     grass_warp.tile_width = grass_warp.tile_height = 16;
     tile_init(&grass_warp, tile_properties[TP_WARP], game->colors[COLOR_RUST], game->renderer);
-    // TODO: Make destination work
     grass_warp.destination_map = 1;
 
     // Map
@@ -260,7 +242,7 @@ int main(int argc, char** argv)
     Map map1 = {};
     map_init(&map1, 12, 10, map1_tiles, game->renderer);
     map1.current = GD_TRUE;
-    Entity* map1_entities[] = {&hero.e, &harlod};
+    Entity* map1_entities[] = {&hero.e, &harlod.e};
     map1.active_entities.entities = map1_entities;
     map1.active_entities.count = 2;
     Tile* map1_active_tiles[] = {&fire};
@@ -269,13 +251,13 @@ int main(int argc, char** argv)
 
     Map map2 = {};
     map_init(&map2, 12, 10, map2_tiles, game->renderer);
-    Entity* map2_entities[] = {&hero.e, &harlod, &buffalo, &buffalo2, &buffalo3,};
+    Entity* map2_entities[] = {&hero.e, &harlod.e, &buffalo, &buffalo2, &buffalo3,};
     map2.active_entities.entities = map2_entities;
     map2.active_entities.count = 5;
 
     Map map3 = {};
     map_init(&map3, 60, 50, map3_tiles, game->renderer);
-    Entity* map3_entities[] = {&hero.e, &harlod};
+    Entity* map3_entities[] = {&hero.e, &harlod.e};
     map3.active_entities.entities = map3_entities;
     map3.active_entities.count = 2;
     Tile* map3_active_tiles[] = {grass};
@@ -312,7 +294,7 @@ int main(int argc, char** argv)
         /*********************************************************************/
         /* Input                                                             */
         /*********************************************************************/
-        input_poll(&input, game, controllerHandles);
+        input_poll(&input, game);
 
         /*********************************************************************/
         /* Update                                                            */
@@ -348,9 +330,9 @@ int main(int argc, char** argv)
         snprintf(fps_str, 9, "FPS: %03d", (u32)fps);
         drawText(game, &fontMetadata, fps_str, game->camera.viewport.x, game->camera.viewport.y);
 
-        char v[30];
-        snprintf(v, 30, "v: {%.6f, %.6f}", input.stickX, input.stickY);
-        drawText(game, &fontMetadata, v, game->camera.viewport.x, game->camera.viewport.y + 24);
+        // char v[30];
+        // snprintf(v, 30, "v: {%.6f, %.6f}", input.stickX, input.stickY);
+        // drawText(game, &fontMetadata, v, game->camera.viewport.x, game->camera.viewport.y + 24);
         // char p[30];
         // snprintf(p, 30, "p: {%.6f, %.6f}", hero.e.position.x, hero.e.position.y);
         // drawText(game, &fontMetadata, p, game->camera.viewport.x, game->camera.viewport.y + 48);
@@ -373,13 +355,7 @@ int main(int argc, char** argv)
     tileset_destroy(&jungle_tiles);
     map_list_destroy(&map_list);
     entity_list_destroy(&entity_list);
-    for(int controllerIndex = 0; controllerIndex < MAX_CONTROLLERS; ++controllerIndex)
-    {
-        if (controllerHandles[controllerIndex])
-        {
-            SDL_GameControllerClose(controllerHandles[controllerIndex]);
-        }
-    }
+    destroyControllers(&input);
     game_destroy(game);
     arena_destroy(&arena);
 

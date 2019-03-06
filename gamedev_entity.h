@@ -4,6 +4,10 @@
 #include "gamedev_tilemap.h"
 #include "gamedev_sprite_sheet.h"
 
+struct Entity;
+typedef void (*interactWithEntity)(Entity *e, Entity *other);
+typedef void (*interactWithHero)(Entity *e, Entity *other);
+
 struct Entity
 {
     EntityType type;
@@ -11,7 +15,7 @@ struct Entity
     SpriteSheet sprite_sheet;
     SDL_Rect sprite_rect;
     Animation animation;
-    Plan* plan;
+    Plan plan;
     u8* pixel_data;
 
     int speed;
@@ -34,6 +38,7 @@ struct Entity
     u8 active;
     u8 has_plan;
     u8 can_move;
+
 };
 
 struct EntityList
@@ -53,5 +58,11 @@ struct Hero
     u8 in_quicksand;
     u8 swing_club;
     u8 harvest;
+};
+
+struct Harlod
+{
+    Entity e;
+    interactWithHero onHeroInteract;
 };
 #endif

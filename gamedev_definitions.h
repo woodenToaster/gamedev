@@ -28,6 +28,7 @@ enum EntityType
     ET_TILE,
     ET_BUFFALO,
     ET_HERO,
+    ET_HARLOD,
     ET_NUM_TYPES
 };
 

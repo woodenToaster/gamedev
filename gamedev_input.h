@@ -1,6 +1,8 @@
 #ifndef GD_INPUT_H
 #define GD_INPUT_H
 
+#define MAX_CONTROLLERS 2
+
 enum Key
 {
     KEY_UP,
@@ -30,6 +32,7 @@ struct Input
 {
     u8 key_pressed[KEY_COUNT];
     bool32 button_pressed[BUTTON_COUNT];
+    SDL_GameController *controllerHandles[MAX_CONTROLLERS];
     f32 stickX;
     f32 stickY;
 };
