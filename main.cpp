@@ -46,14 +46,21 @@
 #include "gamedev_memory.cpp"
 
 #define aalloc(type) ((type*)arena_push(&arena, sizeof(type)))
+#define arraySize(arr) (sizeof(arr) / sizeof(arr[0]))
 
 void harlodInteractWithHero(Entity *e, Entity *h)
 {
     (void)e;
     (void)h;
-    // drawText((Game*)data, &fontMetadata, "Hey dude.",
-    //          ((Game*)data)->camera.viewport.x, ((Game*)data)->camera.viewport.y + 24);
-    printf("Hey dude.\n");
+
+    // if (h->something)
+    // {
+    //     startDialog("Hey dude.");
+    // }
+    // else if(h->something_else)
+    // {
+    //     startDialog("I hate you.");
+    // }
 }
 
 int main(int argc, char** argv)
