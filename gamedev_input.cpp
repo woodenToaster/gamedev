@@ -1,6 +1,6 @@
 #include "gamedev_input.h"
 
-void initControllers(Input *input)
+static void initControllers(Input *input)
 {
     // TODO(chj): Handle SDL_CONTROLLERDEVICEADDED, SDL_CONTROLLERDEVICEREMOVED, and SDL_CONTROLLERDEVICEREMAPPED
     int maxJoysticks = SDL_NumJoysticks();
@@ -18,7 +18,7 @@ void initControllers(Input *input)
     }
 }
 
-void destroyControllers(Input *input)
+static void destroyControllers(Input *input)
 {
     for(int controllerIndex = 0; controllerIndex < MAX_CONTROLLERS; ++controllerIndex)
     {
@@ -29,38 +29,47 @@ void destroyControllers(Input *input)
     }
 }
 
-void input_update(Input* input, SDL_Scancode key, u8 pressed)
+static void setKeyState(Input* input, Key key, bool32 isDown)
+{
+    if (input->key_down[key] && !isDown)
+    {
+        input->key_pressed[key] = GD_TRUE;
+    }
+    input->key_down[key] = isDown;
+}
+
+static void updateInput(Input* input, SDL_Scancode key, bool32 isDown)
 {
     switch (key)
     {
     case SDL_SCANCODE_RIGHT:
     case SDL_SCANCODE_L:
     case SDL_SCANCODE_D:
-        input->key_pressed[KEY_RIGHT] = pressed;
+        setKeyState(input, KEY_RIGHT, isDown);
         break;
     case SDL_SCANCODE_UP:
     case SDL_SCANCODE_K:
     case SDL_SCANCODE_W:
-        input->key_pressed[KEY_UP] = pressed;
+        setKeyState(input, KEY_UP, isDown);
         break;
     case SDL_SCANCODE_DOWN:
     case SDL_SCANCODE_J:
     case SDL_SCANCODE_S:
-        input->key_pressed[KEY_DOWN] = pressed;
+        setKeyState(input, KEY_DOWN, isDown);
         break;
     case SDL_SCANCODE_LEFT:
     case SDL_SCANCODE_H:
     case SDL_SCANCODE_A:
-        input->key_pressed[KEY_LEFT] = pressed;
+        setKeyState(input, KEY_LEFT, isDown);
         break;
     case SDL_SCANCODE_ESCAPE:
-        input->key_pressed[KEY_ESCAPE] = pressed;
+        setKeyState(input, KEY_ESCAPE, isDown);
         break;
     case SDL_SCANCODE_F:
-        input->key_pressed[KEY_F] = pressed;
+        setKeyState(input, KEY_F, isDown);
         break;
     case SDL_SCANCODE_SPACE:
-        input->key_pressed[KEY_SPACE] = pressed;
+        setKeyState(input, KEY_SPACE, isDown);
     default:
         // char* action = pressed ? "pressed" : "released";
         // printf("Key %s: %s\n", action, SDL_GetKeyName(SDL_GetKeyFromScancode(key)));
@@ -68,21 +77,46 @@ void input_update(Input* input, SDL_Scancode key, u8 pressed)
     }
 }
 
-void input_poll(Input* input, Game* game)
+static f32 normalizeStickInput(short unnormalizedStick)
 {
+    f32 result = 0.0f;
+    if (unnormalizedStick < 0)
+    {
+        result = (f32)unnormalizedStick / 32768.0f;
+    }
+    else
+    {
+        result = (f32)unnormalizedStick / 32767.0f;
+    }
+    return result;
+}
+
+static void pollInput(Input* input, Game* game)
+{
+    // Reset all button presses
+    // TODO(chj): This seems wasteful
+    for (u32 key = 0; key < KEY_COUNT; ++key)
+    {
+        input->key_pressed[key] = 0;
+    }
+    for (u32 button = 0; button < BUTTON_COUNT; ++button)
+    {
+        input->button_pressed[button] = 0;
+    }
+
     SDL_Event event;
     while(SDL_PollEvent(&event))
     {
         switch (event.type)
         {
         case SDL_KEYUP:
-            input_update(input, event.key.keysym.scancode, GD_FALSE);
+            updateInput(input, event.key.keysym.scancode, 0);
             break;
         case SDL_QUIT:
-            game->running = GD_FALSE;
+            game->running = 0;
             break;
         case SDL_KEYDOWN:
-            input_update(input, event.key.keysym.scancode, GD_TRUE);
+            updateInput(input, event.key.keysym.scancode, GD_TRUE);
             break;
             // case SDL_MOUSEMOTION:
             //     input_handle_mouse(&input);
@@ -97,6 +131,7 @@ void input_poll(Input* input, Game* game)
         if(controller && SDL_GameControllerGetAttached(controller))
         {
             // TODO(chj): Handle remaining buttons
+            // TODO(chj): Handle key_pressed as distinct from key_down
             bool32 *pressed = input->button_pressed;
             pressed[BUTTON_UP] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_UP);
             pressed[BUTTON_DOWN] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_DOWN);
@@ -111,27 +146,10 @@ void input_poll(Input* input, Game* game)
             pressed[BUTTON_X] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_X);
             pressed[BUTTON_Y] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_Y);
 
-            i16 sdlStickX = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTX);
-            i16 sdlStickY = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTY);
-
-            f32 stickX = 0;
-            f32 stickY = 0;
-            if (sdlStickX < 0)
-            {
-                stickX = (f32)sdlStickX / 32768.0f;
-            }
-            else
-            {
-                stickX = (f32)sdlStickX / 32767.0f;
-            }
-            if (sdlStickY < 0)
-            {
-                stickY = (f32)sdlStickY / 32768.0f;
-            }
-            else
-            {
-                stickY = (f32)sdlStickY / 32767.0f;
-            }
+            short sdlStickX = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTX);
+            short sdlStickY = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTY);
+            f32 stickX = normalizeStickInput(sdlStickX);
+            f32 stickY = normalizeStickInput(sdlStickY);
 
             // Account for dead zone
             input->stickX = (stickX > -0.1f && stickX < 0.1f) ? 0.0f : stickX;

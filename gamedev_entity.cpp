@@ -402,23 +402,24 @@ void hero_clamp_to_map(Hero* h, Map* map)
 
 void hero_process_input(Hero* h, Input* input, f32 dt)
 {
+    // TODO(chj): Handle joystick and keyboard on separate paths
     Vec2 acceleration = {};
     acceleration.x = input->stickX;
     acceleration.y = input->stickY;
 
-    if (input->key_pressed[KEY_RIGHT])
+    if (input->key_down[KEY_RIGHT])
     {
         acceleration.x = 1.0f;
     }
-    if (input->key_pressed[KEY_LEFT])
+    if (input->key_down[KEY_LEFT])
     {
         acceleration.x = -1.0f;
     }
-    if (input->key_pressed[KEY_UP])
+    if (input->key_down[KEY_UP])
     {
         acceleration.y = -1.0f;
     }
-    if (input->key_pressed[KEY_DOWN])
+    if (input->key_down[KEY_DOWN])
     {
         acceleration.y = 1.0f;
     }

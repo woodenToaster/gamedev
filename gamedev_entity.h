@@ -56,7 +56,7 @@ struct Hero
     f32 speed;
     u8 is_moving;
     u8 in_quicksand;
-    u8 swing_club;
+    bool32 swing_club;
     u8 harvest;
 };
 
