@@ -510,7 +510,7 @@ void hero_harvest(Hero *h, Game *g)
             {
                 if(harlod->onHeroInteract)
                 {
-                    harlod->onHeroInteract(&harlod->e, &h->e);
+                    harlod->onHeroInteract(&harlod->e, &h->e, g);
                 }
             }
         }

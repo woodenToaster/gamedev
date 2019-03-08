@@ -28,6 +28,11 @@
 #include "gamedev_input.h"
 #include "gamedev_camera.cpp"
 #include "gamedev_game.h"
+void endDialog(Game *g)
+{
+    g->mode = GAME_MODE_PLAYING;
+    g->dialog = NULL;
+}
 #include "gamedev_sprite_sheet.h"
 #include "gamedev_tilemap.h"
 #include "gamedev_entity.h"
@@ -48,19 +53,18 @@
 #define aalloc(type) ((type*)arena_push(&arena, sizeof(type)))
 #define arraySize(arr) (sizeof(arr) / sizeof(arr[0]))
 
-void harlodInteractWithHero(Entity *e, Entity *h)
-{
-    (void)e;
-    (void)h;
 
-    // if (h->something)
-    // {
-    //     startDialog("Hey dude.");
-    // }
-    // else if(h->something_else)
-    // {
-    //     startDialog("I hate you.");
-    // }
+void startDialog(char *dialog, Game *g)
+{
+    g->mode = GAME_MODE_DIALOG;
+    g->dialog = dialog;
+}
+
+
+void harlodInteractWithHero(Entity *e, Entity *h, Game *g)
+{
+    (void)h;
+    startDialog(e->dialog, g);
 }
 
 int main(int argc, char** argv)
@@ -71,9 +75,12 @@ int main(int argc, char** argv)
     Arena arena = {};
     arena_init(&arena, (size_t)MEGABYTES(1));
 
+    u32 screenWidth = 640;
+    u32 screenHeight = 480;
+
     // Game
     Game* game = aalloc(Game);
-    game_init(game, 640, 480);
+    game_init(game, screenWidth, screenHeight);
 
     // OpenGL
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -87,6 +94,11 @@ int main(int argc, char** argv)
         fprintf(stderr, "Failed to create opengl context: %s\n", SDL_GetError());
         exit(1);
     }
+
+    SDL_Texture *transparentBlackTexture = SDL_CreateTexture(game->renderer, SDL_PIXELFORMAT_RGBA8888,
+                                                             SDL_TEXTUREACCESS_TARGET, screenWidth, screenHeight);
+    SDL_SetTextureBlendMode(transparentBlackTexture, SDL_BLENDMODE_BLEND);
+    // TODO(chj): free
 
     // Input
     Input input = {};
@@ -129,6 +141,7 @@ int main(int argc, char** argv)
     harlod.e.type = ET_HARLOD;
     harlod.onHeroInteract = &harlodInteractWithHero;
     harlod.e.active = GD_TRUE;
+    harlod.e.dialog = "Hey dude.";
 
     // Buffalo
     Entity buffalo = create_buffalo(400, 200, game->renderer);
@@ -306,20 +319,36 @@ int main(int argc, char** argv)
         /*********************************************************************/
         /* Update                                                            */
         /*********************************************************************/
-        game_update(game, &input);
-        map_update_tiles(game);
-        hero_update(&hero, &input, game);
-        hero_update_club(&hero, now);
-        camera_update(&game->camera, &hero.e.dest_rect);
-        entity_list_update(&entity_list, game->current_map, game->dt);
-        animation_update(&hero.e.animation, game->dt, hero.is_moving);
-        sound_play_all(game->sounds, now);
+        if (game->mode == GAME_MODE_PLAYING)
+        {
+            updateGame(game, &input);
+            map_update_tiles(game);
+            hero_update(&hero, &input, game);
+            hero_update_club(&hero, now);
+            camera_update(&game->camera, &hero.e.dest_rect);
+            entity_list_update(&entity_list, game->current_map, game->dt);
+            animation_update(&hero.e.animation, game->dt, hero.is_moving);
+            sound_play_all(game->sounds, now);
+        } else if (game->mode == GAME_MODE_DIALOG)
+        {
+            updateDialog(game, &input);
+        }
 
         /*********************************************************************/
         /* Draw                                                              */
         /*********************************************************************/
         SDL_SetRenderTarget(game->renderer, game->current_map->texture);
         map_draw(game);
+
+        if (game->mode == GAME_MODE_DIALOG)
+        {
+            SDL_SetRenderDrawBlendMode(game->renderer, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(game->renderer, 0, 0, 0, 128);
+            SDL_RenderFillRect(game->renderer, NULL);
+            SDL_Rect dialogBox = {0, 0, 200, 150};
+            renderer_fill_rect(game->renderer, &dialogBox, 0xADD8E6);
+            drawText(game, &fontMetadata, game->dialog, game->camera.viewport.x, game->camera.viewport.y);
+        }
 
         // Only for drawing overlap boxes. Move to update section once real
         // collisions are being handled.
@@ -332,10 +361,10 @@ int main(int argc, char** argv)
         // hero_draw_club(&hero, now, game);
 
         // Draw FPS
-        f32 fps = 1000.0f / game->dt;
-        char fps_str[9] = {0};
-        snprintf(fps_str, 9, "FPS: %03d", (u32)fps);
-        drawText(game, &fontMetadata, fps_str, game->camera.viewport.x, game->camera.viewport.y);
+        // f32 fps = 1000.0f / game->dt;
+        // char fps_str[9] = {0};
+        // snprintf(fps_str, 9, "FPS: %03d", (u32)fps);
+        // drawText(game, &fontMetadata, fps_str, game->camera.viewport.x, game->camera.viewport.y);
 
         // char v[30];
         // snprintf(v, 30, "v: {%.6f, %.6f}", input.stickX, input.stickY);

@@ -18,6 +18,13 @@ enum Colors
     COLOR_LAST
 };
 
+enum GameMode
+{
+    GAME_MODE_PLAYING,
+    GAME_MODE_DIALOG,
+    GAME_MODE_COUNT
+};
+
 struct Game
 {
     u32 dt;
@@ -36,5 +43,7 @@ struct Game
     Map* current_map;
     MapList* maps;
     SoundList* sounds;
+    GameMode mode;
+    char * dialog;
 };
 #endif

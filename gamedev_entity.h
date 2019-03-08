@@ -6,7 +6,7 @@
 
 struct Entity;
 typedef void (*interactWithEntity)(Entity *e, Entity *other);
-typedef void (*interactWithHero)(Entity *e, Entity *other);
+typedef void (*interactWithHero)(Entity *e, Entity *other, Game *g);
 
 struct Entity
 {
@@ -39,6 +39,7 @@ struct Entity
     u8 has_plan;
     u8 can_move;
 
+    char *dialog;
 };
 
 struct EntityList

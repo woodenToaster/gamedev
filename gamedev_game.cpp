@@ -81,11 +81,19 @@ void game_init(Game* g, u32 width, u32 height)
     g->running = GD_TRUE;
 }
 
-void game_update(Game* g, Input* input)
+void updateGame(Game *g, Input *input)
 {
     if (input->key_pressed[KEY_ESCAPE])
     {
         g->running = GD_FALSE;
+    }
+}
+
+void updateDialog(Game *g, Input *input)
+{
+    if (input->key_pressed[KEY_ESCAPE])
+    {
+        endDialog(g);
     }
 }
 
