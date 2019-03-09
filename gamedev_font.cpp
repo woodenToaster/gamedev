@@ -1,14 +1,49 @@
 #include "gamedev_font.h"
 
+EntireFile readEntireFile(char *filename)
+{
+    EntireFile result = {};
+    SDL_RWops *file = SDL_RWFromFile(filename, "rb");
+
+    if (file)
+    {
+        Sint64 fileSize = SDL_RWseek(file, 0, RW_SEEK_END);
+        if (fileSize >= 0)
+        {
+            result.size = (u64)fileSize;
+            if (SDL_RWseek(file, 0, RW_SEEK_SET) >= 0)
+            {
+                result.contents = (u8*)malloc(result.size);
+                SDL_RWread(file, (void*)result.contents, 1, result.size);
+                SDL_RWclose(file);
+            }
+            else
+            {
+                // TODO(chj):
+                // printf(stderr, "%s\n", SDL_GetError());
+            }
+        }
+        else
+        {
+            // TODO(chj):
+            // printf("%s\n", SDL_GetError());
+        }
+    }
+    else
+    {
+        // TODO(chj):
+        // fprintf(stderr, "%s\n", SDL_GetError());
+		// exit(1);
+    }
+    return result;
+}
+
 void generateFontData(FontMetadata *fontMetadata, Game *game)
 {
-    char fontBuffer[1 << 25];
-    FILE* fontFile = fopen("fonts/arialbd.ttf", "rb");
-    fread(fontBuffer, 1, 1 << 25, fontFile);
-    fclose(fontFile);
+    EntireFile fontFile = readEntireFile("ffonts/arialbd.ttf");
 
     fontMetadata->size = 20;
-    stbtt_InitFont(&fontMetadata->info, (u8*)fontBuffer, 0);
+    stbtt_InitFont(&fontMetadata->info, fontFile.contents, 0);
     fontMetadata->scale = stbtt_ScaleForPixelHeight(&fontMetadata->info, fontMetadata->size);
     stbtt_GetFontVMetrics(&fontMetadata->info, &fontMetadata->ascent, &fontMetadata->descent ,
                           &fontMetadata->lineGap);

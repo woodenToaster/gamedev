@@ -6,6 +6,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+// #define SDL_MAIN_HANDLED
+
 #include "SDL.h"
 #include "SDL_opengl.h"
 #include "SDL_mixer.h"
@@ -28,11 +30,6 @@
 #include "gamedev_input.h"
 #include "gamedev_camera.cpp"
 #include "gamedev_game.h"
-void endDialog(Game *g)
-{
-    g->mode = GAME_MODE_PLAYING;
-    g->dialog = NULL;
-}
 #include "gamedev_sprite_sheet.h"
 #include "gamedev_tilemap.h"
 #include "gamedev_entity.h"
@@ -51,23 +48,29 @@ void endDialog(Game *g)
 #include "gamedev_memory.cpp"
 
 #define aalloc(type) ((type*)arena_push(&arena, sizeof(type)))
-#define arraySize(arr) (sizeof(arr) / sizeof(arr[0]))
+#define arraySize(arr) (sizeof(arr) / sizeof((arr)[0]))
 
-
-void startDialog(char *dialog, Game *g)
-{
-    g->mode = GAME_MODE_DIALOG;
-    g->dialog = dialog;
-}
 
 
 void harlodInteractWithHero(Entity *e, Entity *h, Game *g)
 {
     (void)h;
-    startDialog(e->dialog, g);
+
+    if (!e->dialogFile.contents)
+    {
+        e->dialogFile = readEntireFile("dialogs/harlod_dialogs.txt");
+        // Remove the EOF character
+        --e->dialogFile.size;
+        // TODO(chj): Do we need to null terminate everything? This will change. We
+        // want to parse files for strings and tokenize, etc.
+        // TODO(chj): Free dialog.contents
+    }
+    startDialog(g, (char*)e->dialogFile.contents);
 }
 
-int main(int argc, char** argv)
+
+
+int main(int argc, char* argv[])
 {
     (void)argc;
     (void)argv;
@@ -141,7 +144,6 @@ int main(int argc, char** argv)
     harlod.e.type = ET_HARLOD;
     harlod.onHeroInteract = &harlodInteractWithHero;
     harlod.e.active = GD_TRUE;
-    harlod.e.dialog = "Hey dude.";
 
     // Buffalo
     Entity buffalo = create_buffalo(400, 200, game->renderer);
@@ -203,10 +205,10 @@ int main(int argc, char** argv)
     h_tree1.is_harvestable = GD_TRUE;
 
     TileList tile_list = {};
-    Tile* _tiles[] = {&w, &f, &m, &wr, &t, &fire, &h_tree1};
+    Tile* _tiles[] = {&w, &f, &m, &wr, &t, &fire, &h_tree, &h_tree1};
     tile_list.tiles = _tiles;
 
-    tile_list.count = 8;
+    tile_list.count = arraySize(tile_list.tiles);
 
     // Tileset
     Tileset jungle_tiles = {};
@@ -297,7 +299,7 @@ int main(int argc, char** argv)
     MapList map_list = {};
     Map* _maps[] = {&map1, &map2, &map3};
     map_list.maps = _maps;
-    map_list.count = 3;
+    map_list.count = arraySize(map_list.maps);
 
     game->current_map = &map1;
     game_init_camera(game);

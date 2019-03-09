@@ -39,7 +39,7 @@ struct Entity
     u8 has_plan;
     u8 can_move;
 
-    char *dialog;
+    EntireFile dialogFile;
 };
 
 struct EntityList

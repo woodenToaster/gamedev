@@ -89,6 +89,18 @@ void updateGame(Game *g, Input *input)
     }
 }
 
+void startDialog(Game *g, char *dialog)
+{
+    g->mode = GAME_MODE_DIALOG;
+    g->dialog = dialog;
+}
+
+void endDialog(Game *g)
+{
+    g->mode = GAME_MODE_PLAYING;
+    g->dialog = NULL;
+}
+
 void updateDialog(Game *g, Input *input)
 {
     if (input->key_pressed[KEY_ESCAPE])

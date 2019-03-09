@@ -24,4 +24,10 @@ struct FontMetadata
     SDL_Texture *textures[128];
     CodepointMetadata codepointMetadata[128];
 };
+
+struct EntireFile
+{
+    u8 *contents;
+    u64 size;
+};
 #endif
