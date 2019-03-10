@@ -39,7 +39,7 @@ void initColors(Game* g)
     g->colors[COLOR_DARK_BLUE] = SDL_MapRGB(window_pixel_format, 0, 51, 102);
 }
 
-void game_init_camera(Game* g)
+void initCamera(Game* g)
 {
     g->camera.viewport.w = g->screen_width;
     g->camera.viewport.h = g->screen_height;
@@ -50,7 +50,7 @@ void game_init_camera(Game* g)
     g->camera.x_pixel_movement_threshold = g->screen_width / 2;
 }
 
-void game_init(Game* g, u32 width, u32 height)
+void initGame(Game* g, u32 width, u32 height)
 {
     g->screen_width = width;
     g->screen_height = height;

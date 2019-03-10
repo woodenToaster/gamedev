@@ -1,6 +1,6 @@
 #include "gamedev_tilemap.h"
 
-void tile_init(Tile* t, u32 flags, u32 color, SDL_Renderer* renderer, const char* sprite_path)
+void initTile(Tile* t, u32 flags, u32 color, SDL_Renderer* renderer, const char* sprite_path)
 {
     t->flags = flags;
     t->color = color;
@@ -93,7 +93,7 @@ void drawTile(Tile* t, SDL_Renderer* renderer, SDL_Rect* tile_rect)
     }
 }
 
-void tile_destroy(Tile* t)
+void destroyTile(Tile* t)
 {
     if (t->sprite)
     {
@@ -104,21 +104,21 @@ void tile_destroy(Tile* t)
     }
 }
 
-void tile_list_destroy(TileList* tl)
+void destroyTileList(TileList* tl)
 {
     for (u32 i = 0; i < tl->count; ++i)
     {
-        tile_destroy(tl->tiles[i]);
+        destroyTile(tl->tiles[i]);
     }
 }
 
-void tileset_destroy(Tileset* ts)
+void destroyTileset(Tileset* ts)
 {
     SDL_DestroyTexture(ts->texture);
     stbi_image_free(ts->img_data);
 }
 
-void map_init(Map* m, u32 cols, u32 rows, Tile** tiles, SDL_Renderer* renderer)
+void initMap(Map* m, u32 cols, u32 rows, Tile** tiles, SDL_Renderer* renderer)
 {
     m->cols = cols;
     m->rows = rows;

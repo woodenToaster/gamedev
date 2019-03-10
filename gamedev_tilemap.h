@@ -92,8 +92,8 @@ struct MapList
     u32 count;
 };
 
-void tile_init(Tile* t, u32 flags, u32 color, SDL_Renderer* renderer, const char* sprite_path=NULL);
-void tile_destroy(Tile* t);
+void initTile(Tile* t, u32 flags, u32 color, SDL_Renderer* renderer, const char* sprite_path=NULL);
+void destroyTile(Tile* t);
 void tile_set_sprite_size(Tile* t, int width, int height);
 Tile *map_get_tile_at_point(Map *m, Point p);
 

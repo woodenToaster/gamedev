@@ -81,7 +81,7 @@ int main(int argc, char* argv[])
 
     // Game
     Game* game = aalloc(Game);
-    game_init(game, screenWidth, screenHeight);
+    initGame(game, screenWidth, screenHeight);
 
     // OpenGL
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -160,30 +160,30 @@ int main(int argc, char* argv[])
     // Tiles
     Tile w = {};
     w.tile_width = w.tile_height = 80;
-    tile_init(&w, tile_properties[TP_SOLID], game->colors[COLOR_GREEN], game->renderer);
+    initTile(&w, tile_properties[TP_SOLID], game->colors[COLOR_GREEN], game->renderer);
 
     Tile f = {};
     f.tile_width = f.tile_height = 80;
-    tile_init(&f, tile_properties[TP_NONE], game->colors[COLOR_BLUE], game->renderer);
+    initTile(&f, tile_properties[TP_NONE], game->colors[COLOR_BLUE], game->renderer);
 
     Tile m = {};
     m.tile_width = m.tile_height = 80;
-    tile_init(&m, tile_properties[TP_QUICKSAND], game->colors[COLOR_BROWN], game->renderer);
+    initTile(&m, tile_properties[TP_QUICKSAND], game->colors[COLOR_BROWN], game->renderer);
 
     Tile wr = {};
     wr.tile_width = wr.tile_height = 80;
-    tile_init(&wr, tile_properties[TP_WARP], game->colors[COLOR_RUST], game->renderer);
+    initTile(&wr, tile_properties[TP_WARP], game->colors[COLOR_RUST], game->renderer);
     wr.destination_map = 2;
 
     Tile t = {};
     t.tile_width = t.tile_height = 80;
-    tile_init(&t, tile_properties[TP_SOLID], game->colors[COLOR_GREEN], game->renderer, "sprites/TropicalTree.png");
+    initTile(&t, tile_properties[TP_SOLID], game->colors[COLOR_GREEN], game->renderer, "sprites/TropicalTree.png");
     tile_set_sprite_size(&t, 64, 64);
     t.active = GD_TRUE;
 
     Tile fire = {};
     fire.tile_width = fire.tile_height = 80;
-    tile_init(&fire, tile_properties[TP_FIRE], game->colors[COLOR_GREY], game->renderer, "sprites/Campfire.png");
+    initTile(&fire, tile_properties[TP_FIRE], game->colors[COLOR_GREY], game->renderer, "sprites/Campfire.png");
     tile_set_sprite_size(&fire, 64, 64);
     animation_init(&fire.animation, 11, 100);
     fire.active = GD_TRUE;
@@ -192,7 +192,7 @@ int main(int argc, char* argv[])
     // Harvestable tree
     Tile h_tree = {};
     h_tree.tile_width = h_tree.tile_height = 80;
-    tile_init(&h_tree, tile_properties[TP_HARVEST] | tile_properties[TP_SOLID],
+    initTile(&h_tree, tile_properties[TP_HARVEST] | tile_properties[TP_SOLID],
               game->colors[COLOR_NONE], game->renderer, "sprites/tree.png");
     tile_set_sprite_size(&h_tree, 64, 64);
     h_tree.active = GD_TRUE;
@@ -201,7 +201,7 @@ int main(int argc, char* argv[])
 
     Tile h_tree1 = {};
     h_tree1.tile_width = h_tree1.tile_height = 80;
-    tile_init(&h_tree1, tile_properties[TP_HARVEST] | tile_properties[TP_SOLID],
+    initTile(&h_tree1, tile_properties[TP_HARVEST] | tile_properties[TP_SOLID],
               game->colors[COLOR_NONE], game->renderer, "sprites/tree.png");
     tile_set_sprite_size(&h_tree1, 64, 64);
     h_tree1.active = GD_TRUE;
@@ -229,7 +229,7 @@ int main(int argc, char* argv[])
 
     Tile grass_warp = {};
     grass_warp.tile_width = grass_warp.tile_height = 16;
-    tile_init(&grass_warp, tile_properties[TP_WARP], game->colors[COLOR_RUST], game->renderer);
+    initTile(&grass_warp, tile_properties[TP_WARP], game->colors[COLOR_RUST], game->renderer);
     grass_warp.destination_map = 1;
 
     // Map
@@ -266,7 +266,7 @@ int main(int argc, char* argv[])
     }
 
     Map map1 = {};
-    map_init(&map1, 12, 10, map1_tiles, game->renderer);
+    initMap(&map1, 12, 10, map1_tiles, game->renderer);
     map1.current = GD_TRUE;
     Entity* map1_entities[] = {&hero.e, &harlod.e};
     map1.active_entities.entities = map1_entities;
@@ -276,13 +276,13 @@ int main(int argc, char* argv[])
     map1.active_tiles.count = 1;
 
     Map map2 = {};
-    map_init(&map2, 12, 10, map2_tiles, game->renderer);
+    initMap(&map2, 12, 10, map2_tiles, game->renderer);
     Entity* map2_entities[] = {&hero.e, &harlod.e, &buffalo, &buffalo2, &buffalo3,};
     map2.active_entities.entities = map2_entities;
     map2.active_entities.count = 5;
 
     Map map3 = {};
-    map_init(&map3, 60, 50, map3_tiles, game->renderer);
+    initMap(&map3, 60, 50, map3_tiles, game->renderer);
     Entity* map3_entities[] = {&hero.e, &harlod.e};
     map3.active_entities.entities = map3_entities;
     map3.active_entities.count = 2;
@@ -306,7 +306,7 @@ int main(int argc, char* argv[])
     map_list.count = arraySize(map_list.maps);
 
     game->current_map = &map1;
-    game_init_camera(game);
+    initCamera(game);
     game->maps = &map_list;
     game->sounds = &sounds_to_play;
 
@@ -400,8 +400,8 @@ int main(int argc, char* argv[])
     /* Cleanup                                                                */
     /**************************************************************************/
     destroyFontMetadata(&fontMetadata);
-    tile_list_destroy(&tile_list);
-    tileset_destroy(&jungle_tiles);
+    destroyTileList(&tile_list);
+    destroyTileset(&jungle_tiles);
     map_list_destroy(&map_list);
     entity_list_destroy(&entity_list);
     destroyControllers(&input);

@@ -468,9 +468,9 @@ void processInput(Hero *h, Input* input, f32 dt)
 
 void harvestTile(Hero *h, Game *g, Tile *tileToHarvest)
 {
-    tile_destroy(tileToHarvest);
+    destroyTile(tileToHarvest);
     // TODO(chj): Don't re-init?
-    tile_init(tileToHarvest, tile_properties[TP_NONE], g->colors[COLOR_NONE],
+    initTile(tileToHarvest, tile_properties[TP_NONE], g->colors[COLOR_NONE],
               g->renderer, "sprites/tree_stump.png");
     tileToHarvest->active = GD_TRUE;
     tileToHarvest->harvested = GD_TRUE;

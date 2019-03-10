@@ -2,17 +2,20 @@
 #+Startup: nologdone
 
 * Build
-** TODO [#C] IMGUI
+** TODO game code DLL 
 * Gameplay
-** TODO Get PS4 controller working
-** TODO Crafting inventory screen
-** TODO Get pixel data for each sprite in a sheet.
-** TODO [#C] Base building screen
-** TODO [#C] base building gui
+** TODO Basic enemy to prototype combat system
+** TODO Dialog system
+** TODO Inventory system
+** TODO Crafting system
+** TODO Base building system
 * Architecture
 ** TODO Debug system
 ** TODO Use arena instead of stack
+** TODO Hot loading
 * Graphics
+** TODO Hero art
+** TODO Level art (gothic castles)
 * Design
 ** TODO Dark Souls style combat
 *** TODO Normal/heavy swing
@@ -22,3 +25,6 @@
 *** TODO Each move takes time, and the longer it takes, the more damage it does.
 ** TODO Dark Souls atmosphere
 *** TODO See far away parts of the level that you eventually reach
+***** TODO How can I simulate this effect in 2d?
+** TODO Crafting
+
