@@ -50,8 +50,6 @@
 #define aalloc(type) ((type*)arena_push(&arena, sizeof(type)))
 #define arraySize(arr) (sizeof(arr) / sizeof((arr)[0]))
 
-
-
 void harlodInteractWithHero(Entity *e, Entity *h, Game *g)
 {
     (void)h;
@@ -61,14 +59,14 @@ void harlodInteractWithHero(Entity *e, Entity *h, Game *g)
         e->dialogFile = readEntireFile("dialogs/harlod_dialogs.txt");
         // Remove the EOF character
         --e->dialogFile.size;
-        // TODO(chj): Do we need to null terminate everything? This will change. We
-        // want to parse files for strings and tokenize, etc.
+        // TODO(chj): Need to null terminate everything. This will change. We
+        // want to parse files for strings and tokenize, etc. For testing it's
+        // hard coded
+        e->dialogFile.contents[9] = '\0';
         // TODO(chj): Free dialog.contents
     }
-    startDialog(g, (char*)e->dialogFile.contents);
+    startDialogMode(g, (char*)e->dialogFile.contents);
 }
-
-
 
 int main(int argc, char* argv[])
 {
@@ -133,6 +131,10 @@ int main(int argc, char* argv[])
     hero.e.type = ET_HERO;
     hero.e.collision_pt_offset = 10;
     animation_init(&hero.e.animation, 4, 100);
+    for (int i = 0; i < INV_COUNT; ++i)
+    {
+        hero.inventory[i] = 0;
+    }
 
     // Harlod
     Harlod harlod = {};
@@ -195,6 +197,7 @@ int main(int argc, char* argv[])
     tile_set_sprite_size(&h_tree, 64, 64);
     h_tree.active = GD_TRUE;
     h_tree.is_harvestable = GD_TRUE;
+    h_tree.harvestedItem = INV_LEAVES;
 
     Tile h_tree1 = {};
     h_tree1.tile_width = h_tree1.tile_height = 80;
@@ -203,6 +206,7 @@ int main(int argc, char* argv[])
     tile_set_sprite_size(&h_tree1, 64, 64);
     h_tree1.active = GD_TRUE;
     h_tree1.is_harvestable = GD_TRUE;
+    h_tree1.harvestedItem = INV_LEAVES;
 
     TileList tile_list = {};
     Tile* _tiles[] = {&w, &f, &m, &wr, &t, &fire, &h_tree, &h_tree1};
@@ -325,31 +329,38 @@ int main(int argc, char* argv[])
         {
             updateGame(game, &input);
             map_update_tiles(game);
-            hero_update(&hero, &input, game);
+            updateHero(&hero, &input, game);
             hero_update_club(&hero, now);
-            camera_update(&game->camera, &hero.e.dest_rect);
+            updateCamera(&game->camera, &hero.e.dest_rect);
             entity_list_update(&entity_list, game->current_map, game->dt);
-            animation_update(&hero.e.animation, game->dt, hero.is_moving);
+            updateAnimation(&hero.e.animation, game->dt, hero.is_moving);
             sound_play_all(game->sounds, now);
-        } else if (game->mode == GAME_MODE_DIALOG)
+        }
+        else if (game->mode == GAME_MODE_DIALOG)
         {
-            updateDialog(game, &input);
+            updateDialogMode(game, &input);
+        }
+        else if (game->mode == GAME_MODE_INVENTORY)
+        {
+            updateInventoryMode(game, &input);
         }
 
         /*********************************************************************/
         /* Draw                                                              */
         /*********************************************************************/
         SDL_SetRenderTarget(game->renderer, game->current_map->texture);
-        map_draw(game);
+        drawMap(game);
 
         if (game->mode == GAME_MODE_DIALOG)
         {
-            SDL_SetRenderDrawBlendMode(game->renderer, SDL_BLENDMODE_BLEND);
-            SDL_SetRenderDrawColor(game->renderer, 0, 0, 0, 128);
-            SDL_RenderFillRect(game->renderer, NULL);
-            SDL_Rect dialogBox = {0, 0, 200, 150};
-            renderer_fill_rect(game->renderer, &dialogBox, 0xADD8E6);
-            drawText(game, &fontMetadata, game->dialog, game->camera.viewport.x, game->camera.viewport.y);
+            darkenBackground(game);
+            drawDialogScreen(game, &fontMetadata);
+        }
+
+        if (game->mode == GAME_MODE_INVENTORY)
+        {
+            darkenBackground(game);
+            drawInventoryScreen(game, &hero, &fontMetadata);
         }
 
         // Only for drawing overlap boxes. Move to update section once real

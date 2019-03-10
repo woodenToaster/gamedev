@@ -33,14 +33,13 @@ EntireFile readEntireFile(char *filename)
     {
         // TODO(chj):
         // fprintf(stderr, "%s\n", SDL_GetError());
-		// exit(1);
     }
     return result;
 }
 
 void generateFontData(FontMetadata *fontMetadata, Game *game)
 {
-    EntireFile fontFile = readEntireFile("ffonts/arialbd.ttf");
+    EntireFile fontFile = readEntireFile("fonts/arialbd.ttf");
 
     fontMetadata->size = 20;
     stbtt_InitFont(&fontMetadata->info, fontFile.contents, 0);

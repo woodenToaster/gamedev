@@ -51,8 +51,9 @@ struct Tile
     u8 has_animation;
     unsigned char* img_data;
     u32 destination_map;
-    u8 is_harvestable;
-    u8 harvested;
+    bool32 is_harvestable;
+    bool32 harvested;
+    InventoryItemType harvestedItem;
 };
 
 struct TileList

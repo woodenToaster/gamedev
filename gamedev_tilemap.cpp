@@ -72,10 +72,10 @@ u32 tile_get_color(Tile* t)
 void tile_fill(Tile* t, SDL_Renderer* renderer, SDL_Rect* tile_rect)
 {
     u32 fill_color = tile_get_color(t);
-    renderer_fill_rect(renderer, tile_rect, fill_color);
+    renderFilledRect(renderer, tile_rect, fill_color);
 }
 
-void tile_draw(Tile* t, SDL_Renderer* renderer, SDL_Rect* tile_rect)
+void drawTile(Tile* t, SDL_Renderer* renderer, SDL_Rect* tile_rect)
 {
     tile_fill(t, renderer, tile_rect);
 
@@ -162,11 +162,11 @@ void map_update_tiles(Game* g)
     for (size_t i = 0; i < m->rows * m->cols; ++i)
     {
         Tile* tp = m->tiles[i];
-        animation_update(&tp->animation, g->dt, tp->active);
+        updateAnimation(&tp->animation, g->dt, tp->active);
     }
 }
 
-void map_draw(Game* g)
+void drawMap(Game* g)
 {
     Map* m = g->current_map;
     Camera* c = &g->camera;
@@ -190,7 +190,7 @@ void map_draw(Game* g)
             tile_rect.x = (int)col * m->tile_width;
             tile_rect.y = (int)row * m->tile_height;
             Tile* tp = m->tiles[row * m->cols + col];
-            tile_draw(tp, g->renderer, &tile_rect);
+            drawTile(tp, g->renderer, &tile_rect);
         }
     }
 

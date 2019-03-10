@@ -1,5 +1,19 @@
 #include "gamedev_game.h"
 
+void renderFilledRect(SDL_Renderer* renderer, SDL_Rect* dest, u32 color)
+{
+    // COLOR_NONE is 0. Set a tile's background color to COLOR_NONE to avoid
+    // extra rendering.
+    if (color)
+    {
+        u8 r = (u8)((color & 0x00FF0000) >> 16);
+        u8 g = (u8)((color & 0x0000FF00) >> 8);
+        u8 b = (u8)((color & 0x000000FF) >> 0);
+        SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
+        SDL_RenderFillRect(renderer, dest);
+    }
+}
+
 void game_destroy(Game* g)
 {
     Mix_Quit();
@@ -9,7 +23,7 @@ void game_destroy(Game* g)
 
 }
 
-void game_init_colors(Game* g)
+void initColors(Game* g)
 {
     SDL_PixelFormat* window_pixel_format = g->window_surface->format;
     g->colors[COLOR_NONE] = 0;
@@ -22,6 +36,7 @@ void game_init_colors(Game* g)
     g->colors[COLOR_BLACK] = SDL_MapRGB(window_pixel_format, 0, 0, 0);
     g->colors[COLOR_RED] = SDL_MapRGB(window_pixel_format, 255, 0, 0);
     g->colors[COLOR_GREY] = SDL_MapRGB(window_pixel_format, 135, 135, 135);
+    g->colors[COLOR_DARK_BLUE] = SDL_MapRGB(window_pixel_format, 0, 51, 102);
 }
 
 void game_init_camera(Game* g)
@@ -76,7 +91,7 @@ void game_init(Game* g, u32 width, u32 height)
         fprintf(stderr, "Could not create renderer: %s\n", SDL_GetError());
         exit(1);
     }
-    game_init_colors(g);
+    initColors(g);
     g->initialized = GD_TRUE;
     g->running = GD_TRUE;
 }
@@ -89,24 +104,77 @@ void updateGame(Game *g, Input *input)
     }
 }
 
-void startDialog(Game *g, char *dialog)
+void startDialogMode(Game *g, char *dialog)
 {
     g->mode = GAME_MODE_DIALOG;
     g->dialog = dialog;
 }
 
-void endDialog(Game *g)
+void endDialogMode(Game *g)
 {
     g->mode = GAME_MODE_PLAYING;
     g->dialog = NULL;
 }
 
-void updateDialog(Game *g, Input *input)
+void updateDialogMode(Game *g, Input *input)
 {
     if (input->key_pressed[KEY_ESCAPE])
     {
-        endDialog(g);
+        endDialogMode(g);
     }
+}
+
+void startInventoryMode(Game *g)
+{
+    g->mode = GAME_MODE_INVENTORY;
+}
+
+void endInventoryMode(Game *g)
+{
+    g->mode = GAME_MODE_PLAYING;
+}
+
+void updateInventoryMode(Game *g, Input *input)
+{
+    if (input->key_pressed[KEY_ESCAPE])
+    {
+        endInventoryMode(g);
+    }
+}
+
+void drawDialogScreen(Game *g, FontMetadata *fontMetadata)
+{
+    int thirdOfWidth = (int)(g->camera.viewport.w / 3);
+    int fourthOfHeight = (int)(g->camera.viewport.h / 4);
+    int dialogBoxX = (int)(0.5 * (thirdOfWidth)) + g->camera.viewport.x;
+    int dialogBoxY = (int)((3 * (fourthOfHeight)) - 0.5 * fourthOfHeight) + g->camera.viewport.y;
+    int dialogBoxWidth = 2 * (thirdOfWidth);
+    int dialogBoxHeight = fourthOfHeight;
+    SDL_Rect dialogBoxDest = {dialogBoxX,dialogBoxY, dialogBoxWidth, dialogBoxHeight};
+    renderFilledRect(g->renderer, &dialogBoxDest, g->colors[COLOR_DARK_BLUE]);
+    drawText(g, fontMetadata, g->dialog, dialogBoxX, dialogBoxY);
+}
+
+void drawInventoryScreen(Game *g, Hero *h, FontMetadata *fontMetadata)
+{
+    int thirdOfWidth = (int)(g->camera.viewport.w / 3);
+    int fourthOfHeight = (int)(g->camera.viewport.h / 4);
+    int dialogBoxX = (int)(0.5 * thirdOfWidth) + g->camera.viewport.x;
+    int dialogBoxY = (int)(0.5 * fourthOfHeight) + g->camera.viewport.y;
+    int dialogBoxWidth = 2 * (thirdOfWidth);
+    int dialogBoxHeight = fourthOfHeight;
+    SDL_Rect dialogBoxDest = {dialogBoxX,dialogBoxY, dialogBoxWidth, dialogBoxHeight};
+    renderFilledRect(g->renderer, &dialogBoxDest, g->colors[COLOR_DARK_BLUE]);
+    char leaves[30];
+    snprintf(leaves, 30, "Leaves: %d", h->inventory[INV_LEAVES]);
+    drawText(g, fontMetadata, leaves, dialogBoxX, dialogBoxY);
+}
+
+void darkenBackground(Game *g)
+{
+    SDL_SetRenderDrawBlendMode(g->renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(g->renderer, 0, 0, 0, 32);
+    SDL_RenderFillRect(g->renderer, NULL);
 }
 
 void game_fix_frame_rate(Game* g)

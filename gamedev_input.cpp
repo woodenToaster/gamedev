@@ -70,6 +70,10 @@ static void updateInput(Input* input, SDL_Scancode key, bool32 isDown)
         break;
     case SDL_SCANCODE_SPACE:
         setKeyState(input, KEY_SPACE, isDown);
+        break;
+    case SDL_SCANCODE_I:
+        setKeyState(input, KEY_I, isDown);
+        break;
     default:
         // char* action = pressed ? "pressed" : "released";
         // printf("Key %s: %s\n", action, SDL_GetKeyName(SDL_GetKeyFromScancode(key)));
@@ -159,6 +163,11 @@ static void pollInput(Input* input, Game* game)
         {
             // TODO: This controller is not plugged in.
         }
+    }
+
+    if (input->key_pressed[KEY_I])
+    {
+        startInventoryMode(game);
     }
 }
 

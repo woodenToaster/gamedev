@@ -15,6 +15,7 @@ enum Colors
     COLOR_BLACK,
     COLOR_RED,
     COLOR_GREY,
+    COLOR_DARK_BLUE,
     COLOR_LAST
 };
 
@@ -22,6 +23,7 @@ enum GameMode
 {
     GAME_MODE_PLAYING,
     GAME_MODE_DIALOG,
+    GAME_MODE_INVENTORY,
     GAME_MODE_COUNT
 };
 
@@ -46,4 +48,9 @@ struct Game
     GameMode mode;
     char * dialog;
 };
+
+void startDialogMode(Game *g, char *dialog);
+void endDialogMode(Game *g);
+void startInventoryMode(Game *g);
+void endInventoryMode(Game *g);
 #endif

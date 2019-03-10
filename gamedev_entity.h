@@ -48,6 +48,12 @@ struct EntityList
     u32 count;
 };
 
+enum InventoryItemType
+{
+    INV_LEAVES,
+    INV_COUNT
+};
+
 struct Hero
 {
     Entity e;
@@ -55,10 +61,11 @@ struct Hero
     u32 next_club_swing_delay;
     u32 club_swing_timeout;
     f32 speed;
-    u8 is_moving;
-    u8 in_quicksand;
+    bool32 is_moving;
+    bool32 in_quicksand;
     bool32 swing_club;
-    u8 harvest;
+    bool32 harvest;
+    u32 inventory[INV_COUNT];
 };
 
 struct Harlod

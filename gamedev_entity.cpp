@@ -2,20 +2,6 @@
 #include "gamedev_camera.h"
 #include "gamedev_plan.h"
 
-void renderer_fill_rect(SDL_Renderer* renderer, SDL_Rect* dest, u32 color)
-{
-    // COLOR_NONE is 0. Set a tile's background color to COLOR_NONE to avoid
-    // extra rendering.
-    if (color)
-    {
-        u8 r = (u8)((color & 0x00FF0000) >> 16);
-        u8 g = (u8)((color & 0x0000FF00) >> 8);
-        u8 b = (u8)((color & 0x000000FF) >> 0);
-        SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
-        SDL_RenderFillRect(renderer, dest);
-    }
-}
-
 bool overlaps(SDL_Rect* r1, SDL_Rect* r2)
 {
     bool x_overlap = r1->x + r1->w > r2->x && r1->x < r2->x + r2->w;
@@ -75,11 +61,25 @@ void entity_init_dest(Entity* e)
     e->dest_rect.h = e->sprite_sheet.sprite_height;
 }
 
-u8 entity_is_hero(Entity* e)
+bool32 entityIsHero(Entity* e)
 {
-    return e->type == ET_HERO;
+    bool32 result = 0;
+    if (e)
+    {
+        result = e->type == ET_HERO;
+    }
+    return result;
 }
 
+bool32 entityIsHarlod(Entity *e)
+{
+    bool32 result = 0;
+    if (e)
+    {
+        result = e->type == ET_HARLOD;
+    }
+    return result;
+}
 void entity_draw(Entity* e, Game* g)
 {
     if (e->active)
@@ -119,10 +119,10 @@ void entity_draw(Entity* e, Game* g)
     u32 magenta = g->colors[COLOR_MAGENTA];
     if (e->active)
     {
-        renderer_fill_rect(g->renderer, &bb_top, magenta);
-        renderer_fill_rect(g->renderer, &bb_left, magenta);
-        renderer_fill_rect(g->renderer, &bb_right, magenta);
-        renderer_fill_rect(g->renderer, &bb_bottom, magenta);
+        renderFilledRect(g->renderer, &bb_top, magenta);
+        renderFilledRect(g->renderer, &bb_left, magenta);
+        renderFilledRect(g->renderer, &bb_right, magenta);
+        renderFilledRect(g->renderer, &bb_bottom, magenta);
     }
 #endif
 }
@@ -279,13 +279,13 @@ void entity_check_collisions_with_entities(Entity* e, Game* game)
         }
         if (other_e->active && overlaps(&e->bounding_box, &other_e->bounding_box))
         {
-            if (entity_is_hero(e))
+            if (entityIsHero(e))
             {
                 SDL_Rect overlap_box = entity_get_overlap_box(e, other_e);
                 if (entity_check_pixel_collision(e, other_e, &overlap_box))
                 {
                     // TODO: Handle properly instead of just drawing the overlap.
-                    renderer_fill_rect(game->renderer, &overlap_box, game->colors[COLOR_MAGENTA]);
+                    renderFilledRect(game->renderer, &overlap_box, game->colors[COLOR_MAGENTA]);
                 }
             }
             else if (e->type == ET_BUFFALO)
@@ -313,7 +313,7 @@ void entity_update(Entity* e, Map* map, u32 last_frame_duration)
         {
             SDL_Rect saved_position = e->dest_rect;
             entity_move_in_direction(e, e->plan.mv_dir);
-            animation_update(&e->animation, last_frame_duration, GD_TRUE);
+            updateAnimation(&e->animation, last_frame_duration, GD_TRUE);
             entity_set_collision_point(e);
             entity_check_collisions_with_tiles(e, map, &saved_position);
             // entity_check_collisions_with_entities(e, map, &saved_position);
@@ -400,7 +400,7 @@ void hero_clamp_to_map(Hero* h, Map* map)
     h->e.position.y = clampFloat(h->e.position.y, 0, (f32)map->height_pixels - h->e.dest_rect.h);
 }
 
-void hero_process_input(Hero* h, Input* input, f32 dt)
+void processInput(Hero *h, Input* input, f32 dt)
 {
     // TODO(chj): Handle joystick and keyboard on separate paths
     Vec2 acceleration = {};
@@ -466,7 +466,21 @@ void hero_process_input(Hero* h, Input* input, f32 dt)
     h->e.dest_rect.y = (int)(h->e.position.y);
 }
 
-void hero_harvest(Hero *h, Game *g)
+void harvestTile(Hero *h, Game *g, Tile *tileToHarvest)
+{
+    tile_destroy(tileToHarvest);
+    // TODO(chj): Don't re-init?
+    tile_init(tileToHarvest, tile_properties[TP_NONE], g->colors[COLOR_NONE],
+              g->renderer, "sprites/tree_stump.png");
+    tileToHarvest->active = GD_TRUE;
+    tileToHarvest->harvested = GD_TRUE;
+    tile_set_sprite_size(tileToHarvest, 64, 64);
+
+    // Update inventory
+    h->inventory[tileToHarvest->harvestedItem]++;
+}
+
+void heroInteract(Hero *h, Game *g)
 {
     // get next tile in facing direction if it's close enough
     i32 harvest_threshold = 10;
@@ -492,20 +506,17 @@ void hero_harvest(Hero *h, Game *g)
         break;
     }
 
-    Tile *tile_to_harvest = map_get_tile_at_point(g->current_map, point_to_harvest);
-
-    // TODO(chj): Make a general interaction function that dispatches to harvest when nescessary
     // See if there is an entity there
     for (u32 entityIndex = 0; entityIndex < g->current_map->active_entities.count; ++entityIndex)
     {
         Entity *e = g->current_map->active_entities.entities[entityIndex];
         // TODO(chj): Downcast function
 
-        if (!entity_is_hero(e))
+        if (entityIsHarlod(e))
         {
             Harlod *harlod = (Harlod*)e;
             SDL_Rect shiftedBoundingBox = {point_to_harvest.x, point_to_harvest.y,
-                                        (int)g->current_map->tile_width, (int)g->current_map->tile_height};
+                                           (int)g->current_map->tile_width, (int)g->current_map->tile_height};
             if(harlod && overlaps(&harlod->e.bounding_box, &shiftedBoundingBox))
             {
                 if(harlod->onHeroInteract)
@@ -516,25 +527,20 @@ void hero_harvest(Hero *h, Game *g)
         }
     }
 
-    if (tile_to_harvest && tile_to_harvest->is_harvestable)
+    // Check for harvestable tile
+    Tile *tileToHarvest = map_get_tile_at_point(g->current_map, point_to_harvest);
+    if (tileToHarvest && tileToHarvest->is_harvestable && !tileToHarvest->harvested)
     {
-        tile_destroy(tile_to_harvest);
-        // TODO(chj): Don't re-init?
-        tile_init(tile_to_harvest, tile_properties[TP_NONE], g->colors[COLOR_NONE],
-                  g->renderer, "sprites/tree_stump.png");
-        tile_to_harvest->active = GD_TRUE;
-        tile_set_sprite_size(tile_to_harvest, 64, 64);
-
-        // TODO(chj): Add item to inventory
-        // hero->inventory[INV_LEAVES]++;
+        harvestTile(h, g, tileToHarvest);
     }
+
 }
 
-void hero_update(Hero* h, Input* input, Game* g)
+void updateHero(Hero* h, Input* input, Game* g)
 {
     SDL_Rect saved_position = h->e.dest_rect;
 
-    hero_process_input(h, input, (f32)g->dt / 1000.0f);
+    processInput(h, input, (f32)g->dt / 1000.0f);
 
     if (saved_position.x != h->e.dest_rect.x ||
         saved_position.y != h->e.dest_rect.y)
@@ -554,7 +560,7 @@ void hero_update(Hero* h, Input* input, Game* g)
 
     if (h->harvest)
     {
-        hero_harvest(h, g);
+        heroInteract(h, g);
     }
     hero_clamp_to_map(h, g->current_map);
     entity_set_collision_point(&h->e);
