@@ -194,7 +194,7 @@ void drawMap(Game* g)
         }
     }
 
-    entity_list_draw(&m->active_entities, g);
+    drawEntityList(&m->active_entities, g);
 }
 
 void map_activate_entities(Map* m)

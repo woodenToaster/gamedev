@@ -4,8 +4,11 @@
 * Build
 ** TODO game code DLL 
 * Gameplay
-** TODO Basic enemy to prototype combat system
 ** TODO Dialog system
+** TODO Basic enemy to prototype combat system
+*** TODO Collision Detection
+*** TODO Probably want a circle as collision "box" for interactions
+*** TODO Collisions feel bad. Need to slide around other entities
 ** TODO Inventory system
 ** TODO Crafting system
 ** TODO Base building system

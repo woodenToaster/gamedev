@@ -9,7 +9,7 @@ bool overlaps(SDL_Rect* r1, SDL_Rect* r2)
     return x_overlap && y_overlap;
 }
 
-void entity_init_pixel_data(Entity* e)
+void initEntityPixelData(Entity* e)
 {
     e->pixel_data = (u8*)malloc(sizeof(u8) * e->sprite_rect.w * e->sprite_rect.h);
     SDL_Surface* s = e->sprite_sheet.surface;
@@ -30,22 +30,22 @@ void entity_init_pixel_data(Entity* e)
     }
 }
 
-void entity_init_sprite_sheet(Entity* e, const char* path, int num_x, int num_y, SDL_Renderer* renderer)
+void initEntitySpriteSheet(Entity* e, const char* path, int num_x, int num_y, SDL_Renderer* renderer)
 {
     sprite_sheet_load(&e->sprite_sheet, path, num_x, num_y, renderer);
     e->sprite_rect.w = e->sprite_sheet.sprite_width;
     e->sprite_rect.h = e->sprite_sheet.sprite_height;
     // TODO: Do this for each sprite in the sheet.
-    entity_init_pixel_data(e);
+    initEntityPixelData(e);
 }
 
-void entity_set_starting_pos(Entity* e, int x, int y)
+void setEntityStartingPos(Entity* e, int x, int y)
 {
     e->starting_pos.x = x;
     e->starting_pos.y = y;
 }
 
-void entity_set_bounding_box_offset(Entity* e, int x, int y, int w, int h)
+void setEntityBoundingBoxOffset(Entity* e, int x, int y, int w, int h)
 {
     e->bb_x_offset = x;
     e->bb_y_offset = y;
@@ -53,7 +53,7 @@ void entity_set_bounding_box_offset(Entity* e, int x, int y, int w, int h)
     e->bb_h_offset = h;
 }
 
-void entity_init_dest(Entity* e)
+void initEntityDest(Entity* e)
 {
     e->dest_rect.x = e->starting_pos.x;
     e->dest_rect.y = e->starting_pos.y;
@@ -80,7 +80,8 @@ bool32 entityIsHarlod(Entity *e)
     }
     return result;
 }
-void entity_draw(Entity* e, Game* g)
+
+void drawEntity(Entity* e, Game* g)
 {
     if (e->active)
     {
@@ -88,7 +89,7 @@ void entity_draw(Entity* e, Game* g)
         SDL_RenderCopy(g->renderer, e->sprite_sheet.sheet, &e->sprite_rect, &e->dest_rect);
     }
 
-#ifdef DEBUG
+#if 0
     // Draw bounding box
     SDL_Rect bb_top;
     SDL_Rect bb_bottom;
@@ -127,7 +128,7 @@ void entity_draw(Entity* e, Game* g)
 #endif
 }
 
-SDL_Rect entity_get_overlap_box(Entity* e1, Entity* e2)
+SDL_Rect getEntitiesOverlapBox(Entity* e1, Entity* e2)
 {
     SDL_Rect overlap_box;
     if (e1->bounding_box.x > e2->bounding_box.x)
@@ -159,7 +160,7 @@ SDL_Rect entity_get_overlap_box(Entity* e1, Entity* e2)
     return overlap_box;
 }
 
-void entity_move_in_direction(Entity* e, CardinalDir d)
+void moveEntityInDirection(Entity* e, CardinalDir d)
 {
     switch(d)
     {
@@ -180,7 +181,7 @@ void entity_move_in_direction(Entity* e, CardinalDir d)
     }
 }
 
-Tile* entity_get_tile_at_position(Entity* e, Map* map)
+Tile* getTileAtEntityPosition(Entity* e, Map* map)
 {
     SDL_Rect tile_under_entity = {
         (int)((e->collision_pt.x / map->tile_width) * map->tile_width),
@@ -193,7 +194,7 @@ Tile* entity_get_tile_at_position(Entity* e, Map* map)
     return map->tiles[tile_index];
 }
 
-void entity_reverse_direction(Entity* e)
+void reverseEntityDiretion(Entity* e)
 {
     // TODO: Try to use entity direction directly instead of plan.mv_dir
     switch (e->plan.mv_dir)
@@ -213,9 +214,9 @@ void entity_reverse_direction(Entity* e)
     }
 }
 
-void entity_check_collisions_with_tiles(Entity* e, Map* map, SDL_Rect* saved_pos)
+void checkEntityCollisionsWithTiles(Entity* e, Map* map, SDL_Rect* saved_pos)
 {
-    Tile* current_tile = entity_get_tile_at_position(e, map);
+    Tile* current_tile = getTileAtEntityPosition(e, map);
 
     if (tile_is_solid(current_tile))
     {
@@ -224,7 +225,7 @@ void entity_check_collisions_with_tiles(Entity* e, Map* map, SDL_Rect* saved_pos
         switch (e->type)
         {
         case ET_BUFFALO:
-            entity_reverse_direction(e);
+            reverseEntityDiretion(e);
             break;
         default:
             break;
@@ -232,7 +233,7 @@ void entity_check_collisions_with_tiles(Entity* e, Map* map, SDL_Rect* saved_pos
     }
 }
 
-u8 entity_check_pixel_collision(Entity* e1, Entity* e2, SDL_Rect* overlap_box)
+bool32 checkEntitiesPixelCollision(Entity* e1, Entity* e2, SDL_Rect* overlap_box)
 {
     for (int i = overlap_box->y; i < overlap_box->y + overlap_box->h; ++i)
     {
@@ -257,7 +258,7 @@ u8 entity_check_pixel_collision(Entity* e1, Entity* e2, SDL_Rect* overlap_box)
 }
 
 #ifdef DEBUG
-void entity_print_pixels(Entity* e)
+void printEntityPixels(Entity* e)
 {
     for (int i = 0; i < e->sprite_rect.h; ++i)
     {
@@ -270,54 +271,49 @@ void entity_print_pixels(Entity* e)
 }
 #endif
 
-void entity_check_collisions_with_entities(Entity* e, Game* game)
+void checkEntityCollisionsWithEntities(Entity* e, Game* game)
 {
-    for (u32 i = 0; i < game->current_map->active_entities.count; ++i) {
-        Entity* other_e = game->current_map->active_entities.entities[i];
-        if (e == other_e) {
+    u32 entityCount = game->current_map->active_entities.count;
+    for (u32 i = 0; i < entityCount; ++i) {
+        Entity* otherEntity = game->current_map->active_entities.entities[i];
+        if (e == otherEntity) {
             continue;
         }
-        if (other_e->active && overlaps(&e->bounding_box, &other_e->bounding_box))
+        if (otherEntity->active && overlaps(&e->bounding_box, &otherEntity->bounding_box))
         {
-            if (entityIsHero(e))
+            switch (e->type)
             {
-                SDL_Rect overlap_box = entity_get_overlap_box(e, other_e);
-                if (entity_check_pixel_collision(e, other_e, &overlap_box))
-                {
-                    // TODO: Handle properly instead of just drawing the overlap.
-                    renderFilledRect(game->renderer, &overlap_box, game->colors[COLOR_MAGENTA]);
-                }
+            case ET_BUFFALO:
+            {
+                reverseEntityDiretion(e);
+                break;
             }
-            else if (e->type == ET_BUFFALO)
-            {
-                if (other_e->type == ET_BUFFALO)
-                {
-                    entity_reverse_direction(e);
-                }
+            default:
+                break;
             }
         }
     }
 }
 
-void entity_set_collision_point(Entity* e)
+void setEntityCollisionPoint(Entity* e)
 {
     e->collision_pt.y = e->dest_rect.y + e->dest_rect.h - e->collision_pt_offset;
     e->collision_pt.x = e->dest_rect.x + (i32)(e->dest_rect.w / 2.0);
 }
 
-void entity_update(Entity* e, Map* map, u32 last_frame_duration)
+void updateEntity(Entity* e, Map* map, u32 last_frame_duration)
 {
     if (e->has_plan) {
         plan_update(e, last_frame_duration);
         if (e->can_move && e->active)
         {
             SDL_Rect saved_position = e->dest_rect;
-            entity_move_in_direction(e, e->plan.mv_dir);
+            moveEntityInDirection(e, e->plan.mv_dir);
             updateAnimation(&e->animation, last_frame_duration, GD_TRUE);
-            entity_set_collision_point(e);
-            entity_check_collisions_with_tiles(e, map, &saved_position);
+            setEntityCollisionPoint(e);
+            checkEntityCollisionsWithTiles(e, map, &saved_position);
             // entity_check_collisions_with_entities(e, map, &saved_position);
-            entity_set_collision_point(e);
+            setEntityCollisionPoint(e);
         }
     }
     e->bounding_box.x = e->dest_rect.x + e->bb_x_offset;
@@ -326,40 +322,66 @@ void entity_update(Entity* e, Map* map, u32 last_frame_duration)
     e->bounding_box.h = e->dest_rect.h - e->bb_h_offset;
 }
 
-void entity_destroy(Entity* e)
+void destroyEntity(Entity* e)
 {
     sprite_sheet_destroy(&e->sprite_sheet);
     free(e->pixel_data);
 }
 
 
-void entity_list_update(EntityList* el, Map* map, u32 last_frame_duration)
+void updateEntityList(EntityList* el, Map* map, u32 last_frame_duration)
 {
     for (u32 i = 0; i < el->count; ++i)
     {
-        entity_update(el->entities[i], map, last_frame_duration);
+        updateEntity(el->entities[i], map, last_frame_duration);
     }
 }
 
-void entity_list_draw(EntityList* el, Game* g)
+void drawEntityList(EntityList* el, Game* g)
 {
     for (u32 i = 0; i < el->count; ++i)
     {
-        entity_draw(el->entities[i], g);
+        drawEntity(el->entities[i], g);
     }
 }
 
-void entity_list_destroy(EntityList* el)
+void destroyEntityList(EntityList* el)
 {
     for (u32 i = 0; i < el->count; ++i)
     {
-        entity_destroy(el->entities[i]);
+        destroyEntity(el->entities[i]);
     }
 }
 
-void hero_check_collisions_with_tiles(Hero* h, Game* game, SDL_Rect saved_position)
+void checkHeroCollisionsWithEntities(Hero *h, Game *g, SDL_Rect saved_position)
 {
-    Tile* current_tile = entity_get_tile_at_position(&h->e, game->current_map);
+    u32 entityCount = g->current_map->active_entities.count;
+    for (u32 i = 0; i < entityCount; ++i)
+    {
+        Entity* otherEntity = g->current_map->active_entities.entities[i];
+        if (entityIsHero(otherEntity))
+        {
+            continue;
+        }
+        if (otherEntity->active && overlaps(&h->e.bounding_box, &otherEntity->bounding_box))
+        {
+            SDL_Rect overlap_box = getEntitiesOverlapBox(&h->e, otherEntity);
+            if (checkEntitiesPixelCollision(&h->e, otherEntity, &overlap_box))
+            {
+                h->e.dest_rect = saved_position;
+                h->e.position.x = (f32)saved_position.x;
+                h->e.position.y = (f32)saved_position.y;
+
+                h->e.velocity.x = 0.0f;
+                h->e.velocity.y = 0.0f;
+            }
+        }
+    }
+}
+
+void checkHeroCollisionsWithTiles(Hero* h, Game* game, SDL_Rect saved_position)
+{
+    Tile* current_tile = getTileAtEntityPosition(&h->e, game->current_map);
 
     if (tile_is_solid(current_tile))
     {
@@ -394,7 +416,7 @@ void hero_check_collisions_with_tiles(Hero* h, Game* game, SDL_Rect saved_positi
     }
 }
 
-void hero_clamp_to_map(Hero* h, Map* map)
+void clampHeroToMap(Hero* h, Map* map)
 {
     h->e.position.x = clampFloat(h->e.position.x, 0, (f32)map->width_pixels - h->e.dest_rect.w);
     h->e.position.y = clampFloat(h->e.position.y, 0, (f32)map->height_pixels - h->e.dest_rect.h);
@@ -536,6 +558,20 @@ void heroInteract(Hero *h, Game *g)
 
 }
 
+void harlodInteractWithHero(Entity *e, Entity *h, Game *g)
+{
+    (void)h;
+    if (!e->dialogFile.contents)
+    {
+        e->dialogFile = readEntireFile("dialogs/harlod_dialogs.txt");
+        // TODO(chj): Need to null terminate everything. This will change. We
+        // want to parse files for strings and tokenize, etc. For now it's hard coded
+        e->dialogFile.contents[9] = '\0';
+        // TODO(chj): Free dialog.contents
+    }
+    startDialogMode(g, (char*)e->dialogFile.contents);
+}
+
 void updateHero(Hero* h, Input* input, Game* g)
 {
     SDL_Rect saved_position = h->e.dest_rect;
@@ -562,9 +598,10 @@ void updateHero(Hero* h, Input* input, Game* g)
     {
         heroInteract(h, g);
     }
-    hero_clamp_to_map(h, g->current_map);
-    entity_set_collision_point(&h->e);
-    hero_check_collisions_with_tiles(h, g, saved_position);
+    clampHeroToMap(h, g->current_map);
+    setEntityCollisionPoint(&h->e);
+    checkHeroCollisionsWithTiles(h, g, saved_position);
+    checkHeroCollisionsWithEntities(h, g, saved_position);
 }
 
 void hero_update_club(Hero* h, u32 now)
@@ -618,14 +655,14 @@ void hero_update_club(Hero* h, u32 now)
 //     }
 // }
 
-Entity create_buffalo(int starting_x, int starting_y, SDL_Renderer* renderer)
+Entity createBuffalo(int starting_x, int starting_y, SDL_Renderer* renderer)
 {
     Entity buffalo = {};
-    entity_init_sprite_sheet(&buffalo, "sprites/Buffalo.png", 4, 1, renderer);
-    entity_set_starting_pos(&buffalo, starting_x, starting_y);
-    entity_set_bounding_box_offset(&buffalo, 0, 0, 0, 0);
-    entity_init_dest(&buffalo);
-    entity_set_collision_point(&buffalo);
+    initEntitySpriteSheet(&buffalo, "sprites/Buffalo.png", 4, 1, renderer);
+    setEntityStartingPos(&buffalo, starting_x, starting_y);
+    setEntityBoundingBoxOffset(&buffalo, 0, 0, 0, 0);
+    initEntityDest(&buffalo);
+    setEntityCollisionPoint(&buffalo);
     buffalo.speed = 3;
     buffalo.type = ET_BUFFALO;
     buffalo.can_move = GD_TRUE;

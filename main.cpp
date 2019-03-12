@@ -50,24 +50,6 @@
 #define aalloc(type) ((type*)arena_push(&arena, sizeof(type)))
 #define arraySize(arr) (sizeof(arr) / sizeof((arr)[0]))
 
-void harlodInteractWithHero(Entity *e, Entity *h, Game *g)
-{
-    (void)h;
-
-    if (!e->dialogFile.contents)
-    {
-        e->dialogFile = readEntireFile("dialogs/harlod_dialogs.txt");
-        // Remove the EOF character
-        --e->dialogFile.size;
-        // TODO(chj): Need to null terminate everything. This will change. We
-        // want to parse files for strings and tokenize, etc. For testing it's
-        // hard coded
-        e->dialogFile.contents[9] = '\0';
-        // TODO(chj): Free dialog.contents
-    }
-    startDialogMode(g, (char*)e->dialogFile.contents);
-}
-
 int main(int argc, char* argv[])
 {
     (void)argc;
@@ -118,12 +100,12 @@ int main(int argc, char* argv[])
     SoundList sounds_to_play = {};
 
     Hero hero = {};
-    entity_init_sprite_sheet(&hero.e, "sprites/dude.png", 4, 4, game->renderer);
-    entity_set_starting_pos(&hero.e, 85, 85);
+    initEntitySpriteSheet(&hero.e, "sprites/dude.png", 4, 4, game->renderer);
+    setEntityStartingPos(&hero.e, 85, 85);
     hero.e.position.x = (f32)hero.e.starting_pos.x;
     hero.e.position.y = (f32)hero.e.starting_pos.y;
-    entity_set_bounding_box_offset(&hero.e, 6, 5, 12, 7);
-    entity_init_dest(&hero.e);
+    setEntityBoundingBoxOffset(&hero.e, 6, 5, 12, 7);
+    initEntityDest(&hero.e);
     hero.speed = 2000; // m/s^2
     // TODO(chj): Replace entity speed with f32 and use that for hero
     hero.e.speed = 10;
@@ -138,19 +120,19 @@ int main(int argc, char* argv[])
 
     // Harlod
     Harlod harlod = {};
-    entity_init_sprite_sheet(&harlod.e, "sprites/Harlod_the_caveman.png", 1, 1, game->renderer);
-    entity_set_starting_pos(&harlod.e, 150, 150);
-    entity_set_bounding_box_offset(&harlod.e, 0, 0, 0, 0);
-    entity_init_dest(&harlod.e);
+    initEntitySpriteSheet(&harlod.e, "sprites/Harlod_the_caveman.png", 1, 1, game->renderer);
+    setEntityStartingPos(&harlod.e, 150, 150);
+    setEntityBoundingBoxOffset(&harlod.e, 0, 0, 0, 0);
+    initEntityDest(&harlod.e);
     harlod.e.speed = 10;
     harlod.e.type = ET_HARLOD;
     harlod.onHeroInteract = &harlodInteractWithHero;
     harlod.e.active = GD_TRUE;
 
     // Buffalo
-    Entity buffalo = create_buffalo(400, 200, game->renderer);
-    Entity buffalo2 = create_buffalo(500, 500, game->renderer);
-    Entity buffalo3 = create_buffalo(600, 100, game->renderer);
+    Entity buffalo = createBuffalo(400, 200, game->renderer);
+    Entity buffalo2 = createBuffalo(500, 500, game->renderer);
+    Entity buffalo3 = createBuffalo(600, 100, game->renderer);
 
     EntityList entity_list = {};
     Entity* _entities[] = {&hero.e, &harlod.e, &buffalo, &buffalo2, &buffalo3};
@@ -332,7 +314,7 @@ int main(int argc, char* argv[])
             updateHero(&hero, &input, game);
             hero_update_club(&hero, now);
             updateCamera(&game->camera, &hero.e.dest_rect);
-            entity_list_update(&entity_list, game->current_map, game->dt);
+            updateEntityList(&entity_list, game->current_map, game->dt);
             updateAnimation(&hero.e.animation, game->dt, hero.is_moving);
             sound_play_all(game->sounds, now);
         }
@@ -368,7 +350,7 @@ int main(int argc, char* argv[])
         for (size_t i = 0; i < game->current_map->active_entities.count; ++i)
         {
             Entity* e = game->current_map->active_entities.entities[i];
-            entity_check_collisions_with_entities(e, game);
+            checkEntityCollisionsWithEntities(e, game);
         }
 
         // hero_draw_club(&hero, now, game);
@@ -403,7 +385,7 @@ int main(int argc, char* argv[])
     destroyTileList(&tile_list);
     destroyTileset(&jungle_tiles);
     map_list_destroy(&map_list);
-    entity_list_destroy(&entity_list);
+    destroyEntityList(&entity_list);
     destroyControllers(&input);
     game_destroy(game);
     arena_destroy(&arena);
