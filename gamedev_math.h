@@ -15,6 +15,12 @@ struct Vec2
     f32 y;
 };
 
+struct Circle
+{
+    Vec2 center;
+    f32 radius;
+};
+
 Vec2 vec2(f32 x, f32 y)
 {
     Vec2 v = {x, y};
@@ -204,4 +210,26 @@ f32 square(f32 x)
     return x * x;
 }
 
+Circle circle(Vec2 center, f32 radius)
+{
+    Circle result = {};
+    result.center = center;
+    result.radius = radius;
+    return result;
+}
+
+bool overlaps(SDL_Rect* r1, SDL_Rect* r2)
+{
+    bool x_overlap = r1->x + r1->w > r2->x && r1->x < r2->x + r2->w;
+    bool y_overlap = r1->y + r1->h > r2->y && r1->y < r2->y + r2->h;
+    return x_overlap && y_overlap;
+}
+
+bool32 pointInRect(Point point, SDL_Rect *rect)
+{
+    SDL_Rect pointRect = {};
+    pointRect.x = point.x;
+    pointRect.y = point.y;
+    return overlaps(&pointRect, rect)
+}
 #endif

@@ -2,12 +2,6 @@
 #include "gamedev_camera.h"
 #include "gamedev_plan.h"
 
-bool overlaps(SDL_Rect* r1, SDL_Rect* r2)
-{
-    bool x_overlap = r1->x + r1->w > r2->x && r1->x < r2->x + r2->w;
-    bool y_overlap = r1->y + r1->h > r2->y && r1->y < r2->y + r2->h;
-    return x_overlap && y_overlap;
-}
 
 void initEntityPixelData(Entity* e)
 {
@@ -392,19 +386,19 @@ void checkHeroCollisionsWithTiles(Hero* h, Game* game, SDL_Rect saved_position)
         h->e.velocity.x = 0.0f;
         h->e.velocity.y = 0.0f;
     }
-    if (tile_is_slow(current_tile) && !h->in_quicksand)
+    if (tile_is_slow(current_tile) && !h->inQuicksand)
     {
         h->speed -= 990;
-        h->in_quicksand = GD_TRUE;
-        if (h->is_moving)
+        h->inQuicksand = GD_TRUE;
+        if (h->isMoving)
         {
             sound_queue(global_sounds[SOUND_MUD], game->sounds);
         }
     }
-    else if (h->in_quicksand)
+    else if (h->inQuicksand)
     {
         h->speed += 990;
-        h->in_quicksand = GD_FALSE;
+        h->inQuicksand = GD_FALSE;
     }
     if (tile_is_warp(current_tile))
     {
@@ -481,7 +475,7 @@ void processInput(Hero *h, Input* input, f32 dt)
 
     h->e.velocity = (acceleration * dt) + h->e.velocity;
 
-    h->swing_club = input->key_pressed[KEY_F];
+    h->swingClub = input->key_pressed[KEY_F];
     h->harvest = input->key_pressed[KEY_SPACE] || input->button_pressed[BUTTON_A];
 
     h->e.dest_rect.x = (int)(h->e.position.x);
@@ -581,14 +575,14 @@ void updateHero(Hero* h, Input* input, Game* g)
     if (saved_position.x != h->e.dest_rect.x ||
         saved_position.y != h->e.dest_rect.y)
     {
-        h->is_moving = GD_TRUE;
+        h->isMoving = GD_TRUE;
     }
     else
     {
-        h->is_moving = GD_FALSE;
+        h->isMoving = GD_FALSE;
     }
 
-    if (!h->is_moving)
+    if (!h->isMoving)
     {
         h->e.animation.current_frame = 0;
         h->e.sprite_rect.x = 0;
@@ -606,52 +600,52 @@ void updateHero(Hero* h, Input* input, Game* g)
 
 void hero_update_club(Hero* h, u32 now)
 {
-    h->club_rect.x = h->e.dest_rect.x + h->e.dest_rect.w / 2;
-    h->club_rect.y = h->e.dest_rect.y + h->e.dest_rect.h / 2;
+    h->clubRect.x = h->e.dest_rect.x + h->e.dest_rect.w / 2;
+    h->clubRect.y = h->e.dest_rect.y + h->e.dest_rect.h / 2;
 
     switch(h->e.direction)
     {
     case DIR_DOWN:
-        h->club_rect.w = 8;
-        h->club_rect.x -= 4;
-        h->club_rect.h = 32;
-        h->club_rect.y += 16;
+        h->clubRect.w = 8;
+        h->clubRect.x -= 4;
+        h->clubRect.h = 32;
+        h->clubRect.y += 16;
         break;
     case DIR_LEFT:
-        h->club_rect.w = 32;
-        h->club_rect.h = 8;
-        h->club_rect.y += 16;
-        h->club_rect.x -= 32;
+        h->clubRect.w = 32;
+        h->clubRect.h = 8;
+        h->clubRect.y += 16;
+        h->clubRect.x -= 32;
         break;
     case DIR_RIGHT:
-        h->club_rect.y += 16;
-        h->club_rect.w = 32;
-        h->club_rect.h = 8;
+        h->clubRect.y += 16;
+        h->clubRect.w = 32;
+        h->clubRect.h = 8;
         break;
     case DIR_UP:
-        h->club_rect.x -= 4;
-        h->club_rect.y -= 32;
-        h->club_rect.w = 8;
-        h->club_rect.h = 32;
+        h->clubRect.x -= 4;
+        h->clubRect.y -= 32;
+        h->clubRect.w = 8;
+        h->clubRect.h = 32;
         break;
     }
 
-    if (h->swing_club && now > h->next_club_swing_delay + 500)
+    if (h->swingClub && now > h->nextClubSwingDelay + 500)
     {
-        h->next_club_swing_delay = now;
-        h->club_swing_timeout = now + 500;
+        h->nextClubSwingDelay = now;
+        h->clubSwingTimeout = now + 500;
     }
     else
     {
-        h->swing_club = GD_FALSE;
+        h->swingClub = GD_FALSE;
     }
 }
 
 // void hero_draw_club(Hero* h, u32 now, Game* g)
 // {
-//     if (now < h->club_swing_timeout)
+//     if (now < h->clubSwingTimeout)
 //     {
-//         SDL_FillRect(g->current_map->surface, &h->club_rect, g->colors[BLACK]);
+//         SDL_FillRect(g->current_map->surface, &h->clubRect, g->colors[BLACK]);
 //     }
 // }
 

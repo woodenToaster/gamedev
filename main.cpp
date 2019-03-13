@@ -315,7 +315,7 @@ int main(int argc, char* argv[])
             hero_update_club(&hero, now);
             updateCamera(&game->camera, &hero.e.dest_rect);
             updateEntityList(&entity_list, game->current_map, game->dt);
-            updateAnimation(&hero.e.animation, game->dt, hero.is_moving);
+            updateAnimation(&hero.e.animation, game->dt, hero.isMoving);
             sound_play_all(game->sounds, now);
         }
         else if (game->mode == GAME_MODE_DIALOG)

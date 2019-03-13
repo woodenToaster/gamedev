@@ -57,13 +57,14 @@ enum InventoryItemType
 struct Hero
 {
     Entity e;
-    SDL_Rect club_rect;
-    u32 next_club_swing_delay;
-    u32 club_swing_timeout;
+    SDL_Rect clubRect;
+    u32 nextClubSwingDelay;
+    u32 clubSwingTimeout;
     f32 speed;
-    bool32 is_moving;
-    bool32 in_quicksand;
-    bool32 swing_club;
+    f32 boundingRadius;
+    bool32 isMoving;
+    bool32 inQuicksand;
+    bool32 swingClub;
     bool32 harvest;
     u32 inventory[INV_COUNT];
 };
