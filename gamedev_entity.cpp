@@ -129,26 +129,26 @@ SDL_Rect getEntitiesOverlapBox(Entity* e1, Entity* e2)
     {
         overlap_box.x = e1->bounding_box.x;
         overlap_box.w = e2->bounding_box.x + e2->bounding_box.w - e1->bounding_box.x;
-        overlap_box.w = min(overlap_box.w, e1->bounding_box.w);
+        overlap_box.w = minInt32(overlap_box.w, e1->bounding_box.w);
     }
     else
     {
         overlap_box.x = e2->bounding_box.x;
         overlap_box.w = e1->bounding_box.x + e1->bounding_box.w - e2->bounding_box.x;
-        overlap_box.w = min(overlap_box.w, e2->bounding_box.w);
+        overlap_box.w = minInt32(overlap_box.w, e2->bounding_box.w);
     }
 
     if (e1->bounding_box.y > e2->bounding_box.y)
     {
         overlap_box.y = e1->bounding_box.y;
         overlap_box.h = e2->bounding_box.y + e2->bounding_box.h - e1->bounding_box.y;
-        overlap_box.h = min(overlap_box.h, e1->bounding_box.h);
+        overlap_box.h = minInt32(overlap_box.h, e1->bounding_box.h);
     }
     else
     {
         overlap_box.y = e2->bounding_box.y;
         overlap_box.h = e1->bounding_box.y + e1->bounding_box.h - e2->bounding_box.y;
-        overlap_box.h = min(overlap_box.h, e2->bounding_box.h);
+        overlap_box.h = minInt32(overlap_box.h, e2->bounding_box.h);
     }
 
     return overlap_box;
@@ -273,7 +273,7 @@ void checkEntityCollisionsWithEntities(Entity* e, Game* game)
         if (e == otherEntity) {
             continue;
         }
-        if (otherEntity->active && overlaps(&e->bounding_box, &otherEntity->bounding_box))
+        if (otherEntity->active && rectsOverlap(&e->bounding_box, &otherEntity->bounding_box))
         {
             switch (e->type)
             {
@@ -357,7 +357,7 @@ void checkHeroCollisionsWithEntities(Hero *h, Game *g, SDL_Rect saved_position)
         {
             continue;
         }
-        if (otherEntity->active && overlaps(&h->e.bounding_box, &otherEntity->bounding_box))
+        if (otherEntity->active && rectsOverlap(&h->e.bounding_box, &otherEntity->bounding_box))
         {
             SDL_Rect overlap_box = getEntitiesOverlapBox(&h->e, otherEntity);
             if (checkEntitiesPixelCollision(&h->e, otherEntity, &overlap_box))
@@ -533,7 +533,7 @@ void heroInteract(Hero *h, Game *g)
             Harlod *harlod = (Harlod*)e;
             SDL_Rect shiftedBoundingBox = {point_to_harvest.x, point_to_harvest.y,
                                            (int)g->current_map->tile_width, (int)g->current_map->tile_height};
-            if(harlod && overlaps(&harlod->e.bounding_box, &shiftedBoundingBox))
+            if(harlod && rectsOverlap(&harlod->e.bounding_box, &shiftedBoundingBox))
             {
                 if(harlod->onHeroInteract)
                 {
@@ -588,14 +588,16 @@ void updateHero(Hero* h, Input* input, Game* g)
         h->e.sprite_rect.x = 0;
     }
 
-    if (h->harvest)
-    {
-        heroInteract(h, g);
-    }
     clampHeroToMap(h, g->current_map);
     setEntityCollisionPoint(&h->e);
     checkHeroCollisionsWithTiles(h, g, saved_position);
     checkHeroCollisionsWithEntities(h, g, saved_position);
+
+    updateHeroInteractionSphere(h);
+    if (h->harvest)
+    {
+        heroInteract(h, g);
+    }
 }
 
 void hero_update_club(Hero* h, u32 now)
