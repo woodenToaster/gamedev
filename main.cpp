@@ -50,6 +50,43 @@
 #define aalloc(type) ((type*)arena_push(&arena, sizeof(type)))
 #define arraySize(arr) (sizeof(arr) / sizeof((arr)[0]))
 
+void drawCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
+{
+    i32 x = radius - 1;
+    if (radius == 0)
+        return;
+    i32 y = 0;
+    i32 tx = 1;
+    i32 ty = 1;
+    i32 err = tx - (radius << 1); // shifting bits left by 1 effectively
+    // doubles the value. == tx - diameter
+    while (x >= y)
+    {
+        //  Each of the following renders an octant of the circle
+        SDL_RenderDrawPoint(renderer, _x + x, _y - y);
+        SDL_RenderDrawPoint(renderer, _x + x, _y + y);
+        SDL_RenderDrawPoint(renderer, _x - x, _y - y);
+        SDL_RenderDrawPoint(renderer, _x - x, _y + y);
+        SDL_RenderDrawPoint(renderer, _x + y, _y - x);
+        SDL_RenderDrawPoint(renderer, _x + y, _y + x);
+        SDL_RenderDrawPoint(renderer, _x - y, _y - x);
+        SDL_RenderDrawPoint(renderer, _x - y, _y + x);
+
+        if (err <= 0)
+        {
+            y++;
+            err += ty;
+            ty += 2;
+        }
+        if (err > 0)
+        {
+            x--;
+            tx += 2;
+            err += tx - (radius << 1);
+        }
+    }
+}
+
 int main(int argc, char* argv[])
 {
     (void)argc;
@@ -332,6 +369,10 @@ int main(int argc, char* argv[])
         /*********************************************************************/
         SDL_SetRenderTarget(game->renderer, game->current_map->texture);
         drawMap(game);
+
+        SDL_SetRenderDrawColor(game->renderer, 255, 255, 0, 255);
+        drawCircle(game->renderer, (i32)heroInteractionRegion.center.x,
+                   (i32)heroInteractionRegion.center.y, (i32)heroInteractionRegion.radius);
 
         if (game->mode == GAME_MODE_DIALOG)
         {

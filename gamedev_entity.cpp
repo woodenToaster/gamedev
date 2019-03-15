@@ -2,6 +2,7 @@
 #include "gamedev_camera.h"
 #include "gamedev_plan.h"
 
+static Circle heroInteractionRegion = {};
 
 void initEntityPixelData(Entity* e)
 {
@@ -83,7 +84,7 @@ void drawEntity(Entity* e, Game* g)
         SDL_RenderCopy(g->renderer, e->sprite_sheet.sheet, &e->sprite_rect, &e->dest_rect);
     }
 
-#if 0
+#if 1
     // Draw bounding box
     SDL_Rect bb_top;
     SDL_Rect bb_bottom;
@@ -522,23 +523,23 @@ void heroInteract(Hero *h, Game *g)
         break;
     }
 
+    Vec2 heroCenter = {};
+    heroCenter.x = h->e.dest_rect.x + (0.5f * h->e.dest_rect.w);
+    heroCenter.y = h->e.dest_rect.y + (0.5f * h->e.dest_rect.h);
+
+    heroInteractionRegion.center = heroCenter;
+    heroInteractionRegion.radius = maxFloat32((f32)h->e.dest_rect.w, (f32)h->e.dest_rect.h) * 0.666666f;
     // See if there is an entity there
     for (u32 entityIndex = 0; entityIndex < g->current_map->active_entities.count; ++entityIndex)
     {
         Entity *e = g->current_map->active_entities.entities[entityIndex];
-        // TODO(chj): Downcast function
-
         if (entityIsHarlod(e))
         {
-            Harlod *harlod = (Harlod*)e;
-            SDL_Rect shiftedBoundingBox = {point_to_harvest.x, point_to_harvest.y,
-                                           (int)g->current_map->tile_width, (int)g->current_map->tile_height};
-            if(harlod && rectsOverlap(&harlod->e.bounding_box, &shiftedBoundingBox))
+            if(circleOverlapsRect(&heroInteractionRegion, &e->bounding_box))
             {
-                if(harlod->onHeroInteract)
-                {
-                    harlod->onHeroInteract(&harlod->e, &h->e, g);
-                }
+                // TODO(chj): Find a cleaner way to do this
+                interactWithHero *f = (interactWithHero*)((u8*)e + offsetof(Harlod, onHeroInteract));
+                (*f)(e, h, g);
             }
         }
     }
@@ -552,7 +553,7 @@ void heroInteract(Hero *h, Game *g)
 
 }
 
-void harlodInteractWithHero(Entity *e, Entity *h, Game *g)
+void harlodInteractWithHero(Entity *e, Hero *h, Game *g)
 {
     (void)h;
     if (!e->dialogFile.contents)
@@ -593,7 +594,6 @@ void updateHero(Hero* h, Input* input, Game* g)
     checkHeroCollisionsWithTiles(h, g, saved_position);
     checkHeroCollisionsWithEntities(h, g, saved_position);
 
-    updateHeroInteractionSphere(h);
     if (h->harvest)
     {
         heroInteract(h, g);

@@ -5,8 +5,10 @@
 #include "gamedev_sprite_sheet.h"
 
 struct Entity;
+struct Hero;
+
 typedef void (*interactWithEntity)(Entity *e, Entity *other);
-typedef void (*interactWithHero)(Entity *e, Entity *other, Game *g);
+typedef void (*interactWithHero)(Entity *e, Hero *h, Game *g);
 
 struct Entity
 {
