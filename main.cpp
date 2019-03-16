@@ -50,7 +50,7 @@
 #define aalloc(type) ((type*)arena_push(&arena, sizeof(type)))
 #define arraySize(arr) (sizeof(arr) / sizeof((arr)[0]))
 
-void drawCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
+void drawDebugCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
 {
     i32 x = radius - 1;
     if (radius == 0)
@@ -85,6 +85,12 @@ void drawCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
             err += tx - (radius << 1);
         }
     }
+}
+
+void lightFire(Tile *t, Hero *h)
+{
+    (void)h;
+    t->animation_is_active = true;
 }
 
 int main(int argc, char* argv[])
@@ -202,11 +208,13 @@ int main(int argc, char* argv[])
 
     Tile fire = {};
     fire.tile_width = fire.tile_height = 80;
-    initTile(&fire, tile_properties[TP_FIRE], game->colors[COLOR_GREY], game->renderer, "sprites/Campfire.png");
+    initTile(&fire, tile_properties[TP_FIRE] | tile_properties[TP_INTERACTIVE],
+             game->colors[COLOR_GREY], game->renderer, "sprites/Campfire.png");
     tile_set_sprite_size(&fire, 64, 64);
     animation_init(&fire.animation, 11, 100);
     fire.active = GD_TRUE;
     fire.has_animation = GD_TRUE;
+    fire.onHeroInteract = lightFire;
 
     // Harvestable tree
     Tile h_tree = {};
@@ -371,8 +379,8 @@ int main(int argc, char* argv[])
         drawMap(game);
 
         SDL_SetRenderDrawColor(game->renderer, 255, 255, 0, 255);
-        drawCircle(game->renderer, (i32)heroInteractionRegion.center.x,
-                   (i32)heroInteractionRegion.center.y, (i32)heroInteractionRegion.radius);
+        // drawDebugCircle(game->renderer, (i32)heroInteractionRegion.center.x,
+        //                 (i32)heroInteractionRegion.center.y, (i32)heroInteractionRegion.radius);
 
         if (game->mode == GAME_MODE_DIALOG)
         {

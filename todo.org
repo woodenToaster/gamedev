@@ -4,8 +4,8 @@
 * Build
 ** TODO game code DLL (tough)
 * Gameplay
+** TODO Combat system
 ** TODO Dialog system
-** TODO Probably want a circle as collision "box" for interactions
 ** TODO Basic enemy to prototype combat system
 *** TODO Collision Detection
 *** TODO Collisions feel bad. Need to slide around other entities (use vectors)
@@ -22,6 +22,7 @@
 * Graphics
 ** TODO Hero art
 ** TODO Level art (gothic castles)
+** TODO Enemy art
 * Design
 ** TODO Dark Souls style combat
 *** TODO vim style keyboard bindings?
@@ -34,6 +35,8 @@
 *** TODO See far away parts of the level that you eventually reach
 ***** TODO How can I simulate this effect in 2d?
 ** TODO Crafting
-
+** A room full of breakables that a shop keeper later rewards you if unbroken
+* Story
+** Enemies are sad, misinformed people instead of monsters?
 * Bugs
 ** TODO Sometimes get stuck on collisions 

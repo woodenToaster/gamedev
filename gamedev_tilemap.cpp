@@ -63,6 +63,10 @@ u8 tile_is_warp(Tile* t)
     return (u8)(tile_get_flags(t) & tile_properties[TP_WARP]);
 }
 
+bool32 tile_is_interactive(Tile *t)
+{
+    return tile_get_flags(t) & tile_properties[TP_INTERACTIVE];
+}
 
 u32 tile_get_color(Tile* t)
 {
@@ -85,7 +89,7 @@ void drawTile(Tile* t, SDL_Renderer* renderer, SDL_Rect* tile_rect)
         // dest.x += (t->tile_width - t->sprite_rect.w) / 2;
         // dest.y += (t->tile_height - t->sprite_rect.h) / 2;
 
-        if (t->has_animation)
+        if (t->has_animation && t->animation_is_active)
         {
             t->sprite_rect.x = t->sprite_rect.w * t->animation.current_frame;
         }
@@ -145,15 +149,23 @@ void initMap(Map* m, u32 cols, u32 rows, Tile** tiles, SDL_Renderer* renderer)
 
 Tile *map_get_tile_at_point(Map *m, Point p)
 {
-    SDL_Rect tile_at_point = {
-        (int)((p.x / m->tile_width) * m->tile_width),
-        (int)((p.y / m->tile_height) * m->tile_height)
-    };
-    int map_coord_x = tile_at_point.y / m->tile_height;
-    int map_coord_y = tile_at_point.x / m->tile_width;
-    int tile_index = map_coord_x * m->cols + map_coord_y;
+    Tile *result = 0;
+    if (m && p.x >= 0 && p.y >= 0)
+    {
+        SDL_Rect tile_at_point = {
+            (int)((p.x / m->tile_width) * m->tile_width),
+            (int)((p.y / m->tile_height) * m->tile_height)
+        };
+        int map_coord_x = tile_at_point.y / m->tile_height;
+        int map_coord_y = tile_at_point.x / m->tile_width;
+        int tile_index = map_coord_x * m->cols + map_coord_y;
 
-    return m->tiles[tile_index];
+        if (tile_index >= 0 && tile_index < (int)(m->rows * m->cols))
+        {
+            result = m->tiles[tile_index];
+        }
+    }
+    return result;
 }
 
 void map_update_tiles(Game* g)

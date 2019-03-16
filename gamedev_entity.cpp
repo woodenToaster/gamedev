@@ -245,11 +245,11 @@ bool32 checkEntitiesPixelCollision(Entity* e1, Entity* e2, SDL_Rect* overlap_box
 
             if (e1->pixel_data[e1_index] == 1 && e2->pixel_data[e2_index] == 1)
             {
-                return GL_TRUE;
+                return true;
             }
         }
     }
-    return GL_FALSE;
+    return false;
 }
 
 #ifdef DEBUG
@@ -499,6 +499,8 @@ void harvestTile(Hero *h, Game *g, Tile *tileToHarvest)
 
 void heroInteract(Hero *h, Game *g)
 {
+    // Check for harvestable tile
+
     // get next tile in facing direction if it's close enough
     i32 harvest_threshold = 10;
     // TODO(chj): This is based on the bottom center of the sprite. Not very accurate
@@ -523,12 +525,19 @@ void heroInteract(Hero *h, Game *g)
         break;
     }
 
+    Tile *tileToHarvest = map_get_tile_at_point(g->current_map, point_to_harvest);
+    if (tileToHarvest && tileToHarvest->is_harvestable && !tileToHarvest->harvested)
+    {
+        harvestTile(h, g, tileToHarvest);
+    }
+
+    // Check for entities to interact with in a circle
     Vec2 heroCenter = {};
     heroCenter.x = h->e.dest_rect.x + (0.5f * h->e.dest_rect.w);
     heroCenter.y = h->e.dest_rect.y + (0.5f * h->e.dest_rect.h);
-
     heroInteractionRegion.center = heroCenter;
     heroInteractionRegion.radius = maxFloat32((f32)h->e.dest_rect.w, (f32)h->e.dest_rect.h) * 0.666666f;
+
     // See if there is an entity there
     for (u32 entityIndex = 0; entityIndex < g->current_map->active_entities.count; ++entityIndex)
     {
@@ -544,13 +553,37 @@ void heroInteract(Hero *h, Game *g)
         }
     }
 
-    // Check for harvestable tile
-    Tile *tileToHarvest = map_get_tile_at_point(g->current_map, point_to_harvest);
-    if (tileToHarvest && tileToHarvest->is_harvestable && !tileToHarvest->harvested)
+    // Check for interactive tiles
+    Point heroCenterPoint = {(i32)heroCenter.x, (i32)heroCenter.y};
+    const u32 stencilSize = 9;
+    Tile *tileStencil[stencilSize] = {};
+    u32 stencilIndex = 0;
+    for (i32 tileIndexY = heroCenterPoint.y - g->current_map->tile_height;
+         tileIndexY <= heroCenterPoint.y + (i32)g->current_map->tile_height;
+         tileIndexY += g->current_map->tile_height)
     {
-        harvestTile(h, g, tileToHarvest);
+        for (i32 tileIndexX = heroCenterPoint.x - g->current_map->tile_width;
+             tileIndexX <= heroCenterPoint.x + (i32)g->current_map->tile_width;
+             tileIndexX += g->current_map->tile_width)
+        {
+            SDL_Rect tileRect = {tileIndexX, tileIndexY,
+                                 (i32)g->current_map->tile_width, (i32)g->current_map->tile_height};
+            if (circleOverlapsRect(&heroInteractionRegion, &tileRect))
+            {
+                Point tileIndexPoint = {tileIndexX, tileIndexY};
+                tileStencil[stencilIndex] = map_get_tile_at_point(g->current_map, tileIndexPoint);
+            }
+            stencilIndex++;
+        }
     }
 
+    for (u32 i = 0; i < stencilSize; ++i)
+    {
+        if (tileStencil[i] && tile_is_interactive(tileStencil[i]) && tileStencil[i]->onHeroInteract)
+        {
+            tileStencil[i]->onHeroInteract(tileStencil[i], h);
+        }
+    }
 }
 
 void harlodInteractWithHero(Entity *e, Hero *h, Game *g)
