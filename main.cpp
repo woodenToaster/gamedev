@@ -95,8 +95,8 @@ int main(int argc, char* argv[])
     Arena arena = {};
     arena_init(&arena, (size_t)MEGABYTES(1));
 
-    u32 screenWidth = 640;
-    u32 screenHeight = 480;
+    u32 screenWidth = 960; // 640;
+    u32 screenHeight = 540; // 480;
 
     // Game
     Game* game = aalloc(Game);

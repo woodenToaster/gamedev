@@ -44,8 +44,23 @@ void initCamera(Game* g)
     g->camera.viewport.w = g->screen_width;
     g->camera.viewport.h = g->screen_height;
     g->camera.starting_pos = g->camera.viewport;
-    g->camera.max_x = g->current_map->width_pixels - g->camera.viewport.w;
-    g->camera.max_y = g->current_map->height_pixels - g->camera.viewport.h;
+
+    if (g->camera.viewport.w >= g->current_map->width_pixels)
+    {
+        g->camera.max_x = 0;
+    }
+    else
+    {
+        g->camera.max_x = g->current_map->width_pixels - g->camera.viewport.w;
+    }
+    if (g->camera.viewport.h >= g->current_map->width_pixels)
+    {
+        g->camera.max_y = 0;
+    }
+    else
+    {
+        g->camera.max_y = absInt32(g->current_map->height_pixels - g->camera.viewport.h);
+    }
     g->camera.y_pixel_movement_threshold = g->screen_height / 2;
     g->camera.x_pixel_movement_threshold = g->screen_width / 2;
 }

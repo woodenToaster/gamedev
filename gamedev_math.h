@@ -121,6 +121,16 @@ i32 minInt32(i32 a, i32 b)
     return a < b ? a : b;
 }
 
+i32 absInt32(i32 x)
+{
+    i32 result = x;
+    if (x < 0)
+    {
+        result *= -1;
+    }
+    return result;
+}
+
 f32 maxFloat32(f32 a, f32 b)
 {
     return a > b ? a : b;
@@ -129,6 +139,16 @@ f32 maxFloat32(f32 a, f32 b)
 f32 minFloat32(f32 a, f32 b)
 {
     return a < b ? a : b;
+}
+
+f32 absFloat32(f32 x)
+{
+    f32 result = x;
+    if (x < 0)
+    {
+        result *= -1;
+    }
+    return result;
 }
 
 i32 clamp(i32 val, i32 min, i32 max)

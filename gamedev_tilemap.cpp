@@ -171,11 +171,11 @@ void drawMap(Game* g)
     Map* m = g->current_map;
     Camera* c = &g->camera;
 
-    // TODO: Only draw tiles that have changed
+    // TODO: Only draw tiles that have changed?
     size_t first_row = c->viewport.y / m->tile_height;
-    size_t last_row = first_row + c->viewport.h / m->tile_height + 1;
+    size_t last_row = first_row + c->viewport.h / m->tile_height + 2;
     size_t first_col = c->viewport.x / m->tile_width;
-    size_t last_col = first_col + c->viewport.w / m->tile_width + 1;
+    size_t last_col = first_col + c->viewport.w / m->tile_width + 2;
 
     clamp_size_t(&last_row, last_row, m->rows);
     clamp_size_t(&last_col, last_col, m->cols);

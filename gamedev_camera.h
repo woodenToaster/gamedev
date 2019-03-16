@@ -3,10 +3,10 @@
 
 struct Camera
 {
-    int max_x;
-    int max_y;
-    int y_pixel_movement_threshold;
-    int x_pixel_movement_threshold;
+    i32 max_x;
+    i32 max_y;
+    i32 y_pixel_movement_threshold;
+    i32 x_pixel_movement_threshold;
     SDL_Rect viewport;
     SDL_Rect starting_pos;
 };
