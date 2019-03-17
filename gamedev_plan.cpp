@@ -1,6 +1,6 @@
 #include "gamedev_plan.h"
 
-void plan_update(Entity* e, u32 last_frame_duration)
+void updatePlan(Entity* e, u32 last_frame_duration)
 {
     e->plan.current_delay += last_frame_duration;
 

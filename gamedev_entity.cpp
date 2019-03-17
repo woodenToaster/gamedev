@@ -30,7 +30,7 @@ void initEntitySpriteSheet(Entity* e, const char* path, int num_x, int num_y, SD
     sprite_sheet_load(&e->sprite_sheet, path, num_x, num_y, renderer);
     e->sprite_rect.w = e->sprite_sheet.sprite_width;
     e->sprite_rect.h = e->sprite_sheet.sprite_height;
-    // TODO: Do this for each sprite in the sheet.
+    // TODO: Do this for each sprite in the sheet?
     initEntityPixelData(e);
 }
 
@@ -253,7 +253,7 @@ bool32 checkEntitiesPixelCollision(Entity* e1, Entity* e2, SDL_Rect* overlap_box
 }
 
 #ifdef DEBUG
-void printEntityPixels(Entity* e)
+void DEBUGprintEntityPixels(Entity* e)
 {
     for (int i = 0; i < e->sprite_rect.h; ++i)
     {
@@ -298,19 +298,19 @@ void setEntityCollisionPoint(Entity* e)
 
 void updateEntity(Entity* e, Map* map, u32 last_frame_duration)
 {
-    if (e->has_plan) {
-        plan_update(e, last_frame_duration);
-        if (e->can_move && e->active)
-        {
-            SDL_Rect saved_position = e->dest_rect;
-            moveEntityInDirection(e, e->plan.mv_dir);
-            updateAnimation(&e->animation, last_frame_duration, GD_TRUE);
-            setEntityCollisionPoint(e);
-            checkEntityCollisionsWithTiles(e, map, &saved_position);
-            // entity_check_collisions_with_entities(e, map, &saved_position);
-            setEntityCollisionPoint(e);
-        }
-    }
+    // if (e->has_plan) {
+    //     plan_update(e, last_frame_duration);
+    //     if (e->can_move && e->active)
+    //     {
+    //         SDL_Rect saved_position = e->dest_rect;
+    //         moveEntityInDirection(e, e->plan.mv_dir);
+    //         updateAnimation(&e->animation, last_frame_duration, GD_TRUE);
+    //         setEntityCollisionPoint(e);
+    //         checkEntityCollisionsWithTiles(e, map, &saved_position);
+    //         // entity_check_collisions_with_entities(e, map, &saved_position);
+    //         setEntityCollisionPoint(e);
+    //     }
+    // }
     e->bounding_box.x = e->dest_rect.x + e->bb_x_offset;
     e->bounding_box.y = e->dest_rect.y + e->bb_y_offset;
     e->bounding_box.w = e->dest_rect.w - e->bb_w_offset;
@@ -696,7 +696,7 @@ Entity createBuffalo(int starting_x, int starting_y, SDL_Renderer* renderer)
     buffalo.type = ET_BUFFALO;
     buffalo.can_move = GD_TRUE;
     buffalo.collision_pt_offset = 32;
-    animation_init(&buffalo.animation, 4, 100);
+    initAnimation(&buffalo.animation, 4, 100);
     buffalo.plan = {};
     buffalo.has_plan = GD_TRUE;
     buffalo.plan.move_delay = (rand() % 2000) + 1000;

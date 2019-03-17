@@ -48,50 +48,7 @@
 #include "gamedev_memory.cpp"
 
 #define aalloc(type) ((type*)arena_push(&arena, sizeof(type)))
-#define arraySize(arr) (sizeof(arr) / sizeof((arr)[0]))
-
-void drawDebugCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
-{
-    i32 x = radius - 1;
-    if (radius == 0)
-        return;
-    i32 y = 0;
-    i32 tx = 1;
-    i32 ty = 1;
-    i32 err = tx - (radius << 1); // shifting bits left by 1 effectively
-    // doubles the value. == tx - diameter
-    while (x >= y)
-    {
-        //  Each of the following renders an octant of the circle
-        SDL_RenderDrawPoint(renderer, _x + x, _y - y);
-        SDL_RenderDrawPoint(renderer, _x + x, _y + y);
-        SDL_RenderDrawPoint(renderer, _x - x, _y - y);
-        SDL_RenderDrawPoint(renderer, _x - x, _y + y);
-        SDL_RenderDrawPoint(renderer, _x + y, _y - x);
-        SDL_RenderDrawPoint(renderer, _x + y, _y + x);
-        SDL_RenderDrawPoint(renderer, _x - y, _y - x);
-        SDL_RenderDrawPoint(renderer, _x - y, _y + x);
-
-        if (err <= 0)
-        {
-            y++;
-            err += ty;
-            ty += 2;
-        }
-        if (err > 0)
-        {
-            x--;
-            tx += 2;
-            err += tx - (radius << 1);
-        }
-    }
-}
-
-void lightFire(Tile *t, Hero *h)
-{
-    (void)h;
-    t->animation_is_active = true;
-}
+#define arrayCount(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 int main(int argc, char* argv[])
 {
@@ -121,10 +78,10 @@ int main(int argc, char* argv[])
         exit(1);
     }
 
-    SDL_Texture *transparentBlackTexture = SDL_CreateTexture(game->renderer, SDL_PIXELFORMAT_RGBA8888,
-                                                             SDL_TEXTUREACCESS_TARGET, screenWidth, screenHeight);
+    SDL_Texture *transparentBlackTexture =
+        SDL_CreateTexture(game->renderer, SDL_PIXELFORMAT_RGBA8888,
+                          SDL_TEXTUREACCESS_TARGET, screenWidth, screenHeight);
     SDL_SetTextureBlendMode(transparentBlackTexture, SDL_BLENDMODE_BLEND);
-    // TODO(chj): free
 
     // Input
     Input input = {};
@@ -155,22 +112,37 @@ int main(int argc, char* argv[])
     hero.e.active = GD_TRUE;
     hero.e.type = ET_HERO;
     hero.e.collision_pt_offset = 10;
-    animation_init(&hero.e.animation, 4, 100);
+    initAnimation(&hero.e.animation, 4, 100);
     for (int i = 0; i < INV_COUNT; ++i)
     {
         hero.inventory[i] = 0;
     }
 
     // Harlod
-    Harlod harlod = {};
-    initEntitySpriteSheet(&harlod.e, "sprites/Harlod_the_caveman.png", 1, 1, game->renderer);
-    setEntityStartingPos(&harlod.e, 150, 150);
-    setEntityBoundingBoxOffset(&harlod.e, 0, 0, 0, 0);
-    initEntityDest(&harlod.e);
-    harlod.e.speed = 10;
-    harlod.e.type = ET_HARLOD;
-    harlod.onHeroInteract = &harlodInteractWithHero;
-    harlod.e.active = GD_TRUE;
+    // Harlod harlod = {};
+    // initEntitySpriteSheet(&harlod.e, "sprites/Harlod_the_caveman.png", 1, 1, game->renderer);
+    // setEntityStartingPos(&harlod.e, 150, 150);
+    // setEntityBoundingBoxOffset(&harlod.e, 0, 0, 0, 0);
+    // initEntityDest(&harlod.e);
+    // harlod.e.speed = 10;
+    // harlod.e.type = ET_HARLOD;
+    // harlod.onHeroInteract = &harlodInteractWithHero;
+    // harlod.e.active = GD_TRUE;
+
+    // Knight
+    Knight knight = {};
+    initEntitySpriteSheet(&knight.e, "sprites/knight_alligned.png", 8, 5, game->renderer);
+    setEntityStartingPos(&knight.e, 500, 500);
+    setEntityBoundingBoxOffset(&knight.e, 0, 0, 0, 0);
+    initEntityDest(&knight.e);
+    knight.e.can_move = true;
+    knight.e.speed = 1000;
+    knight.e.collision_pt_offset = 25;
+    knight.e.type = ET_ENEMY;
+    knight.e.active = true;
+    knight.e.sprite_rect.y = knight.e.sprite_rect.h * 3 + 4;
+    initAnimation(&knight.e.animation, 2, 200);
+
 
     // Buffalo
     Entity buffalo = createBuffalo(400, 200, game->renderer);
@@ -178,9 +150,9 @@ int main(int argc, char* argv[])
     Entity buffalo3 = createBuffalo(600, 100, game->renderer);
 
     EntityList entity_list = {};
-    Entity* _entities[] = {&hero.e, &harlod.e, &buffalo, &buffalo2, &buffalo3};
+    Entity* _entities[] = {&hero.e, &knight.e, &buffalo, &buffalo2, &buffalo3};
     entity_list.entities = _entities;
-    entity_list.count = 5;
+    entity_list.count = arrayCount(_entities);
 
     // Tiles
     Tile w = {};
@@ -211,7 +183,7 @@ int main(int argc, char* argv[])
     initTile(&fire, tile_properties[TP_FIRE] | tile_properties[TP_INTERACTIVE],
              game->colors[COLOR_GREY], game->renderer, "sprites/Campfire.png");
     tile_set_sprite_size(&fire, 64, 64);
-    animation_init(&fire.animation, 11, 100);
+    initAnimation(&fire.animation, 11, 100);
     fire.active = GD_TRUE;
     fire.has_animation = GD_TRUE;
     fire.onHeroInteract = lightFire;
@@ -239,7 +211,7 @@ int main(int argc, char* argv[])
     Tile* _tiles[] = {&w, &f, &m, &wr, &t, &fire, &h_tree, &h_tree1};
     tile_list.tiles = _tiles;
 
-    tile_list.count = arraySize(tile_list.tiles);
+    tile_list.count = arrayCount(tile_list.tiles);
 
     // Tileset
     Tileset jungle_tiles = {};
@@ -262,14 +234,14 @@ int main(int argc, char* argv[])
     // Map
     Tile* map1_tiles[] = {
         &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w,
-        &w, &f, &f, &h_tree1, &f, &f, &f, &f, &f, &f, &f, &f,
-        &w, &f, &f, &t, &f, &f, &f, &fire, &f, &f, &t, &f,
+        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f,
+        &w, &f, &f, &f, &f, &f, &f, &fire, &f, &f, &f, &f,
         &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &m,
-        &w, &f, &f, &h_tree, &f, &f, &f, &f, &f, &f, &f, &f,
-        &w, &f, &f, &t, &t, &t, &t, &f, &f, &t, &f, &wr,
-        &w, &f, &f, &f, &f, &f, &t, &f, &f, &t, &f, &f,
-        &w, &f, &f, &f, &f, &f, &t, &f, &f, &t, &f, &m,
-        &w, &f, &f, &f, &f, &f, &f, &f, &f, &t, &f, &f,
+        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f,
+        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &wr,
+        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f,
+        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &m,
+        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f,
         &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w
     };
 
@@ -295,27 +267,27 @@ int main(int argc, char* argv[])
     Map map1 = {};
     initMap(&map1, 12, 10, map1_tiles, game->renderer);
     map1.current = GD_TRUE;
-    Entity* map1_entities[] = {&hero.e, &harlod.e};
+    Entity* map1_entities[] = {&hero.e, &knight.e};
     map1.active_entities.entities = map1_entities;
     map1.active_entities.count = 2;
     Tile* map1_active_tiles[] = {&fire};
     map1.active_tiles.tiles = map1_active_tiles;
-    map1.active_tiles.count = 1;
+    map1.active_tiles.count = arrayCount(map1_active_tiles);
 
     Map map2 = {};
     initMap(&map2, 12, 10, map2_tiles, game->renderer);
-    Entity* map2_entities[] = {&hero.e, &harlod.e, &buffalo, &buffalo2, &buffalo3,};
+    Entity* map2_entities[] = {&hero.e, /*&harlod.e,*/ &buffalo, &buffalo2, &buffalo3,};
     map2.active_entities.entities = map2_entities;
-    map2.active_entities.count = 5;
+    map2.active_entities.count = arrayCount(map2_entities);
 
     Map map3 = {};
     initMap(&map3, 60, 50, map3_tiles, game->renderer);
-    Entity* map3_entities[] = {&hero.e, &harlod.e};
+    Entity* map3_entities[] = {&hero.e, /*&harlod.e*/};
     map3.active_entities.entities = map3_entities;
-    map3.active_entities.count = 2;
+    map3.active_entities.count = arrayCount(map3_entities);
     Tile* map3_active_tiles[] = {grass};
     map3.active_tiles.tiles = map3_active_tiles;
-    map3.active_tiles.count = 1;
+    map3.active_tiles.count = arrayCount(map3_active_tiles);
 
     // Draw warp out of 16 x 16 tiles
     for (int i = 4; i < 8; ++i)
@@ -330,7 +302,7 @@ int main(int argc, char* argv[])
     MapList map_list = {};
     Map* _maps[] = {&map1, &map2, &map3};
     map_list.maps = _maps;
-    map_list.count = arraySize(map_list.maps);
+    map_list.count = arrayCount(map_list.maps);
 
     game->current_map = &map1;
     initCamera(game);
@@ -362,6 +334,9 @@ int main(int argc, char* argv[])
             updateEntityList(&entity_list, game->current_map, game->dt);
             updateAnimation(&hero.e.animation, game->dt, hero.isMoving);
             sound_play_all(game->sounds, now);
+
+            // update knight
+            updateAnimation(&knight.e.animation, game->dt, true);
         }
         else if (game->mode == GAME_MODE_DIALOG)
         {
@@ -378,7 +353,51 @@ int main(int argc, char* argv[])
         SDL_SetRenderTarget(game->renderer, game->current_map->texture);
         drawMap(game);
 
-        SDL_SetRenderDrawColor(game->renderer, 255, 255, 0, 255);
+        // Draw sword for knight walking right
+        // int swordSpriteWidth = 16;
+        // int swordSpriteHeight = 50;
+        // SDL_Rect knightSwordLocationInSheet = {188, 1, swordSpriteWidth, swordSpriteHeight};
+        // int currentKnightFrame = knight.e.sprite_rect.x / knight.e.sprite_rect.w;
+        // bool swordIsUp = currentKnightFrame == 0 || currentKnightFrame == 3;
+        // int swordOffsetX = 2;
+        // int swordOffsetY = swordIsUp ? -13 : -11;
+        // SDL_Rect knightSwordLocationOnMap = {knight.e.dest_rect.x + swordOffsetX,
+        //                                      knight.e.dest_rect.y + swordOffsetY,
+        //                                      swordSpriteWidth, swordSpriteHeight};
+        // SDL_RenderCopy(game->renderer, knight.e.sprite_sheet.sheet,
+        //                &knightSwordLocationInSheet, &knightSwordLocationOnMap);
+
+        // Draw sword for knight attacking to right
+        Sprite attackingSwordRaised = {};
+        attackingSwordRaised.x = 188;
+        attackingSwordRaised.y = 1;
+        attackingSwordRaised.width = 16;
+        attackingSwordRaised.height = 50;
+        attackingSwordRaised.offsetX = 2;
+        attackingSwordRaised.offsetY = -25;
+
+        Sprite attackingSwordDown = {};
+        attackingSwordDown.x = 307;
+        attackingSwordDown.y = 1;
+        attackingSwordDown.width = 50;
+        attackingSwordDown.height = 16;
+        attackingSwordDown.offsetX = 12;
+        attackingSwordDown.offsetY = 11;
+
+        int currentFrame = knight.e.sprite_rect.x / knight.e.sprite_rect.w;
+        Sprite *currentSwordSprite = currentFrame == 0 ? &attackingSwordRaised : &attackingSwordDown;
+
+        SDL_Rect raisedSwordLocationInSheet = {currentSwordSprite->x, currentSwordSprite->y,
+                                               currentSwordSprite->width, currentSwordSprite->height};
+
+        SDL_Rect raisedSwordLocationOnMap = {knight.e.dest_rect.x + currentSwordSprite->offsetX,
+                                             knight.e.dest_rect.y + currentSwordSprite->offsetY,
+                                             currentSwordSprite->width, currentSwordSprite->height};
+        SDL_RenderCopy(game->renderer, knight.e.sprite_sheet.sheet,
+                       &raisedSwordLocationInSheet, &raisedSwordLocationOnMap);
+
+
+        // SDL_SetRenderDrawColor(game->renderer, 255, 255, 0, 255);
         // drawDebugCircle(game->renderer, (i32)heroInteractionRegion.center.x,
         //                 (i32)heroInteractionRegion.center.y, (i32)heroInteractionRegion.radius);
 
@@ -430,6 +449,7 @@ int main(int argc, char* argv[])
     /**************************************************************************/
     /* Cleanup                                                                */
     /**************************************************************************/
+    SDL_DestroyTexture(transparentBlackTexture);
     destroyFontMetadata(&fontMetadata);
     destroyTileList(&tile_list);
     destroyTileset(&jungle_tiles);

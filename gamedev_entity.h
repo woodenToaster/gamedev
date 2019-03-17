@@ -76,4 +76,9 @@ struct Harlod
     Entity e;
     interactWithHero onHeroInteract;
 };
+
+struct Knight
+{
+    Entity e;
+};
 #endif

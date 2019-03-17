@@ -97,6 +97,12 @@ void drawTile(Tile* t, SDL_Renderer* renderer, SDL_Rect* tile_rect)
     }
 }
 
+void lightFire(Tile *t, Hero *h)
+{
+    (void)h;
+    t->animation_is_active = true;
+}
+
 void destroyTile(Tile* t)
 {
     if (t->sprite)

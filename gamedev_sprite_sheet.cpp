@@ -15,6 +15,7 @@ void sprite_sheet_destroy(SpriteSheet* ss)
 
 void sprite_sheet_load(SpriteSheet* ss, const char* path, int x_sprites, int y_sprites, SDL_Renderer* renderer)
 {
+    // TODO(chj): Don't store surface and data (currently needed for initEntityPixelData)
     ss->surface = create_surface_from_png(&ss->data, path);
     ss->sheet = SDL_CreateTextureFromSurface(renderer, ss->surface);
 

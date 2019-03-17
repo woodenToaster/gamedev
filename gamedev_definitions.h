@@ -29,6 +29,7 @@ enum EntityType
     ET_BUFFALO,
     ET_HERO,
     ET_HARLOD,
+    ET_ENEMY,
     ET_NUM_TYPES
 };
 

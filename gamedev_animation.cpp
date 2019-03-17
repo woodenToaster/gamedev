@@ -1,6 +1,6 @@
 #include "gamedev_animation.h"
 
-void animation_init(Animation* a, int frames, int ms_delay)
+void initAnimation(Animation* a, int frames, int ms_delay)
 {
     a->total_frames = frames;
     a->delay = ms_delay;
