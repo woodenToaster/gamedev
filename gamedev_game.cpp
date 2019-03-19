@@ -1,5 +1,31 @@
 #include "gamedev_game.h"
 
+// TODO(chj): These should support different endians
+u8 getAlphaFromU32(u32 color)
+{
+    u8 a = (u8)((color & 0xFF000000) >> 24);
+    return a;
+}
+
+u8 getRedFromU32(u32 color)
+{
+    u8 r = (u8)((color & 0x00FF0000) >> 16);
+    return r;
+}
+
+u8 getGreenFromU32(u32 color)
+{
+    u8 g = (u8)((color & 0x0000FF00) >> 8);
+    return g;
+}
+
+u8 getBlueFromU32(u32 color)
+{
+    u8 b = (u8)((color & 0x000000FF) >> 0);
+    return b;
+}
+
+
 void renderFilledRect(SDL_Renderer* renderer, SDL_Rect* dest, u32 color)
 {
     // COLOR_NONE is 0. Set a tile's background color to COLOR_NONE to avoid

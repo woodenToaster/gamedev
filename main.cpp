@@ -101,12 +101,11 @@ int main(int argc, char* argv[])
 
     Hero hero = {};
     initEntitySpriteSheet(&hero.e, "sprites/dude.png", 4, 4, game->renderer);
-    getc(stdin);
-    exit(0);
     setEntityStartingPos(&hero.e, 85, 85);
     hero.e.position.x = (f32)hero.e.starting_pos.x;
     hero.e.position.y = (f32)hero.e.starting_pos.y;
-    setEntityBoundingBoxOffset(&hero.e, 6, 5, 12, 7);
+    // setEntityBoundingBoxOffset(&hero.e, 8, 10, 12, 7);
+    hero.e.bounding_box = {8, 10, 16, 40};
     initEntityDest(&hero.e);
     hero.e.speed = 2000;
     hero.e.active = GD_TRUE;
@@ -133,7 +132,7 @@ int main(int argc, char* argv[])
     Knight knight = {};
     initEntitySpriteSheet(&knight.e, "sprites/knight_alligned.png", 8, 5, game->renderer);
     setEntityStartingPos(&knight.e, 500, 500);
-    setEntityBoundingBoxOffset(&knight.e, 0, 0, 0, 0);
+    // setEntityBoundingBoxOffset(&knight.e, 0, 0, 0, 0);
     initEntityDest(&knight.e);
     knight.e.can_move = true;
     knight.e.speed = 1000;
@@ -215,8 +214,7 @@ int main(int argc, char* argv[])
 
     // Tileset
     Tileset jungle_tiles = {};
-    SDL_Surface* jungle_tiles_surface = create_surface_from_png(&jungle_tiles.img_data, "sprites/jungle_tileset.png");
-    jungle_tiles.texture = SDL_CreateTextureFromSurface(game->renderer, jungle_tiles_surface);
+    jungle_tiles.texture = create_texture_from_png("sprites/jungle_tileset.png", game->renderer);
 
     Tile* grass = &jungle_tiles.tiles[0];
     grass->tile_width = 16;

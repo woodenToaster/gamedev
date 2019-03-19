@@ -10,16 +10,13 @@ void initTile(Tile* t, u32 flags, u32 color, SDL_Renderer* renderer, const char*
 
     if (sprite_path)
     {
-        SDL_Surface* sprite_surface = create_surface_from_png(&t->img_data, sprite_path);
-        t->sprite = SDL_CreateTextureFromSurface(renderer, sprite_surface);
+        t->sprite = create_texture_from_png(sprite_path, renderer);
 
         if (!t->sprite)
         {
             fprintf(stderr, "Could not create texture from surface: %s\n", SDL_GetError());
             exit(1);
         }
-
-        SDL_FreeSurface(sprite_surface);
     }
     else
     {

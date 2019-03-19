@@ -4,16 +4,15 @@
 
 static Circle heroInteractionRegion = {};
 
-void initEntityPixelData(Entity* e)
+void initEntityPixelData(Entity* e, SDL_Surface *s)
 {
     e->pixel_data = (u8*)malloc(sizeof(u8) * e->sprite_rect.w * e->sprite_rect.h);
-    SDL_Surface* s = e->sprite_sheet.surface;
-    for (int i = 0; i < e->sprite_rect.h; ++i)
+    for (int y = 0; y < e->sprite_rect.h; ++y)
     {
-        for (int j = 0; j < e->sprite_rect.w; ++j)
+        for (int x = 0; x < e->sprite_rect.w; ++x)
         {
-            int pd_idx = i * e->sprite_rect.w + j;
-            if ((((u32*)s->pixels)[i * s->w + j] & s->format->Amask) == 0)
+            int pd_idx = y * e->sprite_rect.w + x;
+            if ((((u32*)s->pixels)[y * s->w + x] & s->format->Amask) == 0)
             {
                 e->pixel_data[pd_idx] = 0;
             }
@@ -31,7 +30,7 @@ void initEntitySpriteSheet(Entity* e, const char* path, int num_x, int num_y, SD
     e->sprite_rect.w = e->sprite_sheet.sprite_width;
     e->sprite_rect.h = e->sprite_sheet.sprite_height;
     // TODO: Do this for each sprite in the sheet?
-    initEntityPixelData(e);
+    // initEntityPixelData(e);
 }
 
 void setEntityStartingPos(Entity* e, int x, int y)
@@ -40,12 +39,10 @@ void setEntityStartingPos(Entity* e, int x, int y)
     e->starting_pos.y = y;
 }
 
-void setEntityBoundingBoxOffset(Entity* e, int x, int y, int w, int h)
+void setEntityBoundingBoxOffset(Entity* e, int x, int y)
 {
     e->bb_x_offset = x;
     e->bb_y_offset = y;
-    e->bb_w_offset = w;
-    e->bb_h_offset = h;
 }
 
 void initEntityDest(Entity* e)
@@ -76,6 +73,12 @@ bool32 entityIsHarlod(Entity *e)
     return result;
 }
 
+void setRenderDrawColor(SDL_Renderer *renderer, u32 color)
+{
+    SDL_SetRenderDrawColor(renderer, getRedFromU32(color), getGreenFromU32(color),
+                           getBlueFromU32(color), getAlphaFromU32(color));
+}
+
 void drawEntity(Entity* e, Game* g)
 {
     if (e->active)
@@ -85,41 +88,46 @@ void drawEntity(Entity* e, Game* g)
     }
 
 #if 1
+    SDL_Rect bb = e->bounding_box;
+    bb.x += e->dest_rect.x;
+    bb.y += e->dest_rect.y;
+    setRenderDrawColor(g->renderer, g->colors[COLOR_MAGENTA]);
+    SDL_RenderDrawRect(g->renderer, &bb);
     // Draw bounding box
-    SDL_Rect bb_top;
-    SDL_Rect bb_bottom;
-    SDL_Rect bb_left;
-    SDL_Rect bb_right;
-    int bb_line_width = 2;
+    // SDL_Rect bb_top;
+    // SDL_Rect bb_bottom;
+    // SDL_Rect bb_left;
+    // SDL_Rect bb_right;
+    // int bb_line_width = 2;
 
-    bb_top.x = e->bounding_box.x;
-    bb_top.y = e->bounding_box.y;
-    bb_top.w = e->bounding_box.w;
-    bb_top.h = bb_line_width;
+    // bb_top.x = e->bounding_box.x;
+    // bb_top.y = e->bounding_box.y;
+    // bb_top.w = e->bounding_box.w;
+    // bb_top.h = bb_line_width;
 
-    bb_left.x = e->bounding_box.x;
-    bb_left.y = e->bounding_box.y;
-    bb_left.w = bb_line_width;
-    bb_left.h = e->bounding_box.h;
+    // bb_left.x = e->bounding_box.x;
+    // bb_left.y = e->bounding_box.y;
+    // bb_left.w = bb_line_width;
+    // bb_left.h = e->bounding_box.h;
 
-    bb_right.x = e->bounding_box.x + e->bounding_box.w;
-    bb_right.y = e->bounding_box.y;
-    bb_right.w =bb_line_width;
-    bb_right.h = e->bounding_box.h;
+    // bb_right.x = e->bounding_box.x + e->bounding_box.w;
+    // bb_right.y = e->bounding_box.y;
+    // bb_right.w =bb_line_width;
+    // bb_right.h = e->bounding_box.h;
 
-    bb_bottom.x = e->bounding_box.x;
-    bb_bottom.y = e->bounding_box.y + e->bounding_box.h;
-    bb_bottom.w = e->bounding_box.w + bb_line_width;
-    bb_bottom.h = bb_line_width;
+    // bb_bottom.x = e->bounding_box.x;
+    // bb_bottom.y = e->bounding_box.y + e->bounding_box.h;
+    // bb_bottom.w = e->bounding_box.w + bb_line_width;
+    // bb_bottom.h = bb_line_width;
 
-    u32 magenta = g->colors[COLOR_MAGENTA];
-    if (e->active)
-    {
-        renderFilledRect(g->renderer, &bb_top, magenta);
-        renderFilledRect(g->renderer, &bb_left, magenta);
-        renderFilledRect(g->renderer, &bb_right, magenta);
-        renderFilledRect(g->renderer, &bb_bottom, magenta);
-    }
+    // u32 magenta = g->colors[COLOR_MAGENTA];
+    // if (e->active)
+    // {
+    //     renderFilledRect(g->renderer, &bb_top, magenta);
+    //     renderFilledRect(g->renderer, &bb_left, magenta);
+    //     renderFilledRect(g->renderer, &bb_right, magenta);
+    //     renderFilledRect(g->renderer, &bb_bottom, magenta);
+    // }
 #endif
 }
 
@@ -230,17 +238,17 @@ void checkEntityCollisionsWithTiles(Entity* e, Map* map, SDL_Rect* saved_pos)
 
 bool32 checkEntitiesPixelCollision(Entity* e1, Entity* e2, SDL_Rect* overlap_box)
 {
-    for (int i = overlap_box->y; i < overlap_box->y + overlap_box->h; ++i)
+    for (int y = overlap_box->y; y < overlap_box->y + overlap_box->h; ++y)
     {
-        for (int j = overlap_box->x; j < overlap_box->x + overlap_box->w; ++j)
+        for (int x = overlap_box->x; x < overlap_box->x + overlap_box->w; ++x)
         {
             // Convert overlap_box coordinates to pixel coordinates within the sprites
-            int e1_index_x = j - e1->dest_rect.x;
-            int e1_index_y = i - e1->dest_rect.y;
+            int e1_index_x = x - e1->dest_rect.x;
+            int e1_index_y = y - e1->dest_rect.y;
             int e1_index = e1_index_y * e1->sprite_rect.w + e1_index_x;
 
-            int e2_index_x = j - e2->dest_rect.x;
-            int e2_index_y = i - e2->dest_rect.y;
+            int e2_index_x = x - e2->dest_rect.x;
+            int e2_index_y = y - e2->dest_rect.y;
             int e2_index = e2_index_y * e2->sprite_rect.w + e2_index_x;
 
             if (e1->pixel_data[e1_index] == 1 && e2->pixel_data[e2_index] == 1)
@@ -255,11 +263,11 @@ bool32 checkEntitiesPixelCollision(Entity* e1, Entity* e2, SDL_Rect* overlap_box
 #ifdef DEBUG
 void DEBUGprintEntityPixels(Entity* e)
 {
-    for (int i = 0; i < e->sprite_rect.h; ++i)
+    for (int y = 0; y < e->sprite_rect.h; ++y)
     {
-        for (int j = 0; j < e->sprite_rect.w; ++j)
+        for (int x = 0; x < e->sprite_rect.w; ++x)
         {
-            printf("%x", e->pixel_data[i * e->sprite_rect.w + j]);
+            printf("%x", e->pixel_data[y * e->sprite_rect.w + x]);
         }
         printf("\n");
     }
@@ -269,8 +277,8 @@ void DEBUGprintEntityPixels(Entity* e)
 void checkEntityCollisionsWithEntities(Entity* e, Game* game)
 {
     u32 entityCount = game->current_map->active_entities.count;
-    for (u32 i = 0; i < entityCount; ++i) {
-        Entity* otherEntity = game->current_map->active_entities.entities[i];
+    for (u32 y = 0; y < entityCount; ++y) {
+        Entity* otherEntity = game->current_map->active_entities.entities[y];
         if (e == otherEntity) {
             continue;
         }
@@ -298,6 +306,8 @@ void setEntityCollisionPoint(Entity* e)
 
 void updateEntity(Entity* e, Map* map, u32 last_frame_duration)
 {
+    (void)last_frame_duration;
+    (void)map;
     // if (e->has_plan) {
     //     plan_update(e, last_frame_duration);
     //     if (e->can_move && e->active)
@@ -311,10 +321,10 @@ void updateEntity(Entity* e, Map* map, u32 last_frame_duration)
     //         setEntityCollisionPoint(e);
     //     }
     // }
-    e->bounding_box.x = e->dest_rect.x + e->bb_x_offset;
-    e->bounding_box.y = e->dest_rect.y + e->bb_y_offset;
-    e->bounding_box.w = e->dest_rect.w - e->bb_w_offset;
-    e->bounding_box.h = e->dest_rect.h - e->bb_h_offset;
+    // e->bounding_box.x = e->dest_rect.x + e->bb_x_offset;
+    // e->bounding_box.y = e->dest_rect.y + e->bb_y_offset;
+    // e->bounding_box.w = e->dest_rect.w - e->bb_w_offset;
+    // e->bounding_box.h = e->dest_rect.h - e->bb_h_offset;
 }
 
 void destroyEntity(Entity* e)
@@ -326,50 +336,51 @@ void destroyEntity(Entity* e)
 
 void updateEntityList(EntityList* el, Map* map, u32 last_frame_duration)
 {
-    for (u32 i = 0; i < el->count; ++i)
+    for (u32 y = 0; y < el->count; ++y)
     {
-        updateEntity(el->entities[i], map, last_frame_duration);
+        updateEntity(el->entities[y], map, last_frame_duration);
     }
 }
 
 void drawEntityList(EntityList* el, Game* g)
 {
-    for (u32 i = 0; i < el->count; ++i)
+    for (u32 y = 0; y < el->count; ++y)
     {
-        drawEntity(el->entities[i], g);
+        drawEntity(el->entities[y], g);
     }
 }
 
 void destroyEntityList(EntityList* el)
 {
-    for (u32 i = 0; i < el->count; ++i)
+    for (u32 y = 0; y < el->count; ++y)
     {
-        destroyEntity(el->entities[i]);
+        destroyEntity(el->entities[y]);
     }
 }
 
 void checkHeroCollisionsWithEntities(Hero *h, Game *g, SDL_Rect saved_position)
 {
     u32 entityCount = g->current_map->active_entities.count;
-    for (u32 i = 0; i < entityCount; ++i)
+    for (u32 y = 0; y < entityCount; ++y)
     {
-        Entity* otherEntity = g->current_map->active_entities.entities[i];
+        Entity* otherEntity = g->current_map->active_entities.entities[y];
         if (entityIsHero(otherEntity))
         {
             continue;
         }
         if (otherEntity->active && rectsOverlap(&h->e.bounding_box, &otherEntity->bounding_box))
         {
-            SDL_Rect overlap_box = getEntitiesOverlapBox(&h->e, otherEntity);
-            if (checkEntitiesPixelCollision(&h->e, otherEntity, &overlap_box))
-            {
-                h->e.dest_rect = saved_position;
-                h->e.position.x = (f32)saved_position.x;
-                h->e.position.y = (f32)saved_position.y;
+            // TODO(chj): Enable pixel collision if we don't have to duplicate pixel data
+            // SDL_Rect overlap_box = getEntitiesOverlapBox(&h->e, otherEntity);
+            // if (checkEntitiesPixelCollision(&h->e, otherEntity, &overlap_box))
+            // {
+            h->e.dest_rect = saved_position;
+            h->e.position.x = (f32)saved_position.x;
+            h->e.position.y = (f32)saved_position.y;
 
-                h->e.velocity.x = 0.0f;
-                h->e.velocity.y = 0.0f;
-            }
+            h->e.velocity.x = 0.0f;
+            h->e.velocity.y = 0.0f;
+            // }
         }
     }
 }
@@ -577,11 +588,11 @@ void heroInteract(Hero *h, Game *g)
         }
     }
 
-    for (u32 i = 0; i < stencilSize; ++i)
+    for (u32 y = 0; y < stencilSize; ++y)
     {
-        if (tileStencil[i] && tile_is_interactive(tileStencil[i]) && tileStencil[i]->onHeroInteract)
+        if (tileStencil[y] && tile_is_interactive(tileStencil[y]) && tileStencil[y]->onHeroInteract)
         {
-            tileStencil[i]->onHeroInteract(tileStencil[i], h);
+            tileStencil[y]->onHeroInteract(tileStencil[y], h);
         }
     }
 }
@@ -689,7 +700,7 @@ Entity createBuffalo(int starting_x, int starting_y, SDL_Renderer* renderer)
     Entity buffalo = {};
     initEntitySpriteSheet(&buffalo, "sprites/Buffalo.png", 4, 1, renderer);
     setEntityStartingPos(&buffalo, starting_x, starting_y);
-    setEntityBoundingBoxOffset(&buffalo, 0, 0, 0, 0);
+    // setEntityBoundingBoxOffset(&buffalo, 0, 0, 0, 0);
     initEntityDest(&buffalo);
     setEntityCollisionPoint(&buffalo);
     buffalo.speed = 3;

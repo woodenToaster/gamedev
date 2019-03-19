@@ -34,8 +34,6 @@ struct Entity
     SDL_Rect bounding_box;
     int bb_x_offset;
     int bb_y_offset;
-    int bb_w_offset;
-    int bb_h_offset;
 
     bool32 active;
     bool32 has_plan;
