@@ -160,16 +160,16 @@ void moveEntityInDirection(Entity* e, CardinalDir d)
     switch(d)
     {
     case CARDINAL_NORTH:
-        e->dest_rect.y -= e->speed;
+        e->dest_rect.y -= (int)e->speed;
         break;
     case CARDINAL_SOUTH:
-        e->dest_rect.y += e->speed;
+        e->dest_rect.y +=(int)e->speed;
         break;
     case CARDINAL_WEST:
-        e->dest_rect.x -= e->speed;
+        e->dest_rect.x -= (int)e->speed;
         break;
     case CARDINAL_EAST:
-        e->dest_rect.x += e->speed;
+        e->dest_rect.x += (int)e->speed;
         break;
     default:
         return;
@@ -465,7 +465,7 @@ void processInput(Hero *h, Input* input, f32 dt)
         acceleration *= 0.707186781187f;
     }
 
-    acceleration *= h->speed;
+    acceleration *= h->e.speed;
 
     // Friction
     acceleration -= 4 * h->e.velocity;

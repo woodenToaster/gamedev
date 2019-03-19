@@ -101,14 +101,14 @@ int main(int argc, char* argv[])
 
     Hero hero = {};
     initEntitySpriteSheet(&hero.e, "sprites/dude.png", 4, 4, game->renderer);
+    getc(stdin);
+    exit(0);
     setEntityStartingPos(&hero.e, 85, 85);
     hero.e.position.x = (f32)hero.e.starting_pos.x;
     hero.e.position.y = (f32)hero.e.starting_pos.y;
     setEntityBoundingBoxOffset(&hero.e, 6, 5, 12, 7);
     initEntityDest(&hero.e);
-    hero.speed = 2000; // m/s^2
-    // TODO(chj): Replace entity speed with f32 and use that for hero
-    hero.e.speed = 10;
+    hero.e.speed = 2000;
     hero.e.active = GD_TRUE;
     hero.e.type = ET_HERO;
     hero.e.collision_pt_offset = 10;

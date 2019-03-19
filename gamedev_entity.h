@@ -20,7 +20,7 @@ struct Entity
     Plan plan;
     u8* pixel_data;
 
-    int speed;
+    f32 speed;
     Direction direction;
     Point starting_pos;
     Point collision_pt;
@@ -37,9 +37,9 @@ struct Entity
     int bb_w_offset;
     int bb_h_offset;
 
-    u8 active;
-    u8 has_plan;
-    u8 can_move;
+    bool32 active;
+    bool32 has_plan;
+    bool32 can_move;
 
     EntireFile dialogFile;
 };

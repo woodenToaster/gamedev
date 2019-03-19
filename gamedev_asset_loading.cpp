@@ -1,10 +1,11 @@
 
 SDL_Surface* create_surface_from_png(unsigned char** img_data, const char* fname)
 {
+    unsigned char *i_data;
     int width, height, channels_in_file;
-    *img_data = stbi_load(fname, &width, &height, &channels_in_file, 0);
+    i_data = stbi_load(fname, &width, &height, &channels_in_file, 0);
 
-    if (!*img_data)
+    if (!i_data)
     {
         printf("Loading image failed: %s\n", stbi_failure_reason());
         exit(1);
@@ -34,8 +35,47 @@ SDL_Surface* create_surface_from_png(unsigned char** img_data, const char* fname
         depth = 32;
         pitch = 4 * width;
     }
-    SDL_Surface* surface = SDL_CreateRGBSurfaceFrom((void*)(*img_data), width, height, depth, pitch,
+    SDL_Surface* surface = SDL_CreateRGBSurfaceFrom((void*)(i_data), width, height, depth, pitch,
                                                     rmask, gmask, bmask, amask);
+
+#if DEBUG
+    FILE *stb_data = fopen("stb_data.out", "w");
+    FILE *sdl_data = fopen("sdl_data.out", "w");
+    u32* pixels = (u32*)i_data;
+    for (int y = 0; y < height; ++y)
+    {
+        for (int x = 0; x < width; ++x)
+        {
+            if (pixels[y*height + x] & surface->format->Amask == 0)
+            {
+                fprintf(stb_data, "%d, ", 0);
+            }
+            else
+            {
+                fprintf(stb_data, "%d, ", 1);
+            }
+        }
+        printf("\n");
+    }
+    for (int i = 0; i < height; ++i)
+    {
+        for (int j = 0; j < width; ++j)
+        {
+            int pd_idx = i * width + j;
+            if ((((u32*)surface->pixels)[i * width + j] & surface->format->Amask) == 0)
+            {
+                fprintf(sdl_data, "%d, ", 0);
+            }
+            else
+            {
+                fprintf(sdl_data, "%d, ", 1);
+            }
+        }
+        printf("\n");
+    }
+    fclose(stb_data);
+    fclose(sdl_data);
+#endif
 
     if (!surface)
     {

@@ -24,6 +24,7 @@
 ** TODO Level art (gothic castles)
 ** TODO Enemy art
 * Design
+** TODO 2D fantasy survival crafting
 ** TODO Dark Souls style combat
 *** TODO vim style keyboard bindings?
 *** TODO Normal/heavy swing
