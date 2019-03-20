@@ -4,6 +4,7 @@
 
 static Circle heroInteractionRegion = {};
 
+#if 0
 void initEntityPixelData(Entity* e, SDL_Surface *s)
 {
     e->pixel_data = (u8*)malloc(sizeof(u8) * e->sprite_rect.w * e->sprite_rect.h);
@@ -23,6 +24,7 @@ void initEntityPixelData(Entity* e, SDL_Surface *s)
         }
     }
 }
+#endif
 
 void initEntitySpriteSheet(Entity* e, const char* path, int num_x, int num_y, SDL_Renderer* renderer)
 {
@@ -37,12 +39,6 @@ void setEntityStartingPos(Entity* e, int x, int y)
 {
     e->starting_pos.x = x;
     e->starting_pos.y = y;
-}
-
-void setEntityBoundingBoxOffset(Entity* e, int x, int y)
-{
-    e->bb_x_offset = x;
-    e->bb_y_offset = y;
 }
 
 void initEntityDest(Entity* e)
@@ -88,11 +84,8 @@ void drawEntity(Entity* e, Game* g)
     }
 
 #if 1
-    SDL_Rect bb = e->bounding_box;
-    bb.x += e->dest_rect.x;
-    bb.y += e->dest_rect.y;
     setRenderDrawColor(g->renderer, g->colors[COLOR_MAGENTA]);
-    SDL_RenderDrawRect(g->renderer, &bb);
+    SDL_RenderDrawRect(g->renderer, &e->bounding_box);
     // Draw bounding box
     // SDL_Rect bb_top;
     // SDL_Rect bb_bottom;
@@ -236,6 +229,7 @@ void checkEntityCollisionsWithTiles(Entity* e, Map* map, SDL_Rect* saved_pos)
     }
 }
 
+#if 0
 bool32 checkEntitiesPixelCollision(Entity* e1, Entity* e2, SDL_Rect* overlap_box)
 {
     for (int y = overlap_box->y; y < overlap_box->y + overlap_box->h; ++y)
@@ -259,8 +253,9 @@ bool32 checkEntitiesPixelCollision(Entity* e1, Entity* e2, SDL_Rect* overlap_box
     }
     return false;
 }
+#endif
 
-#ifdef DEBUG
+#if 0
 void DEBUGprintEntityPixels(Entity* e)
 {
     for (int y = 0; y < e->sprite_rect.h; ++y)
@@ -321,16 +316,14 @@ void updateEntity(Entity* e, Map* map, u32 last_frame_duration)
     //         setEntityCollisionPoint(e);
     //     }
     // }
-    // e->bounding_box.x = e->dest_rect.x + e->bb_x_offset;
-    // e->bounding_box.y = e->dest_rect.y + e->bb_y_offset;
-    // e->bounding_box.w = e->dest_rect.w - e->bb_w_offset;
-    // e->bounding_box.h = e->dest_rect.h - e->bb_h_offset;
+    e->bounding_box.x = e->dest_rect.x + e->bb_x_offset;
+    e->bounding_box.y = e->dest_rect.y + e->bb_y_offset;
 }
 
 void destroyEntity(Entity* e)
 {
     sprite_sheet_destroy(&e->sprite_sheet);
-    free(e->pixel_data);
+    // free(e->pixel_data);
 }
 
 
@@ -700,7 +693,6 @@ Entity createBuffalo(int starting_x, int starting_y, SDL_Renderer* renderer)
     Entity buffalo = {};
     initEntitySpriteSheet(&buffalo, "sprites/Buffalo.png", 4, 1, renderer);
     setEntityStartingPos(&buffalo, starting_x, starting_y);
-    // setEntityBoundingBoxOffset(&buffalo, 0, 0, 0, 0);
     initEntityDest(&buffalo);
     setEntityCollisionPoint(&buffalo);
     buffalo.speed = 3;

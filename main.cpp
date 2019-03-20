@@ -104,8 +104,9 @@ int main(int argc, char* argv[])
     setEntityStartingPos(&hero.e, 85, 85);
     hero.e.position.x = (f32)hero.e.starting_pos.x;
     hero.e.position.y = (f32)hero.e.starting_pos.y;
-    // setEntityBoundingBoxOffset(&hero.e, 8, 10, 12, 7);
-    hero.e.bounding_box = {8, 10, 16, 40};
+    hero.e.bounding_box = {0, 0, 30, 43};
+    hero.e.bb_x_offset = 16;
+    hero.e.bb_y_offset = 14;
     initEntityDest(&hero.e);
     hero.e.speed = 2000;
     hero.e.active = GD_TRUE;
@@ -121,7 +122,6 @@ int main(int argc, char* argv[])
     // Harlod harlod = {};
     // initEntitySpriteSheet(&harlod.e, "sprites/Harlod_the_caveman.png", 1, 1, game->renderer);
     // setEntityStartingPos(&harlod.e, 150, 150);
-    // setEntityBoundingBoxOffset(&harlod.e, 0, 0, 0, 0);
     // initEntityDest(&harlod.e);
     // harlod.e.speed = 10;
     // harlod.e.type = ET_HARLOD;
@@ -132,15 +132,17 @@ int main(int argc, char* argv[])
     Knight knight = {};
     initEntitySpriteSheet(&knight.e, "sprites/knight_alligned.png", 8, 5, game->renderer);
     setEntityStartingPos(&knight.e, 500, 500);
-    // setEntityBoundingBoxOffset(&knight.e, 0, 0, 0, 0);
     initEntityDest(&knight.e);
+    knight.e.bounding_box = {0, 0, 20, 40};
+    knight.e.bb_x_offset = 16;
+    knight.e.bb_y_offset = 6;
     knight.e.can_move = true;
     knight.e.speed = 1000;
     knight.e.collision_pt_offset = 25;
     knight.e.type = ET_ENEMY;
     knight.e.active = true;
     knight.e.sprite_rect.y = knight.e.sprite_rect.h * 3 + 4;
-    initAnimation(&knight.e.animation, 2, 200);
+    initAnimation(&knight.e.animation, 2, 400);
 
 
     // Buffalo

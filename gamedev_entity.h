@@ -18,7 +18,7 @@ struct Entity
     SDL_Rect sprite_rect;
     Animation animation;
     Plan plan;
-    u8* pixel_data;
+    // u8* pixel_data;
 
     f32 speed;
     Direction direction;
@@ -30,10 +30,11 @@ struct Entity
     Vec2 velocity;
     Vec2 acceleration;
 
-    SDL_Rect dest_rect;
+    // Offsets are from top left of sprite (i.e., dest_rect)
+    i32 bb_x_offset;
+    i32 bb_y_offset;
     SDL_Rect bounding_box;
-    int bb_x_offset;
-    int bb_y_offset;
+    SDL_Rect dest_rect;
 
     bool32 active;
     bool32 has_plan;

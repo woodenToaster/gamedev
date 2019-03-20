@@ -40,4 +40,4 @@
 * Story
 ** Enemies are sad, misinformed people instead of monsters?
 * Bugs
-** TODO Sometimes get stuck on collisions 
+** TODO Get stuck on collisions 
