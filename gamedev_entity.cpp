@@ -393,7 +393,7 @@ void checkHeroCollisionsWithTiles(Hero* h, Game* game, SDL_Rect saved_position)
     }
     if (tile_is_slow(current_tile) && !h->inQuicksand)
     {
-        h->speed -= 990;
+        h->e.speed -= 990;
         h->inQuicksand = GD_TRUE;
         if (h->isMoving)
         {
@@ -402,7 +402,7 @@ void checkHeroCollisionsWithTiles(Hero* h, Game* game, SDL_Rect saved_position)
     }
     else if (h->inQuicksand)
     {
-        h->speed += 990;
+        h->e.speed += 990;
         h->inQuicksand = GD_FALSE;
     }
     if (tile_is_warp(current_tile))
@@ -482,6 +482,8 @@ void processInput(Hero *h, Input* input, f32 dt)
 
     h->swingClub = input->key_pressed[KEY_F];
     h->harvest = input->key_pressed[KEY_SPACE] || input->button_pressed[BUTTON_A];
+    h->craft = input->key_pressed[KEY_C];
+    h->place = input->key_pressed[KEY_P];
 
     h->e.dest_rect.x = (int)(h->e.position.x);
     h->e.dest_rect.y = (int)(h->e.position.y);
@@ -495,7 +497,7 @@ void harvestTile(Hero *h, Game *g, Tile *tileToHarvest)
               g->renderer, "sprites/tree_stump.png");
     tileToHarvest->active = GD_TRUE;
     tileToHarvest->harvested = GD_TRUE;
-    tile_set_sprite_size(tileToHarvest, 64, 64);
+    setTileSpriteSize(tileToHarvest, 64, 64);
 
     // Update inventory
     h->inventory[tileToHarvest->harvestedItem]++;
@@ -604,7 +606,47 @@ void harlodInteractWithHero(Entity *e, Hero *h, Game *g)
     startDialogMode(g, (char*)e->dialogFile.contents);
 }
 
-void updateHero(Hero* h, Input* input, Game* g)
+internal void craftItem(Hero *h, CraftableItem item)
+{
+    switch (item)
+    {
+    case CRAFTABLE_TREE:
+    {
+        u32 leavesRequiredForTree = 2;
+        if (h->inventory[INV_LEAVES] >= leavesRequiredForTree)
+        {
+            h->inventory[INV_LEAVES] -= leavesRequiredForTree;
+            ++h->inventory[INV_TREES];
+        }
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+internal void placeItem(Game *g, Hero *h, CraftableItem item)
+{
+    if (item == CRAFTABLE_TREE)
+    {
+        Tile *t = (Tile*)malloc(sizeof(Tile));
+        // TODO(chj): Free this
+        // TODO(chj): Share textures. Ref counting?
+        t->tile_width = t->tile_height = 80;
+        initTile(t, tile_properties[TP_HARVEST] | tile_properties[TP_SOLID],
+                 g->colors[COLOR_NONE], g->renderer, "sprites/tree.png");
+        setTileSpriteSize(t, 64, 64);
+        t->active = GD_TRUE;
+        t->is_harvestable = GD_TRUE;
+        t->harvestedItem = INV_LEAVES;
+        // TODO(chj): Free what was there before
+
+        int locationToPlaceTile = 30;
+        g->current_map->tiles[locationToPlaceTile] = t;
+    }
+}
+
+internal void updateHero(Hero* h, Input* input, Game* g)
 {
     SDL_Rect saved_position = h->e.dest_rect;
 
@@ -635,7 +677,18 @@ void updateHero(Hero* h, Input* input, Game* g)
     {
         heroInteract(h, g);
     }
+    if (h->craft)
+    {
+        CraftableItem item = CRAFTABLE_TREE;
+        craftItem(h, item);
+    }
+    if (h->place)
+    {
+        CraftableItem item = CRAFTABLE_TREE;
+        placeItem(g, h, item);
+    }
 }
+
 
 void hero_update_club(Hero* h, u32 now)
 {

@@ -5,8 +5,6 @@ void initTile(Tile* t, u32 flags, u32 color, SDL_Renderer* renderer, const char*
     t->flags = flags;
     t->color = color;
     t->sprite_rect = {};
-    t->active = GD_FALSE;
-    t->img_data = NULL;
 
     if (sprite_path)
     {
@@ -18,13 +16,9 @@ void initTile(Tile* t, u32 flags, u32 color, SDL_Renderer* renderer, const char*
             exit(1);
         }
     }
-    else
-    {
-        t->sprite = NULL;
-    }
 }
 
-void tile_set_sprite_size(Tile* t, int width, int height)
+void setTileSpriteSize(Tile* t, int width, int height)
 {
     t->sprite_rect.w = width;
     t->sprite_rect.h = height;
@@ -106,8 +100,6 @@ void destroyTile(Tile* t)
     {
         SDL_DestroyTexture(t->sprite);
         t->sprite = NULL;
-        stbi_image_free(t->img_data);
-        t->img_data = NULL;
     }
 }
 
@@ -122,7 +114,6 @@ void destroyTileList(TileList* tl)
 void destroyTileset(Tileset* ts)
 {
     SDL_DestroyTexture(ts->texture);
-    stbi_image_free(ts->img_data);
 }
 
 void initMap(Map* m, u32 cols, u32 rows, Tile** tiles, SDL_Renderer* renderer)

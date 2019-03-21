@@ -68,6 +68,12 @@ static void updateInput(Input* input, SDL_Scancode key, bool32 isDown)
     case SDL_SCANCODE_F:
         setKeyState(input, KEY_F, isDown);
         break;
+    case SDL_SCANCODE_C:
+        setKeyState(input, KEY_C, isDown);
+        break;
+    case SDL_SCANCODE_P:
+        setKeyState(input, KEY_P, isDown);
+        break;
     case SDL_SCANCODE_SPACE:
         setKeyState(input, KEY_SPACE, isDown);
         break;

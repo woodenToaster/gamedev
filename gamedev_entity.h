@@ -10,6 +10,12 @@ struct Hero;
 typedef void (*interactWithEntity)(Entity *e, Entity *other);
 typedef void (*interactWithHero)(Entity *e, Hero *h, Game *g);
 
+enum CraftableItem
+{
+    CRAFTABLE_TREE,
+    CRAFTABLE_COUNT
+};
+
 struct Entity
 {
     EntityType type;
@@ -52,6 +58,7 @@ struct EntityList
 enum InventoryItemType
 {
     INV_LEAVES,
+    INV_TREES,
     INV_COUNT
 };
 
@@ -61,12 +68,13 @@ struct Hero
     SDL_Rect clubRect;
     u32 nextClubSwingDelay;
     u32 clubSwingTimeout;
-    f32 speed;
     f32 boundingRadius;
     bool32 isMoving;
     bool32 inQuicksand;
     bool32 swingClub;
     bool32 harvest;
+    bool32 craft;
+    bool32 place;
     u32 inventory[INV_COUNT];
 };
 

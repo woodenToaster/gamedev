@@ -1,6 +1,9 @@
 #ifndef GD_DEFINITIONS_H
 #define GD_DEFINITIONS_H
 
+#define internal static
+#define local_persist static
+#define global_variable static
 
 typedef uint8_t u8;
 typedef uint16_t u16;

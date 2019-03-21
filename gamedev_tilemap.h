@@ -57,7 +57,6 @@ struct Tile
     bool32 active;
     bool32 has_animation;
     bool32 animation_is_active;
-    unsigned char* img_data;
     u32 destination_map;
     bool32 is_harvestable;
     bool32 harvested;
@@ -75,7 +74,6 @@ struct Tileset
 {
     Tile tiles[462];
     SDL_Texture* texture;
-    unsigned char* img_data;
 };
 
 struct Map
@@ -103,7 +101,7 @@ struct MapList
 
 void initTile(Tile* t, u32 flags, u32 color, SDL_Renderer* renderer, const char* sprite_path=NULL);
 void destroyTile(Tile* t);
-void tile_set_sprite_size(Tile* t, int width, int height);
+void setTileSpriteSize(Tile* t, int width, int height);
 bool32 tile_is_interactive(Tile *t);
 Tile *map_get_tile_at_point(Map *m, Point p);
 

@@ -113,10 +113,6 @@ int main(int argc, char* argv[])
     hero.e.type = ET_HERO;
     hero.e.collision_pt_offset = 10;
     initAnimation(&hero.e.animation, 4, 100);
-    for (int i = 0; i < INV_COUNT; ++i)
-    {
-        hero.inventory[i] = 0;
-    }
 
     // Harlod
     // Harlod harlod = {};
@@ -176,14 +172,14 @@ int main(int argc, char* argv[])
     Tile t = {};
     t.tile_width = t.tile_height = 80;
     initTile(&t, tile_properties[TP_SOLID], game->colors[COLOR_GREEN], game->renderer, "sprites/TropicalTree.png");
-    tile_set_sprite_size(&t, 64, 64);
+    setTileSpriteSize(&t, 64, 64);
     t.active = GD_TRUE;
 
     Tile fire = {};
     fire.tile_width = fire.tile_height = 80;
     initTile(&fire, tile_properties[TP_FIRE] | tile_properties[TP_INTERACTIVE],
              game->colors[COLOR_GREY], game->renderer, "sprites/Campfire.png");
-    tile_set_sprite_size(&fire, 64, 64);
+    setTileSpriteSize(&fire, 64, 64);
     initAnimation(&fire.animation, 11, 100);
     fire.active = GD_TRUE;
     fire.has_animation = GD_TRUE;
@@ -194,7 +190,7 @@ int main(int argc, char* argv[])
     h_tree.tile_width = h_tree.tile_height = 80;
     initTile(&h_tree, tile_properties[TP_HARVEST] | tile_properties[TP_SOLID],
               game->colors[COLOR_NONE], game->renderer, "sprites/tree.png");
-    tile_set_sprite_size(&h_tree, 64, 64);
+    setTileSpriteSize(&h_tree, 64, 64);
     h_tree.active = GD_TRUE;
     h_tree.is_harvestable = GD_TRUE;
     h_tree.harvestedItem = INV_LEAVES;
@@ -203,7 +199,7 @@ int main(int argc, char* argv[])
     h_tree1.tile_width = h_tree1.tile_height = 80;
     initTile(&h_tree1, tile_properties[TP_HARVEST] | tile_properties[TP_SOLID],
               game->colors[COLOR_NONE], game->renderer, "sprites/tree.png");
-    tile_set_sprite_size(&h_tree1, 64, 64);
+    setTileSpriteSize(&h_tree1, 64, 64);
     h_tree1.active = GD_TRUE;
     h_tree1.is_harvestable = GD_TRUE;
     h_tree1.harvestedItem = INV_LEAVES;
@@ -234,8 +230,8 @@ int main(int argc, char* argv[])
     // Map
     Tile* map1_tiles[] = {
         &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w,
-        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f,
-        &w, &f, &f, &f, &f, &f, &f, &fire, &f, &f, &f, &f,
+        &w, &f, &h_tree, &f, &f, &f, &f, &f, &f, &f, &f, &f,
+        &w, &f, &h_tree1, &f, &f, &f, &f, &fire, &f, &f, &f, &f,
         &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &m,
         &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f,
         &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &wr,

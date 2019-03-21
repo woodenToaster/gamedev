@@ -198,6 +198,7 @@ void drawDialogScreen(Game *g, FontMetadata *fontMetadata)
 
 void drawInventoryScreen(Game *g, Hero *h, FontMetadata *fontMetadata)
 {
+    // TODO(chj): Don't draw every frame
     int thirdOfWidth = (int)(g->camera.viewport.w / 3);
     int fourthOfHeight = (int)(g->camera.viewport.h / 4);
     int dialogBoxX = (int)(0.5 * thirdOfWidth) + g->camera.viewport.x;
@@ -209,6 +210,10 @@ void drawInventoryScreen(Game *g, Hero *h, FontMetadata *fontMetadata)
     char leaves[30];
     snprintf(leaves, 30, "Leaves: %d", h->inventory[INV_LEAVES]);
     drawText(g, fontMetadata, leaves, dialogBoxX, dialogBoxY);
+    char trees[30];
+    snprintf(trees, 30, "Trees: %d", h->inventory[INV_TREES]);
+    // TODO(chj): Figure out correct y offset for next line
+    drawText(g, fontMetadata, trees, dialogBoxX, dialogBoxY + 25);
 }
 
 void darkenBackground(Game *g)
