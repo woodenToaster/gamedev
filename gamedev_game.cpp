@@ -223,16 +223,17 @@ void darkenBackground(Game *g)
     SDL_RenderFillRect(g->renderer, NULL);
 }
 
-void drawDebugCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
+void drawCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
 {
     i32 x = radius - 1;
     if (radius == 0)
+    {
         return;
+    }
     i32 y = 0;
     i32 tx = 1;
     i32 ty = 1;
-    i32 err = tx - (radius << 1); // shifting bits left by 1 effectively
-    // doubles the value. == tx - diameter
+    i32 err = tx - (2 * radius);
     while (x >= y)
     {
         //  Each of the following renders an octant of the circle

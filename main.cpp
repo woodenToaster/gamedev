@@ -115,14 +115,14 @@ int main(int argc, char* argv[])
     initAnimation(&hero.e.animation, 4, 100);
 
     // Harlod
-    // Harlod harlod = {};
-    // initEntitySpriteSheet(&harlod.e, "sprites/Harlod_the_caveman.png", 1, 1, game->renderer);
-    // setEntityStartingPos(&harlod.e, 150, 150);
-    // initEntityDest(&harlod.e);
-    // harlod.e.speed = 10;
-    // harlod.e.type = ET_HARLOD;
-    // harlod.onHeroInteract = &harlodInteractWithHero;
-    // harlod.e.active = GD_TRUE;
+    Harlod harlod = {};
+    initEntitySpriteSheet(&harlod.e, "sprites/Harlod_the_caveman.png", 1, 1, game->renderer);
+    setEntityStartingPos(&harlod.e, 300, 300);
+    initEntityDest(&harlod.e);
+    harlod.e.speed = 10;
+    harlod.e.type = ET_HARLOD;
+    harlod.onHeroInteract = &harlodInteractWithHero;
+    harlod.e.active = GD_TRUE;
 
     // Knight
     Knight knight = {};
@@ -147,7 +147,7 @@ int main(int argc, char* argv[])
     Entity buffalo3 = createBuffalo(600, 100, game->renderer);
 
     EntityList entity_list = {};
-    Entity* _entities[] = {&hero.e, &knight.e, &buffalo, &buffalo2, &buffalo3};
+    Entity* _entities[] = {&hero.e, &knight.e, &buffalo, &buffalo2, &buffalo3, &harlod.e};
     entity_list.entities = _entities;
     entity_list.count = arrayCount(_entities);
 
@@ -263,9 +263,9 @@ int main(int argc, char* argv[])
     Map map1 = {};
     initMap(&map1, 12, 10, map1_tiles, game->renderer);
     map1.current = GD_TRUE;
-    Entity* map1_entities[] = {&hero.e, &knight.e};
+    Entity* map1_entities[] = {&hero.e, &knight.e, &harlod.e};
     map1.active_entities.entities = map1_entities;
-    map1.active_entities.count = 2;
+    map1.active_entities.count = arrayCount(map1_entities);
     Tile* map1_active_tiles[] = {&fire};
     map1.active_tiles.tiles = map1_active_tiles;
     map1.active_tiles.count = arrayCount(map1_active_tiles);
@@ -323,11 +323,11 @@ int main(int argc, char* argv[])
         if (game->mode == GAME_MODE_PLAYING)
         {
             updateGame(game, &input);
-            map_update_tiles(game);
+            updateMap(game);
             updateHero(&hero, &input, game);
             hero_update_club(&hero, now);
             updateCamera(&game->camera, &hero.e.dest_rect);
-            updateEntityList(&entity_list, game->current_map, game->dt);
+            // updateEntityList(&entity_list, game->current_map, game->dt);
             updateAnimation(&hero.e.animation, game->dt, hero.isMoving);
             sound_play_all(game->sounds, now);
 
@@ -348,6 +348,10 @@ int main(int argc, char* argv[])
         /*********************************************************************/
         SDL_SetRenderTarget(game->renderer, game->current_map->texture);
         drawMap(game);
+        Point heroCenter = {hero.e.dest_rect.x + hero.e.dest_rect.w / 2,
+                            hero.e.dest_rect.y + hero.e.dest_rect.h / 2};
+        setRenderDrawColor(game->renderer, game->colors[COLOR_YELLOW]);
+        drawCircle(game->renderer, heroCenter.x, heroCenter.y, 30);
 
         // Draw sword for knight walking right
         // int swordSpriteWidth = 16;
@@ -363,38 +367,40 @@ int main(int argc, char* argv[])
         // SDL_RenderCopy(game->renderer, knight.e.sprite_sheet.sheet,
         //                &knightSwordLocationInSheet, &knightSwordLocationOnMap);
 
-        // Draw sword for knight attacking to right
-        Sprite attackingSwordRaised = {};
-        attackingSwordRaised.x = 188;
-        attackingSwordRaised.y = 1;
-        attackingSwordRaised.width = 16;
-        attackingSwordRaised.height = 50;
-        attackingSwordRaised.offsetX = 2;
-        attackingSwordRaised.offsetY = -25;
+        if (game->current_map == &map1)
+        {
+            // Draw sword for knight attacking to right
+            Sprite attackingSwordRaised = {};
+            attackingSwordRaised.x = 188;
+            attackingSwordRaised.y = 1;
+            attackingSwordRaised.width = 16;
+            attackingSwordRaised.height = 50;
+            attackingSwordRaised.offsetX = 2;
+            attackingSwordRaised.offsetY = -25;
 
-        Sprite attackingSwordDown = {};
-        attackingSwordDown.x = 307;
-        attackingSwordDown.y = 1;
-        attackingSwordDown.width = 50;
-        attackingSwordDown.height = 16;
-        attackingSwordDown.offsetX = 12;
-        attackingSwordDown.offsetY = 11;
+            Sprite attackingSwordDown = {};
+            attackingSwordDown.x = 307;
+            attackingSwordDown.y = 1;
+            attackingSwordDown.width = 50;
+            attackingSwordDown.height = 16;
+            attackingSwordDown.offsetX = 12;
+            attackingSwordDown.offsetY = 11;
 
-        int currentFrame = knight.e.sprite_rect.x / knight.e.sprite_rect.w;
-        Sprite *currentSwordSprite = currentFrame == 0 ? &attackingSwordRaised : &attackingSwordDown;
+            int currentFrame = knight.e.sprite_rect.x / knight.e.sprite_rect.w;
+            Sprite *currentSwordSprite = currentFrame == 0 ? &attackingSwordRaised : &attackingSwordDown;
 
-        SDL_Rect raisedSwordLocationInSheet = {currentSwordSprite->x, currentSwordSprite->y,
-                                               currentSwordSprite->width, currentSwordSprite->height};
+            SDL_Rect raisedSwordLocationInSheet = {currentSwordSprite->x, currentSwordSprite->y,
+                                                currentSwordSprite->width, currentSwordSprite->height};
 
-        SDL_Rect raisedSwordLocationOnMap = {knight.e.dest_rect.x + currentSwordSprite->offsetX,
-                                             knight.e.dest_rect.y + currentSwordSprite->offsetY,
-                                             currentSwordSprite->width, currentSwordSprite->height};
-        SDL_RenderCopy(game->renderer, knight.e.sprite_sheet.sheet,
-                       &raisedSwordLocationInSheet, &raisedSwordLocationOnMap);
-
+            SDL_Rect raisedSwordLocationOnMap = {knight.e.dest_rect.x + currentSwordSprite->offsetX,
+                                                knight.e.dest_rect.y + currentSwordSprite->offsetY,
+                                                currentSwordSprite->width, currentSwordSprite->height};
+            SDL_RenderCopy(game->renderer, knight.e.sprite_sheet.sheet,
+                        &raisedSwordLocationInSheet, &raisedSwordLocationOnMap);
+        }
 
         // SDL_SetRenderDrawColor(game->renderer, 255, 255, 0, 255);
-        // drawDebugCircle(game->renderer, (i32)heroInteractionRegion.center.x,
+        // drawCircle(game->renderer, (i32)heroInteractionRegion.center.x,
         //                 (i32)heroInteractionRegion.center.y, (i32)heroInteractionRegion.radius);
 
         if (game->mode == GAME_MODE_DIALOG)

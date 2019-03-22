@@ -162,7 +162,7 @@ Tile *map_get_tile_at_point(Map *m, Point p)
     return result;
 }
 
-void map_update_tiles(Game* g)
+void updateMap(Game* g)
 {
     Map* m = g->current_map;
     for (size_t i = 0; i < m->rows * m->cols; ++i)
@@ -170,6 +170,8 @@ void map_update_tiles(Game* g)
         Tile* tp = m->tiles[i];
         updateAnimation(&tp->animation, g->dt, tp->active);
     }
+
+    updateEntityList(g);
 }
 
 void drawMap(Game* g)
@@ -200,7 +202,7 @@ void drawMap(Game* g)
         }
     }
 
-    drawEntityList(&m->active_entities, g);
+    drawEntityList(g);
 }
 
 void map_activate_entities(Map* m)

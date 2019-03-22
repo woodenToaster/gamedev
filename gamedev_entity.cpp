@@ -72,7 +72,7 @@ bool32 entityIsHarlod(Entity *e)
 void setRenderDrawColor(SDL_Renderer *renderer, u32 color)
 {
     SDL_SetRenderDrawColor(renderer, getRedFromU32(color), getGreenFromU32(color),
-                           getBlueFromU32(color), getAlphaFromU32(color));
+                           getBlueFromU32(color), 255);
 }
 
 void drawEntity(Entity* e, Game* g)
@@ -84,43 +84,9 @@ void drawEntity(Entity* e, Game* g)
     }
 
 #if 1
+    // Draw bounding box
     setRenderDrawColor(g->renderer, g->colors[COLOR_MAGENTA]);
     SDL_RenderDrawRect(g->renderer, &e->bounding_box);
-    // Draw bounding box
-    // SDL_Rect bb_top;
-    // SDL_Rect bb_bottom;
-    // SDL_Rect bb_left;
-    // SDL_Rect bb_right;
-    // int bb_line_width = 2;
-
-    // bb_top.x = e->bounding_box.x;
-    // bb_top.y = e->bounding_box.y;
-    // bb_top.w = e->bounding_box.w;
-    // bb_top.h = bb_line_width;
-
-    // bb_left.x = e->bounding_box.x;
-    // bb_left.y = e->bounding_box.y;
-    // bb_left.w = bb_line_width;
-    // bb_left.h = e->bounding_box.h;
-
-    // bb_right.x = e->bounding_box.x + e->bounding_box.w;
-    // bb_right.y = e->bounding_box.y;
-    // bb_right.w =bb_line_width;
-    // bb_right.h = e->bounding_box.h;
-
-    // bb_bottom.x = e->bounding_box.x;
-    // bb_bottom.y = e->bounding_box.y + e->bounding_box.h;
-    // bb_bottom.w = e->bounding_box.w + bb_line_width;
-    // bb_bottom.h = bb_line_width;
-
-    // u32 magenta = g->colors[COLOR_MAGENTA];
-    // if (e->active)
-    // {
-    //     renderFilledRect(g->renderer, &bb_top, magenta);
-    //     renderFilledRect(g->renderer, &bb_left, magenta);
-    //     renderFilledRect(g->renderer, &bb_right, magenta);
-    //     renderFilledRect(g->renderer, &bb_bottom, magenta);
-    // }
 #endif
 }
 
@@ -327,16 +293,19 @@ void destroyEntity(Entity* e)
 }
 
 
-void updateEntityList(EntityList* el, Map* map, u32 last_frame_duration)
+void updateEntityList(Game *g)
 {
+    EntityList *el = &g->current_map->active_entities;
+    Map *map = g->current_map;
     for (u32 y = 0; y < el->count; ++y)
     {
-        updateEntity(el->entities[y], map, last_frame_duration);
+        updateEntity(el->entities[y], map, g->dt);
     }
 }
 
-void drawEntityList(EntityList* el, Game* g)
+void drawEntityList(Game* g)
 {
+    EntityList *el = &g->current_map->active_entities;
     for (u32 y = 0; y < el->count; ++y)
     {
         drawEntity(el->entities[y], g);
@@ -353,6 +322,7 @@ void destroyEntityList(EntityList* el)
 
 void checkHeroCollisionsWithEntities(Hero *h, Game *g, SDL_Rect saved_position)
 {
+    (void)saved_position;
     u32 entityCount = g->current_map->active_entities.count;
     for (u32 y = 0; y < entityCount; ++y)
     {
@@ -367,12 +337,12 @@ void checkHeroCollisionsWithEntities(Hero *h, Game *g, SDL_Rect saved_position)
             // SDL_Rect overlap_box = getEntitiesOverlapBox(&h->e, otherEntity);
             // if (checkEntitiesPixelCollision(&h->e, otherEntity, &overlap_box))
             // {
-            h->e.dest_rect = saved_position;
-            h->e.position.x = (f32)saved_position.x;
-            h->e.position.y = (f32)saved_position.y;
+            // h->e.dest_rect = saved_position;
+            // h->e.position.x = (f32)saved_position.x;
+            // h->e.position.y = (f32)saved_position.y;
 
-            h->e.velocity.x = 0.0f;
-            h->e.velocity.y = 0.0f;
+            // h->e.velocity.x = 0.0f;
+            // h->e.velocity.y = 0.0f;
             // }
         }
     }
@@ -627,6 +597,7 @@ internal void craftItem(Hero *h, CraftableItem item)
 
 internal void placeItem(Game *g, Hero *h, CraftableItem item)
 {
+    (void)h;
     if (item == CRAFTABLE_TREE)
     {
         Tile *t = (Tile*)malloc(sizeof(Tile));
@@ -748,6 +719,9 @@ Entity createBuffalo(int starting_x, int starting_y, SDL_Renderer* renderer)
     setEntityStartingPos(&buffalo, starting_x, starting_y);
     initEntityDest(&buffalo);
     setEntityCollisionPoint(&buffalo);
+    buffalo.bounding_box = {0, 0, 50, 50};
+    buffalo.bb_x_offset = 10;
+    buffalo.bb_y_offset = 10;
     buffalo.speed = 3;
     buffalo.type = ET_BUFFALO;
     buffalo.can_move = GD_TRUE;
