@@ -80,7 +80,14 @@ void drawEntity(Entity* e, Game* g)
     if (e->active)
     {
         e->sprite_rect.x = e->sprite_rect.w * e->animation.current_frame;
-        SDL_RenderCopy(g->renderer, e->sprite_sheet.sheet, &e->sprite_rect, &e->dest_rect);
+        SDL_Rect dest = e->dest_rect;
+        if (e->type == ET_HERO)
+        {
+            // Double hero size because the Link sprite is tiny
+            dest.w += e->dest_rect.w;
+            dest.h += e->dest_rect.h;
+        }
+        SDL_RenderCopy(g->renderer, e->sprite_sheet.sheet, &e->sprite_rect, &dest);
     }
 
 #if 1
@@ -245,6 +252,10 @@ void checkEntityCollisionsWithEntities(Entity* e, Game* game)
         }
         if (otherEntity->active && rectsOverlap(&e->bounding_box, &otherEntity->bounding_box))
         {
+            // Draw bounding box overlap
+            SDL_Rect overlap_box = getEntitiesOverlapBox(e, otherEntity);
+            renderFilledRect(game->renderer, &overlap_box, game->colors[COLOR_MAGENTA]);
+
             switch (e->type)
             {
             case ET_BUFFALO:
@@ -334,13 +345,11 @@ void checkHeroCollisionsWithEntities(Hero *h, Game *g, SDL_Rect saved_position)
         if (otherEntity->active && rectsOverlap(&h->e.bounding_box, &otherEntity->bounding_box))
         {
             // TODO(chj): Enable pixel collision if we don't have to duplicate pixel data
-            SDL_Rect overlap_box = getEntitiesOverlapBox(&h->e, otherEntity);
-            renderFilledRect(g->renderer, &overlap_box, g->colors[COLOR_MAGENTA]);
             // if (checkEntitiesPixelCollision(&h->e, otherEntity, &overlap_box))
             // {
-            // h->e.dest_rect = saved_position;
             // h->e.position.x = (f32)saved_position.x;
             // h->e.position.y = (f32)saved_position.y;
+            // setEntityCollisionPoint(&h->e);
 
             // h->e.velocity.x = 0.0f;
             // h->e.velocity.y = 0.0f;
@@ -417,21 +426,30 @@ void processInput(Hero *h, Input* input, f32 dt)
     }
 
     // TODO(chj): Sprite selection doesn't belong in here
-    if (acceleration.x > 0)
+    if (acceleration.x == 0.0f && acceleration.y == 0.0f)
     {
-        h->e.sprite_rect.y = 2 * h->e.sprite_sheet.sprite_height;
+        h->isMoving = false;
     }
-    if (acceleration.x < 0)
+    else
     {
-        h->e.sprite_rect.y = 1 * h->e.sprite_sheet.sprite_height;
-    }
-    if (acceleration.y < 0)
-    {
-        h->e.sprite_rect.y = 3 * h->e.sprite_sheet.sprite_height;
-    }
-    if (acceleration.y > 0)
-    {
-        h->e.sprite_rect.y = 0 * h->e.sprite_sheet.sprite_height;
+        if (acceleration.x > 0)
+        {
+            h->e.sprite_rect.y = 0 * h->e.sprite_sheet.sprite_height;
+        }
+        if (acceleration.x < 0)
+        {
+            h->e.sprite_rect.y = 3 * h->e.sprite_sheet.sprite_height;
+        }
+        if (acceleration.y < 0)
+        {
+            h->e.sprite_rect.y = 1 * h->e.sprite_sheet.sprite_height;
+        }
+        if (acceleration.y > 0)
+        {
+            h->e.sprite_rect.y = 4 * h->e.sprite_sheet.sprite_height;
+        }
+
+        h->isMoving = true;
     }
 
     // Diagonal movement
@@ -623,16 +641,6 @@ internal void updateHero(Hero* h, Input* input, Game* g)
     SDL_Rect saved_position = h->e.dest_rect;
 
     processInput(h, input, (f32)g->dt / 1000.0f);
-
-    if (saved_position.x != h->e.dest_rect.x ||
-        saved_position.y != h->e.dest_rect.y)
-    {
-        h->isMoving = GD_TRUE;
-    }
-    else
-    {
-        h->isMoving = GD_FALSE;
-    }
 
     if (!h->isMoving)
     {

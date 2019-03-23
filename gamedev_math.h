@@ -195,6 +195,13 @@ void clamp_size_t(size_t* val, size_t min, size_t max)
     }
 }
 
+bool32 isClose(f32 a, f32 b, f32 tol=0.001f)
+{
+    f32 diff = fabsf(a - b);
+    bool32 result = diff < tol;
+    return result;
+}
+
 // One piece of a circle split in 8 sections
 // The radians start at 2*PI on (1, 0) and go to zero counter-clockwise
 Direction get_direction_from_angle(f32 angle)

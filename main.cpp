@@ -100,19 +100,25 @@ int main(int argc, char* argv[])
     SoundList sounds_to_play = {};
 
     Hero hero = {};
-    initEntitySpriteSheet(&hero.e, "sprites/dude.png", 4, 4, game->renderer);
+    // Dude
+    // initEntitySpriteSheet(&hero.e, "sprites/dude.png", 4, 4, game->renderer);
+    // initAnimation(&hero.e.animation, 4, 100);
+
+    // Link
+    initEntitySpriteSheet(&hero.e, "sprites/link_walking.png", 11, 5, game->renderer);
+    initAnimation(&hero.e.animation, 8, 80);
+
     setEntityStartingPos(&hero.e, 85, 85);
     hero.e.position.x = (f32)hero.e.starting_pos.x;
     hero.e.position.y = (f32)hero.e.starting_pos.y;
-    hero.e.bounding_box = {0, 0, 30, 43};
-    hero.e.bb_x_offset = 16;
-    hero.e.bb_y_offset = 14;
+    hero.e.bounding_box = {0, 0, hero.e.sprite_sheet.sprite_width * 2, hero.e.sprite_sheet.sprite_height * 2};
+    hero.e.bb_x_offset = 0;
+    hero.e.bb_y_offset = 0;
     initEntityDest(&hero.e);
-    hero.e.speed = 2000;
+    hero.e.speed = 1000;
     hero.e.active = GD_TRUE;
     hero.e.type = ET_HERO;
     hero.e.collision_pt_offset = 10;
-    initAnimation(&hero.e.animation, 4, 100);
 
     // Harlod
     Harlod harlod = {};
