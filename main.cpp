@@ -120,6 +120,17 @@ int main(int argc, char* argv[])
     hero.e.type = ET_HERO;
     hero.e.collision_pt_offset = 10;
 
+    SpriteSheet heroSword = {};
+    loadSpriteSheet(&heroSword, "sprites/sword.png", 12, 4, game->renderer);
+
+    // Sprite heroSword = {};
+    // heroSword.x = 188;
+    // heroSword.y = 1;
+    // heroSword.width = 16;
+    // heroSword.height = 50;
+    // heroSword.offsetX = 2;
+    // heroSword.offsetY = -25;
+
     // Harlod
     Harlod harlod = {};
     initEntitySpriteSheet(&harlod.e, "sprites/Harlod_the_caveman.png", 1, 1, game->renderer);
@@ -359,6 +370,15 @@ int main(int argc, char* argv[])
         drawMap(game);
         Point heroCenter = {hero.e.dest_rect.x + hero.e.dest_rect.w / 2,
                             hero.e.dest_rect.y + hero.e.dest_rect.h / 2};
+
+        // draw hero sword
+        SDL_Rect swordRect = {72, 0, 72, 72};
+        SDL_Rect swordDest = hero.e.dest_rect;
+        swordDest.w += swordDest.w;
+        swordDest.h += swordDest.h;
+        SDL_RenderCopy(game->renderer, heroSword.sheet, &swordRect, &swordDest);
+
+
         // setRenderDrawColor(game->renderer, game->colors[COLOR_YELLOW]);
         // drawCircle(game->renderer, heroCenter.x, heroCenter.y, 30);
 
