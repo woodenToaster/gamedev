@@ -119,6 +119,9 @@ int main(int argc, char* argv[])
     initEntitySpriteSheet(&harlod.e, "sprites/Harlod_the_caveman.png", 1, 1, game->renderer);
     setEntityStartingPos(&harlod.e, 300, 300);
     initEntityDest(&harlod.e);
+    harlod.e.bounding_box = {0, 0, 45, 45};
+    harlod.e.bb_x_offset = 10;
+    harlod.e.bb_y_offset = 10;
     harlod.e.speed = 10;
     harlod.e.type = ET_HARLOD;
     harlod.onHeroInteract = &harlodInteractWithHero;
@@ -350,8 +353,8 @@ int main(int argc, char* argv[])
         drawMap(game);
         Point heroCenter = {hero.e.dest_rect.x + hero.e.dest_rect.w / 2,
                             hero.e.dest_rect.y + hero.e.dest_rect.h / 2};
-        setRenderDrawColor(game->renderer, game->colors[COLOR_YELLOW]);
-        drawCircle(game->renderer, heroCenter.x, heroCenter.y, 30);
+        // setRenderDrawColor(game->renderer, game->colors[COLOR_YELLOW]);
+        // drawCircle(game->renderer, heroCenter.x, heroCenter.y, 30);
 
         // Draw sword for knight walking right
         // int swordSpriteWidth = 16;

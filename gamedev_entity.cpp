@@ -28,7 +28,7 @@ void initEntityPixelData(Entity* e, SDL_Surface *s)
 
 void initEntitySpriteSheet(Entity* e, const char* path, int num_x, int num_y, SDL_Renderer* renderer)
 {
-    sprite_sheet_load(&e->sprite_sheet, path, num_x, num_y, renderer);
+    loadSpriteSheet(&e->sprite_sheet, path, num_x, num_y, renderer);
     e->sprite_rect.w = e->sprite_sheet.sprite_width;
     e->sprite_rect.h = e->sprite_sheet.sprite_height;
     // TODO: Do this for each sprite in the sheet?
@@ -288,7 +288,7 @@ void updateEntity(Entity* e, Map* map, u32 last_frame_duration)
 
 void destroyEntity(Entity* e)
 {
-    sprite_sheet_destroy(&e->sprite_sheet);
+    destroySpriteSheet(&e->sprite_sheet);
     // free(e->pixel_data);
 }
 
@@ -334,7 +334,8 @@ void checkHeroCollisionsWithEntities(Hero *h, Game *g, SDL_Rect saved_position)
         if (otherEntity->active && rectsOverlap(&h->e.bounding_box, &otherEntity->bounding_box))
         {
             // TODO(chj): Enable pixel collision if we don't have to duplicate pixel data
-            // SDL_Rect overlap_box = getEntitiesOverlapBox(&h->e, otherEntity);
+            SDL_Rect overlap_box = getEntitiesOverlapBox(&h->e, otherEntity);
+            renderFilledRect(g->renderer, &overlap_box, g->colors[COLOR_MAGENTA]);
             // if (checkEntitiesPixelCollision(&h->e, otherEntity, &overlap_box))
             // {
             // h->e.dest_rect = saved_position;

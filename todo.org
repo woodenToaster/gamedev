@@ -15,6 +15,11 @@
 *** TODO Craft tree from leaves
 *** TODO Place tree tile in world
 ** TODO Base building system
+* TODO Mechanics
+** TODO Crafting
+** TODO Block placement
+** TODO Rolling
+** TODO Blocking
 * Architecture
 ** TODO Debug system
 ** TODO Use arena instead of stack

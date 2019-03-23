@@ -1,6 +1,6 @@
 #include "gamedev_sprite_sheet.h"
 
-void sprite_sheet_destroy(SpriteSheet* ss)
+void destroySpriteSheet(SpriteSheet* ss)
 {
     if (ss)
     {
@@ -9,7 +9,7 @@ void sprite_sheet_destroy(SpriteSheet* ss)
     }
 }
 
-void sprite_sheet_load(SpriteSheet* ss, const char* path, int x_sprites, int y_sprites, SDL_Renderer* renderer)
+void loadSpriteSheet(SpriteSheet* ss, const char* path, int x_sprites, int y_sprites, SDL_Renderer* renderer)
 {
     ss->sheet = create_texture_from_png(path, renderer);
     SDL_QueryTexture(ss->sheet, NULL, NULL, &ss->width, &ss->height);
