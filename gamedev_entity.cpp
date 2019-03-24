@@ -238,8 +238,8 @@ void checkEntityCollisionsWithEntities(Entity* e, Game* game)
 
 void setEntityCollisionPoint(Entity* e)
 {
-    e->collision_pt.y = (int)e->position.y + e->height - e->collision_pt_offset;
     e->collision_pt.x = (int)e->position.x + (i32)(e->width / 2.0);
+    e->collision_pt.y = (int)e->position.y + e->height - e->collision_pt_offset;
 }
 
 void updateEntity(Entity* e, Map* map, u32 last_frame_duration)
@@ -324,23 +324,14 @@ void checkHeroCollisionsWithEntities(Hero *h, Game *g, SDL_Rect saved_position)
     }
 }
 
-void checkHeroCollisionsWithTiles(Hero* h, Game* game, SDL_Rect saved_position)
+void checkHeroCollisionsWithTiles(Hero* h, Game* game)
 {
     Tile* current_tile = getTileAtEntityPosition(&h->e, game->current_map);
 
-    if (isSolidTile(current_tile))
+    f32 quicksandValue = 10.0f;
+    if (isSlowTile(current_tile) && !h->inQuicksand)
     {
-        // TODO(chj): saved_position will go away
-        // h->e.dest_rect = saved_position;
-        h->e.position.x = (f32)saved_position.x;
-        h->e.position.y = (f32)saved_position.y;
-
-        h->e.velocity.x = 0.0f;
-        h->e.velocity.y = 0.0f;
-    }
-    if (tile_is_slow(current_tile) && !h->inQuicksand)
-    {
-        h->e.speed *= 0.1f;
+        h->e.speed *= 1 / quicksandValue;
         h->inQuicksand = GD_TRUE;
         if (h->isMoving)
         {
@@ -349,10 +340,10 @@ void checkHeroCollisionsWithTiles(Hero* h, Game* game, SDL_Rect saved_position)
     }
     else if (h->inQuicksand)
     {
-        h->e.speed *= 10;
+        h->e.speed *= quicksandValue;
         h->inQuicksand = GD_FALSE;
     }
-    if (tile_is_warp(current_tile))
+    if (isWarpTile(current_tile))
     {
         map_do_warp(game);
         h->e.position.x = (f32)h->e.starting_pos.x;
@@ -734,9 +725,10 @@ internal void updateHero(Hero* h, Input* input, Game* g)
         {
             h->e.position = newPosition;
             setEntityCollisionPoint(&h->e);
-            // TODO(chj): checkHeroCollisionsWithEntities(h, g, saved_position);
         }
     }
+    // TODO(chj): checkHeroCollisionsWithEntities(h, g, saved_position);
+    checkHeroCollisionsWithTiles(h, g);
 
 #endif
 

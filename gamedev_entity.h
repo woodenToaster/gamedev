@@ -25,14 +25,16 @@ enum InventoryItemType
 
 struct Entity
 {
+    // These are the actual drawn sizes, which may be different from the sprite size
     i32 width;
     i32 height;
 
-    SpriteSheet sprite_sheet;
+    // The current rectangle in the sprite sheet to be drawn
     SDL_Rect sprite_rect;
+    SpriteSheet sprite_sheet;
+
     Animation animation;
     Plan plan;
-    // u8* pixel_data;
 
     f32 speed;
     Direction direction;

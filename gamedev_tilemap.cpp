@@ -44,12 +44,12 @@ bool32 isSolidTile(Tile* t)
     return tile_get_flags(t) & tile_properties[TP_SOLID];
 }
 
-u8 tile_is_slow(Tile* t)
+bool32 isSlowTile(Tile* t)
 {
     return (u8)(tile_get_flags(t) & tile_properties[TP_QUICKSAND]);
 }
 
-u8 tile_is_warp(Tile* t)
+bool32 isWarpTile(Tile* t)
 {
     return (u8)(tile_get_flags(t) & tile_properties[TP_WARP]);
 }

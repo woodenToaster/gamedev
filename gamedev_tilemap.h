@@ -3,6 +3,8 @@
 
 #include "gamedev_entity.h"
 
+struct Tile;
+
 enum TileProperty
 {
     TP_NONE,
@@ -106,7 +108,7 @@ bool32 tile_is_interactive(Tile *t);
 Tile *getTileAtPosition(Map *m, Vec2 pos);
 Tile *map_get_tile_at_point(Map *m, Point p);
 bool32 isSolidTile(Tile *t);
-u8 tile_is_slow(Tile* t);
-u8 tile_is_warp(Tile* t);
+bool32 isSlowTile(Tile* t);
+bool32 isWarpTile(Tile* t);
 void map_do_warp(Game* game);
 #endif

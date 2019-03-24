@@ -3,6 +3,8 @@
 
 #define MAX_CONTROLLERS 2
 
+struct Game;
+
 enum Key
 {
     KEY_UP,

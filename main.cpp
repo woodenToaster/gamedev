@@ -19,7 +19,7 @@
 #include "math.h"
 
 #include "gamedev_definitions.h"
-#include "gamedev_forward_declarations.h"
+// #include "gamedev_forward_declarations.h"
 #include "gamedev_animation.cpp"
 
 #include "gamedev_plan.h"
@@ -117,7 +117,7 @@ int main(int argc, char* argv[])
     hero.e.speed = 2000;
     hero.e.active = GD_TRUE;
     hero.e.type = ET_HERO;
-    hero.e.collision_pt_offset = 10;
+    hero.e.collision_pt_offset = 5;
 
     // SpriteSheet heroSword = {};
     // loadSpriteSheet(&heroSword, "sprites/sword.png", 12, 4, game->renderer);
@@ -452,20 +452,14 @@ int main(int argc, char* argv[])
             checkEntityCollisionsWithEntities(e, game);
         }
 
-        // hero_draw_club(&hero, now, game);
+        // setRenderDrawColor(game->renderer, game->colors[COLOR_BLACK]);
+        // SDL_RenderDrawPoint(game->renderer, hero.e.collision_pt.x, hero.e.collision_pt.y);
 
         // Draw FPS
-        // f32 fps = 1000.0f / game->dt;
-        // char fps_str[9] = {0};
-        // snprintf(fps_str, 9, "FPS: %03d", (u32)fps);
-        // drawText(game, &fontMetadata, fps_str, game->camera.viewport.x, game->camera.viewport.y);
-
-        // char v[30];
-        // snprintf(v, 30, "v: {%.6f, %.6f}", input.stickX, input.stickY);
-        // drawText(game, &fontMetadata, v, game->camera.viewport.x, game->camera.viewport.y + 24);
-        // char p[30];
-        // snprintf(p, 30, "p: {%.6f, %.6f}", hero.e.position.x, hero.e.position.y);
-        // drawText(game, &fontMetadata, p, game->camera.viewport.x, game->camera.viewport.y + 48);
+        f32 fps = 1000.0f / game->dt;
+        char fps_str[9] = {0};
+        snprintf(fps_str, 9, "FPS: %03d", (u32)fps);
+        drawText(game, &fontMetadata, fps_str, game->camera.viewport.x, game->camera.viewport.y);
 
         SDL_SetRenderTarget(game->renderer, NULL);
         SDL_RenderCopy(game->renderer, game->current_map->texture, &game->camera.viewport, NULL);
