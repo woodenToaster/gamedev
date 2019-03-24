@@ -25,7 +25,8 @@ enum InventoryItemType
 
 struct Entity
 {
-    EntityType type;
+    i32 width;
+    i32 height;
 
     SpriteSheet sprite_sheet;
     SDL_Rect sprite_rect;
@@ -53,6 +54,7 @@ struct Entity
     bool32 can_move;
 
     EntireFile dialogFile;
+    EntityType type;
 };
 
 struct EntityList

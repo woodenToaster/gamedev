@@ -107,10 +107,11 @@ int main(int argc, char* argv[])
     // Link
     initEntitySpriteSheet(&hero.e, "sprites/link_walking.png", 11, 5, game->renderer);
     hero.e.sprite_sheet.scale = 2;
+    initEntityWidthHeight(&hero.e);
     initAnimation(&hero.e.animation, 8, 80);
     hero.e.starting_pos = {85, 85};
     hero.e.position = hero.e.starting_pos;
-    hero.e.bounding_box = {0, 0, hero.e.sprite_sheet.sprite_width * 2, hero.e.sprite_sheet.sprite_height * 2};
+    hero.e.bounding_box = {0, 0, hero.e.width, hero.e.height};
     hero.e.bb_x_offset = 0;
     hero.e.bb_y_offset = 0;
     hero.e.speed = 2000;
@@ -132,6 +133,7 @@ int main(int argc, char* argv[])
     // Harlod
     Harlod harlod = {};
     initEntitySpriteSheet(&harlod.e, "sprites/Harlod_the_caveman.png", 1, 1, game->renderer);
+    initEntityWidthHeight(&harlod.e);
     harlod.e.starting_pos = {300, 300};
     harlod.e.position = harlod.e.starting_pos;
     harlod.e.bounding_box = {0, 0, 45, 45};
@@ -145,6 +147,7 @@ int main(int argc, char* argv[])
     // Knight
     Knight knight = {};
     initEntitySpriteSheet(&knight.e, "sprites/knight_alligned.png", 8, 5, game->renderer);
+    initEntityWidthHeight(&knight.e);
     knight.e.starting_pos = {500, 500};
     knight.e.position = knight.e.starting_pos;
     knight.e.bounding_box = {0, 0, 20, 40};
@@ -340,8 +343,8 @@ int main(int argc, char* argv[])
         /*********************************************************************/
         if (game->mode == GAME_MODE_PLAYING)
         {
-            Vec2 heroCenter = {hero.e.position.x + 2 * hero.e.sprite_sheet.sprite_width / 2.0f,
-                               hero.e.position.y + 2 * hero.e.sprite_sheet.sprite_height / 2.0f};
+            Vec2 heroCenter = {hero.e.position.x + hero.e.width / 2.0f,
+                               hero.e.position.y + hero.e.height / 2.0f};
 
             updateGame(game, &input);
             updateMap(game);
@@ -370,9 +373,9 @@ int main(int argc, char* argv[])
         SDL_SetRenderTarget(game->renderer, game->current_map->texture);
         drawMap(game);
         Vec2 lowerLeftPoint = {hero.e.position.x,
-                               hero.e.position.y + 2 * hero.e.sprite_sheet.sprite_height};
-        Vec2 lowerRightPoint = {hero.e.position.x + 2 * hero.e.sprite_sheet.sprite_width,
-                                hero.e.position.y + 2 * hero.e.sprite_sheet.sprite_height};
+                               hero.e.position.y + hero.e.height};
+        Vec2 lowerRightPoint = {hero.e.position.x + hero.e.width,
+                                hero.e.position.y + hero.e.height};
 
         setRenderDrawColor(game->renderer, game->colors[COLOR_YELLOW]);
         SDL_RenderDrawLine(game->renderer, (int)lowerLeftPoint.x, (int)lowerLeftPoint.y,

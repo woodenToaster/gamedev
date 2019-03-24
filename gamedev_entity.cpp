@@ -32,17 +32,13 @@ void initEntitySpriteSheet(Entity* e, const char* path, int num_x, int num_y, SD
     e->sprite_rect.w = e->sprite_sheet.sprite_width;
     e->sprite_rect.h = e->sprite_sheet.sprite_height;
     e->sprite_sheet.scale = 1;
-    // TODO: Do this for each sprite in the sheet?
-    // initEntityPixelData(e);
 }
 
-// void initEntityDest(Entity* e)
-// {
-//     e->dest_rect.x = e->starting_pos.x;
-//     e->dest_rect.y = e->starting_pos.y;
-//     e->dest_rect.w = e->sprite_sheet.sprite_width;
-//     e->dest_rect.h = e->sprite_sheet.sprite_height;
-// }
+void initEntityWidthHeight(Entity *e)
+{
+    e->width = e->sprite_sheet.sprite_width * e->sprite_sheet.scale;
+    e->height = e->sprite_sheet.sprite_height * e->sprite_sheet.scale;
+}
 
 bool32 entityIsHero(Entity* e)
 {
@@ -75,19 +71,7 @@ void drawEntity(Entity* e, Game* g)
     if (e->active)
     {
         e->sprite_rect.x = e->sprite_rect.w * e->animation.current_frame;
-#if 0
-        SDL_Rect dest = e->dest_rect;
-        if (e->type == ET_HERO)
-        {
-            // Double hero size because the Link sprite is tiny
-            dest.w += e->dest_rect.w;
-            dest.h += e->dest_rect.h;
-        }
-#else
-        SDL_Rect dest = {(int)e->position.x, (int)e->position.y,
-                         e->sprite_sheet.sprite_width * e->sprite_sheet.scale,
-                         e->sprite_sheet.sprite_height * e->sprite_sheet.scale};
-#endif
+        SDL_Rect dest = {(int)e->position.x, (int)e->position.y, e->width, e->height};
         SDL_RenderCopy(g->renderer, e->sprite_sheet.sheet, &e->sprite_rect, &dest);
     }
 
@@ -129,28 +113,6 @@ SDL_Rect getEntitiesOverlapBox(Entity* e1, Entity* e2)
 
     return overlap_box;
 }
-
-// TODO(chj): Change to equation of motion
-// void moveEntityInDirection(Entity* e, CardinalDir d)
-// {
-//     switch(d)
-//     {
-//     case CARDINAL_NORTH:
-//         e->dest_rect.y -= (int)e->speed;
-//         break;
-//     case CARDINAL_SOUTH:
-//         e->dest_rect.y +=(int)e->speed;
-//         break;
-//     case CARDINAL_WEST:
-//         e->dest_rect.x -= (int)e->speed;
-//         break;
-//     case CARDINAL_EAST:
-//         e->dest_rect.x += (int)e->speed;
-//         break;
-//     default:
-//         return;
-//     }
-// }
 
 Tile* getTileAtEntityPosition(Entity* e, Map* map)
 {
@@ -276,13 +238,8 @@ void checkEntityCollisionsWithEntities(Entity* e, Game* game)
 
 void setEntityCollisionPoint(Entity* e)
 {
-#if 0
-    e->collision_pt.y = e->dest_rect.y + e->dest_rect.h - e->collision_pt_offset;
-    e->collision_pt.x = e->dest_rect.x + (i32)(e->dest_rect.w / 2.0);
-#else
-    e->collision_pt.y = (int)e->position.y + e->sprite_sheet.sprite_height - e->collision_pt_offset;
-    e->collision_pt.x = (int)e->position.x + (i32)(e->sprite_sheet.sprite_width / 2.0);
-#endif
+    e->collision_pt.y = (int)e->position.y + e->height - e->collision_pt_offset;
+    e->collision_pt.x = (int)e->position.x + (i32)(e->width / 2.0);
 }
 
 void updateEntity(Entity* e, Map* map, u32 last_frame_duration)
@@ -540,11 +497,10 @@ void heroInteract(Hero *h, Game *g)
 
     // Check for entities to interact with in a circle
     Vec2 heroCenter = {};
-    heroCenter.x = h->e.position.x + (0.5f * h->e.sprite_sheet.sprite_width);
-    heroCenter.y = h->e.position.y + (0.5f * h->e.sprite_sheet.sprite_height);
+    heroCenter.x = h->e.position.x + (0.5f * h->e.width);
+    heroCenter.y = h->e.position.y + (0.5f * h->e.height);
     heroInteractionRegion.center = heroCenter;
-    heroInteractionRegion.radius = maxFloat32((f32)h->e.sprite_sheet.sprite_width,
-                                              (f32)h->e.sprite_sheet.sprite_height) * 0.666666f;
+    heroInteractionRegion.radius = maxFloat32((f32)h->e.width, (f32)h->e.height) * 0.666666f;
 
     // See if there is an entity there
     for (u32 entityIndex = 0; entityIndex < g->current_map->active_entities.count; ++entityIndex)
@@ -769,10 +725,8 @@ internal void updateHero(Hero* h, Input* input, Game* g)
         h->e.sprite_rect.x = 0;
     }
 
-    Vec2 lowerLeftPoint = {newPosition.x,
-                           newPosition.y + 2 * h->e.sprite_sheet.sprite_height};
-    Vec2 lowerRightPoint = {newPosition.x + 2 * h->e.sprite_sheet.sprite_width,
-                            newPosition.y + 2 * h->e.sprite_sheet.sprite_height};
+    Vec2 lowerLeftPoint = {newPosition.x, newPosition.y + h->e.height};
+    Vec2 lowerRightPoint = {newPosition.x + h->e.width, newPosition.y + h->e.height};
 
     if (isInMap(g, lowerLeftPoint) && isInMap(g, lowerRightPoint))
     {
@@ -859,6 +813,7 @@ Entity createBuffalo(f32 starting_x, f32 starting_y, SDL_Renderer* renderer)
 {
     Entity buffalo = {};
     initEntitySpriteSheet(&buffalo, "sprites/Buffalo.png", 4, 1, renderer);
+    initEntityWidthHeight(&buffalo);
     buffalo.starting_pos = {starting_x, starting_y};
     buffalo.position = buffalo.starting_pos;
     // initEntityDest(&buffalo);
