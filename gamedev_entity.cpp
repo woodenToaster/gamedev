@@ -361,83 +361,6 @@ void clampHeroToMap(Hero* h, Map* map)
 }
 #endif
 
-void processInput(Hero *h, Input* input, f32 dt)
-{
-    // TODO(chj): Handle joystick and keyboard on separate paths
-    Vec2 acceleration = {};
-    acceleration.x = input->stickX;
-    acceleration.y = input->stickY;
-
-    if (input->key_down[KEY_RIGHT])
-    {
-        acceleration.x = 1.0f;
-    }
-    if (input->key_down[KEY_LEFT])
-    {
-        acceleration.x = -1.0f;
-    }
-    if (input->key_down[KEY_UP])
-    {
-        acceleration.y = -1.0f;
-    }
-    if (input->key_down[KEY_DOWN])
-    {
-        acceleration.y = 1.0f;
-    }
-
-    // TODO(chj): Sprite selection doesn't belong in here
-    if (acceleration.x == 0.0f && acceleration.y == 0.0f)
-    {
-        h->isMoving = false;
-    }
-    else
-    {
-        if (acceleration.x > 0)
-        {
-            h->e.sprite_rect.y = 0 * h->e.sprite_sheet.sprite_height;
-        }
-        if (acceleration.x < 0)
-        {
-            h->e.sprite_rect.y = 3 * h->e.sprite_sheet.sprite_height;
-        }
-        if (acceleration.y < 0)
-        {
-            h->e.sprite_rect.y = 1 * h->e.sprite_sheet.sprite_height;
-        }
-        if (acceleration.y > 0)
-        {
-            h->e.sprite_rect.y = 4 * h->e.sprite_sheet.sprite_height;
-        }
-
-        h->isMoving = true;
-    }
-
-    // Diagonal movement
-    if (acceleration.x != 0.0f && acceleration.y != 0.0f)
-    {
-        acceleration *= 0.707186781187f;
-    }
-
-    acceleration *= h->e.speed;
-
-    // Friction
-    acceleration -= 8 * h->e.velocity;
-
-    h->e.position = (0.5 * acceleration * square(dt)) +
-                    (h->e.velocity * dt) +
-                    h->e.position;
-
-    h->e.velocity = (acceleration * dt) + h->e.velocity;
-
-    h->swingClub = input->key_pressed[KEY_F];
-    h->harvest = input->key_pressed[KEY_SPACE] || input->button_pressed[BUTTON_A];
-    h->craft = input->key_pressed[KEY_C];
-    h->place = input->key_pressed[KEY_P];
-
-    // h->e.dest_rect.x = (int)(h->e.position.x);
-    // h->e.dest_rect.y = (int)(h->e.position.y);
-}
-
 void harvestTile(Hero *h, Game *g, Tile *tileToHarvest)
 {
     destroyTile(tileToHarvest);
@@ -626,22 +549,6 @@ internal bool32 canMoveToPosition(Game *g, Vec2 pos)
 }
 internal void updateHero(Hero* h, Input* input, Game* g)
 {
-#if 0
-    SDL_Rect saved_position = h->e.dest_rect;
-
-    processInput(h, input, (f32)g->dt / 1000.0f);
-
-    if (!h->isMoving)
-    {
-        h->e.animation.current_frame = 0;
-        h->e.sprite_rect.x = 0;
-    }
-
-    clampHeroToMap(h, g->current_map);
-    setEntityCollisionPoint(&h->e);
-    checkHeroCollisionsWithTiles(h, g, saved_position);
-    checkHeroCollisionsWithEntities(h, g, saved_position);
-#else
     // TODO(chj): Handle joystick and keyboard on separate paths
     Vec2 acceleration = {};
     acceleration.x = input->stickX;
@@ -705,32 +612,39 @@ internal void updateHero(Hero* h, Input* input, Game* g)
     Vec2 newPosition = (0.5 * acceleration * square(dt)) + (h->e.velocity * dt) + h->e.position;
     h->e.velocity = (acceleration * dt) + h->e.velocity;
 
-    h->swingClub = input->key_pressed[KEY_F];
-    h->harvest = input->key_pressed[KEY_SPACE] || input->button_pressed[BUTTON_A];
-    h->craft = input->key_pressed[KEY_C];
-    h->place = input->key_pressed[KEY_P];
-
     if (!h->isMoving)
     {
         h->e.animation.current_frame = 0;
         h->e.sprite_rect.x = 0;
     }
 
-    Vec2 lowerLeftPoint = {newPosition.x, newPosition.y + h->e.height};
-    Vec2 lowerRightPoint = {newPosition.x + h->e.width, newPosition.y + h->e.height};
+    SDL_Rect newBoundingBox = {(int)newPosition.x + h->e.bb_x_offset,
+                               (int)newPosition.y + h->e.bb_y_offset,
+                               h->e.bounding_box.w - h->e.bb_x_offset,
+                               h->e.bounding_box.h - h->e.bb_y_offset};
 
-    if (isInMap(g, lowerLeftPoint) && isInMap(g, lowerRightPoint))
+    Vec2 lowerLeftPoint = {(f32)newBoundingBox.x, (f32)newBoundingBox.y + newBoundingBox.h};
+    Vec2 lowerRightPoint = {(f32)newBoundingBox.x + newBoundingBox.w, (f32)newBoundingBox.y + newBoundingBox.h};
+
+    if (isInMap(g, lowerLeftPoint) && isInMap(g, lowerRightPoint) &&
+        canMoveToPosition(g, lowerLeftPoint) && canMoveToPosition(g, lowerRightPoint))
     {
-        if (canMoveToPosition(g, lowerLeftPoint) && canMoveToPosition(g, lowerRightPoint))
-        {
-            h->e.position = newPosition;
-            setEntityCollisionPoint(&h->e);
-        }
+        h->e.position = newPosition;
+        setEntityCollisionPoint(&h->e);
     }
+    else
+    {
+        // TODO(chj): Carry remaining movement along direction where move is possible
+        h->e.velocity = {0, 0};
+    }
+
     // TODO(chj): checkHeroCollisionsWithEntities(h, g, saved_position);
     checkHeroCollisionsWithTiles(h, g);
 
-#endif
+    h->swingClub = input->key_pressed[KEY_F];
+    h->harvest = input->key_pressed[KEY_SPACE] || input->button_pressed[BUTTON_A];
+    h->craft = input->key_pressed[KEY_C];
+    h->place = input->key_pressed[KEY_P];
 
     if (h->harvest)
     {

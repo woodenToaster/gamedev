@@ -20,7 +20,6 @@ enum TileProperty
     TP_COUNT
 };
 
-// TODO(chj): Set values here on enum above
 static u32 tile_properties[TP_COUNT] = {
     // Designated initializer syntax only available in C
     /* [TP_NONE] = 0x0, */

@@ -111,9 +111,9 @@ int main(int argc, char* argv[])
     initAnimation(&hero.e.animation, 8, 80);
     hero.e.starting_pos = {85, 85};
     hero.e.position = hero.e.starting_pos;
-    hero.e.bounding_box = {0, 0, hero.e.width, hero.e.height};
-    hero.e.bb_x_offset = 0;
-    hero.e.bb_y_offset = 0;
+    hero.e.bb_x_offset = 10;
+    hero.e.bb_y_offset = 18;
+    hero.e.bounding_box = {0, 0, hero.e.width - 2 * hero.e.bb_x_offset, hero.e.height - hero.e.bb_y_offset};
     hero.e.speed = 2000;
     hero.e.active = GD_TRUE;
     hero.e.type = ET_HERO;
