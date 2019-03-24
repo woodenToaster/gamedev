@@ -39,9 +39,9 @@ u8 tile_is_fire(Tile* t)
     return (u8)(tile_get_flags(t) & tile_properties[TP_FIRE]);
 }
 
-u8 tile_is_solid(Tile* t)
+bool32 isSolidTile(Tile* t)
 {
-    return (u8)(tile_get_flags(t) & tile_properties[TP_SOLID]);
+    return tile_get_flags(t) & tile_properties[TP_SOLID];
 }
 
 u8 tile_is_slow(Tile* t)
@@ -139,6 +139,27 @@ void initMap(Map* m, u32 cols, u32 rows, Tile** tiles, SDL_Renderer* renderer)
         printf("Failed to create surface: %s\n", SDL_GetError());
         exit(1);
     }
+}
+
+Tile *getTileAtPosition(Map *m, Vec2 pos)
+{
+    Tile *result = 0;
+    if (m)
+    {
+        SDL_Rect tile_at_point = {
+            (int)((pos.x / m->tile_width) * m->tile_width),
+            (int)((pos.y / m->tile_height) * m->tile_height)
+        };
+        int map_coord_x = tile_at_point.y / m->tile_height;
+        int map_coord_y = tile_at_point.x / m->tile_width;
+        int tile_index = map_coord_x * m->cols + map_coord_y;
+
+        if (tile_index >= 0 && tile_index < (int)(m->rows * m->cols))
+        {
+            result = m->tiles[tile_index];
+        }
+    }
+    return result;
 }
 
 Tile *map_get_tile_at_point(Map *m, Point p)

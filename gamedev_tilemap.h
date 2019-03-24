@@ -103,6 +103,10 @@ void initTile(Tile* t, u32 flags, u32 color, SDL_Renderer* renderer, const char*
 void destroyTile(Tile* t);
 void setTileSpriteSize(Tile* t, int width, int height);
 bool32 tile_is_interactive(Tile *t);
+Tile *getTileAtPosition(Map *m, Vec2 pos);
 Tile *map_get_tile_at_point(Map *m, Point p);
-
+bool32 isSolidTile(Tile *t);
+u8 tile_is_slow(Tile* t);
+u8 tile_is_warp(Tile* t);
+void map_do_warp(Game* game);
 #endif

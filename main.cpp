@@ -115,13 +115,13 @@ int main(int argc, char* argv[])
     hero.e.bb_x_offset = 0;
     hero.e.bb_y_offset = 0;
     initEntityDest(&hero.e);
-    hero.e.speed = 1000;
+    hero.e.speed = 2000;
     hero.e.active = GD_TRUE;
     hero.e.type = ET_HERO;
     hero.e.collision_pt_offset = 10;
 
-    SpriteSheet heroSword = {};
-    loadSpriteSheet(&heroSword, "sprites/sword.png", 12, 4, game->renderer);
+    // SpriteSheet heroSword = {};
+    // loadSpriteSheet(&heroSword, "sprites/sword.png", 12, 4, game->renderer);
 
     // Sprite heroSword = {};
     // heroSword.x = 188;
@@ -371,15 +371,14 @@ int main(int argc, char* argv[])
         Point heroCenter = {hero.e.dest_rect.x + hero.e.dest_rect.w / 2,
                             hero.e.dest_rect.y + hero.e.dest_rect.h / 2};
 
-        // draw hero sword
-        SDL_Rect swordRect = {72, 0, 72, 72};
-        SDL_Rect swordDest = hero.e.dest_rect;
-        swordDest.w += swordDest.w;
-        swordDest.h += swordDest.h;
-        SDL_RenderCopy(game->renderer, heroSword.sheet, &swordRect, &swordDest);
+        Vec2 lowerLeftPoint = {hero.e.position.x,
+                               hero.e.position.y + 2 * hero.e.dest_rect.h};
+        Vec2 lowerRightPoint = {hero.e.position.x + 2 * hero.e.dest_rect.w,
+                                hero.e.position.y + 2 * hero.e.dest_rect.h};
 
-
-        // setRenderDrawColor(game->renderer, game->colors[COLOR_YELLOW]);
+        setRenderDrawColor(game->renderer, game->colors[COLOR_YELLOW]);
+        SDL_RenderDrawLine(game->renderer, (int)lowerLeftPoint.x, (int)lowerLeftPoint.y,
+                           (int)lowerRightPoint.x, (int)lowerRightPoint.y);
         // drawCircle(game->renderer, heroCenter.x, heroCenter.y, 30);
 
         // Draw sword for knight walking right

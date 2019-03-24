@@ -187,7 +187,7 @@ void checkEntityCollisionsWithTiles(Entity* e, Map* map, SDL_Rect* saved_pos)
 {
     Tile* current_tile = getTileAtEntityPosition(e, map);
 
-    if (tile_is_solid(current_tile))
+    if (isSolidTile(current_tile))
     {
         // Collision with an impenetrable tile. Revert to original position
         e->dest_rect = *saved_pos;
@@ -362,7 +362,7 @@ void checkHeroCollisionsWithTiles(Hero* h, Game* game, SDL_Rect saved_position)
 {
     Tile* current_tile = getTileAtEntityPosition(&h->e, game->current_map);
 
-    if (tile_is_solid(current_tile))
+    if (isSolidTile(current_tile))
     {
         h->e.dest_rect = saved_position;
         h->e.position.x = (f32)saved_position.x;
@@ -373,7 +373,7 @@ void checkHeroCollisionsWithTiles(Hero* h, Game* game, SDL_Rect saved_position)
     }
     if (tile_is_slow(current_tile) && !h->inQuicksand)
     {
-        h->e.speed -= 990;
+        h->e.speed *= 0.1f;
         h->inQuicksand = GD_TRUE;
         if (h->isMoving)
         {
@@ -382,7 +382,7 @@ void checkHeroCollisionsWithTiles(Hero* h, Game* game, SDL_Rect saved_position)
     }
     else if (h->inQuicksand)
     {
-        h->e.speed += 990;
+        h->e.speed *= 10;
         h->inQuicksand = GD_FALSE;
     }
     if (tile_is_warp(current_tile))
@@ -461,7 +461,7 @@ void processInput(Hero *h, Input* input, f32 dt)
     acceleration *= h->e.speed;
 
     // Friction
-    acceleration -= 4 * h->e.velocity;
+    acceleration -= 8 * h->e.velocity;
 
     h->e.position = (0.5 * acceleration * square(dt)) +
                     (h->e.velocity * dt) +
@@ -636,8 +636,37 @@ internal void placeItem(Game *g, Hero *h, CraftableItem item)
     }
 }
 
+internal bool32 isInMap(Game *g, Vec2 pos)
+{
+    bool32 result = true;
+    if (pos.x < 0 || pos.x > g->current_map->width_pixels - 1 ||
+        pos.y < 0 || pos.y > g->current_map->height_pixels - 1)
+    {
+        result = false;
+    }
+    return result;
+}
+
+internal bool32 canMoveToPosition(Game *g, Vec2 pos)
+{
+    bool result = false;
+    Map *m = g->current_map;
+    Tile *tile = getTileAtPosition(m, pos);
+    if (tile)
+    {
+        result = true;
+        if (isSolidTile(tile))
+        {
+            result = false;
+        }
+    }
+
+    return result;
+
+}
 internal void updateHero(Hero* h, Input* input, Game* g)
 {
+#if 0
     SDL_Rect saved_position = h->e.dest_rect;
 
     processInput(h, input, (f32)g->dt / 1000.0f);
@@ -652,6 +681,100 @@ internal void updateHero(Hero* h, Input* input, Game* g)
     setEntityCollisionPoint(&h->e);
     checkHeroCollisionsWithTiles(h, g, saved_position);
     checkHeroCollisionsWithEntities(h, g, saved_position);
+#else
+    // TODO(chj): Handle joystick and keyboard on separate paths
+    Vec2 acceleration = {};
+    acceleration.x = input->stickX;
+    acceleration.y = input->stickY;
+
+    if (input->key_down[KEY_RIGHT])
+    {
+        acceleration.x = 1.0f;
+    }
+    if (input->key_down[KEY_LEFT])
+    {
+        acceleration.x = -1.0f;
+    }
+    if (input->key_down[KEY_UP])
+    {
+        acceleration.y = -1.0f;
+    }
+    if (input->key_down[KEY_DOWN])
+    {
+        acceleration.y = 1.0f;
+    }
+
+    if (acceleration.x == 0.0f && acceleration.y == 0.0f)
+    {
+        // TODO(chj): should this really be false when skidding to a stop?
+        h->isMoving = false;
+    }
+    else
+    {
+        if (acceleration.x > 0)
+        {
+            h->e.sprite_rect.y = 0 * h->e.sprite_sheet.sprite_height;
+        }
+        if (acceleration.x < 0)
+        {
+            h->e.sprite_rect.y = 3 * h->e.sprite_sheet.sprite_height;
+        }
+        if (acceleration.y < 0)
+        {
+            h->e.sprite_rect.y = 1 * h->e.sprite_sheet.sprite_height;
+        }
+        if (acceleration.y > 0)
+        {
+            h->e.sprite_rect.y = 4 * h->e.sprite_sheet.sprite_height;
+        }
+
+        h->isMoving = true;
+    }
+
+    // Diagonal movement
+    if (acceleration.x != 0.0f && acceleration.y != 0.0f)
+    {
+        acceleration *= 0.707186781187f;
+    }
+
+    acceleration *= h->e.speed;
+    // Friction
+    acceleration -= 8 * h->e.velocity;
+
+    f32 dt = (f32)g->dt / 1000.0f;
+    Vec2 newPosition = (0.5 * acceleration * square(dt)) + (h->e.velocity * dt) + h->e.position;
+    h->e.velocity = (acceleration * dt) + h->e.velocity;
+
+    h->swingClub = input->key_pressed[KEY_F];
+    h->harvest = input->key_pressed[KEY_SPACE] || input->button_pressed[BUTTON_A];
+    h->craft = input->key_pressed[KEY_C];
+    h->place = input->key_pressed[KEY_P];
+
+    if (!h->isMoving)
+    {
+        h->e.animation.current_frame = 0;
+        h->e.sprite_rect.x = 0;
+    }
+
+    Vec2 lowerLeftPoint = {newPosition.x,
+                           newPosition.y + 2 * h->e.dest_rect.h};
+    Vec2 lowerRightPoint = {newPosition.x + 2 * h->e.dest_rect.w,
+                            newPosition.y + 2 * h->e.dest_rect.h};
+
+    if (isInMap(g, lowerLeftPoint) && isInMap(g, lowerRightPoint))
+    {
+        if (canMoveToPosition(g, lowerLeftPoint) && canMoveToPosition(g, lowerRightPoint))
+        {
+            h->e.position = newPosition;
+            // TODO(chj): Do this just at drawing time
+            h->e.dest_rect.x = (int)(newPosition.x);
+            h->e.dest_rect.y = (int)(newPosition.y);
+            setEntityCollisionPoint(&h->e);
+            // TODO(chj): checkHeroCollisionsWithEntities(h, g, saved_position);
+        }
+    }
+
+#endif
 
     if (h->harvest)
     {
