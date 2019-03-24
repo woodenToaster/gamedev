@@ -19,6 +19,7 @@ struct SpriteSheet
     int num_y;
     int sprite_width;
     int sprite_height;
+    int scale;
     SDL_Texture* sheet;
 };
 #endif

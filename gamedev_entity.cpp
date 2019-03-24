@@ -31,23 +31,18 @@ void initEntitySpriteSheet(Entity* e, const char* path, int num_x, int num_y, SD
     loadSpriteSheet(&e->sprite_sheet, path, num_x, num_y, renderer);
     e->sprite_rect.w = e->sprite_sheet.sprite_width;
     e->sprite_rect.h = e->sprite_sheet.sprite_height;
+    e->sprite_sheet.scale = 1;
     // TODO: Do this for each sprite in the sheet?
     // initEntityPixelData(e);
 }
 
-void setEntityStartingPos(Entity* e, int x, int y)
-{
-    e->starting_pos.x = x;
-    e->starting_pos.y = y;
-}
-
-void initEntityDest(Entity* e)
-{
-    e->dest_rect.x = e->starting_pos.x;
-    e->dest_rect.y = e->starting_pos.y;
-    e->dest_rect.w = e->sprite_sheet.sprite_width;
-    e->dest_rect.h = e->sprite_sheet.sprite_height;
-}
+// void initEntityDest(Entity* e)
+// {
+//     e->dest_rect.x = e->starting_pos.x;
+//     e->dest_rect.y = e->starting_pos.y;
+//     e->dest_rect.w = e->sprite_sheet.sprite_width;
+//     e->dest_rect.h = e->sprite_sheet.sprite_height;
+// }
 
 bool32 entityIsHero(Entity* e)
 {
@@ -80,6 +75,7 @@ void drawEntity(Entity* e, Game* g)
     if (e->active)
     {
         e->sprite_rect.x = e->sprite_rect.w * e->animation.current_frame;
+#if 0
         SDL_Rect dest = e->dest_rect;
         if (e->type == ET_HERO)
         {
@@ -87,6 +83,11 @@ void drawEntity(Entity* e, Game* g)
             dest.w += e->dest_rect.w;
             dest.h += e->dest_rect.h;
         }
+#else
+        SDL_Rect dest = {(int)e->position.x, (int)e->position.y,
+                         e->sprite_sheet.sprite_width * e->sprite_sheet.scale,
+                         e->sprite_sheet.sprite_height * e->sprite_sheet.scale};
+#endif
         SDL_RenderCopy(g->renderer, e->sprite_sheet.sheet, &e->sprite_rect, &dest);
     }
 
@@ -129,26 +130,27 @@ SDL_Rect getEntitiesOverlapBox(Entity* e1, Entity* e2)
     return overlap_box;
 }
 
-void moveEntityInDirection(Entity* e, CardinalDir d)
-{
-    switch(d)
-    {
-    case CARDINAL_NORTH:
-        e->dest_rect.y -= (int)e->speed;
-        break;
-    case CARDINAL_SOUTH:
-        e->dest_rect.y +=(int)e->speed;
-        break;
-    case CARDINAL_WEST:
-        e->dest_rect.x -= (int)e->speed;
-        break;
-    case CARDINAL_EAST:
-        e->dest_rect.x += (int)e->speed;
-        break;
-    default:
-        return;
-    }
-}
+// TODO(chj): Change to equation of motion
+// void moveEntityInDirection(Entity* e, CardinalDir d)
+// {
+//     switch(d)
+//     {
+//     case CARDINAL_NORTH:
+//         e->dest_rect.y -= (int)e->speed;
+//         break;
+//     case CARDINAL_SOUTH:
+//         e->dest_rect.y +=(int)e->speed;
+//         break;
+//     case CARDINAL_WEST:
+//         e->dest_rect.x -= (int)e->speed;
+//         break;
+//     case CARDINAL_EAST:
+//         e->dest_rect.x += (int)e->speed;
+//         break;
+//     default:
+//         return;
+//     }
+// }
 
 Tile* getTileAtEntityPosition(Entity* e, Map* map)
 {
@@ -183,6 +185,7 @@ void reverseEntityDiretion(Entity* e)
     }
 }
 
+#if 0
 void checkEntityCollisionsWithTiles(Entity* e, Map* map, SDL_Rect* saved_pos)
 {
     Tile* current_tile = getTileAtEntityPosition(e, map);
@@ -201,6 +204,7 @@ void checkEntityCollisionsWithTiles(Entity* e, Map* map, SDL_Rect* saved_pos)
         }
     }
 }
+#endif
 
 #if 0
 bool32 checkEntitiesPixelCollision(Entity* e1, Entity* e2, SDL_Rect* overlap_box)
@@ -272,8 +276,13 @@ void checkEntityCollisionsWithEntities(Entity* e, Game* game)
 
 void setEntityCollisionPoint(Entity* e)
 {
+#if 0
     e->collision_pt.y = e->dest_rect.y + e->dest_rect.h - e->collision_pt_offset;
     e->collision_pt.x = e->dest_rect.x + (i32)(e->dest_rect.w / 2.0);
+#else
+    e->collision_pt.y = (int)e->position.y + e->sprite_sheet.sprite_height - e->collision_pt_offset;
+    e->collision_pt.x = (int)e->position.x + (i32)(e->sprite_sheet.sprite_width / 2.0);
+#endif
 }
 
 void updateEntity(Entity* e, Map* map, u32 last_frame_duration)
@@ -293,8 +302,8 @@ void updateEntity(Entity* e, Map* map, u32 last_frame_duration)
     //         setEntityCollisionPoint(e);
     //     }
     // }
-    e->bounding_box.x = e->dest_rect.x + e->bb_x_offset;
-    e->bounding_box.y = e->dest_rect.y + e->bb_y_offset;
+    e->bounding_box.x = (int)e->position.x + e->bb_x_offset;
+    e->bounding_box.y = (int)e->position.y + e->bb_y_offset;
 }
 
 void destroyEntity(Entity* e)
@@ -364,7 +373,8 @@ void checkHeroCollisionsWithTiles(Hero* h, Game* game, SDL_Rect saved_position)
 
     if (isSolidTile(current_tile))
     {
-        h->e.dest_rect = saved_position;
+        // TODO(chj): saved_position will go away
+        // h->e.dest_rect = saved_position;
         h->e.position.x = (f32)saved_position.x;
         h->e.position.y = (f32)saved_position.y;
 
@@ -388,18 +398,20 @@ void checkHeroCollisionsWithTiles(Hero* h, Game* game, SDL_Rect saved_position)
     if (tile_is_warp(current_tile))
     {
         map_do_warp(game);
-        h->e.dest_rect.x = (int)h->e.starting_pos.x;
-        h->e.dest_rect.y = (int)h->e.starting_pos.y;
+        h->e.position.x = (f32)h->e.starting_pos.x;
+        h->e.position.y = (f32)h->e.starting_pos.y;
         h->e.position.x = (f32)h->e.starting_pos.x;
         h->e.position.y = (f32)h->e.starting_pos.y;
     }
 }
 
+#if 0
 void clampHeroToMap(Hero* h, Map* map)
 {
     h->e.position.x = clampFloat(h->e.position.x, 0, (f32)map->width_pixels - h->e.dest_rect.w);
     h->e.position.y = clampFloat(h->e.position.y, 0, (f32)map->height_pixels - h->e.dest_rect.h);
 }
+#endif
 
 void processInput(Hero *h, Input* input, f32 dt)
 {
@@ -474,8 +486,8 @@ void processInput(Hero *h, Input* input, f32 dt)
     h->craft = input->key_pressed[KEY_C];
     h->place = input->key_pressed[KEY_P];
 
-    h->e.dest_rect.x = (int)(h->e.position.x);
-    h->e.dest_rect.y = (int)(h->e.position.y);
+    // h->e.dest_rect.x = (int)(h->e.position.x);
+    // h->e.dest_rect.y = (int)(h->e.position.y);
 }
 
 void harvestTile(Hero *h, Game *g, Tile *tileToHarvest)
@@ -528,10 +540,11 @@ void heroInteract(Hero *h, Game *g)
 
     // Check for entities to interact with in a circle
     Vec2 heroCenter = {};
-    heroCenter.x = h->e.dest_rect.x + (0.5f * h->e.dest_rect.w);
-    heroCenter.y = h->e.dest_rect.y + (0.5f * h->e.dest_rect.h);
+    heroCenter.x = h->e.position.x + (0.5f * h->e.sprite_sheet.sprite_width);
+    heroCenter.y = h->e.position.y + (0.5f * h->e.sprite_sheet.sprite_height);
     heroInteractionRegion.center = heroCenter;
-    heroInteractionRegion.radius = maxFloat32((f32)h->e.dest_rect.w, (f32)h->e.dest_rect.h) * 0.666666f;
+    heroInteractionRegion.radius = maxFloat32((f32)h->e.sprite_sheet.sprite_width,
+                                              (f32)h->e.sprite_sheet.sprite_height) * 0.666666f;
 
     // See if there is an entity there
     for (u32 entityIndex = 0; entityIndex < g->current_map->active_entities.count; ++entityIndex)
@@ -757,18 +770,15 @@ internal void updateHero(Hero* h, Input* input, Game* g)
     }
 
     Vec2 lowerLeftPoint = {newPosition.x,
-                           newPosition.y + 2 * h->e.dest_rect.h};
-    Vec2 lowerRightPoint = {newPosition.x + 2 * h->e.dest_rect.w,
-                            newPosition.y + 2 * h->e.dest_rect.h};
+                           newPosition.y + 2 * h->e.sprite_sheet.sprite_height};
+    Vec2 lowerRightPoint = {newPosition.x + 2 * h->e.sprite_sheet.sprite_width,
+                            newPosition.y + 2 * h->e.sprite_sheet.sprite_height};
 
     if (isInMap(g, lowerLeftPoint) && isInMap(g, lowerRightPoint))
     {
         if (canMoveToPosition(g, lowerLeftPoint) && canMoveToPosition(g, lowerRightPoint))
         {
             h->e.position = newPosition;
-            // TODO(chj): Do this just at drawing time
-            h->e.dest_rect.x = (int)(newPosition.x);
-            h->e.dest_rect.y = (int)(newPosition.y);
             setEntityCollisionPoint(&h->e);
             // TODO(chj): checkHeroCollisionsWithEntities(h, g, saved_position);
         }
@@ -792,7 +802,7 @@ internal void updateHero(Hero* h, Input* input, Game* g)
     }
 }
 
-
+#if 0
 void hero_update_club(Hero* h, u32 now)
 {
     h->clubRect.x = h->e.dest_rect.x + h->e.dest_rect.w / 2;
@@ -835,6 +845,7 @@ void hero_update_club(Hero* h, u32 now)
         h->swingClub = GD_FALSE;
     }
 }
+#endif
 
 // void hero_draw_club(Hero* h, u32 now, Game* g)
 // {
@@ -844,12 +855,13 @@ void hero_update_club(Hero* h, u32 now)
 //     }
 // }
 
-Entity createBuffalo(int starting_x, int starting_y, SDL_Renderer* renderer)
+Entity createBuffalo(f32 starting_x, f32 starting_y, SDL_Renderer* renderer)
 {
     Entity buffalo = {};
     initEntitySpriteSheet(&buffalo, "sprites/Buffalo.png", 4, 1, renderer);
-    setEntityStartingPos(&buffalo, starting_x, starting_y);
-    initEntityDest(&buffalo);
+    buffalo.starting_pos = {starting_x, starting_y};
+    buffalo.position = buffalo.starting_pos;
+    // initEntityDest(&buffalo);
     setEntityCollisionPoint(&buffalo);
     buffalo.bounding_box = {0, 0, 50, 50};
     buffalo.bb_x_offset = 10;

@@ -16,6 +16,13 @@ enum CraftableItem
     CRAFTABLE_COUNT
 };
 
+enum InventoryItemType
+{
+    INV_LEAVES,
+    INV_TREES,
+    INV_COUNT
+};
+
 struct Entity
 {
     EntityType type;
@@ -28,7 +35,7 @@ struct Entity
 
     f32 speed;
     Direction direction;
-    Point starting_pos;
+    Vec2 starting_pos;
     Point collision_pt;
     u32 collision_pt_offset;
 
@@ -36,11 +43,10 @@ struct Entity
     Vec2 velocity;
     Vec2 acceleration;
 
-    // Offsets are from top left of sprite (i.e., dest_rect)
+    // Offsets are from top left of sprite_rect
     i32 bb_x_offset;
     i32 bb_y_offset;
     SDL_Rect bounding_box;
-    SDL_Rect dest_rect;
 
     bool32 active;
     bool32 has_plan;
@@ -53,13 +59,6 @@ struct EntityList
 {
     Entity** entities;
     u32 count;
-};
-
-enum InventoryItemType
-{
-    INV_LEAVES,
-    INV_TREES,
-    INV_COUNT
 };
 
 struct Hero
