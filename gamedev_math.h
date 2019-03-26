@@ -121,6 +121,16 @@ i32 minInt32(i32 a, i32 b)
     return a < b ? a : b;
 }
 
+i32 maxUInt32(u32 a, u32 b)
+{
+    return a > b ? a : b;
+}
+
+i32 minUInt32(u32 a, u32 b)
+{
+    return a < b ? a : b;
+}
+
 i32 absInt32(i32 x)
 {
     i32 result = x;

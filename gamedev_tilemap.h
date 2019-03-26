@@ -52,15 +52,17 @@ struct Tile
     u32 tile_height;
     u32 flags;
     u32 color;
-    SDL_Texture* sprite;
-    SDL_Rect sprite_rect;
-    Animation animation;
+    u32 destination_map;
+
     bool32 active;
     bool32 has_animation;
     bool32 animation_is_active;
-    u32 destination_map;
     bool32 is_harvestable;
     bool32 harvested;
+
+    SDL_Texture* sprite;
+    SDL_Rect sprite_rect;
+    Animation animation;
     InventoryItemType harvestedItem;
     heroTileInteractionFunc onHeroInteract;
 };

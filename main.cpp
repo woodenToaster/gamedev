@@ -107,7 +107,9 @@ int main(int argc, char* argv[])
     // Link
     initEntitySpriteSheet(&hero.e, "sprites/link_walking.png", 11, 5, game->renderer);
     hero.e.sprite_sheet.scale = 2;
-    initEntityWidthHeight(&hero.e);
+    // initEntityWidthHeight(&hero.e);
+    hero.e.width = 20;
+    hero.e.height = 10;
     initAnimation(&hero.e.animation, 8, 80);
     hero.e.starting_pos = {85, 85};
     hero.e.position = hero.e.starting_pos;
@@ -372,14 +374,12 @@ int main(int argc, char* argv[])
         /*********************************************************************/
         SDL_SetRenderTarget(game->renderer, game->current_map->texture);
         drawMap(game);
-        Vec2 lowerLeftPoint = {hero.e.position.x,
-                               hero.e.position.y + hero.e.height};
-        Vec2 lowerRightPoint = {hero.e.position.x + hero.e.width,
-                                hero.e.position.y + hero.e.height};
 
+        // Draw player collision box
         setRenderDrawColor(game->renderer, game->colors[COLOR_YELLOW]);
-        SDL_RenderDrawLine(game->renderer, (int)lowerLeftPoint.x, (int)lowerLeftPoint.y,
-                           (int)lowerRightPoint.x, (int)lowerRightPoint.y);
+        SDL_Rect playerRect = {(int)hero.e.position.x, (int)hero.e.position.y, hero.e.width, hero.e.height};
+        SDL_RenderFillRect(game->renderer, &playerRect);
+
         // drawCircle(game->renderer, heroCenter.x, heroCenter.y, 30);
 
         // Draw sword for knight walking right

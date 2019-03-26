@@ -246,6 +246,7 @@ void updateEntity(Entity* e, Map* map, u32 last_frame_duration)
 {
     (void)last_frame_duration;
     (void)map;
+    (void)e;
     // if (e->has_plan) {
     //     plan_update(e, last_frame_duration);
     //     if (e->can_move && e->active)
@@ -259,8 +260,8 @@ void updateEntity(Entity* e, Map* map, u32 last_frame_duration)
     //         setEntityCollisionPoint(e);
     //     }
     // }
-    e->bounding_box.x = (int)e->position.x + e->bb_x_offset;
-    e->bounding_box.y = (int)e->position.y + e->bb_y_offset;
+    // e->bounding_box.x = (int)e->position.x + e->bb_x_offset;
+    // e->bounding_box.y = (int)e->position.y + e->bb_y_offset;
 }
 
 void destroyEntity(Entity* e)
@@ -547,6 +548,29 @@ internal bool32 canMoveToPosition(Game *g, Vec2 pos)
     return result;
 
 }
+
+internal bool32 testWall(f32 wall, f32 relX, f32 relY, f32 playerDeltaX, f32 playerDeltaY,
+                         f32 *tMin, f32 minY, f32 maxY)
+{
+    bool32 hit = false;
+
+    if (playerDeltaX != 0.0f)
+    {
+        f32 tResult = (wall - relX) / playerDeltaX;
+        f32 y = relY + tResult * playerDeltaY;
+        if ((tResult >= 0.0f) && (*tMin > tResult))
+        {
+            if ((y >= minY) && (y <= maxY))
+            {
+                *tMin = maxFloat32(0.0f, tResult);
+                hit = true;
+            }
+        }
+    }
+
+    return hit;
+}
+
 internal void updateHero(Hero* h, Input* input, Game* g)
 {
     // TODO(chj): Handle joystick and keyboard on separate paths
@@ -609,7 +633,9 @@ internal void updateHero(Hero* h, Input* input, Game* g)
     acceleration -= 8 * h->e.velocity;
 
     f32 dt = (f32)g->dt / 1000.0f;
-    Vec2 newPosition = (0.5 * acceleration * square(dt)) + (h->e.velocity * dt) + h->e.position;
+    Vec2 oldPosition = h->e.position;
+    Vec2 playerDelta = (0.5 * acceleration * square(dt)) + (h->e.velocity * dt);
+    Vec2 newPosition =  playerDelta + h->e.position;
     h->e.velocity = (acceleration * dt) + h->e.velocity;
 
     if (!h->isMoving)
@@ -618,6 +644,7 @@ internal void updateHero(Hero* h, Input* input, Game* g)
         h->e.sprite_rect.x = 0;
     }
 
+#if 1
     SDL_Rect newBoundingBox = {(int)newPosition.x + h->e.bb_x_offset,
                                (int)newPosition.y + h->e.bb_y_offset,
                                h->e.bounding_box.w - h->e.bb_x_offset,
@@ -640,7 +667,51 @@ internal void updateHero(Hero* h, Input* input, Game* g)
 
     // TODO(chj): checkHeroCollisionsWithEntities(h, g, saved_position);
     checkHeroCollisionsWithTiles(h, g);
+#else
+    u32 minTileX = minUInt32((u32)oldPosition.x, (u32)newPosition.x);
+    u32 minTileY = minUInt32((u32)oldPosition.y, (u32)newPosition.y);
+    u32 maxTileX = maxUInt32((u32)oldPosition.x, (u32)newPosition.x);
+    u32 maxTileY = maxUInt32((u32)oldPosition.y, (u32)newPosition.y);
 
+    f32 tMin = 1.0f;
+    Vec2 wallNormal = {};
+
+    for (u32 tileY = minTileY; tileY <= maxTileY; ++tileY)
+    {
+        for (u32 tileX = minTileX; tileX <= maxTileX; ++tileX)
+        {
+            Vec2 pos = {(f32)tileX, (f32)tileY};
+            Tile *testTile = getTileAtPosition(g->current_map, pos);
+            if (isSolidTile(testTile))
+            {
+                Vec2 minCorner = -0.5f * Vec2{(f32)testTile->tile_width, (f32)testTile->tile_height};
+                Vec2 maxCorner = 0.5f * Vec2{(f32)testTile->tile_width, (f32)testTile->tile_height};
+                if (testWall(minCorner.x, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
+                             &tMin, minCorner.y, maxCorner.y))
+                {
+                    wallNormal = {1, 0};
+                }
+                if (testWall(maxCorner.x, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
+                             &tMin, minCorner.y, maxCorner.y))
+                {
+                    wallNormal = {-1, 0};
+                }
+                if (testWall(minCorner.y, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
+                             &tMin, minCorner.y, maxCorner.y))
+                {
+                    wallNormal = {0, 1};
+                }
+                if (testWall(maxCorner.y, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
+                             &tMin, minCorner.y, maxCorner.y))
+                {
+                    wallNormal = {0, -1};
+                }
+            }
+        }
+    }
+    h->e.position += (tMin * playerDelta);
+    h->e.velocity -= 1 * vec2_dot(&h->e.velocity, &wallNormal) * wallNormal;
+#endif
     h->swingClub = input->key_pressed[KEY_F];
     h->harvest = input->key_pressed[KEY_SPACE] || input->button_pressed[BUTTON_A];
     h->craft = input->key_pressed[KEY_C];
