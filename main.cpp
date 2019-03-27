@@ -111,7 +111,7 @@ int main(int argc, char* argv[])
     hero.e.width = 20;
     hero.e.height = 10;
     initAnimation(&hero.e.animation, 8, 80);
-    hero.e.starting_pos = {85, 85};
+    hero.e.starting_pos = {95, 95};
     hero.e.position = hero.e.starting_pos;
     hero.e.bb_x_offset = 10;
     hero.e.bb_y_offset = 18;
@@ -377,7 +377,9 @@ int main(int argc, char* argv[])
 
         // Draw player collision box
         setRenderDrawColor(game->renderer, game->colors[COLOR_YELLOW]);
-        SDL_Rect playerRect = {(int)hero.e.position.x, (int)hero.e.position.y, hero.e.width, hero.e.height};
+        SDL_Rect playerRect = {(int)(hero.e.position.x - 0.5f * hero.e.width),
+                               (int)hero.e.position.y - hero.e.height,
+                               hero.e.width, hero.e.height};
         SDL_RenderFillRect(game->renderer, &playerRect);
 
         // drawCircle(game->renderer, heroCenter.x, heroCenter.y, 30);

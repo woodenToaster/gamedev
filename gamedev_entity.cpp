@@ -644,7 +644,7 @@ internal void updateHero(Hero* h, Input* input, Game* g)
         h->e.sprite_rect.x = 0;
     }
 
-#if 1
+#if 0
     SDL_Rect newBoundingBox = {(int)newPosition.x + h->e.bb_x_offset,
                                (int)newPosition.y + h->e.bb_y_offset,
                                h->e.bounding_box.w - h->e.bb_x_offset,
@@ -684,8 +684,9 @@ internal void updateHero(Hero* h, Input* input, Game* g)
             Tile *testTile = getTileAtPosition(g->current_map, pos);
             if (isSolidTile(testTile))
             {
-                Vec2 minCorner = -0.5f * Vec2{(f32)testTile->tile_width, (f32)testTile->tile_height};
-                Vec2 maxCorner = 0.5f * Vec2{(f32)testTile->tile_width, (f32)testTile->tile_height};
+                Vec2 minCorner = {tileX % testTile->tile_width, tileY % testTile->tile_height};
+                Vec2 maxCorner = {tileX % testTile->tile_width + testTile->tile_width,
+                                  tileY % testTile->tile_height + testTile->tile_height};
                 if (testWall(minCorner.x, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
                              &tMin, minCorner.y, maxCorner.y))
                 {
