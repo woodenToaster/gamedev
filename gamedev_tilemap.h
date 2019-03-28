@@ -48,8 +48,8 @@ typedef void (*heroTileInteractionFunc)(Tile *t, Hero *h);
 
 struct Tile
 {
-    u32 tile_width;
-    u32 tile_height;
+    u32 width;
+    u32 height;
     u32 flags;
     u32 color;
     u32 destination_map;

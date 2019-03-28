@@ -111,7 +111,7 @@ int main(int argc, char* argv[])
     hero.e.width = 20;
     hero.e.height = 10;
     initAnimation(&hero.e.animation, 8, 80);
-    hero.e.starting_pos = {95, 95};
+    hero.e.starting_pos = {80, 81};
     hero.e.position = hero.e.starting_pos;
     hero.e.bb_x_offset = 10;
     hero.e.bb_y_offset = 18;
@@ -176,30 +176,30 @@ int main(int argc, char* argv[])
 
     // Tiles
     Tile w = {};
-    w.tile_width = w.tile_height = 80;
+    w.width = w.height = 80;
     initTile(&w, tile_properties[TP_SOLID], game->colors[COLOR_GREEN], game->renderer);
 
     Tile f = {};
-    f.tile_width = f.tile_height = 80;
+    f.width = f.height = 80;
     initTile(&f, tile_properties[TP_NONE], game->colors[COLOR_BLUE], game->renderer);
 
     Tile m = {};
-    m.tile_width = m.tile_height = 80;
+    m.width = m.height = 80;
     initTile(&m, tile_properties[TP_QUICKSAND], game->colors[COLOR_BROWN], game->renderer);
 
     Tile wr = {};
-    wr.tile_width = wr.tile_height = 80;
+    wr.width = wr.height = 80;
     initTile(&wr, tile_properties[TP_WARP], game->colors[COLOR_RUST], game->renderer);
     wr.destination_map = 2;
 
     Tile t = {};
-    t.tile_width = t.tile_height = 80;
+    t.width = t.height = 80;
     initTile(&t, tile_properties[TP_SOLID], game->colors[COLOR_GREEN], game->renderer, "sprites/TropicalTree.png");
     setTileSpriteSize(&t, 64, 64);
     t.active = GD_TRUE;
 
     Tile fire = {};
-    fire.tile_width = fire.tile_height = 80;
+    fire.width = fire.height = 80;
     initTile(&fire, tile_properties[TP_FIRE] | tile_properties[TP_INTERACTIVE],
              game->colors[COLOR_GREY], game->renderer, "sprites/Campfire.png");
     setTileSpriteSize(&fire, 64, 64);
@@ -210,7 +210,7 @@ int main(int argc, char* argv[])
 
     // Harvestable tree
     Tile h_tree = {};
-    h_tree.tile_width = h_tree.tile_height = 80;
+    h_tree.width = h_tree.height = 80;
     initTile(&h_tree, tile_properties[TP_HARVEST] | tile_properties[TP_SOLID],
               game->colors[COLOR_NONE], game->renderer, "sprites/tree.png");
     setTileSpriteSize(&h_tree, 64, 64);
@@ -219,7 +219,7 @@ int main(int argc, char* argv[])
     h_tree.harvestedItem = INV_LEAVES;
 
     Tile h_tree1 = {};
-    h_tree1.tile_width = h_tree1.tile_height = 80;
+    h_tree1.width = h_tree1.height = 80;
     initTile(&h_tree1, tile_properties[TP_HARVEST] | tile_properties[TP_SOLID],
               game->colors[COLOR_NONE], game->renderer, "sprites/tree.png");
     setTileSpriteSize(&h_tree1, 64, 64);
@@ -238,15 +238,15 @@ int main(int argc, char* argv[])
     jungle_tiles.texture = create_texture_from_png("sprites/jungle_tileset.png", game->renderer);
 
     Tile* grass = &jungle_tiles.tiles[0];
-    grass->tile_width = 16;
-    grass->tile_height = 16;
+    grass->width = 16;
+    grass->height = 16;
     grass->flags = tile_properties[TP_NONE];
     grass->color = game->colors[COLOR_NONE];
     grass->sprite = jungle_tiles.texture;
     grass->sprite_rect = {16, 16, 16, 16};
 
     Tile grass_warp = {};
-    grass_warp.tile_width = grass_warp.tile_height = 16;
+    grass_warp.width = grass_warp.height = 16;
     initTile(&grass_warp, tile_properties[TP_WARP], game->colors[COLOR_RUST], game->renderer);
     grass_warp.destination_map = 1;
 
@@ -382,6 +382,10 @@ int main(int argc, char* argv[])
                                hero.e.width, hero.e.height};
         SDL_RenderFillRect(game->renderer, &playerRect);
 
+        // Draw player position point
+        setRenderDrawColor(game->renderer, game->colors[COLOR_BLACK]);
+        SDL_RenderDrawPoint(game->renderer, (int)hero.e.position.x, (int)hero.e.position.y);
+
         // drawCircle(game->renderer, heroCenter.x, heroCenter.y, 30);
 
         // Draw sword for knight walking right
@@ -458,10 +462,14 @@ int main(int argc, char* argv[])
         // SDL_RenderDrawPoint(game->renderer, hero.e.collision_pt.x, hero.e.collision_pt.y);
 
         // Draw FPS
-        f32 fps = 1000.0f / game->dt;
-        char fps_str[9] = {0};
-        snprintf(fps_str, 9, "FPS: %03d", (u32)fps);
-        drawText(game, &fontMetadata, fps_str, game->camera.viewport.x, game->camera.viewport.y);
+        // f32 fps = 1000.0f / game->dt;
+        // char fps_str[9] = {0};
+        // snprintf(fps_str, 9, "FPS: %03d", (u32)fps);
+        // drawText(game, &fontMetadata, fps_str, game->camera.viewport.x, game->camera.viewport.y);
+
+        char pos_str[20] = {0};
+        snprintf(pos_str, 20, "x: %.2f, y: %.2f", hero.e.position.x, hero.e.position.y);
+        drawText(game, &fontMetadata, pos_str, game->camera.viewport.x, game->camera.viewport.y);
 
         SDL_SetRenderTarget(game->renderer, NULL);
         SDL_RenderCopy(game->renderer, game->current_map->texture, &game->camera.viewport, NULL);

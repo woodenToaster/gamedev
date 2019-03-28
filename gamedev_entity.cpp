@@ -506,7 +506,7 @@ internal void placeItem(Game *g, Hero *h, CraftableItem item)
         Tile *t = (Tile*)malloc(sizeof(Tile));
         // TODO(chj): Free this
         // TODO(chj): Share textures. Ref counting?
-        t->tile_width = t->tile_height = 80;
+        t->width = t->height = 80;
         initTile(t, tile_properties[TP_HARVEST] | tile_properties[TP_SOLID],
                  g->colors[COLOR_NONE], g->renderer, "sprites/tree.png");
         setTileSpriteSize(t, 64, 64);
@@ -554,6 +554,7 @@ internal bool32 testWall(f32 wall, f32 relX, f32 relY, f32 playerDeltaX, f32 pla
 {
     bool32 hit = false;
 
+    f32 tEpsilon = 0.001f;
     if (playerDeltaX != 0.0f)
     {
         f32 tResult = (wall - relX) / playerDeltaX;
@@ -562,7 +563,7 @@ internal bool32 testWall(f32 wall, f32 relX, f32 relY, f32 playerDeltaX, f32 pla
         {
             if ((y >= minY) && (y <= maxY))
             {
-                *tMin = maxFloat32(0.0f, tResult);
+                *tMin = maxFloat32(0.0f, tResult - tEpsilon);
                 hit = true;
             }
         }
@@ -644,75 +645,53 @@ internal void updateHero(Hero* h, Input* input, Game* g)
         h->e.sprite_rect.x = 0;
     }
 
-#if 0
-    SDL_Rect newBoundingBox = {(int)newPosition.x + h->e.bb_x_offset,
-                               (int)newPosition.y + h->e.bb_y_offset,
-                               h->e.bounding_box.w - h->e.bb_x_offset,
-                               h->e.bounding_box.h - h->e.bb_y_offset};
-
-    Vec2 lowerLeftPoint = {(f32)newBoundingBox.x, (f32)newBoundingBox.y + newBoundingBox.h};
-    Vec2 lowerRightPoint = {(f32)newBoundingBox.x + newBoundingBox.w, (f32)newBoundingBox.y + newBoundingBox.h};
-
-    if (isInMap(g, lowerLeftPoint) && isInMap(g, lowerRightPoint) &&
-        canMoveToPosition(g, lowerLeftPoint) && canMoveToPosition(g, lowerRightPoint))
-    {
-        h->e.position = newPosition;
-        setEntityCollisionPoint(&h->e);
-    }
-    else
-    {
-        // TODO(chj): Carry remaining movement along direction where move is possible
-        h->e.velocity = {0, 0};
-    }
-
-    // TODO(chj): checkHeroCollisionsWithEntities(h, g, saved_position);
-    checkHeroCollisionsWithTiles(h, g);
-#else
-    u32 minTileX = minUInt32((u32)oldPosition.x, (u32)newPosition.x);
-    u32 minTileY = minUInt32((u32)oldPosition.y, (u32)newPosition.y);
-    u32 maxTileX = maxUInt32((u32)oldPosition.x, (u32)newPosition.x);
-    u32 maxTileY = maxUInt32((u32)oldPosition.y, (u32)newPosition.y);
+    u32 minXPos = minUInt32((u32)oldPosition.x, (u32)newPosition.x);
+    u32 minYPos = minUInt32((u32)oldPosition.y, (u32)newPosition.y);
+    u32 maxXPos = maxUInt32((u32)oldPosition.x, (u32)newPosition.x);
+    u32 maxYPos = maxUInt32((u32)oldPosition.y, (u32)newPosition.y);
 
     f32 tMin = 1.0f;
     Vec2 wallNormal = {};
 
-    for (u32 tileY = minTileY; tileY <= maxTileY; ++tileY)
+    for (u32 tileY = minYPos; tileY <= maxYPos; ++tileY)
     {
-        for (u32 tileX = minTileX; tileX <= maxTileX; ++tileX)
+        for (u32 tileX = minXPos; tileX <= maxXPos; ++tileX)
         {
             Vec2 pos = {(f32)tileX, (f32)tileY};
             Tile *testTile = getTileAtPosition(g->current_map, pos);
             if (isSolidTile(testTile))
             {
-                Vec2 minCorner = {tileX % testTile->tile_width, tileY % testTile->tile_height};
-                Vec2 maxCorner = {tileX % testTile->tile_width + testTile->tile_width,
-                                  tileY % testTile->tile_height + testTile->tile_height};
+                Vec2 minCorner = {(f32)(tileX / testTile->width * testTile->width),
+                                  (f32)(tileY / testTile->height * testTile->height)};
+                Vec2 maxCorner = {(f32)(tileX / testTile->width * testTile->width + testTile->width),
+                                        (f32)(tileY / testTile->height * testTile->height + testTile->height)};
+
                 if (testWall(minCorner.x, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
-                             &tMin, minCorner.y, maxCorner.y))
-                {
-                    wallNormal = {1, 0};
-                }
-                if (testWall(maxCorner.x, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
                              &tMin, minCorner.y, maxCorner.y))
                 {
                     wallNormal = {-1, 0};
                 }
-                if (testWall(minCorner.y, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
+                if (testWall(maxCorner.x, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
                              &tMin, minCorner.y, maxCorner.y))
                 {
-                    wallNormal = {0, 1};
+                    wallNormal = {1, 0};
                 }
-                if (testWall(maxCorner.y, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
-                             &tMin, minCorner.y, maxCorner.y))
+                if (testWall(minCorner.y, oldPosition.y, oldPosition.x, playerDelta.y, playerDelta.x,
+                             &tMin, minCorner.x, maxCorner.x))
                 {
                     wallNormal = {0, -1};
+                }
+                if (testWall(maxCorner.y, oldPosition.y, oldPosition.x, playerDelta.y, playerDelta.x,
+                             &tMin, minCorner.x, maxCorner.x))
+                {
+                    wallNormal = {0, 1};
                 }
             }
         }
     }
     h->e.position += (tMin * playerDelta);
     h->e.velocity -= 1 * vec2_dot(&h->e.velocity, &wallNormal) * wallNormal;
-#endif
+
     h->swingClub = input->key_pressed[KEY_F];
     h->harvest = input->key_pressed[KEY_SPACE] || input->button_pressed[BUTTON_A];
     h->craft = input->key_pressed[KEY_C];
