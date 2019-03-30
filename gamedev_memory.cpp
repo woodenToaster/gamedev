@@ -1,13 +1,13 @@
 #include "gamedev_memory.h"
 
-void arena_init(Arena* arena, size_t bytes)
+void initArena(Arena* arena, size_t bytes)
 {
     arena->start = (char*)malloc(bytes);
     arena->next = arena->start;
     arena->max_cap = bytes;
 }
 
-void arena_destroy(Arena* arena)
+void destroyArena(Arena* arena)
 {
     free(arena->start);
     arena->start = NULL;
@@ -16,7 +16,7 @@ void arena_destroy(Arena* arena)
     arena->max_cap = 0;
 }
 
-char* arena_push(Arena* arena, size_t size)
+char* pushSize(Arena* arena, size_t size)
 {
     assert(size + arena->used < arena->max_cap);
     char* ptr = arena->next;

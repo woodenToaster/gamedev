@@ -70,12 +70,30 @@ void drawEntity(Entity* e, Game* g)
 {
     if (e->active)
     {
+        SDL_Rect dest = {};
         e->sprite_rect.x = e->sprite_rect.w * e->animation.current_frame;
-        SDL_Rect dest = {(int)e->position.x, (int)e->position.y, e->width, e->height};
+        if (entityIsHero(e))
+        {
+            // Draw player collision box
+            setRenderDrawColor(g->renderer, g->colors[COLOR_YELLOW]);
+            SDL_Rect playerRect = {(int)(e->position.x - 0.5f * e->width),
+                                   (int)(e->position.y - e->height),
+                                   e->width, e->height};
+            SDL_RenderFillRect(g->renderer, &playerRect);
+
+            f32 width = 45;
+            f32 height = 60;
+            dest = {(int)(e->position.x - 0.5f*width), (int)(e->position.y - height),
+                    (int)width, (int)height};
+        }
+        else
+        {
+            dest = {(int)e->position.x, (int)e->position.y, e->width, e->height};
+        }
         SDL_RenderCopy(g->renderer, e->sprite_sheet.sheet, &e->sprite_rect, &dest);
     }
 
-#if 1
+#if 0
     // Draw bounding box
     setRenderDrawColor(g->renderer, g->colors[COLOR_MAGENTA]);
     SDL_RenderDrawRect(g->renderer, &e->bounding_box);
@@ -520,6 +538,7 @@ internal void placeItem(Game *g, Hero *h, CraftableItem item)
     }
 }
 
+#if 0
 internal bool32 isInMap(Game *g, Vec2 pos)
 {
     bool32 result = true;
@@ -546,8 +565,8 @@ internal bool32 canMoveToPosition(Game *g, Vec2 pos)
     }
 
     return result;
-
 }
+#endif
 
 internal bool32 testWall(f32 wall, f32 relX, f32 relY, f32 playerDeltaX, f32 playerDeltaY,
                          f32 *tMin, f32 minY, f32 maxY)
@@ -712,59 +731,6 @@ internal void updateHero(Hero* h, Input* input, Game* g)
         placeItem(g, h, item);
     }
 }
-
-#if 0
-void hero_update_club(Hero* h, u32 now)
-{
-    h->clubRect.x = h->e.dest_rect.x + h->e.dest_rect.w / 2;
-    h->clubRect.y = h->e.dest_rect.y + h->e.dest_rect.h / 2;
-
-    switch(h->e.direction)
-    {
-    case DIR_DOWN:
-        h->clubRect.w = 8;
-        h->clubRect.x -= 4;
-        h->clubRect.h = 32;
-        h->clubRect.y += 16;
-        break;
-    case DIR_LEFT:
-        h->clubRect.w = 32;
-        h->clubRect.h = 8;
-        h->clubRect.y += 16;
-        h->clubRect.x -= 32;
-        break;
-    case DIR_RIGHT:
-        h->clubRect.y += 16;
-        h->clubRect.w = 32;
-        h->clubRect.h = 8;
-        break;
-    case DIR_UP:
-        h->clubRect.x -= 4;
-        h->clubRect.y -= 32;
-        h->clubRect.w = 8;
-        h->clubRect.h = 32;
-        break;
-    }
-
-    if (h->swingClub && now > h->nextClubSwingDelay + 500)
-    {
-        h->nextClubSwingDelay = now;
-        h->clubSwingTimeout = now + 500;
-    }
-    else
-    {
-        h->swingClub = GD_FALSE;
-    }
-}
-#endif
-
-// void hero_draw_club(Hero* h, u32 now, Game* g)
-// {
-//     if (now < h->clubSwingTimeout)
-//     {
-//         SDL_FillRect(g->current_map->surface, &h->clubRect, g->colors[BLACK]);
-//     }
-// }
 
 Entity createBuffalo(f32 starting_x, f32 starting_y, SDL_Renderer* renderer)
 {

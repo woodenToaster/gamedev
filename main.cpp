@@ -19,7 +19,6 @@
 #include "math.h"
 
 #include "gamedev_definitions.h"
-// #include "gamedev_forward_declarations.h"
 #include "gamedev_animation.cpp"
 
 #include "gamedev_plan.h"
@@ -47,7 +46,7 @@
 #include "gamedev_tilemap.cpp"
 #include "gamedev_memory.cpp"
 
-#define aalloc(type) ((type*)arena_push(&arena, sizeof(type)))
+#define PushStruct(arena, type) ((type*)pushSize((arena), sizeof(type)))
 #define arrayCount(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 int main(int argc, char* argv[])
@@ -56,13 +55,13 @@ int main(int argc, char* argv[])
     (void)argv;
 
     Arena arena = {};
-    arena_init(&arena, (size_t)MEGABYTES(1));
+    initArena(&arena, (size_t)MEGABYTES(1));
 
     u32 screenWidth = 960; // 640;
     u32 screenHeight = 540; // 480;
 
     // Game
-    Game* game = aalloc(Game);
+    Game* game = PushStruct(&arena, Game);
     initGame(game, screenWidth, screenHeight);
 
     // OpenGL
@@ -351,7 +350,6 @@ int main(int argc, char* argv[])
             updateGame(game, &input);
             updateMap(game);
             updateHero(&hero, &input, game);
-            // hero_update_club(&hero, now);
             updateCamera(&game->camera, hero.e.position);
             // updateEntityList(&entity_list, game->current_map, game->dt);
             updateAnimation(&hero.e.animation, game->dt, hero.isMoving);
@@ -375,16 +373,9 @@ int main(int argc, char* argv[])
         SDL_SetRenderTarget(game->renderer, game->current_map->texture);
         drawMap(game);
 
-        // Draw player collision box
-        setRenderDrawColor(game->renderer, game->colors[COLOR_YELLOW]);
-        SDL_Rect playerRect = {(int)(hero.e.position.x - 0.5f * hero.e.width),
-                               (int)hero.e.position.y - hero.e.height,
-                               hero.e.width, hero.e.height};
-        SDL_RenderFillRect(game->renderer, &playerRect);
-
         // Draw player position point
-        setRenderDrawColor(game->renderer, game->colors[COLOR_BLACK]);
-        SDL_RenderDrawPoint(game->renderer, (int)hero.e.position.x, (int)hero.e.position.y);
+        // setRenderDrawColor(game->renderer, game->colors[COLOR_BLACK]);
+        // SDL_RenderDrawPoint(game->renderer, (int)hero.e.position.x, (int)hero.e.position.y);
 
         // drawCircle(game->renderer, heroCenter.x, heroCenter.y, 30);
 
@@ -492,7 +483,7 @@ int main(int argc, char* argv[])
     destroyEntityList(&entity_list);
     destroyControllers(&input);
     game_destroy(game);
-    arena_destroy(&arena);
+    destroyArena(&arena);
 
     return 0;
 }
