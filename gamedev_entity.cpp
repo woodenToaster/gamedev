@@ -81,6 +81,10 @@ void drawEntity(Entity* e, Game* g)
                                    e->width, e->height};
             SDL_RenderFillRect(g->renderer, &playerRect);
 
+            // Draw player position point
+            setRenderDrawColor(g->renderer, g->colors[COLOR_BLACK]);
+            SDL_RenderDrawPoint(g->renderer, (int)e->position.x, (int)e->position.y);
+
             f32 width = 45;
             f32 height = 60;
             dest = {(int)(e->position.x - 0.5f*width), (int)(e->position.y - height),
@@ -669,47 +673,70 @@ internal void updateHero(Hero* h, Input* input, Game* g)
     u32 maxXPos = maxUInt32((u32)oldPosition.x, (u32)newPosition.x);
     u32 maxYPos = maxUInt32((u32)oldPosition.y, (u32)newPosition.y);
 
-    f32 tMin = 1.0f;
-    Vec2 wallNormal = {};
+    minXPos -= h->e.width;
+    minYPos -= h->e.height;
+    maxXPos += h->e.width;
+    maxYPos += h->e.height;
 
-    for (u32 tileY = minYPos; tileY <= maxYPos; ++tileY)
+    for (int iter = 0; iter < 4; ++iter)
     {
-        for (u32 tileX = minXPos; tileX <= maxXPos; ++tileX)
-        {
-            Vec2 pos = {(f32)tileX, (f32)tileY};
-            Tile *testTile = getTileAtPosition(g->current_map, pos);
-            if (isSolidTile(testTile))
-            {
-                Vec2 minCorner = {(f32)(tileX / testTile->width * testTile->width),
-                                  (f32)(tileY / testTile->height * testTile->height)};
-                Vec2 maxCorner = {(f32)(tileX / testTile->width * testTile->width + testTile->width),
-                                        (f32)(tileY / testTile->height * testTile->height + testTile->height)};
+        f32 tMin = 1.0f;
+        Vec2 wallNormal = {};
+        bool32 hit = false;
+        Vec2 desiredPosition = h->e.position + playerDelta;
 
-                if (testWall(minCorner.x, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
-                             &tMin, minCorner.y, maxCorner.y))
+        for (u32 tileY = minYPos; tileY <= maxYPos; ++tileY)
+        {
+            for (u32 tileX = minXPos; tileX <= maxXPos; ++tileX)
+            {
+                Vec2 tilePos = {(f32)tileX, (f32)tileY};
+                Tile *testTile = getTileAtPosition(g->current_map, tilePos);
+                u32 tileW = testTile->width;
+                u32 tileH = testTile->height;
+                if (isSolidTile(testTile))
                 {
-                    wallNormal = {-1, 0};
-                }
-                if (testWall(maxCorner.x, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
-                             &tMin, minCorner.y, maxCorner.y))
-                {
-                    wallNormal = {1, 0};
-                }
-                if (testWall(minCorner.y, oldPosition.y, oldPosition.x, playerDelta.y, playerDelta.x,
-                             &tMin, minCorner.x, maxCorner.x))
-                {
-                    wallNormal = {0, -1};
-                }
-                if (testWall(maxCorner.y, oldPosition.y, oldPosition.x, playerDelta.y, playerDelta.x,
-                             &tMin, minCorner.x, maxCorner.x))
-                {
-                    wallNormal = {0, 1};
+                    f32 minX = maxFloat32(0.0f, (f32)(tileX / tileW * tileW) - 0.5f*h->e.width);
+                    f32 minY = maxFloat32(0.0f, (f32)(tileY / tileH * tileH));
+                    Vec2 minCorner = {minX, minY};
+                    f32 maxX = minFloat32((f32)g->current_map->width_pixels,
+                                          (f32)(tileX / tileW * tileW + tileW + 0.5f*h->e.width));
+                    f32 maxY = minFloat32((f32)g->current_map->height_pixels,
+                                          (f32)(tileY / tileH * tileH + tileH + h->e.height));
+                    Vec2 maxCorner = {maxX, maxY};
+
+                    if (testWall(minCorner.x, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
+                                &tMin, minCorner.y, maxCorner.y))
+                    {
+                        wallNormal = {-1, 0};
+                        hit = true;
+                    }
+                    if (testWall(maxCorner.x, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
+                                &tMin, minCorner.y, maxCorner.y))
+                    {
+                        wallNormal = {1, 0};
+                        hit = true;
+                    }
+                    if (testWall(minCorner.y, oldPosition.y, oldPosition.x, playerDelta.y, playerDelta.x,
+                                &tMin, minCorner.x, maxCorner.x))
+                    {
+                        wallNormal = {0, -1};
+                        hit = true;
+                    }
+                    if (testWall(maxCorner.y, oldPosition.y, oldPosition.x, playerDelta.y, playerDelta.x,
+                                &tMin, minCorner.x, maxCorner.x))
+                    {
+                        wallNormal = {0, 1};
+                        hit = true;
+                    }
                 }
             }
         }
+        // oldPosition = h->e.position;
+        h->e.position += (tMin * playerDelta);
+        h->e.velocity -= 1 * vec2_dot(&h->e.velocity, &wallNormal) * wallNormal;
+        playerDelta = desiredPosition - h->e.position;
+        playerDelta -= 1 * vec2_dot(&playerDelta, &wallNormal) * wallNormal;
     }
-    h->e.position += (tMin * playerDelta);
-    h->e.velocity -= 1 * vec2_dot(&h->e.velocity, &wallNormal) * wallNormal;
 
     h->swingClub = input->key_pressed[KEY_F];
     h->harvest = input->key_pressed[KEY_SPACE] || input->button_pressed[BUTTON_A];

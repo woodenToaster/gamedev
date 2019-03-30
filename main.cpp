@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
     hero.e.width = 20;
     hero.e.height = 10;
     initAnimation(&hero.e.animation, 8, 80);
-    hero.e.starting_pos = {80, 81};
+    hero.e.starting_pos = {120, 120};
     hero.e.position = hero.e.starting_pos;
     hero.e.bb_x_offset = 10;
     hero.e.bb_y_offset = 18;
@@ -372,10 +372,6 @@ int main(int argc, char* argv[])
         /*********************************************************************/
         SDL_SetRenderTarget(game->renderer, game->current_map->texture);
         drawMap(game);
-
-        // Draw player position point
-        // setRenderDrawColor(game->renderer, game->colors[COLOR_BLACK]);
-        // SDL_RenderDrawPoint(game->renderer, (int)hero.e.position.x, (int)hero.e.position.y);
 
         // drawCircle(game->renderer, heroCenter.x, heroCenter.y, 30);
 
