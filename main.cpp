@@ -109,6 +109,7 @@ int main(int argc, char* argv[])
     // initEntityWidthHeight(&hero.e);
     hero.e.width = 20;
     hero.e.height = 10;
+    hero.e.spriteDims = {45, 60};
     initAnimation(&hero.e.animation, 8, 80);
     hero.e.starting_pos = {120, 120};
     hero.e.position = hero.e.starting_pos;
@@ -131,24 +132,13 @@ int main(int argc, char* argv[])
     // heroSword.offsetX = 2;
     // heroSword.offsetY = -25;
 
-    // Harlod
-    Harlod harlod = {};
-    initEntitySpriteSheet(&harlod.e, "sprites/Harlod_the_caveman.png", 1, 1, game->renderer);
-    initEntityWidthHeight(&harlod.e);
-    harlod.e.starting_pos = {300, 300};
-    harlod.e.position = harlod.e.starting_pos;
-    harlod.e.bounding_box = {0, 0, 45, 45};
-    harlod.e.bb_x_offset = 10;
-    harlod.e.bb_y_offset = 10;
-    harlod.e.speed = 10;
-    harlod.e.type = ET_HARLOD;
-    harlod.onHeroInteract = &harlodInteractWithHero;
-    harlod.e.active = GD_TRUE;
-
     // Knight
     Knight knight = {};
     initEntitySpriteSheet(&knight.e, "sprites/knight_alligned.png", 8, 5, game->renderer);
-    initEntityWidthHeight(&knight.e);
+    // initEntityWidthHeight(&knight.e);
+    knight.e.width = 20;
+    knight.e.height = 10;
+    knight.e.spriteDims = {45, 45};
     knight.e.starting_pos = {500, 500};
     knight.e.position = knight.e.starting_pos;
     knight.e.bounding_box = {0, 0, 20, 40};
@@ -168,10 +158,10 @@ int main(int argc, char* argv[])
     Entity buffalo2 = createBuffalo(500, 500, game->renderer);
     Entity buffalo3 = createBuffalo(600, 100, game->renderer);
 
-    EntityList entity_list = {};
-    Entity* _entities[] = {&hero.e, &knight.e, &buffalo, &buffalo2, &buffalo3, &harlod.e};
-    entity_list.entities = _entities;
-    entity_list.count = arrayCount(_entities);
+    // EntityList entity_list = {};
+    // Entity* _entities[] = {&hero.e, &knight.e, &buffalo, &buffalo2, &buffalo3, &harlod.e};
+    // entity_list.entities = _entities;
+    // entity_list.count = arrayCount(_entities);
 
     // Tiles
     Tile w = {};
@@ -249,82 +239,75 @@ int main(int argc, char* argv[])
     initTile(&grass_warp, tile_properties[TP_WARP], game->colors[COLOR_RUST], game->renderer);
     grass_warp.destination_map = 1;
 
-    // Map
-    Tile* map1_tiles[] = {
-        &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w,
-        &w, &f, &h_tree, &f, &f, &f, &f, &f, &f, &f, &f, &f,
-        &w, &f, &h_tree1, &f, &f, &f, &f, &fire, &f, &f, &f, &f,
-        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &m,
-        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f,
-        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &wr,
-        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f,
-        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &m,
-        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f,
-        &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w
-    };
-
-    Tile* map2_tiles[] = {
-        &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w,
-        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
-        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
-        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
-        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
-        &w, &f, &f, &f, &f, &wr, &f, &f, &f, &f, &f, &w,
-        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
-        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
-        &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
-        &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w
-    };
-
-    Tile* map3_tiles[3000];
-    for (int i = 0; i < 3000; ++i)
+    Map map0 = {};
+    map0.current = true;
+    map0.rows = 10;
+    map0.cols = 12;
+    for (u32 row = 0; row < map0.rows; ++row)
     {
-        map3_tiles[i] = grass;
+        for (u32 col = 0; col < map0.cols; ++col)
+        {
+            if (row == 0 || col == 0 || row == map0.rows - 1 || col == map0.cols - 1)
+            {
+                Entity *tile = &map0.entities[map0.entityCount++];
+                // tile->flags = tile_properties[TP_SOLID];
+                tile->color = game->colors[COLOR_GREEN];
+                tile->width = 80;
+                tile->height = 80;
+                tile->position = {col*tile->width + 0.5f*tile->width, row*tile->height + 0.5f*tile->height};
+                tile->collides = true;
+            }
+        }
     }
+    map0.width_pixels = map0.cols * map0.entities[0].width;
+    map0.height_pixels = map0.rows * map0.entities[0].height;
 
-    Map map1 = {};
-    initMap(&map1, 12, 10, map1_tiles, game->renderer);
-    map1.current = GD_TRUE;
-    Entity* map1_entities[] = {&hero.e, &knight.e, &harlod.e};
-    map1.active_entities.entities = map1_entities;
-    map1.active_entities.count = arrayCount(map1_entities);
-    Tile* map1_active_tiles[] = {&fire};
-    map1.active_tiles.tiles = map1_active_tiles;
-    map1.active_tiles.count = arrayCount(map1_active_tiles);
+    // Harlod
+    Entity *harlod = &map0.entities[map0.entityCount++];
+    *harlod = {};
+    initEntitySpriteSheet(harlod, "sprites/Harlod_the_caveman.png", 1, 1, game->renderer);
+    harlod->collides = true;
+    harlod->width = 20;
+    harlod->height = 10;
+    harlod->spriteDims = {60, 60};
+    harlod->starting_pos = {300, 300};
+    harlod->position = harlod->starting_pos;
+    harlod->speed = 10;
+    harlod->type = ET_HARLOD;
+    // harlod->onHeroInteract = &harlodInteractWithHero;
+    harlod->active = true;
 
-    Map map2 = {};
-    initMap(&map2, 12, 10, map2_tiles, game->renderer);
-    Entity* map2_entities[] = {&hero.e, /*&harlod.e,*/ &buffalo, &buffalo2, &buffalo3,};
-    map2.active_entities.entities = map2_entities;
-    map2.active_entities.count = arrayCount(map2_entities);
+    Entity* map0_entities[] = {&hero.e, &knight.e, harlod};
+    map0.active_entities.entities = map0_entities;
+    map0.active_entities.count = arrayCount(map0_entities);
 
-    Map map3 = {};
-    initMap(&map3, 60, 50, map3_tiles, game->renderer);
-    Entity* map3_entities[] = {&hero.e, /*&harlod.e*/};
-    map3.active_entities.entities = map3_entities;
-    map3.active_entities.count = arrayCount(map3_entities);
-    Tile* map3_active_tiles[] = {grass};
-    map3.active_tiles.tiles = map3_active_tiles;
-    map3.active_tiles.count = arrayCount(map3_active_tiles);
+    // Tile* map2_tiles[] = {
+    //     &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w,
+    //     &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
+    //     &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
+    //     &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
+    //     &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
+    //     &w, &f, &f, &f, &f, &wr, &f, &f, &f, &f, &f, &w,
+    //     &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
+    //     &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
+    //     &w, &f, &f, &f, &f, &f, &f, &f, &f, &f, &f, &w,
+    //     &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w, &w
+    // };
 
-    // Draw warp out of 16 x 16 tiles
-    for (int i = 4; i < 8; ++i)
-    {
-        int row = map3.cols * i + 200;
-        map3_tiles[row] = &grass_warp;
-        map3_tiles[row + 1] = &grass_warp;
-        map3_tiles[row + 2] = &grass_warp;
-        map3_tiles[row + 3] = &grass_warp;
-    }
+    // Map map2 = {};
+    // initMap(&map2, 12, 10, map2_tiles, game->renderer);
+    // Entity* map2_entities[] = {&hero.e, &buffalo, &buffalo2, &buffalo3,};
+    // map2.active_entities.entities = map2_entities;
+    // map2.active_entities.count = arrayCount(map2_entities);
 
-    MapList map_list = {};
-    Map* _maps[] = {&map1, &map2, &map3};
-    map_list.maps = _maps;
-    map_list.count = arrayCount(map_list.maps);
+    // MapList map_list = {};
+    // Map* _maps[] = {&map1, &map2};
+    // map_list.maps = _maps;
+    // map_list.count = arrayCount(map_list.maps);
 
-    game->current_map = &map1;
+    game->current_map = &map0;
     initCamera(game);
-    game->maps = &map_list;
+    // game->maps = &map_list;
     game->sounds = &sounds_to_play;
 
     /**************************************************************************/
@@ -344,11 +327,8 @@ int main(int argc, char* argv[])
         /*********************************************************************/
         if (game->mode == GAME_MODE_PLAYING)
         {
-            Vec2 heroCenter = {hero.e.position.x + hero.e.width / 2.0f,
-                               hero.e.position.y + hero.e.height / 2.0f};
-
             updateGame(game, &input);
-            updateMap(game);
+            // updateMap(game);
             updateHero(&hero, &input, game);
             updateCamera(&game->camera, hero.e.position);
             // updateEntityList(&entity_list, game->current_map, game->dt);
@@ -373,7 +353,8 @@ int main(int argc, char* argv[])
         SDL_SetRenderTarget(game->renderer, game->current_map->texture);
         drawMap(game);
 
-        // drawCircle(game->renderer, heroCenter.x, heroCenter.y, 30);
+        // Player interaction region
+        // drawCircle(game->renderer, (int)hero.e.position.x, (int)(hero.e.position.y - hero.e.height), 30);
 
         // Draw sword for knight walking right
         // int swordSpriteWidth = 16;
@@ -389,7 +370,7 @@ int main(int argc, char* argv[])
         // SDL_RenderCopy(game->renderer, knight.e.sprite_sheet.sheet,
         //                &knightSwordLocationInSheet, &knightSwordLocationOnMap);
 
-        if (game->current_map == &map1)
+        if (game->current_map == &map0)
         {
             // Draw sword for knight attacking to right
             Sprite attackingSwordRaised = {};
@@ -417,8 +398,8 @@ int main(int argc, char* argv[])
             SDL_Rect raisedSwordLocationOnMap = {(int)knight.e.position.x + currentSwordSprite->offsetX,
                                                  (int)knight.e.position.y + currentSwordSprite->offsetY,
                                                  currentSwordSprite->width, currentSwordSprite->height};
-            SDL_RenderCopy(game->renderer, knight.e.sprite_sheet.sheet,
-                        &raisedSwordLocationInSheet, &raisedSwordLocationOnMap);
+            // SDL_RenderCopy(game->renderer, knight.e.sprite_sheet.sheet,
+            //             &raisedSwordLocationInSheet, &raisedSwordLocationOnMap);
         }
 
         // SDL_SetRenderDrawColor(game->renderer, 255, 255, 0, 255);
@@ -444,9 +425,6 @@ int main(int argc, char* argv[])
             Entity* e = game->current_map->active_entities.entities[i];
             checkEntityCollisionsWithEntities(e, game);
         }
-
-        // setRenderDrawColor(game->renderer, game->colors[COLOR_BLACK]);
-        // SDL_RenderDrawPoint(game->renderer, hero.e.collision_pt.x, hero.e.collision_pt.y);
 
         // Draw FPS
         // f32 fps = 1000.0f / game->dt;
@@ -475,8 +453,8 @@ int main(int argc, char* argv[])
     destroyFontMetadata(&fontMetadata);
     destroyTileList(&tile_list);
     destroyTileset(&jungle_tiles);
-    map_list_destroy(&map_list);
-    destroyEntityList(&entity_list);
+    // map_list_destroy(&map_list);
+    // destroyEntityList(&entity_list);
     destroyControllers(&input);
     game_destroy(game);
     destroyArena(&arena);

@@ -183,6 +183,7 @@ Tile *map_get_tile_at_point(Map *m, Point p)
     return result;
 }
 
+#if 0
 void updateMap(Game* g)
 {
     Map* m = g->current_map;
@@ -194,12 +195,14 @@ void updateMap(Game* g)
 
     updateEntityList(g);
 }
+#endif
 
 void drawMap(Game* g)
 {
-    Map* m = g->current_map;
+    Map* map = g->current_map;
     Camera* c = &g->camera;
 
+#if 0
     // TODO: Only draw tiles that have changed?
     size_t first_row = c->viewport.y / m->tile_height;
     size_t last_row = first_row + c->viewport.h / m->tile_height + 2;
@@ -223,6 +226,26 @@ void drawMap(Game* g)
         }
     }
 
+    drawEntityList(g);
+#endif
+    // Draw background
+    SDL_Rect dest = {0, 0, c->viewport.w, c->viewport.h};
+    renderFilledRect(g->renderer, &dest, g->colors[COLOR_BLUE]);
+
+    // Draw tile entities
+    for (u32 entityIndex = 0; entityIndex < map->entityCount; ++entityIndex)
+    {
+        Entity *e = &map->entities[entityIndex];
+        if (e->type == ET_TILE)
+        {
+            Vec2 relPos = e->position - vec2((f32)c->viewport.x, (f32)c->viewport.y);
+            SDL_Rect tileRect = {(int)(relPos.x - 0.5f*e->width),
+                                 (int)(relPos.y - 0.5f*e->height),
+                                 (int)e->width, (int)e->height};
+            u32 tileColor = e->color;
+            renderFilledRect(g->renderer, &tileRect, tileColor);
+        }
+    }
     drawEntityList(g);
 }
 

@@ -72,36 +72,22 @@ void drawEntity(Entity* e, Game* g)
     {
         SDL_Rect dest = {};
         e->sprite_rect.x = e->sprite_rect.w * e->animation.current_frame;
-        if (entityIsHero(e))
-        {
-            // Draw player collision box
-            setRenderDrawColor(g->renderer, g->colors[COLOR_YELLOW]);
-            SDL_Rect playerRect = {(int)(e->position.x - 0.5f * e->width),
-                                   (int)(e->position.y - e->height),
-                                   e->width, e->height};
-            SDL_RenderFillRect(g->renderer, &playerRect);
-
-            // Draw player position point
-            setRenderDrawColor(g->renderer, g->colors[COLOR_BLACK]);
-            SDL_RenderDrawPoint(g->renderer, (int)e->position.x, (int)e->position.y);
-
-            f32 width = 45;
-            f32 height = 60;
-            dest = {(int)(e->position.x - 0.5f*width), (int)(e->position.y - height),
-                    (int)width, (int)height};
-        }
-        else
-        {
-            dest = {(int)e->position.x, (int)e->position.y, e->width, e->height};
-        }
-        SDL_RenderCopy(g->renderer, e->sprite_sheet.sheet, &e->sprite_rect, &dest);
-    }
+        // Draw collision box
+        setRenderDrawColor(g->renderer, g->colors[COLOR_YELLOW]);
+        SDL_Rect collisionRect = {(int)(e->position.x - 0.5f * e->width), (int)(e->position.y - e->height),
+                                e->width, e->height};
+        SDL_RenderFillRect(g->renderer, &collisionRect);
 
 #if 0
-    // Draw bounding box
-    setRenderDrawColor(g->renderer, g->colors[COLOR_MAGENTA]);
-    SDL_RenderDrawRect(g->renderer, &e->bounding_box);
+        // Draw position point
+        setRenderDrawColor(g->renderer, g->colors[COLOR_BLACK]);
+        SDL_RenderDrawPoint(g->renderer, (int)e->position.x, (int)e->position.y);
 #endif
+        i32 width = e->spriteDims.x;
+        i32 height = e->spriteDims.y;
+        dest = {(int)(e->position.x - 0.5f*width), (int)(e->position.y - height), width, height};
+        SDL_RenderCopy(g->renderer, e->sprite_sheet.sheet, &e->sprite_rect, &dest);
+    }
 }
 
 SDL_Rect getEntitiesOverlapBox(Entity* e1, Entity* e2)
@@ -376,13 +362,11 @@ void checkHeroCollisionsWithTiles(Hero* h, Game* game)
     }
 }
 
-#if 0
 void clampHeroToMap(Hero* h, Map* map)
 {
-    h->e.position.x = clampFloat(h->e.position.x, 0, (f32)map->width_pixels - h->e.dest_rect.w);
-    h->e.position.y = clampFloat(h->e.position.y, 0, (f32)map->height_pixels - h->e.dest_rect.h);
+    h->e.position.x = clampFloat(h->e.position.x, 0, (f32)map->width_pixels - 0.5f*h->e.width);
+    h->e.position.y = clampFloat(h->e.position.y, 0, (f32)map->height_pixels - 0.5f*h->e.height);
 }
-#endif
 
 void harvestTile(Hero *h, Game *g, Tile *tileToHarvest)
 {
@@ -597,6 +581,7 @@ internal bool32 testWall(f32 wall, f32 relX, f32 relY, f32 playerDeltaX, f32 pla
 
 internal void updateHero(Hero* h, Input* input, Game* g)
 {
+    Map *map = g->current_map;
     // TODO(chj): Handle joystick and keyboard on separate paths
     Vec2 acceleration = {};
     acceleration.x = input->stickX;
@@ -626,21 +611,22 @@ internal void updateHero(Hero* h, Input* input, Game* g)
     }
     else
     {
+        u32 spriteHeight = h->e.sprite_sheet.sprite_height;
         if (acceleration.x > 0)
         {
-            h->e.sprite_rect.y = 0 * h->e.sprite_sheet.sprite_height;
+            h->e.sprite_rect.y = 0 * spriteHeight;
         }
         if (acceleration.x < 0)
         {
-            h->e.sprite_rect.y = 3 * h->e.sprite_sheet.sprite_height;
+            h->e.sprite_rect.y = 3 * spriteHeight;
         }
         if (acceleration.y < 0)
         {
-            h->e.sprite_rect.y = 1 * h->e.sprite_sheet.sprite_height;
+            h->e.sprite_rect.y = 1 * spriteHeight;
         }
         if (acceleration.y > 0)
         {
-            h->e.sprite_rect.y = 4 * h->e.sprite_sheet.sprite_height;
+            h->e.sprite_rect.y = 4 * spriteHeight;
         }
 
         h->isMoving = true;
@@ -668,6 +654,7 @@ internal void updateHero(Hero* h, Input* input, Game* g)
         h->e.sprite_rect.x = 0;
     }
 
+#if 0
     u32 minXPos = minUInt32((u32)oldPosition.x, (u32)newPosition.x);
     u32 minYPos = minUInt32((u32)oldPosition.y, (u32)newPosition.y);
     u32 maxXPos = maxUInt32((u32)oldPosition.x, (u32)newPosition.x);
@@ -677,6 +664,7 @@ internal void updateHero(Hero* h, Input* input, Game* g)
     minYPos -= h->e.height;
     maxXPos += h->e.width;
     maxYPos += h->e.height;
+#endif
 
     for (int iter = 0; iter < 4; ++iter)
     {
@@ -685,58 +673,55 @@ internal void updateHero(Hero* h, Input* input, Game* g)
         bool32 hit = false;
         Vec2 desiredPosition = h->e.position + playerDelta;
 
-        for (u32 tileY = minYPos; tileY <= maxYPos; ++tileY)
+        for (u32 entityIndex = 0; entityIndex < map->entityCount; ++entityIndex)
         {
-            for (u32 tileX = minXPos; tileX <= maxXPos; ++tileX)
-            {
-                Vec2 tilePos = {(f32)tileX, (f32)tileY};
-                Tile *testTile = getTileAtPosition(g->current_map, tilePos);
-                u32 tileW = testTile->width;
-                u32 tileH = testTile->height;
-                if (isSolidTile(testTile))
-                {
-                    f32 minX = maxFloat32(0.0f, (f32)(tileX / tileW * tileW) - 0.5f*h->e.width);
-                    f32 minY = maxFloat32(0.0f, (f32)(tileY / tileH * tileH));
-                    Vec2 minCorner = {minX, minY};
-                    f32 maxX = minFloat32((f32)g->current_map->width_pixels,
-                                          (f32)(tileX / tileW * tileW + tileW + 0.5f*h->e.width));
-                    f32 maxY = minFloat32((f32)g->current_map->height_pixels,
-                                          (f32)(tileY / tileH * tileH + tileH + h->e.height));
-                    Vec2 maxCorner = {maxX, maxY};
+            Entity *testEntity = &map->entities[entityIndex];
 
-                    if (testWall(minCorner.x, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
-                                &tMin, minCorner.y, maxCorner.y))
-                    {
-                        wallNormal = {-1, 0};
-                        hit = true;
-                    }
-                    if (testWall(maxCorner.x, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
-                                &tMin, minCorner.y, maxCorner.y))
-                    {
-                        wallNormal = {1, 0};
-                        hit = true;
-                    }
-                    if (testWall(minCorner.y, oldPosition.y, oldPosition.x, playerDelta.y, playerDelta.x,
-                                &tMin, minCorner.x, maxCorner.x))
-                    {
-                        wallNormal = {0, -1};
-                        hit = true;
-                    }
-                    if (testWall(maxCorner.y, oldPosition.y, oldPosition.x, playerDelta.y, playerDelta.x,
-                                &tMin, minCorner.x, maxCorner.x))
-                    {
-                        wallNormal = {0, 1};
-                        hit = true;
-                    }
+            if (testEntity->collides)
+            {
+                f32 minX = maxFloat32(0.0f, testEntity->position.x - 0.5f*testEntity->width - 0.5f*h->e.width);
+                f32 minY = maxFloat32(0.0f, testEntity->position.y - 0.5f*testEntity->height - 0.5f*h->e.height);
+                Vec2 minCorner = {minX, minY};
+                f32 maxX = minFloat32((f32)map->width_pixels,
+                                      testEntity->position.x + 0.5f*testEntity->width + 0.5f*h->e.width);
+                f32 maxY = minFloat32((f32)map->height_pixels,
+                                      testEntity->position.y + 0.5f*testEntity->height + h->e.height);
+                Vec2 maxCorner = {maxX, maxY};
+
+                if (testWall(minCorner.x, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
+                            &tMin, minCorner.y, maxCorner.y))
+                {
+                    wallNormal = {-1, 0};
+                    hit = true;
+                }
+                if (testWall(maxCorner.x, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
+                            &tMin, minCorner.y, maxCorner.y))
+                {
+                    wallNormal = {1, 0};
+                    hit = true;
+                }
+                if (testWall(minCorner.y, oldPosition.y, oldPosition.x, playerDelta.y, playerDelta.x,
+                            &tMin, minCorner.x, maxCorner.x))
+                {
+                    wallNormal = {0, -1};
+                    hit = true;
+                }
+                if (testWall(maxCorner.y, oldPosition.y, oldPosition.x, playerDelta.y, playerDelta.x,
+                            &tMin, minCorner.x, maxCorner.x))
+                {
+                    wallNormal = {0, 1};
+                    hit = true;
                 }
             }
         }
-        // oldPosition = h->e.position;
+
         h->e.position += (tMin * playerDelta);
         h->e.velocity -= 1 * vec2_dot(&h->e.velocity, &wallNormal) * wallNormal;
         playerDelta = desiredPosition - h->e.position;
         playerDelta -= 1 * vec2_dot(&playerDelta, &wallNormal) * wallNormal;
     }
+
+    clampHeroToMap(h, map);
 
     h->swingClub = input->key_pressed[KEY_F];
     h->harvest = input->key_pressed[KEY_SPACE] || input->button_pressed[BUTTON_A];

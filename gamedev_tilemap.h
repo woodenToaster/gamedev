@@ -48,6 +48,7 @@ typedef void (*heroTileInteractionFunc)(Tile *t, Hero *h);
 
 struct Tile
 {
+    Entity e;
     u32 width;
     u32 height;
     u32 flags;
@@ -89,11 +90,15 @@ struct Map
     int height_pixels;
     u64 tile_rows_per_screen;
     u64 tile_cols_per_screen;
-    u8 current;
+    bool32 current;
     Tile** tiles;
     SDL_Texture* texture;
     EntityList active_entities;
     TileList active_tiles;
+
+    // New stuff
+    u32 entityCount;
+    Entity entities[256];
 };
 
 struct MapList
