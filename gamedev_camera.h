@@ -8,6 +8,6 @@ struct Camera
     i32 y_pixel_movement_threshold;
     i32 x_pixel_movement_threshold;
     SDL_Rect viewport;
-    SDL_Rect starting_pos;
+    Point starting_pos;
 };
 #endif

@@ -202,34 +202,8 @@ void drawMap(Game* g)
     Map* map = g->current_map;
     Camera* c = &g->camera;
 
-#if 0
-    // TODO: Only draw tiles that have changed?
-    size_t first_row = c->viewport.y / m->tile_height;
-    size_t last_row = first_row + c->viewport.h / m->tile_height + 2;
-    size_t first_col = c->viewport.x / m->tile_width;
-    size_t last_col = first_col + c->viewport.w / m->tile_width + 2;
-
-    clamp_size_t(&last_row, last_row, m->rows);
-    clamp_size_t(&last_col, last_col, m->cols);
-
-    SDL_Rect tile_rect = {};
-    tile_rect.w = m->tile_width;
-    tile_rect.h = m->tile_height;
-    for (size_t row = first_row; row < last_row; ++row)
-    {
-        for (size_t col = first_col; col < last_col; ++col)
-        {
-            tile_rect.x = (int)col * m->tile_width;
-            tile_rect.y = (int)row * m->tile_height;
-            Tile* tp = m->tiles[row * m->cols + col];
-            drawTile(tp, g->renderer, &tile_rect);
-        }
-    }
-
-    drawEntityList(g);
-#endif
     // Draw background
-    SDL_Rect dest = {0, 0, c->viewport.w, c->viewport.h};
+    SDL_Rect dest = {c->viewport.x, c->viewport.y, c->viewport.w, c->viewport.h};
     renderFilledRect(g->renderer, &dest, g->colors[COLOR_BLUE]);
 
     // Draw tile entities
@@ -238,9 +212,8 @@ void drawMap(Game* g)
         Entity *e = &map->entities[entityIndex];
         if (e->type == ET_TILE)
         {
-            Vec2 relPos = e->position - vec2((f32)c->viewport.x, (f32)c->viewport.y);
-            SDL_Rect tileRect = {(int)(relPos.x - 0.5f*e->width),
-                                 (int)(relPos.y - 0.5f*e->height),
+            SDL_Rect tileRect = {(int)(e->position.x - 0.5f*e->width),
+                                 (int)(e->position.y - 0.5f*e->height),
                                  (int)e->width, (int)e->height};
             u32 tileColor = e->color;
             renderFilledRect(g->renderer, &tileRect, tileColor);
@@ -253,7 +226,7 @@ void map_activate_entities(Map* m)
 {
     for (u32 i = 0; i < m->active_entities.count; ++i)
     {
-        m->active_entities.entities[i]->active = GD_TRUE;
+        m->active_entities.entities[i]->active = true;
     }
 }
 
@@ -261,7 +234,7 @@ void map_deactivate_entities(Map* m)
 {
     for (u32 i = 0; i < m->active_entities.count; ++i)
     {
-        m->active_entities.entities[i]->active = GD_FALSE;
+        m->active_entities.entities[i]->active = false;
     }
 }
 
@@ -269,7 +242,7 @@ void map_activate_tiles(Map* m)
 {
     for (u32 i = 0; i < m->active_tiles.count; ++i)
     {
-        m->active_tiles.tiles[i]->active = GD_TRUE;
+        m->active_tiles.tiles[i]->active = true;
     }
 }
 
@@ -277,7 +250,7 @@ void map_deactivate_tiles(Map* m)
 {
     for (u32 i = 0; i < m->active_tiles.count; ++i)
     {
-        m->active_tiles.tiles[i]->active = GD_FALSE;
+        m->active_tiles.tiles[i]->active = false;
     }
 }
 
@@ -292,8 +265,8 @@ void map_do_warp(Game* g)
     {
         // Transitioning to map2
         g->current_map = map2;
-        map1->current = GD_FALSE;
-        map2->current = GD_TRUE;
+        map1->current = false;
+        map2->current = true;
         map_deactivate_entities(map1);
         map_deactivate_tiles(map1);
         map_activate_entities(map2);
@@ -303,8 +276,8 @@ void map_do_warp(Game* g)
     {
         // Transitioning to map3
         g->current_map = map3;
-        map2->current = GD_FALSE;
-        map3->current = GD_TRUE;
+        map2->current = false;
+        map3->current = true;
         map_deactivate_entities(map2);
         map_activate_entities(map3);
         map_deactivate_tiles(map2);
@@ -314,8 +287,8 @@ void map_do_warp(Game* g)
     {
         // Transitioning to map1
         g->current_map = map1;
-        map1->current = GD_TRUE;
-        map3->current = GD_FALSE;
+        map1->current = true;
+        map3->current = false;
         map_deactivate_entities(map3);
         map_activate_entities(map1);
         map_deactivate_tiles(map3);

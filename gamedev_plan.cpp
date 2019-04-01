@@ -13,11 +13,11 @@ void updatePlan(Entity* e, u32 last_frame_duration)
 
         if (!e->plan.waiting)
         {
-            e->can_move = GD_TRUE;
+            e->can_move = true;
         }
         else
         {
-            e->can_move = GD_FALSE;
+            e->can_move = false;
         }
     }
 }

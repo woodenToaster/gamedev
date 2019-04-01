@@ -90,8 +90,4 @@ struct Harlod
     interactWithHero onHeroInteract;
 };
 
-struct Knight
-{
-    Entity e;
-};
 #endif

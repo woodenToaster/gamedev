@@ -33,7 +33,7 @@ static void setKeyState(Input* input, Key key, bool32 isDown)
 {
     if (input->key_down[key] && !isDown)
     {
-        input->key_pressed[key] = GD_TRUE;
+        input->key_pressed[key] = true;
     }
     input->key_down[key] = isDown;
 }
@@ -126,7 +126,7 @@ static void pollInput(Input* input, Game* game)
             game->running = 0;
             break;
         case SDL_KEYDOWN:
-            updateInput(input, event.key.keysym.scancode, GD_TRUE);
+            updateInput(input, event.key.keysym.scancode, true);
             break;
             // case SDL_MOUSEMOTION:
             //     input_handle_mouse(&input);
@@ -204,7 +204,7 @@ static void pollInput(Input* input, Game* game)
 // {
 //     if (event.button.button == SDL_BUTTON_LEFT)
 //     {
-//         hero.swing_club = GD_TRUE;
+//         hero.swing_club = true;
 //     }
 //     break;
 // }

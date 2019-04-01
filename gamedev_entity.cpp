@@ -78,11 +78,10 @@ void drawEntity(Entity* e, Game* g)
                                 e->width, e->height};
         SDL_RenderFillRect(g->renderer, &collisionRect);
 
-#if 0
         // Draw position point
-        setRenderDrawColor(g->renderer, g->colors[COLOR_BLACK]);
-        SDL_RenderDrawPoint(g->renderer, (int)e->position.x, (int)e->position.y);
-#endif
+        // setRenderDrawColor(g->renderer, g->colors[COLOR_BLACK]);
+        // SDL_RenderDrawPoint(g->renderer, (int)e->position.x, (int)e->position.y);
+
         i32 width = e->spriteDims.x;
         i32 height = e->spriteDims.y;
         dest = {(int)(e->position.x - 0.5f*width), (int)(e->position.y - height), width, height};
@@ -261,7 +260,7 @@ void updateEntity(Entity* e, Map* map, u32 last_frame_duration)
     //     {
     //         SDL_Rect saved_position = e->dest_rect;
     //         moveEntityInDirection(e, e->plan.mv_dir);
-    //         updateAnimation(&e->animation, last_frame_duration, GD_TRUE);
+    //         updateAnimation(&e->animation, last_frame_duration, true);
     //         setEntityCollisionPoint(e);
     //         checkEntityCollisionsWithTiles(e, map, &saved_position);
     //         // entity_check_collisions_with_entities(e, map, &saved_position);
@@ -341,7 +340,7 @@ void checkHeroCollisionsWithTiles(Hero* h, Game* game)
     if (isSlowTile(current_tile) && !h->inQuicksand)
     {
         h->e.speed *= 1 / quicksandValue;
-        h->inQuicksand = GD_TRUE;
+        h->inQuicksand = true;
         if (h->isMoving)
         {
             sound_queue(global_sounds[SOUND_MUD], game->sounds);
@@ -350,7 +349,7 @@ void checkHeroCollisionsWithTiles(Hero* h, Game* game)
     else if (h->inQuicksand)
     {
         h->e.speed *= quicksandValue;
-        h->inQuicksand = GD_FALSE;
+        h->inQuicksand = false;
     }
     if (isWarpTile(current_tile))
     {
@@ -374,8 +373,8 @@ void harvestTile(Hero *h, Game *g, Tile *tileToHarvest)
     // TODO(chj): Don't re-init?
     initTile(tileToHarvest, tile_properties[TP_NONE], g->colors[COLOR_NONE],
               g->renderer, "sprites/tree_stump.png");
-    tileToHarvest->active = GD_TRUE;
-    tileToHarvest->harvested = GD_TRUE;
+    tileToHarvest->active = true;
+    tileToHarvest->harvested = true;
     setTileSpriteSize(tileToHarvest, 64, 64);
 
     // Update inventory
@@ -516,8 +515,8 @@ internal void placeItem(Game *g, Hero *h, CraftableItem item)
         initTile(t, tile_properties[TP_HARVEST] | tile_properties[TP_SOLID],
                  g->colors[COLOR_NONE], g->renderer, "sprites/tree.png");
         setTileSpriteSize(t, 64, 64);
-        t->active = GD_TRUE;
-        t->is_harvestable = GD_TRUE;
+        t->active = true;
+        t->is_harvestable = true;
         t->harvestedItem = INV_LEAVES;
         // TODO(chj): Free what was there before
 
@@ -654,18 +653,6 @@ internal void updateHero(Hero* h, Input* input, Game* g)
         h->e.sprite_rect.x = 0;
     }
 
-#if 0
-    u32 minXPos = minUInt32((u32)oldPosition.x, (u32)newPosition.x);
-    u32 minYPos = minUInt32((u32)oldPosition.y, (u32)newPosition.y);
-    u32 maxXPos = maxUInt32((u32)oldPosition.x, (u32)newPosition.x);
-    u32 maxYPos = maxUInt32((u32)oldPosition.y, (u32)newPosition.y);
-
-    minXPos -= h->e.width;
-    minYPos -= h->e.height;
-    maxXPos += h->e.width;
-    maxYPos += h->e.height;
-#endif
-
     for (int iter = 0; iter < 4; ++iter)
     {
         f32 tMin = 1.0f;
@@ -679,8 +666,15 @@ internal void updateHero(Hero* h, Input* input, Game* g)
 
             if (testEntity->collides)
             {
+                f32 heightOffset = 0.5f*h->e.height;
+                if (testEntity->type == ET_TILE)
+                {
+                    // TODO(chj): Clean this up. Need special handling based off where position is.
+                    // It's at the center of tiles but the bottom of entities
+                    heightOffset = 0.0f;
+                }
                 f32 minX = maxFloat32(0.0f, testEntity->position.x - 0.5f*testEntity->width - 0.5f*h->e.width);
-                f32 minY = maxFloat32(0.0f, testEntity->position.y - 0.5f*testEntity->height - 0.5f*h->e.height);
+                f32 minY = maxFloat32(0.0f, testEntity->position.y - 0.5f*testEntity->height - heightOffset);
                 Vec2 minCorner = {minX, minY};
                 f32 maxX = minFloat32((f32)map->width_pixels,
                                       testEntity->position.x + 0.5f*testEntity->width + 0.5f*h->e.width);
@@ -758,11 +752,11 @@ Entity createBuffalo(f32 starting_x, f32 starting_y, SDL_Renderer* renderer)
     buffalo.bb_y_offset = 10;
     buffalo.speed = 3;
     buffalo.type = ET_BUFFALO;
-    buffalo.can_move = GD_TRUE;
+    buffalo.can_move = true;
     buffalo.collision_pt_offset = 32;
     initAnimation(&buffalo.animation, 4, 100);
     buffalo.plan = {};
-    buffalo.has_plan = GD_TRUE;
+    buffalo.has_plan = true;
     buffalo.plan.move_delay = (rand() % 2000) + 1000;
     buffalo.plan.mv_dir = (CardinalDir)(rand() % 4);
     return buffalo;

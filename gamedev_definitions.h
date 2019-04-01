@@ -15,16 +15,9 @@ typedef int32_t i32;
 typedef int64_t i64;
 typedef float f32;
 typedef double f64;
-// TODO(chj): Change use of u8 as bool to bool32
 typedef int32_t bool32;
 
 #define MEGABYTES(n) ((n) * 1024 * 1024)
-
-enum
-{
-    GD_FALSE,
-    GD_TRUE
-};
 
 enum EntityType
 {

@@ -69,7 +69,7 @@ void initCamera(Game* g)
 {
     g->camera.viewport.w = g->screen_width;
     g->camera.viewport.h = g->screen_height;
-    g->camera.starting_pos = g->camera.viewport;
+    g->camera.starting_pos = {0, 0};
 
     if (g->camera.viewport.w >= g->current_map->width_pixels)
     {
@@ -79,7 +79,7 @@ void initCamera(Game* g)
     {
         g->camera.max_x = g->current_map->width_pixels - g->camera.viewport.w;
     }
-    if (g->camera.viewport.h >= g->current_map->width_pixels)
+    if (g->camera.viewport.h >= g->current_map->height_pixels)
     {
         g->camera.max_y = 0;
     }
@@ -133,15 +133,15 @@ void initGame(Game* g, u32 width, u32 height)
         exit(1);
     }
     initColors(g);
-    g->initialized = GD_TRUE;
-    g->running = GD_TRUE;
+    g->initialized = true;
+    g->running = true;
 }
 
 void updateGame(Game *g, Input *input)
 {
     if (input->key_pressed[KEY_ESCAPE])
     {
-        g->running = GD_FALSE;
+        g->running = false;
     }
 }
 
@@ -261,7 +261,7 @@ void drawCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
     }
 }
 
-void game_fix_frame_rate(Game* g)
+void sleepIfAble(Game* g)
 {
     if (g->dt < g->target_ms_per_frame)
     {
