@@ -76,6 +76,9 @@ LRESULT CALLBACK WindowProc(HWND WindowHandle, UINT Message, WPARAM WParam, LPAR
 
 int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int CmdShow)
 {
+    (void)CmdLine;
+    (void)PrevInstance;
+
     WNDCLASS WindowClass = {0};
     WindowClass.lpfnWndProc = WindowProc;
     WindowClass.hInstance = Instance;
@@ -98,7 +101,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
         while (GlobalRunning)
         {
             MSG Message = {0};
-            while (PeekMessage(&Message, NULL, 0, 0, PM_REMOVE) == TRUE)
+            while (PeekMessage(&Message, NULL, 0, 0, PM_NOREMOVE) == TRUE)
             {
                 if (GetMessage(&Message, NULL, 0, 0))
                 {
