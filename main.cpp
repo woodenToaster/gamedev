@@ -47,7 +47,7 @@
 #include "gamedev_memory.cpp"
 
 #define PushStruct(arena, type) ((type*)pushSize((arena), sizeof(type)))
-#define arrayCount(arr) (sizeof(arr) / sizeof((arr)[0]))
+#define ArrayCount(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 int main(int argc, char* argv[])
 {
@@ -140,83 +140,83 @@ int main(int argc, char* argv[])
     // EntityList entity_list = {};
     // Entity* _entities[] = {&hero.e, &knight.e, &buffalo, &buffalo2, &buffalo3, &harlod.e};
     // entity_list.entities = _entities;
-    // entity_list.count = arrayCount(_entities);
+    // entity_list.count = ArrayCount(_entities);
 
     // Tiles
-    Tile w = {};
-    w.width = w.height = 80;
-    initTile(&w, tile_properties[TP_SOLID], game->colors[COLOR_GREEN], game->renderer);
+    // Tile w = {};
+    // w.width = w.height = 80;
+    // initTile(&w, tile_properties[TP_SOLID], game->colors[COLOR_GREEN], game->renderer);
 
-    Tile f = {};
-    f.width = f.height = 80;
-    initTile(&f, tile_properties[TP_NONE], game->colors[COLOR_BLUE], game->renderer);
+    // Tile f = {};
+    // f.width = f.height = 80;
+    // initTile(&f, tile_properties[TP_NONE], game->colors[COLOR_BLUE], game->renderer);
 
-    Tile m = {};
-    m.width = m.height = 80;
-    initTile(&m, tile_properties[TP_QUICKSAND], game->colors[COLOR_BROWN], game->renderer);
+    // Tile m = {};
+    // m.width = m.height = 80;
+    // initTile(&m, tile_properties[TP_QUICKSAND], game->colors[COLOR_BROWN], game->renderer);
 
-    Tile wr = {};
-    wr.width = wr.height = 80;
-    initTile(&wr, tile_properties[TP_WARP], game->colors[COLOR_RUST], game->renderer);
-    wr.destination_map = 2;
+    // Tile wr = {};
+    // wr.width = wr.height = 80;
+    // initTile(&wr, tile_properties[TP_WARP], game->colors[COLOR_RUST], game->renderer);
+    // wr.destination_map = 2;
 
-    Tile t = {};
-    t.width = t.height = 80;
-    initTile(&t, tile_properties[TP_SOLID], game->colors[COLOR_GREEN], game->renderer, "sprites/TropicalTree.png");
-    setTileSpriteSize(&t, 64, 64);
-    t.active = true;
+    // Tile t = {};
+    // t.width = t.height = 80;
+    // initTile(&t, tile_properties[TP_SOLID], game->colors[COLOR_GREEN], game->renderer, "sprites/TropicalTree.png");
+    // setTileSpriteSize(&t, 64, 64);
+    // t.active = true;
 
-    Tile fire = {};
-    fire.width = fire.height = 80;
-    initTile(&fire, tile_properties[TP_FIRE] | tile_properties[TP_INTERACTIVE],
-             game->colors[COLOR_GREY], game->renderer, "sprites/Campfire.png");
-    setTileSpriteSize(&fire, 64, 64);
-    initAnimation(&fire.animation, 11, 100);
-    fire.active = true;
-    fire.has_animation = true;
-    fire.onHeroInteract = lightFire;
+    // Tile fire = {};
+    // fire.width = fire.height = 80;
+    // initTile(&fire, tile_properties[TP_FIRE] | tile_properties[TP_INTERACTIVE],
+    //          game->colors[COLOR_GREY], game->renderer, "sprites/Campfire.png");
+    // setTileSpriteSize(&fire, 64, 64);
+    // initAnimation(&fire.animation, 11, 100);
+    // fire.active = true;
+    // fire.has_animation = true;
+    // fire.onHeroInteract = lightFire;
 
     // Harvestable tree
-    Tile h_tree = {};
-    h_tree.width = h_tree.height = 80;
-    initTile(&h_tree, tile_properties[TP_HARVEST] | tile_properties[TP_SOLID],
-              game->colors[COLOR_NONE], game->renderer, "sprites/tree.png");
-    setTileSpriteSize(&h_tree, 64, 64);
-    h_tree.active = true;
-    h_tree.is_harvestable = true;
-    h_tree.harvestedItem = INV_LEAVES;
+    // Tile h_tree = {};
+    // h_tree.width = h_tree.height = 80;
+    // initTile(&h_tree, tile_properties[TP_HARVEST] | tile_properties[TP_SOLID],
+    //           game->colors[COLOR_NONE], game->renderer, "sprites/tree.png");
+    // setTileSpriteSize(&h_tree, 64, 64);
+    // h_tree.active = true;
+    // h_tree.is_harvestable = true;
+    // h_tree.harvestedItem = INV_LEAVES;
 
-    Tile h_tree1 = {};
-    h_tree1.width = h_tree1.height = 80;
-    initTile(&h_tree1, tile_properties[TP_HARVEST] | tile_properties[TP_SOLID],
-              game->colors[COLOR_NONE], game->renderer, "sprites/tree.png");
-    setTileSpriteSize(&h_tree1, 64, 64);
-    h_tree1.active = true;
-    h_tree1.is_harvestable = true;
-    h_tree1.harvestedItem = INV_LEAVES;
+    // Tile h_tree1 = {};
+    // h_tree1.width = h_tree1.height = 80;
+    // initTile(&h_tree1, tile_properties[TP_HARVEST] | tile_properties[TP_SOLID],
+    //           game->colors[COLOR_NONE], game->renderer, "sprites/tree.png");
+    // setTileSpriteSize(&h_tree1, 64, 64);
+    // h_tree1.active = true;
+    // h_tree1.is_harvestable = true;
+    // h_tree1.harvestedItem = INV_LEAVES;
 
-    TileList tile_list = {};
-    Tile* _tiles[] = {&w, &f, &m, &wr, &t, &fire, &h_tree, &h_tree1};
-    tile_list.tiles = _tiles;
+    // TileList tile_list = {};
+    // Tile* _tiles[] = {&w, &f, &m, &wr, &t, &fire, &h_tree, &h_tree1};
+    // tile_list.tiles = _tiles;
 
-    tile_list.count = arrayCount(tile_list.tiles);
+    // tile_list.count = ArrayCount(tile_list.tiles);
 
     // Tileset
-    Tileset jungle_tiles = {};
-    jungle_tiles.texture = create_texture_from_png("sprites/jungle_tileset.png", game->renderer);
+    // Tileset jungle_tiles = {};
+    // jungle_tiles.texture = create_texture_from_png("sprites/jungle_tileset.png", game->renderer);
 
-    Tile* grass = &jungle_tiles.tiles[0];
-    grass->width = 16;
-    grass->height = 16;
-    grass->flags = tile_properties[TP_NONE];
-    grass->color = game->colors[COLOR_NONE];
-    grass->sprite = jungle_tiles.texture;
-    grass->sprite_rect = {16, 16, 16, 16};
+    // Tile* grass = &jungle_tiles.tiles[0];
+    // grass->width = 16;
+    // grass->height = 16;
+    // grass->flags = tile_properties[TP_NONE];
+    // grass->color = game->colors[COLOR_NONE];
+    // grass->sprite = jungle_tiles.texture;
+    // grass->sprite_rect = {16, 16, 16, 16};
 
-    Tile grass_warp = {};
-    grass_warp.width = grass_warp.height = 16;
-    initTile(&grass_warp, tile_properties[TP_WARP], game->colors[COLOR_RUST], game->renderer);
-    grass_warp.destination_map = 1;
+    // Tile grass_warp = {};
+    // grass_warp.width = grass_warp.height = 16;
+    // initTile(&grass_warp, tile_properties[TP_WARP], game->colors[COLOR_RUST], game->renderer);
+    // grass_warp.destination_map = 1;
 
     u32 tileWidth = 80;
     u32 tileHeight = 80;
@@ -280,7 +280,7 @@ int main(int argc, char* argv[])
 
     Entity* map0_entities[] = {&hero.e, knight, harlod};
     map0.active_entities.entities = map0_entities;
-    map0.active_entities.count = arrayCount(map0_entities);
+    map0.active_entities.count = ArrayCount(map0_entities);
 
     game->current_map = &map0;
     initCamera(game);
@@ -428,8 +428,8 @@ int main(int argc, char* argv[])
     /**************************************************************************/
     SDL_DestroyTexture(transparentBlackTexture);
     destroyFontMetadata(&fontMetadata);
-    destroyTileList(&tile_list);
-    destroyTileset(&jungle_tiles);
+    // destroyTileList(&tile_list);
+    // destroyTileset(&jungle_tiles);
     // map_list_destroy(&map_list);
     // destroyEntityList(&entity_list);
     destroyControllers(&input);

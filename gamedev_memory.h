@@ -3,10 +3,10 @@
 
 struct Arena
 {
-    char* start;
-    char* next;
+    u8* start;
+    u8* next;
     size_t used;
-    size_t max_cap;
+    size_t maxCap;
 };
 
 #endif

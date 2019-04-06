@@ -7,8 +7,6 @@
 ** TODO Combat system
 ** TODO Dialog system
 ** TODO Basic enemy to prototype combat system
-*** TODO Collision Detection
-*** TODO Collisions feel bad. Need to slide around other entities (use vectors)
 ** TODO Inventory system
 *** TODO Make items selectable
 ** TODO Crafting system
@@ -48,4 +46,3 @@
 * Story
 ** Enemies are sad, misinformed people instead of monsters?
 * Bugs
-** TODO Get stuck on collisions 
