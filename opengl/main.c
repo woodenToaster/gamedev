@@ -7,6 +7,7 @@
 global_variable HDC GlobalDeviceContext;
 global_variable HGLRC GlobalRenderingContext;
 global_variable int GlobalRunning;
+global_variable GLfloat GlobalSpin;
 
 LRESULT CALLBACK WindowProc(HWND WindowHandle, UINT Message, WPARAM WParam, LPARAM LParam)
 {
@@ -57,6 +58,7 @@ LRESULT CALLBACK WindowProc(HWND WindowHandle, UINT Message, WPARAM WParam, LPAR
 
         glEnable(GL_DEPTH_TEST);
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        glShadeModel(GL_FLAT);
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
         glOrtho(0, 1, 0, 1, -1, 1);
@@ -85,6 +87,9 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
     (void)CmdLine;
     (void)PrevInstance;
 
+    LARGE_INTEGER CountsPerSecond;
+    QueryPerformanceFrequency(&CountsPerSecond);
+
     WNDCLASS WindowClass = {0};
     WindowClass.lpfnWndProc = WindowProc;
     WindowClass.hInstance = Instance;
@@ -103,9 +108,13 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
         ShowWindow(WindowHandle, CmdShow);
         UpdateWindow(WindowHandle);
 
+        LARGE_INTEGER ElapsedMicroseconds = {0};
         GlobalRunning = 1;
         while (GlobalRunning)
         {
+            LARGE_INTEGER StartTime;
+            QueryPerformanceCounter(&StartTime);
+
             MSG Message = {0};
             while (PeekMessage(&Message, NULL, 0, 0, PM_NOREMOVE) == TRUE)
             {
@@ -117,15 +126,28 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
             }
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glPushMatrix();
+            glTranslatef(0.375f, 0.375f, 0.0f);
+            glRotatef(GlobalSpin, 0.0f, 0.0f, 1.0f);
+            glTranslatef(-0.375f, -0.375f, 0.0f);
             glColor3f(1.0f, 0.0f, 0.0f);
-            glBegin(GL_POLYGON);
-              glVertex3f(0.25f, 0.25, 0.0f);
-              glVertex3f(0.75f, 0.25, 0.0f);
-              glVertex3f(0.75f, 0.75, 0.0f);
-              glVertex3f(0.25f, 0.75, 0.0f);
-            glEnd();
+            glRectf(0.25f, 0.25f, 0.5f, 0.5f);
+            glPopMatrix();
             glFlush();
             SwapBuffers(GlobalDeviceContext);
+
+            LARGE_INTEGER EndTime;
+            QueryPerformanceCounter(&EndTime);
+
+            ElapsedMicroseconds.QuadPart += (EndTime.QuadPart - StartTime.QuadPart) * 1000000 /
+                CountsPerSecond.QuadPart / 100;
+
+            if (ElapsedMicroseconds.QuadPart > 16)
+            {
+                GlobalSpin += 1.0f;
+                GlobalSpin = fmodf(GlobalSpin, 360);
+                ElapsedMicroseconds.QuadPart = 0;
+            }
         }
     }
     else
