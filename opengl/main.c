@@ -19,8 +19,14 @@ LRESULT CALLBACK WindowProc(HWND WindowHandle, UINT Message, WPARAM WParam, LPAR
         PixelFormatDescriptor.nVersion = 1;
         PixelFormatDescriptor.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
         PixelFormatDescriptor.dwLayerMask = PFD_MAIN_PLANE;
-        PixelFormatDescriptor.iPixelType = PFD_TYPE_COLORINDEX;
-        PixelFormatDescriptor.cColorBits = 8;
+        PixelFormatDescriptor.iPixelType = PFD_TYPE_RGBA;
+        PixelFormatDescriptor.cColorBits = 24;
+        PixelFormatDescriptor.cRedBits = 8;
+        PixelFormatDescriptor.cRedShift = 16;
+        PixelFormatDescriptor.cGreenBits = 8;
+        PixelFormatDescriptor.cGreenShift = 8;
+        PixelFormatDescriptor.cBlueBits = 8;
+        PixelFormatDescriptor.cBlueShift = 0;
         PixelFormatDescriptor.cDepthBits = 16;
         PixelFormatDescriptor.cAccumBits = 0;
         PixelFormatDescriptor.cStencilBits = 0;
@@ -50,7 +56,7 @@ LRESULT CALLBACK WindowProc(HWND WindowHandle, UINT Message, WPARAM WParam, LPAR
         GetClientRect(WindowHandle, &ClientRect);
 
         glEnable(GL_DEPTH_TEST);
-        glClearColor(0, 0, 0, 0);
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
         glOrtho(0, 1, 0, 1, -1, 1);
@@ -118,7 +124,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
               glVertex3f(0.75f, 0.75, 0.0f);
               glVertex3f(0.25f, 0.75, 0.0f);
             glEnd();
-
+            glFlush();
             SwapBuffers(GlobalDeviceContext);
         }
     }
