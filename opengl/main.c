@@ -1,6 +1,5 @@
 #include <windows.h>
 #include <GL/gl.h>
-#include <GL/glu.h>
 
 #define global_variable static
 
@@ -59,6 +58,19 @@ LRESULT CALLBACK WindowProc(HWND WindowHandle, UINT Message, WPARAM WParam, LPAR
         glEnable(GL_DEPTH_TEST);
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glShadeModel(GL_FLAT);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(0, 1, 0, 1, -1, 1);
+        return 0;
+    }
+    case WM_SIZE:
+    {
+        RECT ClientRect;
+        GetClientRect(WindowHandle, &ClientRect);
+
+        int Width = ClientRect.right;
+        int Height = ClientRect.bottom;
+        glViewport(0, 0, (GLsizei)Width, (GLsizei)Height);
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
         glOrtho(0, 1, 0, 1, -1, 1);
