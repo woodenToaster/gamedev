@@ -49,6 +49,12 @@ bool32 isSlowTile(Tile* t)
     return (u8)(tile_get_flags(t) & tile_properties[TP_QUICKSAND]);
 }
 
+bool32 isTileFlagSet(Entity *e, TileProperty prop)
+{
+    bool32 result = e->tileFlags & tile_properties[prop];
+    return result;
+}
+
 bool32 isWarpTile(Tile* t)
 {
     return (u8)(tile_get_flags(t) & tile_properties[TP_WARP]);

@@ -578,6 +578,26 @@ internal bool32 testWall(f32 wall, f32 relX, f32 relY, f32 playerDeltaX, f32 pla
     return hit;
 }
 
+internal bool32 testOverlapTile(f32 wall, f32 relX, f32 relY, f32 playerDeltaX, f32 playerDeltaY,
+                                f32 minY, f32 maxY)
+{
+    bool32 hit = false;
+
+    if (playerDeltaX != 0.0f)
+    {
+        f32 tResult = (wall - relX) / playerDeltaX;
+        f32 y = relY + tResult * playerDeltaY;
+        if (tResult >= 0.0f)
+        {
+            if ((y >= minY) && (y  <= maxY))
+            {
+                hit = true;
+            }
+        }
+    }
+    return hit;
+}
+
 internal void updateHero(Hero* h, Input* input, Game* g)
 {
     Map *map = g->current_map;
@@ -664,24 +684,69 @@ internal void updateHero(Hero* h, Input* input, Game* g)
         {
             Entity *testEntity = &map->entities[entityIndex];
 
+            f32 heightOffset = 0.5f*h->e.height;
+            if (testEntity->type == ET_TILE)
+            {
+                // TODO(chj): Clean this up. Need special handling based off where position is.
+                // It's at the center of tiles but the bottom of entities
+                heightOffset = 0.0f;
+            }
+            f32 minX = maxFloat32(0.0f, testEntity->position.x - 0.5f*testEntity->width - 0.5f*h->e.width);
+            f32 minY = maxFloat32(0.0f, testEntity->position.y - 0.5f*testEntity->height - heightOffset);
+            Vec2 minCorner = {minX, minY};
+            f32 maxX = minFloat32((f32)map->width_pixels,
+                                  testEntity->position.x + 0.5f*testEntity->width + 0.5f*h->e.width);
+            f32 maxY = minFloat32((f32)map->height_pixels,
+                                  testEntity->position.y + 0.5f*testEntity->height + h->e.height);
+            Vec2 maxCorner = {maxX, maxY};
+
+
+            if (isTileFlagSet(testEntity, TP_QUICKSAND))
+            {
+                bool32 inQuicksand = false;
+                if (testOverlapTile(minCorner.x, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
+                                    minCorner.y, maxCorner.y))
+                {
+                    inQuicksand = true;
+                }
+                if (testOverlapTile(maxCorner.x, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
+                                    minCorner.y, maxCorner.y))
+                {
+                    inQuicksand = true;
+                }
+                if (testOverlapTile(minCorner.y, oldPosition.y, oldPosition.x, playerDelta.y, playerDelta.x,
+                                    minCorner.x, maxCorner.x))
+                {
+                    inQuicksand = true;
+                }
+                if (testOverlapTile(maxCorner.y, oldPosition.y, oldPosition.x, playerDelta.y, playerDelta.x,
+                                    minCorner.x, maxCorner.x))
+                {
+                    inQuicksand = true;
+                }
+
+                f32 quicksandValue = 10.0f;
+                if (inQuicksand)
+                {
+                    if (!h->inQuicksand)
+                    {
+                        h->e.speed *= 1 / quicksandValue;
+                        h->inQuicksand = true;
+                        if (h->isMoving)
+                        {
+                            sound_queue(global_sounds[SOUND_MUD], g->sounds);
+                        }
+                    }
+                    else if (h->inQuicksand)
+                    {
+                        h->e.speed *= quicksandValue;
+                        h->inQuicksand = false;
+                    }
+                }
+            }
+
             if (testEntity->collides)
             {
-                f32 heightOffset = 0.5f*h->e.height;
-                if (testEntity->type == ET_TILE)
-                {
-                    // TODO(chj): Clean this up. Need special handling based off where position is.
-                    // It's at the center of tiles but the bottom of entities
-                    heightOffset = 0.0f;
-                }
-                f32 minX = maxFloat32(0.0f, testEntity->position.x - 0.5f*testEntity->width - 0.5f*h->e.width);
-                f32 minY = maxFloat32(0.0f, testEntity->position.y - 0.5f*testEntity->height - heightOffset);
-                Vec2 minCorner = {minX, minY};
-                f32 maxX = minFloat32((f32)map->width_pixels,
-                                      testEntity->position.x + 0.5f*testEntity->width + 0.5f*h->e.width);
-                f32 maxY = minFloat32((f32)map->height_pixels,
-                                      testEntity->position.y + 0.5f*testEntity->height + h->e.height);
-                Vec2 maxCorner = {maxX, maxY};
-
                 if (testWall(minCorner.x, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
                             &tMin, minCorner.y, maxCorner.y))
                 {

@@ -115,6 +115,7 @@ Tile *getTileAtPosition(Map *m, Vec2 pos);
 Tile *map_get_tile_at_point(Map *m, Point p);
 bool32 isSolidTile(Tile *t);
 bool32 isSlowTile(Tile* t);
+bool32 isTileFlagSet(Entity *e, TileProperty prop);
 bool32 isWarpTile(Tile* t);
 void map_do_warp(Game* game);
 #endif

@@ -60,6 +60,7 @@ struct Entity
 
     // Tile
     u32 color;
+    u32 tileFlags;
 };
 
 struct EntityList

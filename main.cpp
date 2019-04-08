@@ -57,8 +57,8 @@ int main(int argc, char* argv[])
     Arena arena = {};
     initArena(&arena, (size_t)MEGABYTES(1));
 
-    u32 screenWidth = 960; // 640;
-    u32 screenHeight = 540; // 480;
+    u32 screenWidth = 960;
+    u32 screenHeight = 540;
 
     // Game
     Game* game = PushStruct(&arena, Game);
@@ -99,14 +99,8 @@ int main(int argc, char* argv[])
     SoundList sounds_to_play = {};
 
     Hero hero = {};
-    // Dude
-    // initEntitySpriteSheet(&hero.e, "sprites/dude.png", 4, 4, game->renderer);
-    // initAnimation(&hero.e.animation, 4, 100);
-
-    // Link
     initEntitySpriteSheet(&hero.e, "sprites/link_walking.png", 11, 5, game->renderer);
     hero.e.sprite_sheet.scale = 2;
-    // initEntityWidthHeight(&hero.e);
     hero.e.width = 20;
     hero.e.height = 10;
     hero.e.spriteDims = {45, 60};
@@ -131,16 +125,6 @@ int main(int argc, char* argv[])
     // heroSword.height = 50;
     // heroSword.offsetX = 2;
     // heroSword.offsetY = -25;
-
-    // Buffalo
-    Entity buffalo = createBuffalo(400, 200, game->renderer);
-    Entity buffalo2 = createBuffalo(500, 500, game->renderer);
-    Entity buffalo3 = createBuffalo(600, 100, game->renderer);
-
-    // EntityList entity_list = {};
-    // Entity* _entities[] = {&hero.e, &knight.e, &buffalo, &buffalo2, &buffalo3, &harlod.e};
-    // entity_list.entities = _entities;
-    // entity_list.count = ArrayCount(_entities);
 
     // Tiles
     // Tile w = {};
@@ -237,6 +221,16 @@ int main(int argc, char* argv[])
                 tile->height = tileHeight;
                 tile->position = {col*tile->width + 0.5f*tile->width, row*tile->height + 0.5f*tile->height};
                 tile->collides = true;
+            }
+            if (row == 4 && col == 1)
+            {
+                Entity *tile = &map0.entities[map0.entityCount++];
+                tile->tileFlags = tile_properties[TP_QUICKSAND];
+                tile->color = game->colors[COLOR_BROWN];
+                tile->width = tileWidth;
+                tile->height = tileHeight;
+                tile->position = {col*tile->width + 0.5f*tile->width, row*tile->height + 0.5f*tile->height};
+                tile->collides = false;
             }
         }
     }
