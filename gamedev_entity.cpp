@@ -704,23 +704,23 @@ internal void updateHero(Hero* h, Input* input, Game* g)
             if (isTileFlagSet(testEntity, TP_QUICKSAND))
             {
                 bool32 inQuicksand = false;
-                if (testOverlapTile(minCorner.x, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
-                                    minCorner.y, maxCorner.y))
+                if (testWall(minCorner.x, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
+                             &tMin, minCorner.y, maxCorner.y))
                 {
                     inQuicksand = true;
                 }
-                if (testOverlapTile(maxCorner.x, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
-                                    minCorner.y, maxCorner.y))
+                if (testWall(maxCorner.x, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
+                             &tMin, minCorner.y, maxCorner.y))
                 {
                     inQuicksand = true;
                 }
-                if (testOverlapTile(minCorner.y, oldPosition.y, oldPosition.x, playerDelta.y, playerDelta.x,
-                                    minCorner.x, maxCorner.x))
+                if (testWall(minCorner.y, oldPosition.y, oldPosition.x, playerDelta.y, playerDelta.x,
+                             &tMin, minCorner.x, maxCorner.x))
                 {
                     inQuicksand = true;
                 }
-                if (testOverlapTile(maxCorner.y, oldPosition.y, oldPosition.x, playerDelta.y, playerDelta.x,
-                                    minCorner.x, maxCorner.x))
+                if (testWall(maxCorner.y, oldPosition.y, oldPosition.x, playerDelta.y, playerDelta.x,
+                             &tMin, minCorner.x, maxCorner.x))
                 {
                     inQuicksand = true;
                 }
@@ -728,19 +728,10 @@ internal void updateHero(Hero* h, Input* input, Game* g)
                 f32 quicksandValue = 10.0f;
                 if (inQuicksand)
                 {
-                    if (!h->inQuicksand)
+                    h->e.acceleration -= 8*h->e.velocity;
+                    if (h->isMoving)
                     {
-                        h->e.speed *= 1 / quicksandValue;
-                        h->inQuicksand = true;
-                        if (h->isMoving)
-                        {
-                            sound_queue(global_sounds[SOUND_MUD], g->sounds);
-                        }
-                    }
-                    else if (h->inQuicksand)
-                    {
-                        h->e.speed *= quicksandValue;
-                        h->inQuicksand = false;
+                        sound_queue(global_sounds[SOUND_MUD], g->sounds);
                     }
                 }
             }
