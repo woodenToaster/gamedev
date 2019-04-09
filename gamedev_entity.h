@@ -61,6 +61,9 @@ struct Entity
     // Tile
     u32 color;
     u32 tileFlags;
+    bool32 isHarvestable;
+    InventoryItemType harvestedItem;
+
 };
 
 struct EntityList

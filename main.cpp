@@ -205,6 +205,8 @@ int main(int argc, char* argv[])
     u32 tileWidth = 80;
     u32 tileHeight = 80;
     Map map0 = {};
+    map0.tile_width = tileWidth;
+    map0.tile_height = tileHeight;
     map0.current = true;
     map0.rows = 10;
     map0.cols = 12;
@@ -212,25 +214,33 @@ int main(int argc, char* argv[])
     {
         for (u32 col = 0; col < map0.cols; ++col)
         {
+            Entity *tile = &map0.entities[map0.entityCount++];
+            tile->width = tileWidth;
+            tile->height = tileHeight;
+            tile->position = {col*tile->width + 0.5f*tile->width, row*tile->height + 0.5f*tile->height};
             if (row == 0 || col == 0 || row == map0.rows - 1 || col == map0.cols - 1)
             {
-                Entity *tile = &map0.entities[map0.entityCount++];
                 // tile->flags = tile_properties[TP_SOLID];
                 tile->color = game->colors[COLOR_GREEN];
-                tile->width = tileWidth;
-                tile->height = tileHeight;
-                tile->position = {col*tile->width + 0.5f*tile->width, row*tile->height + 0.5f*tile->height};
                 tile->collides = true;
             }
             if (row == 4 && col == 1)
             {
-                Entity *tile = &map0.entities[map0.entityCount++];
+                // Quicksand
                 tile->tileFlags = tile_properties[TP_QUICKSAND];
                 tile->color = game->colors[COLOR_BROWN];
-                tile->width = tileWidth;
-                tile->height = tileHeight;
-                tile->position = {col*tile->width + 0.5f*tile->width, row*tile->height + 0.5f*tile->height};
                 tile->collides = false;
+            }
+            if (row == 2 && col == 4)
+            {
+                // Harvestable tree
+                tile->tileFlags = tile_properties[TP_HARVEST];
+                tile->color = game->colors[COLOR_NONE];
+                tile->collides = true;
+                initEntitySpriteSheet(tile, "sprites/tree.png", 1, 1, game->renderer);
+                tile->active = true;
+                tile->isHarvestable = true;
+                tile->harvestedItem = INV_LEAVES;
             }
         }
     }

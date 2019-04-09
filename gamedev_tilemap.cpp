@@ -168,6 +168,11 @@ Tile *getTileAtPosition(Map *m, Vec2 pos)
     return result;
 }
 
+Tile *getTileFromPosition(Map *m, Vec2 pos)
+{
+    // TODO(chj): How do we do this with the new entity system?
+}
+
 Tile *map_get_tile_at_point(Map *m, Point p)
 {
     Tile *result = 0;
@@ -218,11 +223,22 @@ void drawMap(Game* g)
         Entity *e = &map->entities[entityIndex];
         if (e->type == ET_TILE)
         {
-            SDL_Rect tileRect = {(int)(e->position.x - 0.5f*e->width),
-                                 (int)(e->position.y - 0.5f*e->height),
+            SDL_Rect tileRect = {(int)(e->position.x - 0.5f*e->width), (int)(e->position.y - 0.5f*e->height),
                                  (int)e->width, (int)e->height};
-            u32 tileColor = e->color;
-            renderFilledRect(g->renderer, &tileRect, tileColor);
+
+            if (e->sprite_sheet.sheet && e->active)
+            {
+                // if (t->has_animation && t->animation_is_active)
+                // {
+                //     t->sprite_rect.x = t->sprite_rect.w * t->animation.current_frame;
+                // }
+                SDL_RenderCopy(g->renderer, e->sprite_sheet.sheet, NULL, &tileRect);
+            }
+            else
+            {
+                u32 tileColor = e->color;
+                renderFilledRect(g->renderer, &tileRect, tileColor);
+            }
         }
     }
     drawEntityList(g);

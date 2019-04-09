@@ -386,30 +386,31 @@ void heroInteract(Hero *h, Game *g)
     // Check for harvestable tile
 
     // get next tile in facing direction if it's close enough
-    i32 harvest_threshold = 10;
+    f32 harvest_threshold = 10.0f;
     // TODO(chj): This is based on the bottom center of the sprite. Not very accurate
-    // We want to test on a 10 pixel box outside the bounding box
-    Point point_to_harvest = h->e.collision_pt;
+    // Want to test if the collision volume is within a certain threshold
+    Vec2 pointToHarvest = h->e.position;
 
     switch (h->e.direction)
     {
     case DIR_UP:
-        point_to_harvest.y -= harvest_threshold;
+        pointToHarvest.y -= harvest_threshold;
         break;
     case DIR_DOWN:
-        point_to_harvest.y += harvest_threshold;
+        pointToHarvest.y += harvest_threshold;
         break;
     case DIR_LEFT:
-        point_to_harvest.x -= harvest_threshold;
+        pointToHarvest.x -= harvest_threshold;
         break;
     case DIR_RIGHT:
-        point_to_harvest.x += harvest_threshold;
+        pointToHarvest.x += harvest_threshold;
         break;
     default:
         break;
     }
 
-    Tile *tileToHarvest = map_get_tile_at_point(g->current_map, point_to_harvest);
+    // Tile *tileToHarvest = map_get_tile_at_point(g->current_map, pointToHarvest);
+    Tile *tileToHarvest = getTileFromPosition(g->current_map, pointToHarvest);
     if (tileToHarvest && tileToHarvest->is_harvestable && !tileToHarvest->harvested)
     {
         harvestTile(h, g, tileToHarvest);
@@ -578,26 +579,6 @@ internal bool32 testWall(f32 wall, f32 relX, f32 relY, f32 playerDeltaX, f32 pla
     return hit;
 }
 
-internal bool32 testOverlapTile(f32 wall, f32 relX, f32 relY, f32 playerDeltaX, f32 playerDeltaY,
-                                f32 minY, f32 maxY)
-{
-    bool32 hit = false;
-
-    if (playerDeltaX != 0.0f)
-    {
-        f32 tResult = (wall - relX) / playerDeltaX;
-        f32 y = relY + tResult * playerDeltaY;
-        if (tResult >= 0.0f)
-        {
-            if ((y >= minY) && (y  <= maxY))
-            {
-                hit = true;
-            }
-        }
-    }
-    return hit;
-}
-
 internal void updateHero(Hero* h, Input* input, Game* g)
 {
     Map *map = g->current_map;
@@ -725,10 +706,9 @@ internal void updateHero(Hero* h, Input* input, Game* g)
                     inQuicksand = true;
                 }
 
-                f32 quicksandValue = 10.0f;
                 if (inQuicksand)
                 {
-                    h->e.acceleration -= 8*h->e.velocity;
+                    // TODO(chj): Slow hero down
                     if (h->isMoving)
                     {
                         sound_queue(global_sounds[SOUND_MUD], g->sounds);
