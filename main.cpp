@@ -113,7 +113,7 @@ int main(int argc, char* argv[])
     hero.e.speed = 2000;
     hero.e.active = true;
     hero.e.type = ET_HERO;
-    hero.e.collision_pt_offset = 5;
+    // hero.e.collision_pt_offset = 5;
 
     // SpriteSheet heroSword = {};
     // loadSpriteSheet(&heroSword, "sprites/sword.png", 12, 4, game->renderer);

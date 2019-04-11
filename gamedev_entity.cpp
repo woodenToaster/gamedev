@@ -86,6 +86,12 @@ void drawEntity(Entity* e, Game* g)
         i32 height = e->spriteDims.y;
         dest = {(int)(e->position.x - 0.5f*width), (int)(e->position.y - height), width, height};
         SDL_RenderCopy(g->renderer, e->sprite_sheet.sheet, &e->sprite_rect, &dest);
+
+        // Hero interactionRect
+        if (e->harvesting)
+        {
+            renderFilledRect(g->renderer, &e->heroInteractionRect, g->colors[COLOR_DARK_ORANGE]);
+        }
     }
 }
 
@@ -384,33 +390,40 @@ void harvestTile(Hero *h, Game *g, Tile *tileToHarvest)
 void heroInteract(Hero *h, Game *g)
 {
     // Check for harvestable tile
-
-    // get next tile in facing direction if it's close enough
-    f32 harvest_threshold = 10.0f;
-    // TODO(chj): This is based on the bottom center of the sprite. Not very accurate
-    // Want to test if the collision volume is within a certain threshold
-    Vec2 pointToHarvest = h->e.position;
+    Point pointToHarvest = {(i32)h->e.position.x, (i32)h->e.position.y};
+    i32 interactionRectWidth = h->e.width;
+    i32 interactionRectHeight = h->e.height;
 
     switch (h->e.direction)
     {
     case DIR_UP:
-        pointToHarvest.y -= harvest_threshold;
+        interactionRectWidth = h->e.height;
+        interactionRectHeight = h->e.width;
+        pointToHarvest.x -= (i32)(0.5f*interactionRectWidth);
+        pointToHarvest.y -= (interactionRectHeight + interactionRectWidth);
         break;
     case DIR_DOWN:
-        pointToHarvest.y += harvest_threshold;
+        interactionRectWidth = h->e.height;
+        interactionRectHeight = h->e.width;
+        pointToHarvest.x -= (i32)(0.5f*interactionRectWidth);
         break;
     case DIR_LEFT:
-        pointToHarvest.x -= harvest_threshold;
+        pointToHarvest.x -= (i32)(1.5f*h->e.width);
+        pointToHarvest.y -= h->e.height;
         break;
     case DIR_RIGHT:
-        pointToHarvest.x += harvest_threshold;
+        pointToHarvest.x += (i32)(0.5f*h->e.width);
+        pointToHarvest.y -= h->e.height;
         break;
     default:
         break;
     }
 
+    h->e.heroInteractionRect = {pointToHarvest.x, pointToHarvest.y, interactionRectWidth, interactionRectHeight};
+
+#if 0
     // Tile *tileToHarvest = map_get_tile_at_point(g->current_map, pointToHarvest);
-    Tile *tileToHarvest = getTileFromPosition(g->current_map, pointToHarvest);
+    Tile *tileToHarvest = getTileAtPosition(g->current_map, pointToHarvest);
     if (tileToHarvest && tileToHarvest->is_harvestable && !tileToHarvest->harvested)
     {
         harvestTile(h, g, tileToHarvest);
@@ -469,6 +482,7 @@ void heroInteract(Hero *h, Game *g)
             tileStencil[y]->onHeroInteract(tileStencil[y], h);
         }
     }
+#endif
 }
 
 void harlodInteractWithHero(Entity *e, Hero *h, Game *g)
@@ -615,18 +629,22 @@ internal void updateHero(Hero* h, Input* input, Game* g)
         if (acceleration.x > 0)
         {
             h->e.sprite_rect.y = 0 * spriteHeight;
+            h->e.direction = DIR_RIGHT;
         }
         if (acceleration.x < 0)
         {
             h->e.sprite_rect.y = 3 * spriteHeight;
+            h->e.direction = DIR_LEFT;
         }
         if (acceleration.y < 0)
         {
             h->e.sprite_rect.y = 1 * spriteHeight;
+            h->e.direction = DIR_UP;
         }
         if (acceleration.y > 0)
         {
             h->e.sprite_rect.y = 4 * spriteHeight;
+            h->e.direction = DIR_DOWN;
         }
 
         h->isMoving = true;
@@ -754,11 +772,11 @@ internal void updateHero(Hero* h, Input* input, Game* g)
     clampHeroToMap(h, map);
 
     h->swingClub = input->key_pressed[KEY_F];
-    h->harvest = input->key_pressed[KEY_SPACE] || input->button_pressed[BUTTON_A];
+    h->e.harvesting = input->key_pressed[KEY_SPACE] || input->button_pressed[BUTTON_A];
     h->craft = input->key_pressed[KEY_C];
     h->place = input->key_pressed[KEY_P];
 
-    if (h->harvest)
+    if (h->e.harvesting)
     {
         heroInteract(h, g);
     }
@@ -782,7 +800,7 @@ Entity createBuffalo(f32 starting_x, f32 starting_y, SDL_Renderer* renderer)
     buffalo.starting_pos = {starting_x, starting_y};
     buffalo.position = buffalo.starting_pos;
     // initEntityDest(&buffalo);
-    setEntityCollisionPoint(&buffalo);
+    // setEntityCollisionPoint(&buffalo);
     buffalo.bounding_box = {0, 0, 50, 50};
     buffalo.bb_x_offset = 10;
     buffalo.bb_y_offset = 10;

@@ -16,6 +16,7 @@ enum Colors
     COLOR_RED,
     COLOR_GREY,
     COLOR_DARK_BLUE,
+    COLOR_DARK_ORANGE,
     COLOR_LAST
 };
 

@@ -63,6 +63,7 @@ void initColors(Game* g)
     g->colors[COLOR_RED] = SDL_MapRGB(window_pixel_format, 255, 0, 0);
     g->colors[COLOR_GREY] = SDL_MapRGB(window_pixel_format, 135, 135, 135);
     g->colors[COLOR_DARK_BLUE] = SDL_MapRGB(window_pixel_format, 0, 51, 102);
+    g->colors[COLOR_DARK_ORANGE] = SDL_MapRGB(window_pixel_format, 255, 140, 0);
 }
 
 void initCamera(Game* g)

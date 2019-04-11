@@ -168,10 +168,12 @@ Tile *getTileAtPosition(Map *m, Vec2 pos)
     return result;
 }
 
+#if 0
 Tile *getTileFromPosition(Map *m, Vec2 pos)
 {
     // TODO(chj): How do we do this with the new entity system?
 }
+#endif
 
 Tile *map_get_tile_at_point(Map *m, Point p)
 {

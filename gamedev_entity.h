@@ -64,6 +64,9 @@ struct Entity
     bool32 isHarvestable;
     InventoryItemType harvestedItem;
 
+    // Hero
+    SDL_Rect heroInteractionRect;
+    bool32 harvesting;
 };
 
 struct EntityList
@@ -82,7 +85,6 @@ struct Hero
     bool32 isMoving;
     bool32 inQuicksand;
     bool32 swingClub;
-    bool32 harvest;
     bool32 craft;
     bool32 place;
     u32 inventory[INV_COUNT];
