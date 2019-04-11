@@ -686,8 +686,6 @@ internal void updateHero(Hero* h, Input* input, Game* g)
             f32 heightOffset = 0.5f*h->e.height;
             if (testEntity->type == ET_TILE)
             {
-                // TODO(chj): Clean this up. Need special handling based off where position is.
-                // It's at the center of tiles but the bottom of entities
                 heightOffset = 0.0f;
             }
             f32 minX = maxFloat32(0.0f, testEntity->position.x - 0.5f*testEntity->width - 0.5f*h->e.width);
@@ -727,6 +725,8 @@ internal void updateHero(Hero* h, Input* input, Game* g)
                 if (inQuicksand)
                 {
                     // TODO(chj): Slow hero down
+                    // TODO(chj): Need constant sound
+                    // TODO(chj): Move to harvesting loop below (a collision loop)
                     if (h->isMoving)
                     {
                         sound_queue(global_sounds[SOUND_MUD], g->sounds);
@@ -771,6 +771,7 @@ internal void updateHero(Hero* h, Input* input, Game* g)
 
     clampHeroToMap(h, map);
 
+    // Actions
     h->swingClub = input->key_pressed[KEY_F];
     h->e.harvesting = input->key_pressed[KEY_SPACE] || input->button_pressed[BUTTON_A];
     h->craft = input->key_pressed[KEY_C];
@@ -779,7 +780,31 @@ internal void updateHero(Hero* h, Input* input, Game* g)
     if (h->e.harvesting)
     {
         heroInteract(h, g);
+
+        for (u32 entityIndex = 0; entityIndex < map->entityCount; ++entityIndex)
+        {
+            Entity *testEntity = &map->entities[entityIndex];
+            if (testEntity->isHarvestable)
+            {
+                // Tile position is at center of tile
+                SDL_Rect tileBoundingBox = {(i32)testEntity->position.x - (i32)(0.5f*testEntity->width),
+                                            (i32)testEntity->position.y - (i32)(0.5f*testEntity->height),
+                                            testEntity->width, testEntity->height};
+                if (rectsOverlap(&h->e.heroInteractionRect, &tileBoundingBox))
+                {
+                    testEntity->isHarvestable = false;
+                    // TODO(chj): Keep textures around instead of destroying them
+                    destroySpriteSheet(&testEntity->sprite_sheet);
+                    initEntitySpriteSheet(testEntity, "sprites/tree_stump.png", 1, 1, g->renderer);
+
+                    // Update inventory
+                    h->inventory[testEntity->harvestedItem]++;
+                }
+            }
+        }
     }
+
+#if 0
     if (h->craft)
     {
         CraftableItem item = CRAFTABLE_TREE;
@@ -790,6 +815,7 @@ internal void updateHero(Hero* h, Input* input, Game* g)
         CraftableItem item = CRAFTABLE_TREE;
         placeItem(g, h, item);
     }
+#endif
 }
 
 Entity createBuffalo(f32 starting_x, f32 starting_y, SDL_Renderer* renderer)
