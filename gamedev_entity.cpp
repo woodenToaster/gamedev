@@ -34,6 +34,14 @@ void initEntitySpriteSheet(Entity* e, const char* path, int num_x, int num_y, SD
     e->sprite_sheet.scale = 1;
 }
 
+void initEntitySpriteSheet(Entity* e, SDL_Texture *texture, int num_x, int num_y)
+{
+    initSpriteSheet(&e->sprite_sheet, texture, num_x, num_y);
+    e->sprite_rect.w = e->sprite_sheet.sprite_width;
+    e->sprite_rect.h = e->sprite_sheet.sprite_height;
+    e->sprite_sheet.scale = 1;
+}
+
 void initEntityWidthHeight(Entity *e)
 {
     e->width = e->sprite_sheet.sprite_width * e->sprite_sheet.scale;
@@ -389,6 +397,7 @@ void harvestTile(Hero *h, Game *g, Tile *tileToHarvest)
 
 void heroInteract(Hero *h, Game *g)
 {
+    (void)g;
     // Check for harvestable tile
     Point pointToHarvest = {(i32)h->e.position.x, (i32)h->e.position.y};
     i32 interactionRectWidth = h->e.width;
@@ -499,6 +508,7 @@ void harlodInteractWithHero(Entity *e, Hero *h, Game *g)
     startDialogMode(g, (char*)e->dialogFile.contents);
 }
 
+#if 0
 internal void craftItem(Hero *h, CraftableItem item)
 {
     switch (item)
@@ -539,6 +549,7 @@ internal void placeItem(Game *g, Hero *h, CraftableItem item)
         g->current_map->tiles[locationToPlaceTile] = t;
     }
 }
+#endif
 
 #if 0
 internal bool32 isInMap(Game *g, Vec2 pos)
@@ -793,10 +804,8 @@ internal void updateHero(Hero* h, Input* input, Game* g)
                 if (rectsOverlap(&h->e.heroInteractionRect, &tileBoundingBox))
                 {
                     testEntity->isHarvestable = false;
-                    // TODO(chj): Keep textures around instead of destroying them
-                    destroySpriteSheet(&testEntity->sprite_sheet);
-                    initEntitySpriteSheet(testEntity, "sprites/tree_stump.png", 1, 1, g->renderer);
-
+                    testEntity->collides = false;
+                    initSpriteSheet(&testEntity->sprite_sheet, testEntity->harvestedSprite, 1, 1);
                     // Update inventory
                     h->inventory[testEntity->harvestedItem]++;
                 }

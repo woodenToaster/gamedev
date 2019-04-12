@@ -40,7 +40,7 @@ void renderFilledRect(SDL_Renderer* renderer, SDL_Rect* dest, u32 color)
     }
 }
 
-void game_destroy(Game* g)
+void destroyGame(Game* g)
 {
     Mix_Quit();
     SDL_DestroyRenderer(g->renderer);

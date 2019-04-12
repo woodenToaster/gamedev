@@ -15,11 +15,6 @@
 *** TODO Craft tree from leaves
 *** TODO Place tree tile in world
 ** TODO Base building system
-* TODO Mechanics
-** TODO Crafting
-** TODO Block placement
-** TODO Rolling
-** TODO Blocking
 * Architecture
 ** TODO Debug system
 ** TODO Use arena instead of stack
@@ -45,6 +40,11 @@
 ***** TODO How can I simulate this effect in 2d?
 ** TODO Crafting
 ** A room full of breakables that a shop keeper later rewards you if unbroken
+* TODO Mechanics
+** TODO Crafting
+** TODO Block placement
+** TODO Rolling
+** TODO Blocking
 * Story
 ** Enemies are sad, misinformed people instead of monsters?
 * Bugs

@@ -77,10 +77,16 @@ int main(int argc, char* argv[])
         exit(1);
     }
 
-    SDL_Texture *transparentBlackTexture =
-        SDL_CreateTexture(game->renderer, SDL_PIXELFORMAT_RGBA8888,
-                          SDL_TEXTUREACCESS_TARGET, screenWidth, screenHeight);
+    // TODO(chj): Preloading some textures that can be shared
+    SDL_Texture *transparentBlackTexture = SDL_CreateTexture(game->renderer, SDL_PIXELFORMAT_RGBA8888,
+                                                             SDL_TEXTUREACCESS_TARGET, screenWidth, screenHeight);
     SDL_SetTextureBlendMode(transparentBlackTexture, SDL_BLENDMODE_BLEND);
+
+    SDL_Texture* linkTexture = create_texture_from_png("sprites/link_walking.png", game->renderer);
+    SDL_Texture* treeTexture = create_texture_from_png("sprites/tree.png", game->renderer);
+    SDL_Texture* treeStumpTexture = create_texture_from_png("sprites/tree_stump.png", game->renderer);
+    SDL_Texture* harlodTexture = create_texture_from_png("sprites/Harlod_the_caveman.png", game->renderer);
+    SDL_Texture* knightTexture = create_texture_from_png("sprites/knight_alligned.png", game->renderer);
 
     // Input
     Input input = {};
@@ -99,7 +105,7 @@ int main(int argc, char* argv[])
     SoundList sounds_to_play = {};
 
     Hero hero = {};
-    initEntitySpriteSheet(&hero.e, "sprites/link_walking.png", 11, 5, game->renderer);
+    initEntitySpriteSheet(&hero.e, linkTexture, 11, 5);
     hero.e.sprite_sheet.scale = 2;
     hero.e.width = 20;
     hero.e.height = 10;
@@ -231,13 +237,16 @@ int main(int argc, char* argv[])
                 tile->color = game->colors[COLOR_BROWN];
                 tile->collides = false;
             }
-            if (row == 2 && col == 4)
+            if ((row == 2 && (col == 4 || col == 5 || col == 6 || col == 7)) ||
+                ((row == 3 || row == 4 || row == 5 || row == 6) && col == 7))
             {
                 // Harvestable tree
                 tile->tileFlags = tile_properties[TP_HARVEST];
                 tile->color = game->colors[COLOR_NONE];
                 tile->collides = true;
-                initEntitySpriteSheet(tile, "sprites/tree.png", 1, 1, game->renderer);
+                tile->unharvestedSprite = treeTexture;
+                tile->harvestedSprite = treeStumpTexture;
+                initEntitySpriteSheet(tile, tile->unharvestedSprite, 1, 1);
                 tile->active = true;
                 tile->isHarvestable = true;
                 tile->harvestedItem = INV_LEAVES;
@@ -252,7 +261,7 @@ int main(int argc, char* argv[])
     // Harlod
     Entity *harlod = &map0.entities[map0.entityCount++];
     *harlod = {};
-    initEntitySpriteSheet(harlod, "sprites/Harlod_the_caveman.png", 1, 1, game->renderer);
+    initEntitySpriteSheet(harlod, harlodTexture, 1, 1);
     harlod->collides = true;
     harlod->width = 20;
     harlod->height = 10;
@@ -266,7 +275,7 @@ int main(int argc, char* argv[])
 
     // Knight
     Entity *knight = &map0.entities[map0.entityCount++];
-    initEntitySpriteSheet(knight, "sprites/knight_alligned.png", 8, 5, game->renderer);
+    initEntitySpriteSheet(knight, knightTexture, 8, 5);
     // initEntityWidthHeight(&knight.e);
     knight->collides = true;
     knight->width = 20;
@@ -431,13 +440,18 @@ int main(int argc, char* argv[])
     /* Cleanup                                                                */
     /**************************************************************************/
     SDL_DestroyTexture(transparentBlackTexture);
+    SDL_DestroyTexture(linkTexture);
+    SDL_DestroyTexture(treeTexture);
+    SDL_DestroyTexture(treeStumpTexture);
+    SDL_DestroyTexture(harlodTexture);
+    SDL_DestroyTexture(knightTexture);
     destroyFontMetadata(&fontMetadata);
     // destroyTileList(&tile_list);
     // destroyTileset(&jungle_tiles);
     // map_list_destroy(&map_list);
     // destroyEntityList(&entity_list);
     destroyControllers(&input);
-    game_destroy(game);
+    destroyGame(game);
     destroyArena(&arena);
 
     return 0;

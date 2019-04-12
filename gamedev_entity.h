@@ -63,6 +63,8 @@ struct Entity
     u32 tileFlags;
     bool32 isHarvestable;
     InventoryItemType harvestedItem;
+    SDL_Texture *unharvestedSprite;
+    SDL_Texture *harvestedSprite;
 
     // Hero
     SDL_Rect heroInteractionRect;
