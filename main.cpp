@@ -21,6 +21,9 @@
 #include "gamedev_definitions.h"
 #include "gamedev_animation.cpp"
 
+// TODO(chj): No global
+global_variable SDL_Texture *globalTextures[6];
+
 #include "gamedev_plan.h"
 #include "gamedev_math.h"
 #include "gamedev_font.h"
@@ -46,8 +49,6 @@
 #include "gamedev_tilemap.cpp"
 #include "gamedev_memory.cpp"
 
-#define PushStruct(arena, type) ((type*)pushSize((arena), sizeof(type)))
-#define ArrayCount(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 int main(int argc, char* argv[])
 {
@@ -87,6 +88,13 @@ int main(int argc, char* argv[])
     SDL_Texture* treeStumpTexture = create_texture_from_png("sprites/tree_stump.png", game->renderer);
     SDL_Texture* harlodTexture = create_texture_from_png("sprites/Harlod_the_caveman.png", game->renderer);
     SDL_Texture* knightTexture = create_texture_from_png("sprites/knight_alligned.png", game->renderer);
+
+    globalTextures[0] = linkTexture;
+    globalTextures[1] = treeTexture;
+    globalTextures[2] = treeStumpTexture;
+    globalTextures[3] = harlodTexture;
+    globalTextures[4] = knightTexture;
+    globalTextures[5] = transparentBlackTexture;
 
     // Input
     Input input = {};
@@ -216,6 +224,8 @@ int main(int argc, char* argv[])
     map0.current = true;
     map0.rows = 10;
     map0.cols = 12;
+    // TODO(chj): Hard-coded constant in 2 different places (here and struct Map declaration)
+    map0.maxEntities = 256;
     for (u32 row = 0; row < map0.rows; ++row)
     {
         for (u32 col = 0; col < map0.cols; ++col)

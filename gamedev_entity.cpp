@@ -381,20 +381,6 @@ void clampHeroToMap(Hero* h, Map* map)
     h->e.position.y = clampFloat(h->e.position.y, 0, (f32)map->height_pixels - 0.5f*h->e.height);
 }
 
-void harvestTile(Hero *h, Game *g, Tile *tileToHarvest)
-{
-    destroyTile(tileToHarvest);
-    // TODO(chj): Don't re-init?
-    initTile(tileToHarvest, tile_properties[TP_NONE], g->colors[COLOR_NONE],
-              g->renderer, "sprites/tree_stump.png");
-    tileToHarvest->active = true;
-    tileToHarvest->harvested = true;
-    setTileSpriteSize(tileToHarvest, 64, 64);
-
-    // Update inventory
-    h->inventory[tileToHarvest->harvestedItem]++;
-}
-
 void heroInteract(Hero *h, Game *g)
 {
     (void)g;
@@ -508,7 +494,6 @@ void harlodInteractWithHero(Entity *e, Hero *h, Game *g)
     startDialogMode(g, (char*)e->dialogFile.contents);
 }
 
-#if 0
 internal void craftItem(Hero *h, CraftableItem item)
 {
     switch (item)
@@ -533,23 +518,28 @@ internal void placeItem(Game *g, Hero *h, CraftableItem item)
     (void)h;
     if (item == CRAFTABLE_TREE)
     {
-        Tile *t = (Tile*)malloc(sizeof(Tile));
-        // TODO(chj): Free this
-        // TODO(chj): Share textures. Ref counting?
-        t->width = t->height = 80;
-        initTile(t, tile_properties[TP_HARVEST] | tile_properties[TP_SOLID],
-                 g->colors[COLOR_NONE], g->renderer, "sprites/tree.png");
-        setTileSpriteSize(t, 64, 64);
-        t->active = true;
-        t->is_harvestable = true;
-        t->harvestedItem = INV_LEAVES;
-        // TODO(chj): Free what was there before
+        Map *m = g->current_map;
+        assert(m->entityCount < m->maxEntities);
 
-        int locationToPlaceTile = 30;
-        g->current_map->tiles[locationToPlaceTile] = t;
+        Entity *tile = &m->entities[m->entityCount++];
+        tile->width = 80;
+        tile->height = 80;
+        // TODO(chj): no globalTextures
+        tile->unharvestedSprite = globalTextures[1];
+        tile->harvestedSprite = globalTextures[2];
+        initEntitySpriteSheet(tile, tile->unharvestedSprite, 1, 1);
+        tile->collides = true;
+        tile->color = g->colors[COLOR_NONE];
+        tile->active = true;
+        tile->isHarvestable = true;
+        tile->harvestedItem = INV_LEAVES;
+
+        // TODO(chj): Place tile in facing direction. If a tile is there, add it to the firstFree list?
+        f32 col = 8;
+        f32 row = 2;
+        tile->position = {col*tile->width + 0.5f*tile->width, row*tile->height + 0.5f*tile->height};
     }
 }
-#endif
 
 #if 0
 internal bool32 isInMap(Game *g, Vec2 pos)
@@ -813,7 +803,6 @@ internal void updateHero(Hero* h, Input* input, Game* g)
         }
     }
 
-#if 0
     if (h->craft)
     {
         CraftableItem item = CRAFTABLE_TREE;
@@ -824,7 +813,6 @@ internal void updateHero(Hero* h, Input* input, Game* g)
         CraftableItem item = CRAFTABLE_TREE;
         placeItem(g, h, item);
     }
-#endif
 }
 
 Entity createBuffalo(f32 starting_x, f32 starting_y, SDL_Renderer* renderer)

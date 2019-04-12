@@ -5,7 +5,7 @@
 ** TODO game code DLL (tough)
 * Gameplay
 ** TODO Harvesting and tile placing system
-*** TODO Load all textures up front and reuse them instead of destroying them when harvested
+*** TODO firstFree Entity list
 ** TODO Combat system
 ** TODO Dialog system
 ** TODO Basic enemy to prototype combat system
@@ -48,3 +48,4 @@
 * Story
 ** Enemies are sad, misinformed people instead of monsters?
 * Bugs
+** TODO Quicksand sound doesn't play at appropriate interval
