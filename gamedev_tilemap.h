@@ -98,7 +98,6 @@ struct Map
 
     // New stuff
     u32 entityCount;
-    u32 maxEntities;
     Entity entities[256];
 };
 

@@ -1,8 +1,8 @@
 #include "gamedev_sound.h"
 
-Mix_Chunk* sound_load_wav(const char* fname)
+Mix_Chunk *loadWav(const char *fname)
 {
-    Mix_Chunk * result = Mix_LoadWAV(fname);
+    Mix_Chunk *result = Mix_LoadWAV(fname);
     if (result == NULL)
     {
         printf("Mix_LoadWAV error: %s\n", Mix_GetError());
@@ -11,7 +11,7 @@ Mix_Chunk* sound_load_wav(const char* fname)
     return result;
 }
 
-void sound_play(Sound* s, u64 now)
+void playSound(Sound *s, u64 now)
 {
     if (now > s->last_play_time + s->delay)
     {
@@ -20,22 +20,22 @@ void sound_play(Sound* s, u64 now)
     }
 }
 
-void sound_play_all(SoundList* sl, u64 now)
+void playQueuedSounds(SoundList *sl, u64 now)
 {
     for (u32 i = 0; i < sl->count; ++i)
     {
-        sound_play(sl->items[i], now);
+        playSound(sl->items[i], now);
         sl->items[i] = NULL;
     }
     sl->count = 0;
 }
 
-void sound_queue(Sound* s, SoundList* sl)
+void queueSound(SoundList *sl, Sound *s)
 {
     sl->items[sl->count++] = s;
 }
 
-void sound_destroy(Sound* s)
+void destroySound(Sound *s)
 {
     Mix_FreeChunk(s->chunk);
 }

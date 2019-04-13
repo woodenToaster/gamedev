@@ -69,6 +69,8 @@ struct Entity
     // Hero
     SDL_Rect heroInteractionRect;
     bool32 harvesting;
+    bool32 placingItem;
+    Entity *tileToPlace;
 };
 
 struct EntityList

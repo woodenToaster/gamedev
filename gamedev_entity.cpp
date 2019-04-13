@@ -42,12 +42,6 @@ void initEntitySpriteSheet(Entity* e, SDL_Texture *texture, int num_x, int num_y
     e->sprite_sheet.scale = 1;
 }
 
-void initEntityWidthHeight(Entity *e)
-{
-    e->width = e->sprite_sheet.sprite_width * e->sprite_sheet.scale;
-    e->height = e->sprite_sheet.sprite_height * e->sprite_sheet.scale;
-}
-
 bool32 entityIsHero(Entity* e)
 {
     bool32 result = 0;
@@ -357,7 +351,7 @@ void checkHeroCollisionsWithTiles(Hero* h, Game* game)
         h->inQuicksand = true;
         if (h->isMoving)
         {
-            sound_queue(global_sounds[SOUND_MUD], game->sounds);
+            queueSound(&game->sounds, &game->mudSound);
         }
     }
     else if (h->inQuicksand)
@@ -417,13 +411,6 @@ void heroInteract(Hero *h, Game *g)
     h->e.heroInteractionRect = {pointToHarvest.x, pointToHarvest.y, interactionRectWidth, interactionRectHeight};
 
 #if 0
-    // Tile *tileToHarvest = map_get_tile_at_point(g->current_map, pointToHarvest);
-    Tile *tileToHarvest = getTileAtPosition(g->current_map, pointToHarvest);
-    if (tileToHarvest && tileToHarvest->is_harvestable && !tileToHarvest->harvested)
-    {
-        harvestTile(h, g, tileToHarvest);
-    }
-
     // Check for entities to interact with in a circle
     Vec2 heroCenter = {};
     heroCenter.x = h->e.position.x + (0.5f * h->e.width);
@@ -513,30 +500,17 @@ internal void craftItem(Hero *h, CraftableItem item)
     }
 }
 
-internal void placeItem(Game *g, Hero *h, CraftableItem item)
+internal void placeItem(Game *g, Hero *h, CraftableItem item, f32 col, f32 row)
 {
     (void)h;
     if (item == CRAFTABLE_TREE)
     {
-        Map *m = g->current_map;
-        assert(m->entityCount < m->maxEntities);
-
-        Entity *tile = &m->entities[m->entityCount++];
-        tile->width = 80;
-        tile->height = 80;
-        // TODO(chj): no globalTextures
-        tile->unharvestedSprite = globalTextures[1];
-        tile->harvestedSprite = globalTextures[2];
-        initEntitySpriteSheet(tile, tile->unharvestedSprite, 1, 1);
+        Entity *tile = h->e.tileToPlace;
         tile->collides = true;
-        tile->color = g->colors[COLOR_NONE];
         tile->active = true;
         tile->isHarvestable = true;
-        tile->harvestedItem = INV_LEAVES;
 
-        // TODO(chj): Place tile in facing direction. If a tile is there, add it to the firstFree list?
-        f32 col = 8;
-        f32 row = 2;
+        // TODO(chj): If a tile is already there, remove it?
         tile->position = {col*tile->width + 0.5f*tile->width, row*tile->height + 0.5f*tile->height};
     }
 }
@@ -730,7 +704,7 @@ internal void updateHero(Hero* h, Input* input, Game* g)
                     // TODO(chj): Move to harvesting loop below (a collision loop)
                     if (h->isMoving)
                     {
-                        sound_queue(global_sounds[SOUND_MUD], g->sounds);
+                        queueSound(&g->sounds, &g->mudSound);
                     }
                 }
             }
@@ -776,9 +750,9 @@ internal void updateHero(Hero* h, Input* input, Game* g)
     h->swingClub = input->key_pressed[KEY_F];
     h->e.harvesting = input->key_pressed[KEY_SPACE] || input->button_pressed[BUTTON_A];
     h->craft = input->key_pressed[KEY_C];
-    h->place = input->key_pressed[KEY_P];
+    h->e.placingItem = input->key_pressed[KEY_P];
 
-    if (h->e.harvesting)
+    if (h->e.harvesting && !h->e.placingItem)
     {
         heroInteract(h, g);
 
@@ -796,7 +770,6 @@ internal void updateHero(Hero* h, Input* input, Game* g)
                     testEntity->isHarvestable = false;
                     testEntity->collides = false;
                     initSpriteSheet(&testEntity->sprite_sheet, testEntity->harvestedSprite, 1, 1);
-                    // Update inventory
                     h->inventory[testEntity->harvestedItem]++;
                 }
             }
@@ -808,34 +781,59 @@ internal void updateHero(Hero* h, Input* input, Game* g)
         CraftableItem item = CRAFTABLE_TREE;
         craftItem(h, item);
     }
-    if (h->place)
+
+    if (h->e.harvesting && h->e.placingItem)
     {
         CraftableItem item = CRAFTABLE_TREE;
         placeItem(g, h, item);
+        h->e.placingItem = false;
+        h->e.tileToPlace = NULL;
+    }
+
+    if (h->e.placingItem)
+    {
+        if (!h->e.tileToPlace)
+        {
+            // TODO(chj): Switch on item type
+            Map *m = g->current_map;
+            assert(m->entityCount < ArrayCount(m->entities));
+            h->e.tileToPlace = &m->entities[m->entityCount++];
+            Tile *tile = h->e.tileToPlace;
+            tile->width = 80;
+            tile->height = 80;
+            tile->unharvestedSprite = g->treeTexture;
+            tile->harvestedSprite = g->treeStumpTexture;
+            initEntitySpriteSheet(tile, tile->unharvestedSprite, 1, 1);
+            tile->color = g->colors[COLOR_NONE];
+            tile->harvestedItem = INV_LEAVES;
+        }
+        else
+        {
+            
+        }
     }
 }
 
-Entity createBuffalo(f32 starting_x, f32 starting_y, SDL_Renderer* renderer)
-{
-    Entity buffalo = {};
-    initEntitySpriteSheet(&buffalo, "sprites/Buffalo.png", 4, 1, renderer);
-    initEntityWidthHeight(&buffalo);
-    buffalo.starting_pos = {starting_x, starting_y};
-    buffalo.position = buffalo.starting_pos;
-    // initEntityDest(&buffalo);
-    // setEntityCollisionPoint(&buffalo);
-    buffalo.bounding_box = {0, 0, 50, 50};
-    buffalo.bb_x_offset = 10;
-    buffalo.bb_y_offset = 10;
-    buffalo.speed = 3;
-    buffalo.type = ET_BUFFALO;
-    buffalo.can_move = true;
-    buffalo.collision_pt_offset = 32;
-    initAnimation(&buffalo.animation, 4, 100);
-    buffalo.plan = {};
-    buffalo.has_plan = true;
-    buffalo.plan.move_delay = (rand() % 2000) + 1000;
-    buffalo.plan.mv_dir = (CardinalDir)(rand() % 4);
-    return buffalo;
-}
+// Entity createBuffalo(f32 starting_x, f32 starting_y, SDL_Renderer* renderer)
+// {
+//     Entity buffalo = {};
+
+//     initEntitySpriteSheet(&buffalo, "sprites/Buffalo.png", 4, 1, renderer);
+//     buffalo.starting_pos = {starting_x, starting_y};
+//     buffalo.position = buffalo.starting_pos;
+//     buffalo.bounding_box = {0, 0, 50, 50};
+//     buffalo.bb_x_offset = 10;
+//     buffalo.bb_y_offset = 10;
+//     buffalo.speed = 3;
+//     buffalo.type = ET_BUFFALO;
+//     buffalo.can_move = true;
+//     buffalo.collision_pt_offset = 32;
+//     initAnimation(&buffalo.animation, 4, 100);
+//     buffalo.plan = {};
+//     buffalo.has_plan = true;
+//     buffalo.plan.move_delay = (rand() % 2000) + 1000;
+//     buffalo.plan.mv_dir = (CardinalDir)(rand() % 4);
+
+//     return buffalo;
+// }
 

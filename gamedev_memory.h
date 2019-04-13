@@ -9,4 +9,6 @@ struct Arena
     size_t maxCap;
 };
 
+#define PushStruct(arena, type) ((type*)pushSize((arena), sizeof(type)))
+
 #endif

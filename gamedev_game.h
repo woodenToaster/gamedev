@@ -38,16 +38,26 @@ struct Game
     u32 target_ms_per_frame;
     bool running;
     u8 initialized;
-    SDL_Window* window;
-    SDL_Surface* window_surface;
-    SDL_Renderer* renderer;
+    SDL_Window *window;
+    SDL_Surface *window_surface;
+    SDL_Renderer *renderer;
     u32 colors[COLOR_LAST];
     Camera camera;
-    Map* current_map;
-    MapList* maps;
-    SoundList* sounds;
+    Map *current_map;
+    MapList *maps;
+    SoundList sounds;
     GameMode mode;
-    char * dialog;
+    char *dialog;
+
+    SDL_Texture *transparentBlackTexture;
+    SDL_Texture *linkTexture;
+    SDL_Texture *treeTexture;
+    SDL_Texture *treeStumpTexture;
+    SDL_Texture *harlodTexture;
+    SDL_Texture *knightTexture;
+
+    Sound mudSound;
+    u32 soundCount;
 };
 
 void startDialogMode(Game *g, char *dialog);

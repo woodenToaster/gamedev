@@ -73,7 +73,7 @@ LRESULT CALLBACK WindowProc(HWND WindowHandle, UINT Message, WPARAM WParam, LPAR
         glViewport(0, 0, (GLsizei)Width, (GLsizei)Height);
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        glOrtho(0, (GLdouble)Width, 0, (GLdouble)Height, 1, 1);
+        glOrtho(0, (GLdouble)Width, 0, (GLdouble)Height, -1, 1);
         return 0;
     }
     case WM_DESTROY:
@@ -119,7 +119,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
     {
         ShowWindow(WindowHandle, CmdShow);
         UpdateWindow(WindowHandle);
-
+        glEnable(GL_BLEND);
         LARGE_INTEGER ElapsedMicroseconds = {0};
         GlobalRunning = 1;
         while (GlobalRunning)
@@ -138,13 +138,18 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
             }
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            glPushMatrix();
-            glTranslatef(0.375f, 0.375f, 0.0f);
-            glRotatef(GlobalSpin, 0.0f, 0.0f, 1.0f);
-            glTranslatef(-0.375f, -0.375f, 0.0f);
-            glColor3f(0.0f, 1.0f, 1.0f);
-            glRectf(0.25f, 0.25f, 0.5f, 0.5f);
-            glPopMatrix();
+
+            //
+            glBegin(GL_POLYGON);
+            glColor3f(0.0, 1.0, 0.0);
+            glVertex2f(5, 5);
+            glColor3f(1.0, 0.0, 0.0);
+            glVertex2f(125, 5);
+            glColor3f(0.0, 0.0, 1.0);
+            glVertex2f(125, 125);
+            glEnd();
+            //
+
             glFlush();
             SwapBuffers(GlobalDeviceContext);
 

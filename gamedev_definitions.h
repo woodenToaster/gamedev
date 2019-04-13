@@ -18,7 +18,6 @@ typedef double f64;
 typedef int32_t bool32;
 
 #define MEGABYTES(n) ((n) * 1024 * 1024)
-#define PushStruct(arena, type) ((type*)pushSize((arena), sizeof(type)))
 #define ArrayCount(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 enum EntityType

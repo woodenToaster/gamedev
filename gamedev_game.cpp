@@ -42,6 +42,13 @@ void renderFilledRect(SDL_Renderer* renderer, SDL_Rect* dest, u32 color)
 
 void destroyGame(Game* g)
 {
+    SDL_DestroyTexture(g->transparentBlackTexture);
+    SDL_DestroyTexture(g->linkTexture);
+    SDL_DestroyTexture(g->treeTexture);
+    SDL_DestroyTexture(g->treeStumpTexture);
+    SDL_DestroyTexture(g->harlodTexture);
+    SDL_DestroyTexture(g->knightTexture);
+
     Mix_Quit();
     SDL_DestroyRenderer(g->renderer);
     SDL_DestroyWindow(g->window);

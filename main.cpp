@@ -21,14 +21,10 @@
 #include "gamedev_definitions.h"
 #include "gamedev_animation.cpp"
 
-// TODO(chj): No global
-global_variable SDL_Texture *globalTextures[6];
-
 #include "gamedev_plan.h"
 #include "gamedev_math.h"
 #include "gamedev_font.h"
 #include "gamedev_sound.h"
-#include "gamedev_globals.h"
 #include "gamedev_input.h"
 #include "gamedev_camera.cpp"
 #include "gamedev_game.h"
@@ -39,7 +35,6 @@ global_variable SDL_Texture *globalTextures[6];
 
 #include "gamedev_font.cpp"
 #include "gamedev_sound.cpp"
-#include "gamedev_globals.h"
 #include "gamedev_asset_loading.cpp"
 #include "gamedev_input.cpp"
 #include "gamedev_game.cpp"
@@ -78,23 +73,15 @@ int main(int argc, char* argv[])
         exit(1);
     }
 
-    // TODO(chj): Preloading some textures that can be shared
-    SDL_Texture *transparentBlackTexture = SDL_CreateTexture(game->renderer, SDL_PIXELFORMAT_RGBA8888,
-                                                             SDL_TEXTUREACCESS_TARGET, screenWidth, screenHeight);
-    SDL_SetTextureBlendMode(transparentBlackTexture, SDL_BLENDMODE_BLEND);
+    game->transparentBlackTexture = SDL_CreateTexture(game->renderer, SDL_PIXELFORMAT_RGBA8888,
+                                                      SDL_TEXTUREACCESS_TARGET, screenWidth, screenHeight);
+    SDL_SetTextureBlendMode(game->transparentBlackTexture, SDL_BLENDMODE_BLEND);
 
-    SDL_Texture* linkTexture = create_texture_from_png("sprites/link_walking.png", game->renderer);
-    SDL_Texture* treeTexture = create_texture_from_png("sprites/tree.png", game->renderer);
-    SDL_Texture* treeStumpTexture = create_texture_from_png("sprites/tree_stump.png", game->renderer);
-    SDL_Texture* harlodTexture = create_texture_from_png("sprites/Harlod_the_caveman.png", game->renderer);
-    SDL_Texture* knightTexture = create_texture_from_png("sprites/knight_alligned.png", game->renderer);
-
-    globalTextures[0] = linkTexture;
-    globalTextures[1] = treeTexture;
-    globalTextures[2] = treeStumpTexture;
-    globalTextures[3] = harlodTexture;
-    globalTextures[4] = knightTexture;
-    globalTextures[5] = transparentBlackTexture;
+    game->linkTexture = create_texture_from_png("sprites/link_walking.png", game->renderer);
+    game->treeTexture = create_texture_from_png("sprites/tree.png", game->renderer);
+    game->treeStumpTexture = create_texture_from_png("sprites/tree_stump.png", game->renderer);
+    game->harlodTexture = create_texture_from_png("sprites/Harlod_the_caveman.png", game->renderer);
+    game->knightTexture = create_texture_from_png("sprites/knight_alligned.png", game->renderer);
 
     // Input
     Input input = {};
@@ -105,15 +92,11 @@ int main(int argc, char* argv[])
     generateFontData(&fontMetadata, game);
 
 	// Sound
-    Sound mudSound = {};
-    mudSound.delay = 250;
-    mudSound.chunk = sound_load_wav("sounds/mud_walk.wav");
-    global_sounds[SOUND_MUD] = &mudSound;
-
-    SoundList sounds_to_play = {};
+    game->mudSound.delay = 250;
+    game->mudSound.chunk = loadWav("sounds/mud_walk.wav");
 
     Hero hero = {};
-    initEntitySpriteSheet(&hero.e, linkTexture, 11, 5);
+    initEntitySpriteSheet(&hero.e, game->linkTexture, 11, 5);
     hero.e.sprite_sheet.scale = 2;
     hero.e.width = 20;
     hero.e.height = 10;
@@ -141,18 +124,6 @@ int main(int argc, char* argv[])
     // heroSword.offsetY = -25;
 
     // Tiles
-    // Tile w = {};
-    // w.width = w.height = 80;
-    // initTile(&w, tile_properties[TP_SOLID], game->colors[COLOR_GREEN], game->renderer);
-
-    // Tile f = {};
-    // f.width = f.height = 80;
-    // initTile(&f, tile_properties[TP_NONE], game->colors[COLOR_BLUE], game->renderer);
-
-    // Tile m = {};
-    // m.width = m.height = 80;
-    // initTile(&m, tile_properties[TP_QUICKSAND], game->colors[COLOR_BROWN], game->renderer);
-
     // Tile wr = {};
     // wr.width = wr.height = 80;
     // initTile(&wr, tile_properties[TP_WARP], game->colors[COLOR_RUST], game->renderer);
@@ -174,43 +145,6 @@ int main(int argc, char* argv[])
     // fire.has_animation = true;
     // fire.onHeroInteract = lightFire;
 
-    // Harvestable tree
-    // Tile h_tree = {};
-    // h_tree.width = h_tree.height = 80;
-    // initTile(&h_tree, tile_properties[TP_HARVEST] | tile_properties[TP_SOLID],
-    //           game->colors[COLOR_NONE], game->renderer, "sprites/tree.png");
-    // setTileSpriteSize(&h_tree, 64, 64);
-    // h_tree.active = true;
-    // h_tree.is_harvestable = true;
-    // h_tree.harvestedItem = INV_LEAVES;
-
-    // Tile h_tree1 = {};
-    // h_tree1.width = h_tree1.height = 80;
-    // initTile(&h_tree1, tile_properties[TP_HARVEST] | tile_properties[TP_SOLID],
-    //           game->colors[COLOR_NONE], game->renderer, "sprites/tree.png");
-    // setTileSpriteSize(&h_tree1, 64, 64);
-    // h_tree1.active = true;
-    // h_tree1.is_harvestable = true;
-    // h_tree1.harvestedItem = INV_LEAVES;
-
-    // TileList tile_list = {};
-    // Tile* _tiles[] = {&w, &f, &m, &wr, &t, &fire, &h_tree, &h_tree1};
-    // tile_list.tiles = _tiles;
-
-    // tile_list.count = ArrayCount(tile_list.tiles);
-
-    // Tileset
-    // Tileset jungle_tiles = {};
-    // jungle_tiles.texture = create_texture_from_png("sprites/jungle_tileset.png", game->renderer);
-
-    // Tile* grass = &jungle_tiles.tiles[0];
-    // grass->width = 16;
-    // grass->height = 16;
-    // grass->flags = tile_properties[TP_NONE];
-    // grass->color = game->colors[COLOR_NONE];
-    // grass->sprite = jungle_tiles.texture;
-    // grass->sprite_rect = {16, 16, 16, 16};
-
     // Tile grass_warp = {};
     // grass_warp.width = grass_warp.height = 16;
     // initTile(&grass_warp, tile_properties[TP_WARP], game->colors[COLOR_RUST], game->renderer);
@@ -224,8 +158,7 @@ int main(int argc, char* argv[])
     map0.current = true;
     map0.rows = 10;
     map0.cols = 12;
-    // TODO(chj): Hard-coded constant in 2 different places (here and struct Map declaration)
-    map0.maxEntities = 256;
+
     for (u32 row = 0; row < map0.rows; ++row)
     {
         for (u32 col = 0; col < map0.cols; ++col)
@@ -254,8 +187,8 @@ int main(int argc, char* argv[])
                 tile->tileFlags = tile_properties[TP_HARVEST];
                 tile->color = game->colors[COLOR_NONE];
                 tile->collides = true;
-                tile->unharvestedSprite = treeTexture;
-                tile->harvestedSprite = treeStumpTexture;
+                tile->unharvestedSprite = game->treeTexture;
+                tile->harvestedSprite = game->treeStumpTexture;
                 initEntitySpriteSheet(tile, tile->unharvestedSprite, 1, 1);
                 tile->active = true;
                 tile->isHarvestable = true;
@@ -271,7 +204,7 @@ int main(int argc, char* argv[])
     // Harlod
     Entity *harlod = &map0.entities[map0.entityCount++];
     *harlod = {};
-    initEntitySpriteSheet(harlod, harlodTexture, 1, 1);
+    initEntitySpriteSheet(harlod, game->harlodTexture, 1, 1);
     harlod->collides = true;
     harlod->width = 20;
     harlod->height = 10;
@@ -285,8 +218,7 @@ int main(int argc, char* argv[])
 
     // Knight
     Entity *knight = &map0.entities[map0.entityCount++];
-    initEntitySpriteSheet(knight, knightTexture, 8, 5);
-    // initEntityWidthHeight(&knight.e);
+    initEntitySpriteSheet(knight, game->knightTexture, 8, 5);
     knight->collides = true;
     knight->width = 20;
     knight->height = 10;
@@ -307,8 +239,6 @@ int main(int argc, char* argv[])
 
     game->current_map = &map0;
     initCamera(game);
-    // game->maps = &map_list;
-    game->sounds = &sounds_to_play;
 
     /**************************************************************************/
     /* Main Loop                                                              */
@@ -333,7 +263,7 @@ int main(int argc, char* argv[])
             updateCamera(&game->camera, hero.e.position);
             // updateEntityList(&entity_list, game->current_map, game->dt);
             updateAnimation(&hero.e.animation, game->dt, hero.isMoving);
-            sound_play_all(game->sounds, now);
+            playQueuedSounds(&game->sounds, now);
 
             // update knight
             updateAnimation(&knight->animation, game->dt, true);
@@ -355,20 +285,6 @@ int main(int argc, char* argv[])
 
         // Player interaction region
         // drawCircle(game->renderer, (int)hero.e.position.x, (int)(hero.e.position.y - hero.e.height), 30);
-
-        // Draw sword for knight walking right
-        // int swordSpriteWidth = 16;
-        // int swordSpriteHeight = 50;
-        // SDL_Rect knightSwordLocationInSheet = {188, 1, swordSpriteWidth, swordSpriteHeight};
-        // int currentKnightFrame = knight.e.sprite_rect.x / knight.e.sprite_rect.w;
-        // bool swordIsUp = currentKnightFrame == 0 || currentKnightFrame == 3;
-        // int swordOffsetX = 2;
-        // int swordOffsetY = swordIsUp ? -13 : -11;
-        // SDL_Rect knightSwordLocationOnMap = {knight.e.dest_rect.x + swordOffsetX,
-        //                                      knight.e.dest_rect.y + swordOffsetY,
-        //                                      swordSpriteWidth, swordSpriteHeight};
-        // SDL_RenderCopy(game->renderer, knight.e.sprite_sheet.sheet,
-        //                &knightSwordLocationInSheet, &knightSwordLocationOnMap);
 
         if (game->current_map == &map0)
         {
@@ -427,10 +343,10 @@ int main(int argc, char* argv[])
         }
 
         // Draw FPS
-        f32 fps = 1000.0f / game->dt;
-        char fps_str[9] = {0};
-        snprintf(fps_str, 9, "FPS: %03d", (u32)fps);
-        drawText(game, &fontMetadata, fps_str, game->camera.viewport.x, game->camera.viewport.y);
+        // f32 fps = 1000.0f / game->dt;
+        // char fps_str[9] = {0};
+        // snprintf(fps_str, 9, "FPS: %03d", (u32)fps);
+        // drawText(game, &fontMetadata, fps_str, game->camera.viewport.x, game->camera.viewport.y);
 
         // char pos_str[20] = {0};
         // snprintf(pos_str, 20, "x: %.2f, y: %.2f", hero.e.position.x, hero.e.position.y);
@@ -449,16 +365,7 @@ int main(int argc, char* argv[])
     /**************************************************************************/
     /* Cleanup                                                                */
     /**************************************************************************/
-    SDL_DestroyTexture(transparentBlackTexture);
-    SDL_DestroyTexture(linkTexture);
-    SDL_DestroyTexture(treeTexture);
-    SDL_DestroyTexture(treeStumpTexture);
-    SDL_DestroyTexture(harlodTexture);
-    SDL_DestroyTexture(knightTexture);
     destroyFontMetadata(&fontMetadata);
-    // destroyTileList(&tile_list);
-    // destroyTileset(&jungle_tiles);
-    // map_list_destroy(&map_list);
     // destroyEntityList(&entity_list);
     destroyControllers(&input);
     destroyGame(game);
