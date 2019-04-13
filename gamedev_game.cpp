@@ -35,9 +35,13 @@ void renderFilledRect(SDL_Renderer* renderer, SDL_Rect* dest, u32 color, u8 alph
         u8 r = (u8)((color & 0x00FF0000) >> 16);
         u8 g = (u8)((color & 0x0000FF00) >> 8);
         u8 b = (u8)((color & 0x000000FF) >> 0);
+
+        SDL_BlendMode blendMode;
+        SDL_GetRenderDrawBlendMode(renderer, &blendMode);
         SDL_SetRenderDrawColor(renderer, r, g, b, alpha);
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
         SDL_RenderFillRect(renderer, dest);
+        SDL_SetRenderDrawBlendMode(renderer, blendMode);
     }
 }
 
@@ -142,6 +146,11 @@ void initGame(Game* g, u32 width, u32 height)
         exit(1);
     }
     initColors(g);
+
+    // Sounds
+    g->mudSound.delay = 250;
+    g->mudSound.chunk = loadWav("sounds/mud_walk.wav");
+
     g->initialized = true;
     g->running = true;
 }

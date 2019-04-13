@@ -91,10 +91,6 @@ int main(int argc, char* argv[])
     FontMetadata fontMetadata = {};
     generateFontData(&fontMetadata, game);
 
-	// Sound
-    game->mudSound.delay = 250;
-    game->mudSound.chunk = loadWav("sounds/mud_walk.wav");
-
     Hero hero = {};
     initEntitySpriteSheet(&hero.e, game->linkTexture, 11, 5);
     hero.e.sprite_sheet.scale = 2;
@@ -110,7 +106,6 @@ int main(int argc, char* argv[])
     hero.e.speed = 2000;
     hero.e.active = true;
     hero.e.type = ET_HERO;
-    // hero.e.collision_pt_offset = 5;
 
     // SpriteSheet heroSword = {};
     // loadSpriteSheet(&heroSword, "sprites/sword.png", 12, 4, game->renderer);
@@ -152,22 +147,22 @@ int main(int argc, char* argv[])
 
     u32 tileWidth = 80;
     u32 tileHeight = 80;
-    Map map0 = {};
-    map0.tile_width = tileWidth;
-    map0.tile_height = tileHeight;
-    map0.current = true;
-    map0.rows = 10;
-    map0.cols = 12;
+    Map *map0 = PushStruct(&arena, Map);
+    map0->tile_width = tileWidth;
+    map0->tile_height = tileHeight;
+    map0->current = true;
+    map0->rows = 10;
+    map0->cols = 12;
 
-    for (u32 row = 0; row < map0.rows; ++row)
+    for (u32 row = 0; row < map0->rows; ++row)
     {
-        for (u32 col = 0; col < map0.cols; ++col)
+        for (u32 col = 0; col < map0->cols; ++col)
         {
-            Entity *tile = &map0.entities[map0.entityCount++];
+            Entity *tile = &map0->entities[map0->entityCount++];
             tile->width = tileWidth;
             tile->height = tileHeight;
             tile->position = {col*tile->width + 0.5f*tile->width, row*tile->height + 0.5f*tile->height};
-            if (row == 0 || col == 0 || row == map0.rows - 1 || col == map0.cols - 1)
+            if (row == 0 || col == 0 || row == map0->rows - 1 || col == map0->cols - 1)
             {
                 // tile->flags = tile_properties[TP_SOLID];
                 tile->color = game->colors[COLOR_GREEN];
@@ -196,14 +191,14 @@ int main(int argc, char* argv[])
             }
         }
     }
-    map0.width_pixels = map0.cols * tileWidth;
-    map0.height_pixels = map0.rows * tileHeight;
-    map0.texture = SDL_CreateTexture(game->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
-                                     map0.width_pixels, map0.height_pixels);
-    SDL_SetTextureBlendMode(map0.texture, SDL_BLENDMODE_BLEND);
+    map0->width_pixels = map0->cols * tileWidth;
+    map0->height_pixels = map0->rows * tileHeight;
+    map0->texture = SDL_CreateTexture(game->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
+                                     map0->width_pixels, map0->height_pixels);
+    SDL_SetTextureBlendMode(map0->texture, SDL_BLENDMODE_BLEND);
 
     // Harlod
-    Entity *harlod = &map0.entities[map0.entityCount++];
+    Entity *harlod = &map0->entities[map0->entityCount++];
     *harlod = {};
     initEntitySpriteSheet(harlod, game->harlodTexture, 1, 1);
     harlod->collides = true;
@@ -218,7 +213,7 @@ int main(int argc, char* argv[])
     harlod->active = true;
 
     // Knight
-    Entity *knight = &map0.entities[map0.entityCount++];
+    Entity *knight = &map0->entities[map0->entityCount++];
     initEntitySpriteSheet(knight, game->knightTexture, 8, 5);
     knight->collides = true;
     knight->width = 20;
@@ -235,10 +230,10 @@ int main(int argc, char* argv[])
     initAnimation(&knight->animation, 2, 400);
 
     Entity* map0_entities[] = {&hero.e, knight, harlod};
-    map0.active_entities.entities = map0_entities;
-    map0.active_entities.count = ArrayCount(map0_entities);
+    map0->active_entities.entities = map0_entities;
+    map0->active_entities.count = ArrayCount(map0_entities);
 
-    game->current_map = &map0;
+    game->current_map = map0;
     initCamera(game);
 
     /**************************************************************************/
@@ -288,7 +283,7 @@ int main(int argc, char* argv[])
         // Player interaction region
         // drawCircle(game->renderer, (int)hero.e.position.x, (int)(hero.e.position.y - hero.e.height), 30);
 
-        if (game->current_map == &map0)
+        if (game->current_map == map0)
         {
             // Draw sword for knight attacking to right
             Sprite attackingSwordRaised = {};
@@ -353,20 +348,6 @@ int main(int argc, char* argv[])
         // char pos_str[20] = {0};
         // snprintf(pos_str, 20, "x: %.2f, y: %.2f", hero.e.position.x, hero.e.position.y);
         // drawText(game, &fontMetadata, pos_str, game->camera.viewport.x, game->camera.viewport.y);
-
-        char valid[10] = {};
-        if (hero.e.tileToPlace && hero.e.placingItem)
-        {
-            if (hero.e.tileToPlace->validPlacement)
-            {
-                snprintf(valid, 10, "valid");
-            }
-            else
-            {
-                snprintf(valid, 10, "invalid");
-            }
-        }
-        drawText(game, &fontMetadata, valid, game->camera.viewport.x, game->camera.viewport.y);
 
         SDL_SetRenderTarget(game->renderer, NULL);
         SDL_RenderCopy(game->renderer, game->current_map->texture, &game->camera.viewport, NULL);
