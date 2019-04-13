@@ -641,6 +641,12 @@ internal bool32 isValidTilePlacment(Map *m, Entity *tileToPlace)
     return result;
 }
 
+internal Entity emptyEntity()
+{
+    Entity result = {};
+    return result;
+}
+
 internal void updateHero(Hero* h, Input* input, Game* g)
 {
     Map *map = g->current_map;
@@ -868,6 +874,7 @@ internal void updateHero(Hero* h, Input* input, Game* g)
             Map *m = g->current_map;
             assert(m->entityCount < ArrayCount(m->entities));
             h->e.tileToPlace = &m->entities[m->entityCount++];
+            *h->e.tileToPlace = emptyEntity();
             Entity *tile = h->e.tileToPlace;
             tile->width = 80;
             tile->height = 80;
