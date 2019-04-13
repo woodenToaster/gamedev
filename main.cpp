@@ -73,10 +73,6 @@ int main(int argc, char* argv[])
         exit(1);
     }
 
-    game->transparentBlackTexture = SDL_CreateTexture(game->renderer, SDL_PIXELFORMAT_RGBA8888,
-                                                      SDL_TEXTUREACCESS_TARGET, screenWidth, screenHeight);
-    SDL_SetTextureBlendMode(game->transparentBlackTexture, SDL_BLENDMODE_BLEND);
-
     game->linkTexture = create_texture_from_png("sprites/link_walking.png", game->renderer);
     game->treeTexture = create_texture_from_png("sprites/tree.png", game->renderer);
     game->treeStumpTexture = create_texture_from_png("sprites/tree_stump.png", game->renderer);
@@ -107,28 +103,11 @@ int main(int argc, char* argv[])
     hero.e.active = true;
     hero.e.type = ET_HERO;
 
-    // SpriteSheet heroSword = {};
-    // loadSpriteSheet(&heroSword, "sprites/sword.png", 12, 4, game->renderer);
-
-    // Sprite heroSword = {};
-    // heroSword.x = 188;
-    // heroSword.y = 1;
-    // heroSword.width = 16;
-    // heroSword.height = 50;
-    // heroSword.offsetX = 2;
-    // heroSword.offsetY = -25;
-
     // Tiles
     // Tile wr = {};
     // wr.width = wr.height = 80;
     // initTile(&wr, tile_properties[TP_WARP], game->colors[COLOR_RUST], game->renderer);
     // wr.destination_map = 2;
-
-    // Tile t = {};
-    // t.width = t.height = 80;
-    // initTile(&t, tile_properties[TP_SOLID], game->colors[COLOR_GREEN], game->renderer, "sprites/TropicalTree.png");
-    // setTileSpriteSize(&t, 64, 64);
-    // t.active = true;
 
     // Tile fire = {};
     // fire.width = fire.height = 80;
@@ -139,11 +118,6 @@ int main(int argc, char* argv[])
     // fire.active = true;
     // fire.has_animation = true;
     // fire.onHeroInteract = lightFire;
-
-    // Tile grass_warp = {};
-    // grass_warp.width = grass_warp.height = 16;
-    // initTile(&grass_warp, tile_properties[TP_WARP], game->colors[COLOR_RUST], game->renderer);
-    // grass_warp.destination_map = 1;
 
     u32 tileWidth = 80;
     u32 tileHeight = 80;
@@ -164,7 +138,7 @@ int main(int argc, char* argv[])
             tile->position = {col*tile->width + 0.5f*tile->width, row*tile->height + 0.5f*tile->height};
             if (row == 0 || col == 0 || row == map0->rows - 1 || col == map0->cols - 1)
             {
-                // tile->flags = tile_properties[TP_SOLID];
+                tile->tileFlags = tile_properties[TP_SOLID];
                 tile->color = game->colors[COLOR_GREEN];
                 tile->collides = true;
             }
@@ -195,7 +169,6 @@ int main(int argc, char* argv[])
     map0->height_pixels = map0->rows * tileHeight;
     map0->texture = SDL_CreateTexture(game->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
                                      map0->width_pixels, map0->height_pixels);
-    SDL_SetTextureBlendMode(map0->texture, SDL_BLENDMODE_BLEND);
 
     // Harlod
     Entity *harlod = &map0->entities[map0->entityCount++];
@@ -251,26 +224,28 @@ int main(int argc, char* argv[])
         /*********************************************************************/
         /* Update                                                            */
         /*********************************************************************/
-        if (game->mode == GAME_MODE_PLAYING)
-        {
-            updateGame(game, &input);
-            // updateMap(game);
-            updateHero(&hero, &input, game);
-            updateCamera(&game->camera, hero.e.position);
-            // updateEntityList(&entity_list, game->current_map, game->dt);
-            updateAnimation(&hero.e.animation, game->dt, hero.isMoving);
-            playQueuedSounds(&game->sounds, now);
 
-            // update knight
-            updateAnimation(&knight->animation, game->dt, true);
-        }
-        else if (game->mode == GAME_MODE_DIALOG)
+        switch (game->mode)
         {
-            updateDialogMode(game, &input);
-        }
-        else if (game->mode == GAME_MODE_INVENTORY)
-        {
-            updateInventoryMode(game, &input);
+            case GAME_MODE_PLAYING:
+            {
+                updateGame(game, &input);
+                // updateMap(game);
+                updateHero(&hero, &input, game);
+                updateCamera(&game->camera, hero.e.position);
+                // updateEntityList(&entity_list, game->current_map, game->dt);
+                updateAnimation(&hero.e.animation, game->dt, hero.isMoving);
+                playQueuedSounds(&game->sounds, now);
+                updateAnimation(&knight->animation, game->dt, true);
+            } break;
+            case GAME_MODE_DIALOG:
+            {
+                updateDialogMode(game, &input);
+            } break;
+            case GAME_MODE_INVENTORY:
+            {
+                updateInventoryMode(game, &input);
+            } break;
         }
 
         /*********************************************************************/
@@ -279,6 +254,7 @@ int main(int argc, char* argv[])
         SDL_SetRenderTarget(game->renderer, game->current_map->texture);
         drawMap(game);
         drawPlacingTile(game, &hero);
+        drawHUD(game, &hero);
 
         // Player interaction region
         // drawCircle(game->renderer, (int)hero.e.position.x, (int)(hero.e.position.y - hero.e.height), 30);
@@ -331,32 +307,28 @@ int main(int argc, char* argv[])
             drawInventoryScreen(game, &hero, &fontMetadata);
         }
 
-        // Only for drawing overlap boxes. Move to update section once real
-        // collisions are being handled.
-        for (size_t i = 0; i < game->current_map->active_entities.count; ++i)
-        {
-            Entity* e = game->current_map->active_entities.entities[i];
-            checkEntityCollisionsWithEntities(e, game);
-        }
+        /**************************************************************************/
+        /* Debug text                                                             */
+        /**************************************************************************/
 
-        // Draw FPS
         // f32 fps = 1000.0f / game->dt;
-        // char fps_str[9] = {0};
-        // snprintf(fps_str, 9, "FPS: %03d", (u32)fps);
-        // drawText(game, &fontMetadata, fps_str, game->camera.viewport.x, game->camera.viewport.y);
+        // char fpsText[9] = {0};
+        // snprintf(fpsText, 9, "FPS: %03d", (u32)fps);
+        // drawText(game, &fontMetadata, fpsText, game->camera.viewport.x, game->camera.viewport.y);
 
-        // char pos_str[20] = {0};
-        // snprintf(pos_str, 20, "x: %.2f, y: %.2f", hero.e.position.x, hero.e.position.y);
-        // drawText(game, &fontMetadata, pos_str, game->camera.viewport.x, game->camera.viewport.y);
+        // char heroPosition[20] = {0};
+        // snprintf(heroPosition, 20, "x: %.2f, y: %.2f", hero.e.position.x, hero.e.position.y);
+        // drawText(game, &fontMetadata, heroPosition, game->camera.viewport.x, game->camera.viewport.y);
+
+        // char bytesUsed[35] = {};
+        // snprintf(bytesUsed, 35, "%zu / %zu bytes in use", arena.used, arena.maxCap);
+        // drawText(game, &fontMetadata, bytesUsed, game->camera.viewport.x, game->camera.viewport.y);
 
         SDL_SetRenderTarget(game->renderer, NULL);
         SDL_RenderCopy(game->renderer, game->current_map->texture, &game->camera.viewport, NULL);
-
         game->dt = SDL_GetTicks() - now;
         sleepIfAble(game);
-
         SDL_RenderPresent(game->renderer);
-        fflush(stdout);
     }
 
     /**************************************************************************/

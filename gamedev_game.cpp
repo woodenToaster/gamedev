@@ -47,7 +47,6 @@ void renderFilledRect(SDL_Renderer* renderer, SDL_Rect* dest, u32 color, u8 alph
 
 void destroyGame(Game* g)
 {
-    SDL_DestroyTexture(g->transparentBlackTexture);
     SDL_DestroyTexture(g->linkTexture);
     SDL_DestroyTexture(g->treeTexture);
     SDL_DestroyTexture(g->treeStumpTexture);
@@ -76,6 +75,7 @@ void initColors(Game* g)
     g->colors[COLOR_GREY] = SDL_MapRGB(window_pixel_format, 135, 135, 135);
     g->colors[COLOR_DARK_BLUE] = SDL_MapRGB(window_pixel_format, 0, 51, 102);
     g->colors[COLOR_DARK_ORANGE] = SDL_MapRGB(window_pixel_format, 255, 140, 0);
+    g->colors[COLOR_BABY_BLUE] = SDL_MapRGB(window_pixel_format, 137, 207, 240);
 }
 
 void initCamera(Game* g)
@@ -210,7 +210,7 @@ void drawDialogScreen(Game *g, FontMetadata *fontMetadata)
     int dialogBoxWidth = 2 * (thirdOfWidth);
     int dialogBoxHeight = fourthOfHeight;
     SDL_Rect dialogBoxDest = {dialogBoxX,dialogBoxY, dialogBoxWidth, dialogBoxHeight};
-    renderFilledRect(g->renderer, &dialogBoxDest, g->colors[COLOR_DARK_BLUE]);
+    renderFilledRect(g->renderer, &dialogBoxDest, g->colors[COLOR_BABY_BLUE]);
     drawText(g, fontMetadata, g->dialog, dialogBoxX, dialogBoxY);
 }
 
@@ -224,7 +224,7 @@ void drawInventoryScreen(Game *g, Hero *h, FontMetadata *fontMetadata)
     int dialogBoxWidth = 2 * (thirdOfWidth);
     int dialogBoxHeight = fourthOfHeight;
     SDL_Rect dialogBoxDest = {dialogBoxX,dialogBoxY, dialogBoxWidth, dialogBoxHeight};
-    renderFilledRect(g->renderer, &dialogBoxDest, g->colors[COLOR_DARK_BLUE]);
+    renderFilledRect(g->renderer, &dialogBoxDest, g->colors[COLOR_BABY_BLUE]);
     char leaves[30];
     snprintf(leaves, 30, "Leaves: %d", h->inventory[INV_LEAVES]);
     drawText(g, fontMetadata, leaves, dialogBoxX, dialogBoxY);
@@ -234,10 +234,28 @@ void drawInventoryScreen(Game *g, Hero *h, FontMetadata *fontMetadata)
     drawText(g, fontMetadata, trees, dialogBoxX, dialogBoxY + 25);
 }
 
+void drawHUD(Game *g, Hero *h)
+{
+    u8 beltSlots = 8;
+    u8 slotSize = 40;
+    i32 slotCenterX = g->camera.viewport.w / 2;
+    i32 destX = slotCenterX - ((beltSlots / 2) * slotSize);
+    i32 destY = g->camera.viewport.h + g->camera.viewport.y - slotSize;
+
+    SDL_SetRenderDrawColor(g->renderer, 255, 255, 255, 255);
+
+    for (int i = 0; i < beltSlots; ++i)
+    {
+        SDL_Rect dest = {destX + i*slotSize, destY, slotSize, slotSize};
+        SDL_RenderDrawRect(g->renderer, &dest);
+        // TODO(chj): Draw hero inventory
+    }
+}
+
 void darkenBackground(Game *g)
 {
     SDL_SetRenderDrawBlendMode(g->renderer, SDL_BLENDMODE_BLEND);
-    SDL_SetRenderDrawColor(g->renderer, 0, 0, 0, 32);
+    SDL_SetRenderDrawColor(g->renderer, 0, 0, 0, 64);
     SDL_RenderFillRect(g->renderer, NULL);
 }
 

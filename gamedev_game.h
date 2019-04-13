@@ -16,6 +16,7 @@ enum Colors
     COLOR_RED,
     COLOR_GREY,
     COLOR_DARK_BLUE,
+    COLOR_BABY_BLUE,
     COLOR_DARK_ORANGE,
     COLOR_LAST
 };
@@ -49,7 +50,6 @@ struct Game
     GameMode mode;
     char *dialog;
 
-    SDL_Texture *transparentBlackTexture;
     SDL_Texture *linkTexture;
     SDL_Texture *treeTexture;
     SDL_Texture *treeStumpTexture;

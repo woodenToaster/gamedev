@@ -4,14 +4,20 @@
 * Build
 ** TODO game code DLL (tough)
 * Gameplay
+** TODO Crafting system
+*** DONE Craft tree from leaves
+*** DONE Place tree tile in world
+*** TODO Show item belt at bottom of screen (HUD)
+*** TODO Scroll through belt to place tiles
+** TODO Tile placement
+*** TODO Need to know type of tile we're placing before the tile exists
+**** TODO Place a different type of tile to see how this will work
 ** TODO Combat system
 ** TODO Dialog system
+*** TODO reenable
 ** TODO Basic enemy to prototype combat system
 ** TODO Inventory system
 *** TODO Make items selectable
-** TODO Crafting system
-*** TODO Craft tree from leaves
-*** TODO Place tree tile in world
 ** TODO Base building system
 * Architecture
 ** TODO Debug system
@@ -35,7 +41,7 @@
 *** TODO Each move takes time, and the longer it takes, the more damage it does.
 ** TODO Dark Souls atmosphere
 *** TODO See far away parts of the level that you eventually reach
-***** TODO How can I simulate this effect in 2d?
+***** TODO How can I simulate this effect in 2d? Parallax scrolling.
 ** TODO Crafting
 ** A room full of breakables that a shop keeper later rewards you if unbroken
 * TODO Mechanics
