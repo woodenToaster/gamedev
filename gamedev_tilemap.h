@@ -91,7 +91,6 @@ struct Map
     u64 tile_rows_per_screen;
     u64 tile_cols_per_screen;
     bool32 current;
-    Tile** tiles;
     SDL_Texture* texture;
     EntityList active_entities;
     TileList active_tiles;
@@ -109,6 +108,8 @@ struct MapList
 
 void initTile(Tile* t, u32 flags, u32 color, SDL_Renderer* renderer, const char* sprite_path=NULL);
 void destroyTile(Tile* t);
+void drawTile(Game *g, Entity *e, bool32 isBeingPlace=false);
+SDL_Rect getTileRect(Entity *e);
 void setTileSpriteSize(Tile* t, int width, int height);
 bool32 tile_is_interactive(Tile *t);
 Tile *getTileAtPosition(Map *m, Vec2 pos);

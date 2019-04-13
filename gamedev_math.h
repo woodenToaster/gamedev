@@ -161,7 +161,23 @@ f32 absFloat32(f32 x)
     return result;
 }
 
-i32 clamp(i32 val, i32 min, i32 max)
+i32 clampInt32(i32 val, i32 min, i32 max)
+{
+    if (val < min)
+    {
+        return min;
+    }
+    else if (val > max)
+    {
+        return max;
+    }
+    else
+    {
+        return val;
+    }
+}
+
+u32 clampU32(u32 val, u32 min, u32 max)
 {
     if (val < min)
     {

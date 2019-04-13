@@ -9,6 +9,6 @@ void centerCameraOverPoint(Camera* c, Vec2 pos)
 void updateCamera(Camera* c, Vec2 centerPos)
 {
     centerCameraOverPoint(c, centerPos);
-    c->viewport.x = clamp(c->viewport.x, 0, c->max_x);
-    c->viewport.y = clamp(c->viewport.y, 0, c->max_y);
+    c->viewport.x = clampInt32(c->viewport.x, 0, c->max_x);
+    c->viewport.y = clampInt32(c->viewport.y, 0, c->max_y);
 }

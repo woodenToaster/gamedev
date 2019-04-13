@@ -10,14 +10,16 @@ struct Hero;
 typedef void (*interactWithEntity)(Entity *e, Entity *other);
 typedef void (*interactWithHero)(Entity *e, Hero *h, Game *g);
 
-enum CraftableItem
+enum CraftableItemType
 {
+    CRAFTABLE_NONE,
     CRAFTABLE_TREE,
     CRAFTABLE_COUNT
 };
 
 enum InventoryItemType
 {
+    INV_NONE,
     INV_LEAVES,
     INV_TREES,
     INV_COUNT
@@ -63,8 +65,11 @@ struct Entity
     u32 tileFlags;
     bool32 isHarvestable;
     InventoryItemType harvestedItem;
+    CraftableItemType craftableItem;
     SDL_Texture *unharvestedSprite;
     SDL_Texture *harvestedSprite;
+    bool32 validPlacement;
+    Entity *deleteAfterPlacement;
 
     // Hero
     SDL_Rect heroInteractionRect;

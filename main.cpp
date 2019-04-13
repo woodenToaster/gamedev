@@ -198,8 +198,9 @@ int main(int argc, char* argv[])
     }
     map0.width_pixels = map0.cols * tileWidth;
     map0.height_pixels = map0.rows * tileHeight;
-    map0.texture = SDL_CreateTexture(game->renderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_TARGET,
+    map0.texture = SDL_CreateTexture(game->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
                                      map0.width_pixels, map0.height_pixels);
+    SDL_SetTextureBlendMode(map0.texture, SDL_BLENDMODE_BLEND);
 
     // Harlod
     Entity *harlod = &map0.entities[map0.entityCount++];
@@ -282,6 +283,7 @@ int main(int argc, char* argv[])
         /*********************************************************************/
         SDL_SetRenderTarget(game->renderer, game->current_map->texture);
         drawMap(game);
+        drawPlacingTile(game, &hero);
 
         // Player interaction region
         // drawCircle(game->renderer, (int)hero.e.position.x, (int)(hero.e.position.y - hero.e.height), 30);
@@ -351,6 +353,20 @@ int main(int argc, char* argv[])
         // char pos_str[20] = {0};
         // snprintf(pos_str, 20, "x: %.2f, y: %.2f", hero.e.position.x, hero.e.position.y);
         // drawText(game, &fontMetadata, pos_str, game->camera.viewport.x, game->camera.viewport.y);
+
+        char valid[10] = {};
+        if (hero.e.tileToPlace && hero.e.placingItem)
+        {
+            if (hero.e.tileToPlace->validPlacement)
+            {
+                snprintf(valid, 10, "valid");
+            }
+            else
+            {
+                snprintf(valid, 10, "invalid");
+            }
+        }
+        drawText(game, &fontMetadata, valid, game->camera.viewport.x, game->camera.viewport.y);
 
         SDL_SetRenderTarget(game->renderer, NULL);
         SDL_RenderCopy(game->renderer, game->current_map->texture, &game->camera.viewport, NULL);

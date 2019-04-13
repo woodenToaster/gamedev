@@ -26,7 +26,7 @@ u8 getBlueFromU32(u32 color)
 }
 
 
-void renderFilledRect(SDL_Renderer* renderer, SDL_Rect* dest, u32 color)
+void renderFilledRect(SDL_Renderer* renderer, SDL_Rect* dest, u32 color, u8 alpha=255)
 {
     // COLOR_NONE is 0. Set a tile's background color to COLOR_NONE to avoid
     // extra rendering.
@@ -35,7 +35,8 @@ void renderFilledRect(SDL_Renderer* renderer, SDL_Rect* dest, u32 color)
         u8 r = (u8)((color & 0x00FF0000) >> 16);
         u8 g = (u8)((color & 0x0000FF00) >> 8);
         u8 b = (u8)((color & 0x000000FF) >> 0);
-        SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
+        SDL_SetRenderDrawColor(renderer, r, g, b, alpha);
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
         SDL_RenderFillRect(renderer, dest);
     }
 }

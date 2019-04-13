@@ -76,23 +76,23 @@ void tile_fill(Tile* t, SDL_Renderer* renderer, SDL_Rect* tile_rect)
     renderFilledRect(renderer, tile_rect, fill_color);
 }
 
-void drawTile(Tile* t, SDL_Renderer* renderer, SDL_Rect* tile_rect)
-{
-    tile_fill(t, renderer, tile_rect);
+// void drawTile(Tile* t, SDL_Renderer* renderer, SDL_Rect* tile_rect)
+// {
+//     tile_fill(t, renderer, tile_rect);
 
-    if (t->sprite && t->active)
-    {
-        SDL_Rect dest = *tile_rect;
-        // dest.x += (t->tile_width - t->sprite_rect.w) / 2;
-        // dest.y += (t->tile_height - t->sprite_rect.h) / 2;
+//     if (t->sprite && t->active)
+//     {
+//         SDL_Rect dest = *tile_rect;
+//         // dest.x += (t->tile_width - t->sprite_rect.w) / 2;
+//         // dest.y += (t->tile_height - t->sprite_rect.h) / 2;
 
-        if (t->has_animation && t->animation_is_active)
-        {
-            t->sprite_rect.x = t->sprite_rect.w * t->animation.current_frame;
-        }
-        SDL_RenderCopy(renderer, t->sprite, &t->sprite_rect, &dest);
-    }
-}
+//         if (t->has_animation && t->animation_is_active)
+//         {
+//             t->sprite_rect.x = t->sprite_rect.w * t->animation.current_frame;
+//         }
+//         SDL_RenderCopy(renderer, t->sprite, &t->sprite_rect, &dest);
+//     }
+// }
 
 void lightFire(Tile *t, Hero *h)
 {
@@ -122,51 +122,51 @@ void destroyTileset(Tileset* ts)
     SDL_DestroyTexture(ts->texture);
 }
 
-void initMap(Map* m, u32 cols, u32 rows, Tile** tiles, SDL_Renderer* renderer)
-{
-    m->cols = cols;
-    m->rows = rows;
-    m->tile_width = tiles[0][0].width;
-    m->tile_height = tiles[0][0].height;
-    m->tiles = tiles;
-    m->width_pixels = cols * tiles[0]->width;
-    m->height_pixels = rows * tiles[0]->height;
+// void initMap(Map* m, u32 cols, u32 rows, Tile** tiles, SDL_Renderer* renderer)
+// {
+//     m->cols = cols;
+//     m->rows = rows;
+//     m->tile_width = tiles[0][0].width;
+//     m->tile_height = tiles[0][0].height;
+//     m->tiles = tiles;
+//     m->width_pixels = cols * tiles[0]->width;
+//     m->height_pixels = rows * tiles[0]->height;
 
-    m->texture = SDL_CreateTexture(
-        renderer,
-        SDL_PIXELFORMAT_RGB888,
-        SDL_TEXTUREACCESS_TARGET,
-        m->width_pixels,
-        m->height_pixels
-    );
+//     m->texture = SDL_CreateTexture(
+//         renderer,
+//         SDL_PIXELFORMAT_RGB888,
+//         SDL_TEXTUREACCESS_TARGET,
+//         m->width_pixels,
+//         m->height_pixels
+//     );
 
-    if (!m->texture)
-    {
-        printf("Failed to create surface: %s\n", SDL_GetError());
-        exit(1);
-    }
-}
+//     if (!m->texture)
+//     {
+//         printf("Failed to create surface: %s\n", SDL_GetError());
+//         exit(1);
+//     }
+// }
 
-Tile *getTileAtPosition(Map *m, Vec2 pos)
-{
-    Tile *result = 0;
-    if (m)
-    {
-        SDL_Rect tile_at_point = {
-            (int)((pos.x / m->tile_width) * m->tile_width),
-            (int)((pos.y / m->tile_height) * m->tile_height)
-        };
-        int map_coord_x = tile_at_point.y / m->tile_height;
-        int map_coord_y = tile_at_point.x / m->tile_width;
-        int tile_index = map_coord_x * m->cols + map_coord_y;
+// Tile *getTileAtPosition(Map *m, Vec2 pos)
+// {
+//     Tile *result = 0;
+//     if (m)
+//     {
+//         SDL_Rect tile_at_point = {
+//             (int)((pos.x / m->tile_width) * m->tile_width),
+//             (int)((pos.y / m->tile_height) * m->tile_height)
+//         };
+//         int map_coord_x = tile_at_point.y / m->tile_height;
+//         int map_coord_y = tile_at_point.x / m->tile_width;
+//         int tile_index = map_coord_x * m->cols + map_coord_y;
 
-        if (tile_index >= 0 && tile_index < (int)(m->rows * m->cols))
-        {
-            result = m->tiles[tile_index];
-        }
-    }
-    return result;
-}
+//         if (tile_index >= 0 && tile_index < (int)(m->rows * m->cols))
+//         {
+//             result = m->tiles[tile_index];
+//         }
+//     }
+//     return result;
+// }
 
 #if 0
 Tile *getTileFromPosition(Map *m, Vec2 pos)
@@ -175,26 +175,26 @@ Tile *getTileFromPosition(Map *m, Vec2 pos)
 }
 #endif
 
-Tile *map_get_tile_at_point(Map *m, Point p)
-{
-    Tile *result = 0;
-    if (m && p.x >= 0 && p.y >= 0)
-    {
-        SDL_Rect tile_at_point = {
-            (int)((p.x / m->tile_width) * m->tile_width),
-            (int)((p.y / m->tile_height) * m->tile_height)
-        };
-        int map_coord_x = tile_at_point.y / m->tile_height;
-        int map_coord_y = tile_at_point.x / m->tile_width;
-        int tile_index = map_coord_x * m->cols + map_coord_y;
+// Tile *map_get_tile_at_point(Map *m, Point p)
+// {
+//     Tile *result = 0;
+//     if (m && p.x >= 0 && p.y >= 0)
+//     {
+//         SDL_Rect tile_at_point = {
+//             (int)((p.x / m->tile_width) * m->tile_width),
+//             (int)((p.y / m->tile_height) * m->tile_height)
+//         };
+//         int map_coord_x = tile_at_point.y / m->tile_height;
+//         int map_coord_y = tile_at_point.x / m->tile_width;
+//         int tile_index = map_coord_x * m->cols + map_coord_y;
 
-        if (tile_index >= 0 && tile_index < (int)(m->rows * m->cols))
-        {
-            result = m->tiles[tile_index];
-        }
-    }
-    return result;
-}
+//         if (tile_index >= 0 && tile_index < (int)(m->rows * m->cols))
+//         {
+//             result = m->tiles[tile_index];
+//         }
+//     }
+//     return result;
+// }
 
 #if 0
 void updateMap(Game* g)
@@ -209,6 +209,45 @@ void updateMap(Game* g)
     updateEntityList(g);
 }
 #endif
+
+SDL_Rect getTileRect(Entity *tile)
+{
+    SDL_Rect result = {(int)(tile->position.x - 0.5f*tile->width), (int)(tile->position.y - 0.5f*tile->height),
+                       (int)tile->width, (int)tile->height};
+    return result;
+}
+
+void drawTile(Game *g, Entity *e, bool32 isBeingPlaced)
+{
+    SDL_Rect tileRect = getTileRect(e);
+
+    if (e->sprite_sheet.sheet)
+    {
+        // if (t->has_animation && t->animation_is_active)
+        // {
+        //     t->sprite_rect.x = t->sprite_rect.w * t->animation.current_frame;
+        // }
+        SDL_RenderCopy(g->renderer, e->sprite_sheet.sheet, NULL, &tileRect);
+    }
+    else
+    {
+        u32 tileColor = e->color;
+        renderFilledRect(g->renderer, &tileRect, tileColor);
+    }
+
+    if (isBeingPlaced)
+    {
+        if (e->validPlacement)
+        {
+            // TODO(chj): Draw green filter?
+        }
+        else
+        {
+            // Draw red filter on top
+            renderFilledRect(g->renderer, &tileRect, g->colors[COLOR_RED], 128);
+        }
+    }
+}
 
 void drawMap(Game* g)
 {
@@ -225,22 +264,7 @@ void drawMap(Game* g)
         Entity *e = &map->entities[entityIndex];
         if (e->type == ET_TILE)
         {
-            SDL_Rect tileRect = {(int)(e->position.x - 0.5f*e->width), (int)(e->position.y - 0.5f*e->height),
-                                 (int)e->width, (int)e->height};
-
-            if (e->sprite_sheet.sheet && e->active)
-            {
-                // if (t->has_animation && t->animation_is_active)
-                // {
-                //     t->sprite_rect.x = t->sprite_rect.w * t->animation.current_frame;
-                // }
-                SDL_RenderCopy(g->renderer, e->sprite_sheet.sheet, NULL, &tileRect);
-            }
-            else
-            {
-                u32 tileColor = e->color;
-                renderFilledRect(g->renderer, &tileRect, tileColor);
-            }
+            drawTile(g, e);
         }
     }
     drawEntityList(g);

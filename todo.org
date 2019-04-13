@@ -4,8 +4,6 @@
 * Build
 ** TODO game code DLL (tough)
 * Gameplay
-** TODO Harvesting and tile placing system
-*** TODO firstFree Entity list
 ** TODO Combat system
 ** TODO Dialog system
 ** TODO Basic enemy to prototype combat system

@@ -4,28 +4,6 @@
 
 static Circle heroInteractionRegion = {};
 
-#if 0
-void initEntityPixelData(Entity* e, SDL_Surface *s)
-{
-    e->pixel_data = (u8*)malloc(sizeof(u8) * e->sprite_rect.w * e->sprite_rect.h);
-    for (int y = 0; y < e->sprite_rect.h; ++y)
-    {
-        for (int x = 0; x < e->sprite_rect.w; ++x)
-        {
-            int pd_idx = y * e->sprite_rect.w + x;
-            if ((((u32*)s->pixels)[y * s->w + x] & s->format->Amask) == 0)
-            {
-                e->pixel_data[pd_idx] = 0;
-            }
-            else
-            {
-                e->pixel_data[pd_idx] = 1;
-            }
-        }
-    }
-}
-#endif
-
 void initEntitySpriteSheet(Entity* e, const char* path, int num_x, int num_y, SDL_Renderer* renderer)
 {
     loadSpriteSheet(&e->sprite_sheet, path, num_x, num_y, renderer);
@@ -42,7 +20,7 @@ void initEntitySpriteSheet(Entity* e, SDL_Texture *texture, int num_x, int num_y
     e->sprite_sheet.scale = 1;
 }
 
-bool32 entityIsHero(Entity* e)
+bool32 entityIsHero(Entity *e)
 {
     bool32 result = 0;
     if (e)
@@ -70,7 +48,7 @@ void setRenderDrawColor(SDL_Renderer *renderer, u32 color)
 
 void drawEntity(Entity* e, Game* g)
 {
-    if (e->active)
+    if (e->active && e->type != ET_TILE)
     {
         SDL_Rect dest = {};
         e->sprite_rect.x = e->sprite_rect.w * e->animation.current_frame;
@@ -94,6 +72,14 @@ void drawEntity(Entity* e, Game* g)
         {
             renderFilledRect(g->renderer, &e->heroInteractionRect, g->colors[COLOR_DARK_ORANGE]);
         }
+    }
+}
+
+void drawPlacingTile(Game *g, Hero *h)
+{
+    if (h->e.tileToPlace && h->e.placingItem)
+    {
+        drawTile(g, h->e.tileToPlace, true);
     }
 }
 
@@ -129,18 +115,18 @@ SDL_Rect getEntitiesOverlapBox(Entity* e1, Entity* e2)
     return overlap_box;
 }
 
-Tile* getTileAtEntityPosition(Entity* e, Map* map)
-{
-    SDL_Rect tile_under_entity = {
-        (int)((e->collision_pt.x / map->tile_width) * map->tile_width),
-        (int)((e->collision_pt.y / map->tile_height) * map->tile_height)
-    };
-    int map_coord_x = tile_under_entity.y / map->tile_height;
-    int map_coord_y = tile_under_entity.x / map->tile_width;
-    int tile_index = map_coord_x * map->cols + map_coord_y;
+// Tile* getTileAtEntityPosition(Entity* e, Map* map)
+// {
+//     SDL_Rect tile_under_entity = {
+//         (int)((e->collision_pt.x / map->tile_width) * map->tile_width),
+//         (int)((e->collision_pt.y / map->tile_height) * map->tile_height)
+//     };
+//     int map_coord_x = tile_under_entity.y / map->tile_height;
+//     int map_coord_y = tile_under_entity.x / map->tile_width;
+//     int tile_index = map_coord_x * map->cols + map_coord_y;
 
-    return map->tiles[tile_index];
-}
+//     return map->tiles[tile_index];
+// }
 
 void reverseEntityDiretion(Entity* e)
 {
@@ -340,34 +326,34 @@ void checkHeroCollisionsWithEntities(Hero *h, Game *g, SDL_Rect saved_position)
     }
 }
 
-void checkHeroCollisionsWithTiles(Hero* h, Game* game)
-{
-    Tile* current_tile = getTileAtEntityPosition(&h->e, game->current_map);
+// void checkHeroCollisionsWithTiles(Hero* h, Game* game)
+// {
+//     Tile* current_tile = getTileAtEntityPosition(&h->e, game->current_map);
 
-    f32 quicksandValue = 10.0f;
-    if (isSlowTile(current_tile) && !h->inQuicksand)
-    {
-        h->e.speed *= 1 / quicksandValue;
-        h->inQuicksand = true;
-        if (h->isMoving)
-        {
-            queueSound(&game->sounds, &game->mudSound);
-        }
-    }
-    else if (h->inQuicksand)
-    {
-        h->e.speed *= quicksandValue;
-        h->inQuicksand = false;
-    }
-    if (isWarpTile(current_tile))
-    {
-        map_do_warp(game);
-        h->e.position.x = (f32)h->e.starting_pos.x;
-        h->e.position.y = (f32)h->e.starting_pos.y;
-        h->e.position.x = (f32)h->e.starting_pos.x;
-        h->e.position.y = (f32)h->e.starting_pos.y;
-    }
-}
+//     f32 quicksandValue = 10.0f;
+//     if (isSlowTile(current_tile) && !h->inQuicksand)
+//     {
+//         h->e.speed *= 1 / quicksandValue;
+//         h->inQuicksand = true;
+//         if (h->isMoving)
+//         {
+//             queueSound(&game->sounds, &game->mudSound);
+//         }
+//     }
+//     else if (h->inQuicksand)
+//     {
+//         h->e.speed *= quicksandValue;
+//         h->inQuicksand = false;
+//     }
+//     if (isWarpTile(current_tile))
+//     {
+//         map_do_warp(game);
+//         h->e.position.x = (f32)h->e.starting_pos.x;
+//         h->e.position.y = (f32)h->e.starting_pos.y;
+//         h->e.position.x = (f32)h->e.starting_pos.x;
+//         h->e.position.y = (f32)h->e.starting_pos.y;
+//     }
+// }
 
 void clampHeroToMap(Hero* h, Map* map)
 {
@@ -481,7 +467,7 @@ void harlodInteractWithHero(Entity *e, Hero *h, Game *g)
     startDialogMode(g, (char*)e->dialogFile.contents);
 }
 
-internal void craftItem(Hero *h, CraftableItem item)
+internal void craftItem(Hero *h, CraftableItemType item)
 {
     switch (item)
     {
@@ -500,18 +486,33 @@ internal void craftItem(Hero *h, CraftableItem item)
     }
 }
 
-internal void placeItem(Game *g, Hero *h, CraftableItem item, f32 col, f32 row)
+internal void placeItem(Map *m, Hero *h)
 {
-    (void)h;
-    if (item == CRAFTABLE_TREE)
+    if (h->e.tileToPlace && h->e.tileToPlace->validPlacement)
     {
-        Entity *tile = h->e.tileToPlace;
-        tile->collides = true;
-        tile->active = true;
-        tile->isHarvestable = true;
+        switch (h->e.tileToPlace->craftableItem)
+        {
+            case CRAFTABLE_TREE:
+            {
+                Entity *tile = h->e.tileToPlace;
+                tile->collides = true;
+                tile->active = true;
+                tile->isHarvestable = true;
 
-        // TODO(chj): If a tile is already there, remove it?
-        tile->position = {col*tile->width + 0.5f*tile->width, row*tile->height + 0.5f*tile->height};
+                h->inventory[INV_TREES]--;
+
+                if (tile->deleteAfterPlacement)
+                {
+                    u64 indexToRemove = tile->deleteAfterPlacement - m->entities;
+                    m->entities[indexToRemove] = m->entities[--m->entityCount];
+                    tile->deleteAfterPlacement = NULL;
+                }
+            } break;
+            default:
+                break;
+        }
+        h->e.placingItem = false;
+        h->e.tileToPlace = NULL;
     }
 }
 
@@ -566,6 +567,78 @@ internal bool32 testWall(f32 wall, f32 relX, f32 relY, f32 playerDeltaX, f32 pla
     }
 
     return hit;
+}
+
+internal Vec2 getTilePlacementPosition(Game *g, Hero *h)
+{
+    Vec2 result = {};
+
+    Entity *tile = h->e.tileToPlace;
+    if (tile)
+    {
+        // Calculate position to place new tile from hero's position
+        u32 col = (u32)(h->e.position.x / tile->width);
+        u32 row = (u32)(h->e.position.y / tile->height);
+
+        switch (h->e.direction)
+        {
+        case DIR_UP:
+            row--;
+            break;
+        case DIR_DOWN:
+            row++;
+            break;
+        case DIR_LEFT:
+            col--;
+            break;
+        case DIR_RIGHT:
+            col++;
+            break;
+        default:
+            break;
+        }
+
+        clampU32(row, 0, g->current_map->rows - 1);
+        clampU32(col, 0, g->current_map->cols - 1);
+        result = {col*tile->width + 0.5f*tile->width, row*tile->height + 0.5f*tile->height};
+    }
+
+    return result;
+}
+
+internal bool32 isValidTilePlacment(Map *m, Entity *tileToPlace)
+{
+    bool32 result = true;
+    tileToPlace->deleteAfterPlacement = NULL;
+
+    for (u32 entityIndex = 0; entityIndex < m->entityCount; ++entityIndex)
+    {
+        Entity *testEntity = &m->entities[entityIndex];
+
+        if (testEntity != tileToPlace)
+        {
+            SDL_Rect tileRect = getTileRect(tileToPlace);
+            SDL_Rect testRect = getTileRect(testEntity);
+
+            if (rectsOverlap(&tileRect, &testRect))
+            {
+                if (testEntity->collides)
+                {
+                    result = false;
+                    break;
+                }
+                else
+                {
+                    // A tile can be placed here because this is not a colliding tile.
+                    // However, we need to remember it so we can delete it after we
+                    // place a tile here.
+                    tileToPlace->deleteAfterPlacement = testEntity;
+                }
+            }
+        }
+    }
+
+    return result;
 }
 
 internal void updateHero(Hero* h, Input* input, Game* g)
@@ -750,7 +823,13 @@ internal void updateHero(Hero* h, Input* input, Game* g)
     h->swingClub = input->key_pressed[KEY_F];
     h->e.harvesting = input->key_pressed[KEY_SPACE] || input->button_pressed[BUTTON_A];
     h->craft = input->key_pressed[KEY_C];
-    h->e.placingItem = input->key_pressed[KEY_P];
+    if (input->key_pressed[KEY_P])
+    {
+        if (h->inventory[INV_TREES] > 0)
+        {
+            h->e.placingItem = true;
+        }
+    }
 
     if (h->e.harvesting && !h->e.placingItem)
     {
@@ -778,40 +857,39 @@ internal void updateHero(Hero* h, Input* input, Game* g)
 
     if (h->craft)
     {
-        CraftableItem item = CRAFTABLE_TREE;
+        CraftableItemType item = CRAFTABLE_TREE;
         craftItem(h, item);
-    }
-
-    if (h->e.harvesting && h->e.placingItem)
-    {
-        CraftableItem item = CRAFTABLE_TREE;
-        placeItem(g, h, item);
-        h->e.placingItem = false;
-        h->e.tileToPlace = NULL;
     }
 
     if (h->e.placingItem)
     {
         if (!h->e.tileToPlace)
         {
-            // TODO(chj): Switch on item type
             Map *m = g->current_map;
             assert(m->entityCount < ArrayCount(m->entities));
             h->e.tileToPlace = &m->entities[m->entityCount++];
-            Tile *tile = h->e.tileToPlace;
+            Entity *tile = h->e.tileToPlace;
             tile->width = 80;
             tile->height = 80;
+
             tile->unharvestedSprite = g->treeTexture;
             tile->harvestedSprite = g->treeStumpTexture;
             initEntitySpriteSheet(tile, tile->unharvestedSprite, 1, 1);
             tile->color = g->colors[COLOR_NONE];
             tile->harvestedItem = INV_LEAVES;
+            // TODO(chj): Need to know the type before we fill all the specifics out
+            tile->craftableItem = CRAFTABLE_TREE;
         }
-        else
-        {
-            
-        }
+
+        h->e.tileToPlace->position = getTilePlacementPosition(g, h);
+        h->e.tileToPlace->validPlacement = isValidTilePlacment(map, h->e.tileToPlace);
     }
+
+    if (h->e.harvesting && h->e.placingItem)
+    {
+        placeItem(map, h);
+    }
+
 }
 
 // Entity createBuffalo(f32 starting_x, f32 starting_y, SDL_Renderer* renderer)
@@ -829,7 +907,6 @@ internal void updateHero(Hero* h, Input* input, Game* g)
 //     buffalo.can_move = true;
 //     buffalo.collision_pt_offset = 32;
 //     initAnimation(&buffalo.animation, 4, 100);
-//     buffalo.plan = {};
 //     buffalo.has_plan = true;
 //     buffalo.plan.move_delay = (rand() % 2000) + 1000;
 //     buffalo.plan.mv_dir = (CardinalDir)(rand() % 4);
