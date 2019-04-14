@@ -15,10 +15,10 @@ struct SpriteSheet
 {
     int width;
     int height;
-    int num_x;
-    int num_y;
-    int sprite_width;
-    int sprite_height;
+    int numX;
+    int numY;
+    int spriteWidth;
+    int spriteHeight;
     int scale;
     SDL_Texture* sheet;
 };

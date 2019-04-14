@@ -24,8 +24,8 @@ struct Entity
     i32 height;
 
     // The current rectangle in the sprite sheet to be drawn
-    SDL_Rect sprite_rect;
-    SpriteSheet sprite_sheet;
+    SDL_Rect spriteRect;
+    SpriteSheet spriteSheet;
     Point spriteDims;
     Animation animation;
 

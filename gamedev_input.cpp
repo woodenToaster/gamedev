@@ -31,11 +31,11 @@ static void destroyControllers(Input *input)
 
 static void setKeyState(Input* input, Key key, bool32 isDown)
 {
-    if (input->key_down[key] && !isDown)
+    if (input->keyDown[key] && !isDown)
     {
-        input->key_pressed[key] = true;
+        input->keyPressed[key] = true;
     }
-    input->key_down[key] = isDown;
+    input->keyDown[key] = isDown;
 }
 
 static void updateInput(Input* input, SDL_Scancode key, bool32 isDown)
@@ -107,11 +107,11 @@ static void pollInput(Input* input, Game* game)
     // TODO(chj): This seems wasteful
     for (u32 key = 0; key < KEY_COUNT; ++key)
     {
-        input->key_pressed[key] = 0;
+        input->keyPressed[key] = 0;
     }
     for (u32 button = 0; button < BUTTON_COUNT; ++button)
     {
-        input->button_pressed[button] = 0;
+        input->buttonPressed[button] = 0;
     }
 
     SDL_Event event;
@@ -141,8 +141,8 @@ static void pollInput(Input* input, Game* game)
         if(controller && SDL_GameControllerGetAttached(controller))
         {
             // TODO(chj): Handle remaining buttons
-            // TODO(chj): Handle key_pressed as distinct from key_down
-            bool32 *pressed = input->button_pressed;
+            // TODO(chj): Handle keyPressed as distinct from keyDown
+            bool32 *pressed = input->buttonPressed;
             pressed[BUTTON_UP] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_UP);
             pressed[BUTTON_DOWN] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_DOWN);
             pressed[BUTTON_LEFT] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_LEFT);
@@ -171,7 +171,7 @@ static void pollInput(Input* input, Game* game)
         }
     }
 
-    if (input->key_pressed[KEY_I])
+    if (input->keyPressed[KEY_I])
     {
         startInventoryMode(game);
     }

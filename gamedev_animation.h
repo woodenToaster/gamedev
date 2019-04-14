@@ -3,8 +3,8 @@
 
 struct Animation
 {
-    int total_frames;
-    int current_frame;
+    int totalFrames;
+    int currentFrame;
     u32 delay;
     u32 elapsed;
 };

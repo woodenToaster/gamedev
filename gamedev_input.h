@@ -57,10 +57,10 @@ enum Buttons
 
 struct Input
 {
-    bool32 key_pressed[KEY_COUNT];
-    bool32 key_down[KEY_COUNT];
-    bool32 button_pressed[BUTTON_COUNT];
-    bool32 button_down[BUTTON_COUNT];
+    bool32 keyPressed[KEY_COUNT];
+    bool32 keyDown[KEY_COUNT];
+    bool32 buttonPressed[BUTTON_COUNT];
+    bool32 buttonDown[BUTTON_COUNT];
     SDL_GameController *controllerHandles[MAX_CONTROLLERS];
     f32 stickX;
     f32 stickY;

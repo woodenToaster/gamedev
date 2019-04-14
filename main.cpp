@@ -71,11 +71,12 @@ int main(int argc, char* argv[])
         exit(1);
     }
 
-    game->linkTexture = create_texture_from_png("sprites/link_walking.png", game->renderer);
-    game->treeTexture = create_texture_from_png("sprites/tree.png", game->renderer);
-    game->treeStumpTexture = create_texture_from_png("sprites/tree_stump.png", game->renderer);
-    game->harlodTexture = create_texture_from_png("sprites/Harlod_the_caveman.png", game->renderer);
-    game->knightTexture = create_texture_from_png("sprites/knight_alligned.png", game->renderer);
+    game->linkTexture = createTextureFromPng("sprites/link_walking.png", game->renderer);
+    game->treeTexture = createTextureFromPng("sprites/tree.png", game->renderer);
+    game->treeStumpTexture = createTextureFromPng("sprites/tree_stump.png", game->renderer);
+    game->harlodTexture = createTextureFromPng("sprites/Harlod_the_caveman.png", game->renderer);
+    game->knightTexture = createTextureFromPng("sprites/knight_alligned.png", game->renderer);
+    game->fireTileTexture = createTextureFromPng("sprites/Campfire.png", game->renderer);
 
     // Input
     Input input = {};
@@ -134,18 +135,14 @@ int main(int argc, char* argv[])
                 tile->harvestedItem = INV_LEAVES;
             }
 
-            // if (row == 1 && col == 7)
-            // {
+            if (row == 1 && col == 7)
+            {
                 // Lightable fire
-                // addTileFlags(tile, TP_FIRE | TP_INTERACTIVE);
-                // tile->color = game->colors[COLOR_GREY];
-                // TODO(chj): Create fire texture
-                // TODO(chj): Set sprite to "sprites/Campfire.png"
-                // initAnimation(&fire.animation, 11, 100);
-                // tile->active = true;
-                // tile->has_animation = true;
-                // tile->onHeroInteract = lightFire;
-            // }
+                addTileFlags(tile, TP_FIRE | TP_INTERACTIVE);
+                tile->color = game->colors[COLOR_GREY];
+                initEntitySpriteSheet(tile, game->fireTileTexture, 11, 1);
+                initAnimation(&tile->animation, 11, 100);
+            }
         }
     }
 
@@ -153,7 +150,7 @@ int main(int argc, char* argv[])
     // Hero
     Entity *hero = addEntity(map0);
     initEntitySpriteSheet(hero, game->linkTexture, 11, 5);
-    hero->sprite_sheet.scale = 2;
+    hero->spriteSheet.scale = 2;
     hero->width = 20;
     hero->height = 10;
     hero->spriteDims = {45, 60};
@@ -188,10 +185,10 @@ int main(int argc, char* argv[])
     knight->speed = 1000;
     knight->type = ET_ENEMY;
     knight->active = true;
-    knight->sprite_rect.y = knight->sprite_rect.h * 3 + 4;
+    knight->spriteRect.y = knight->spriteRect.h * 3 + 4;
     initAnimation(&knight->animation, 2, 400);
 
-    game->current_map = map0;
+    game->currentMap = map0;
     initCamera(game);
 
     /**************************************************************************/
@@ -220,6 +217,7 @@ int main(int argc, char* argv[])
                 updateAnimation(&hero->animation, game->dt, hero->isMoving);
                 playQueuedSounds(&game->sounds, now);
                 updateAnimation(&knight->animation, game->dt, true);
+                updateAnimatedTiles(map0, game->dt);
                 break;
             }
             case GAME_MODE_DIALOG:
@@ -237,7 +235,7 @@ int main(int argc, char* argv[])
         /*********************************************************************/
         /* Draw                                                              */
         /*********************************************************************/
-        SDL_SetRenderTarget(game->renderer, game->current_map->texture);
+        SDL_SetRenderTarget(game->renderer, game->currentMap->texture);
         drawMap(game);
         drawPlacingTile(game, hero);
         drawHUD(game, hero);
@@ -263,21 +261,23 @@ int main(int argc, char* argv[])
         /* Debug text                                                             */
         /**************************************************************************/
 
-        // f32 fps = 1000.0f / game->dt;
-        // char fpsText[9] = {0};
-        // snprintf(fpsText, 9, "FPS: %03d", (u32)fps);
-        // drawText(game, &fontMetadata, fpsText, game->camera.viewport.x, game->camera.viewport.y);
+#if 0
+        f32 fps = 1000.0f / game->dt;
+        char fpsText[9] = {0};
+        snprintf(fpsText, 9, "FPS: %03d", (u32)fps);
+        drawText(game, &fontMetadata, fpsText, game->camera.viewport.x, game->camera.viewport.y);
 
-        // char heroPosition[20] = {0};
-        // snprintf(heroPosition, 20, "x: %.2f, y: %.2f", hero.e.position.x, hero.e.position.y);
-        // drawText(game, &fontMetadata, heroPosition, game->camera.viewport.x, game->camera.viewport.y);
+        char heroPosition[20] = {0};
+        snprintf(heroPosition, 20, "x: %.2f, y: %.2f", hero.e.position.x, hero.e.position.y);
+        drawText(game, &fontMetadata, heroPosition, game->camera.viewport.x, game->camera.viewport.y);
 
-        // char bytesUsed[35] = {};
-        // snprintf(bytesUsed, 35, "%zu / %zu bytes in use", arena.used, arena.maxCap);
-        // drawText(game, &fontMetadata, bytesUsed, game->camera.viewport.x, game->camera.viewport.y);
+        char bytesUsed[35] = {};
+        snprintf(bytesUsed, 35, "%zu / %zu bytes in use", arena.used, arena.maxCap);
+        drawText(game, &fontMetadata, bytesUsed, game->camera.viewport.x, game->camera.viewport.y);
+#endif
 
         SDL_SetRenderTarget(game->renderer, NULL);
-        SDL_RenderCopy(game->renderer, game->current_map->texture, &game->camera.viewport, NULL);
+        SDL_RenderCopy(game->renderer, game->currentMap->texture, &game->camera.viewport, NULL);
         game->dt = SDL_GetTicks() - now;
         sleepIfAble(game);
         SDL_RenderPresent(game->renderer);
@@ -288,6 +288,7 @@ int main(int argc, char* argv[])
     /**************************************************************************/
     destroyFontMetadata(&fontMetadata);
     destroyControllers(&input);
+    SDL_DestroyTexture(map0->texture);
     destroyGame(game);
     destroyArena(&arena);
 

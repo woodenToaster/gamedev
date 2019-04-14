@@ -18,7 +18,7 @@ enum Colors
     COLOR_DARK_BLUE,
     COLOR_BABY_BLUE,
     COLOR_DARK_ORANGE,
-    COLOR_LAST
+    COLOR_COUNT
 };
 
 enum GameMode
@@ -32,20 +32,19 @@ enum GameMode
 struct Game
 {
     u32 dt;
-    i32 screen_width;
-    i32 screen_height;
-    i32 target_fps;
-    u32 total_frames_elapsed;
-    u32 target_ms_per_frame;
+    i32 screenWidth;
+    i32 screenHeight;
+    i32 targetFps;
+    u32 totalFramesElapsed;
+    u32 targetMsPerFrame;
     bool running;
     u8 initialized;
     SDL_Window *window;
-    SDL_Surface *window_surface;
+    SDL_Surface *windowSurface;
     SDL_Renderer *renderer;
-    u32 colors[COLOR_LAST];
+    u32 colors[COLOR_COUNT];
     Camera camera;
-    Map *current_map;
-    // MapList *maps;
+    Map *currentMap;
     SoundList sounds;
     GameMode mode;
     char *dialog;
@@ -55,9 +54,12 @@ struct Game
     SDL_Texture *treeStumpTexture;
     SDL_Texture *harlodTexture;
     SDL_Texture *knightTexture;
+    SDL_Texture *fireTileTexture;
 
     Sound mudSound;
-    u32 soundCount;
+    // TODO(chj): Replace SoundList
+    // u32 soundCount;
+    // Sound *sounds[16];
 };
 
 void startDialogMode(Game *g, char *dialog);

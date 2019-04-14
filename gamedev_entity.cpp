@@ -1,11 +1,9 @@
-static Circle heroInteractionRegion = {};
-
 void initEntitySpriteSheet(Entity* e, SDL_Texture *texture, int num_x, int num_y)
 {
-    initSpriteSheet(&e->sprite_sheet, texture, num_x, num_y);
-    e->sprite_rect.w = e->sprite_sheet.sprite_width;
-    e->sprite_rect.h = e->sprite_sheet.sprite_height;
-    e->sprite_sheet.scale = 1;
+    initSpriteSheet(&e->spriteSheet, texture, num_x, num_y);
+    e->spriteRect.w = e->spriteSheet.spriteWidth;
+    e->spriteRect.h = e->spriteSheet.spriteHeight;
+    e->spriteSheet.scale = 1;
 }
 
 bool32 isEntity(Entity *e)
@@ -29,7 +27,7 @@ void drawEntity(Entity* e, Game* g)
     if (e->active && e->type != ET_TILE)
     {
         SDL_Rect dest = {};
-        e->sprite_rect.x = e->sprite_rect.w * e->animation.current_frame;
+        e->spriteRect.x = e->spriteRect.w * e->animation.currentFrame;
         // Draw collision box
         setRenderDrawColor(g->renderer, g->colors[COLOR_YELLOW]);
         SDL_Rect collisionRect = {(int)(e->position.x - 0.5f * e->width), (int)(e->position.y - e->height),
@@ -43,7 +41,7 @@ void drawEntity(Entity* e, Game* g)
         i32 width = e->spriteDims.x;
         i32 height = e->spriteDims.y;
         dest = {(int)(e->position.x - 0.5f*width), (int)(e->position.y - height), width, height};
-        SDL_RenderCopy(g->renderer, e->sprite_sheet.sheet, &e->sprite_rect, &dest);
+        SDL_RenderCopy(g->renderer, e->spriteSheet.sheet, &e->spriteRect, &dest);
 
         // Entity interactionRect
         // TODO(chj): This is visible when placing a tile. Push buffer rendering will fix that
@@ -83,7 +81,7 @@ void reverseDirection(Entity* e)
 
 void drawEntities(Game* g)
 {
-    Map *m = g->current_map;
+    Map *m = g->currentMap;
     for (u32 entityIndex = 0; entityIndex < m->entityCount; ++entityIndex)
     {
         Entity *e = &m->entities[entityIndex];
@@ -141,9 +139,9 @@ void heroInteract(Entity *h, Game *g)
     heroInteractionRegion.radius = maxFloat32((f32)h->width, (f32)h->height) * 0.666666f;
 
     // See if there is an entity there
-    for (u32 entityIndex = 0; entityIndex < g->current_map->active_entities.count; ++entityIndex)
+    for (u32 entityIndex = 0; entityIndex < g->currentMap->active_entities.count; ++entityIndex)
     {
-        Entity *e = g->current_map->active_entities.entities[entityIndex];
+        Entity *e = g->currentMap->active_entities.entities[entityIndex];
         if (entityIsHarlod(e))
         {
             if(circleOverlapsRect(&heroInteractionRegion, &e->bounding_box))
@@ -160,20 +158,20 @@ void heroInteract(Entity *h, Game *g)
     const u32 stencilSize = 9;
     Tile *tileStencil[stencilSize] = {};
     u32 stencilIndex = 0;
-    for (i32 tileIndexY = heroCenterPoint.y - g->current_map->tile_height;
-         tileIndexY <= heroCenterPoint.y + (i32)g->current_map->tile_height;
-         tileIndexY += g->current_map->tile_height)
+    for (i32 tileIndexY = heroCenterPoint.y - g->currentMap->tile_height;
+         tileIndexY <= heroCenterPoint.y + (i32)g->currentMap->tile_height;
+         tileIndexY += g->currentMap->tile_height)
     {
-        for (i32 tileIndexX = heroCenterPoint.x - g->current_map->tile_width;
-             tileIndexX <= heroCenterPoint.x + (i32)g->current_map->tile_width;
-             tileIndexX += g->current_map->tile_width)
+        for (i32 tileIndexX = heroCenterPoint.x - g->currentMap->tile_width;
+             tileIndexX <= heroCenterPoint.x + (i32)g->currentMap->tile_width;
+             tileIndexX += g->currentMap->tile_width)
         {
             SDL_Rect tileRect = {tileIndexX, tileIndexY,
-                                 (i32)g->current_map->tile_width, (i32)g->current_map->tile_height};
+                                 (i32)g->currentMap->tile_width, (i32)g->currentMap->tile_height};
             if (circleOverlapsRect(&heroInteractionRegion, &tileRect))
             {
                 Point tileIndexPoint = {tileIndexX, tileIndexY};
-                tileStencil[stencilIndex] = map_get_tile_at_point(g->current_map, tileIndexPoint);
+                tileStencil[stencilIndex] = map_get_tile_at_point(g->currentMap, tileIndexPoint);
             }
             stencilIndex++;
         }
@@ -264,8 +262,8 @@ internal void placeItem(Map *m, Entity *h)
 internal bool32 isInMap(Game *g, Vec2 pos)
 {
     bool32 result = true;
-    if (pos.x < 0 || pos.x > g->current_map->widthPixels - 1 ||
-        pos.y < 0 || pos.y > g->current_map->heightPixels - 1)
+    if (pos.x < 0 || pos.x > g->currentMap->widthPixels - 1 ||
+        pos.y < 0 || pos.y > g->currentMap->heightPixels - 1)
     {
         result = false;
     }
@@ -325,8 +323,8 @@ internal Vec2 getTilePlacementPosition(Game *g, Entity *h)
             break;
         }
 
-        clampU32(row, 0, g->current_map->rows - 1);
-        clampU32(col, 0, g->current_map->cols - 1);
+        clampU32(row, 0, g->currentMap->rows - 1);
+        clampU32(col, 0, g->currentMap->cols - 1);
         result = {col*tile->width + 0.5f*tile->width, row*tile->height + 0.5f*tile->height};
     }
 
@@ -376,25 +374,25 @@ internal Entity emptyEntity()
 
 internal void updateHero(Entity* h, Input* input, Game* g)
 {
-    Map *map = g->current_map;
+    Map *map = g->currentMap;
     // TODO(chj): Handle joystick and keyboard on separate paths
     Vec2 acceleration = {};
     acceleration.x = input->stickX;
     acceleration.y = input->stickY;
 
-    if (input->key_down[KEY_RIGHT])
+    if (input->keyDown[KEY_RIGHT])
     {
         acceleration.x = 1.0f;
     }
-    if (input->key_down[KEY_LEFT])
+    if (input->keyDown[KEY_LEFT])
     {
         acceleration.x = -1.0f;
     }
-    if (input->key_down[KEY_UP])
+    if (input->keyDown[KEY_UP])
     {
         acceleration.y = -1.0f;
     }
-    if (input->key_down[KEY_DOWN])
+    if (input->keyDown[KEY_DOWN])
     {
         acceleration.y = 1.0f;
     }
@@ -406,25 +404,25 @@ internal void updateHero(Entity* h, Input* input, Game* g)
     }
     else
     {
-        u32 spriteHeight = h->sprite_sheet.sprite_height;
+        u32 spriteHeight = h->spriteSheet.spriteHeight;
         if (acceleration.x > 0)
         {
-            h->sprite_rect.y = 0 * spriteHeight;
+            h->spriteRect.y = 0 * spriteHeight;
             h->direction = DIR_RIGHT;
         }
         if (acceleration.x < 0)
         {
-            h->sprite_rect.y = 3 * spriteHeight;
+            h->spriteRect.y = 3 * spriteHeight;
             h->direction = DIR_LEFT;
         }
         if (acceleration.y < 0)
         {
-            h->sprite_rect.y = 1 * spriteHeight;
+            h->spriteRect.y = 1 * spriteHeight;
             h->direction = DIR_UP;
         }
         if (acceleration.y > 0)
         {
-            h->sprite_rect.y = 4 * spriteHeight;
+            h->spriteRect.y = 4 * spriteHeight;
             h->direction = DIR_DOWN;
         }
 
@@ -449,8 +447,8 @@ internal void updateHero(Entity* h, Input* input, Game* g)
 
     if (!h->isMoving)
     {
-        h->animation.current_frame = 0;
-        h->sprite_rect.x = 0;
+        h->animation.currentFrame = 0;
+        h->spriteRect.x = 0;
     }
 
     for (int iter = 0; iter < 4; ++iter)
@@ -553,9 +551,9 @@ internal void updateHero(Entity* h, Input* input, Game* g)
     clampEntityToMap(h, map);
 
     // Actions
-    h->harvesting = input->key_pressed[KEY_SPACE] || input->button_pressed[BUTTON_A];
-    h->craft = input->key_pressed[KEY_C];
-    if (input->key_pressed[KEY_P])
+    h->harvesting = input->keyPressed[KEY_SPACE] || input->buttonPressed[BUTTON_A];
+    h->craft = input->keyPressed[KEY_C];
+    if (input->keyPressed[KEY_P])
     {
         if (h->inventory[INV_TREES] > 0)
         {
@@ -570,19 +568,39 @@ internal void updateHero(Entity* h, Input* input, Game* g)
         for (u32 entityIndex = 0; entityIndex < map->entityCount; ++entityIndex)
         {
             Entity *testEntity = &map->entities[entityIndex];
-            if (testEntity->isHarvestable)
+
+            switch (testEntity->type)
             {
-                // Tile position is at center of tile
-                SDL_Rect tileBoundingBox = {(i32)testEntity->position.x - (i32)(0.5f*testEntity->width),
-                                            (i32)testEntity->position.y - (i32)(0.5f*testEntity->height),
-                                            testEntity->width, testEntity->height};
-                if (rectsOverlap(&h->heroInteractionRect, &tileBoundingBox))
+                case ET_TILE:
                 {
-                    testEntity->isHarvestable = false;
-                    testEntity->collides = false;
-                    initSpriteSheet(&testEntity->sprite_sheet, testEntity->harvestedSprite, 1, 1);
-                    h->inventory[testEntity->harvestedItem]++;
+                    // Tile position is at center of tile
+                    SDL_Rect tileBoundingBox = {(i32)testEntity->position.x - (i32)(0.5f*testEntity->width),
+                                                (i32)testEntity->position.y - (i32)(0.5f*testEntity->height),
+                                                testEntity->width, testEntity->height};
+
+                    if (rectsOverlap(&h->heroInteractionRect, &tileBoundingBox))
+                    {
+                        // TODO(chj): Use tileFlags
+                        if (testEntity->isHarvestable)
+                        {
+                            testEntity->isHarvestable = false;
+                            testEntity->collides = false;
+                            initSpriteSheet(&testEntity->spriteSheet, testEntity->harvestedSprite, 1, 1);
+                            h->inventory[testEntity->harvestedItem]++;
+                        }
+
+                        if (isTileFlagSet(testEntity, TP_INTERACTIVE))
+                        {
+                            if (isTileFlagSet(testEntity, TP_FIRE))
+                            {
+                                testEntity->active = !testEntity->active;
+                            }
+                        }
+                    }
+                    break;
                 }
+                default:
+                    break;
             }
         }
     }
@@ -597,7 +615,7 @@ internal void updateHero(Entity* h, Input* input, Game* g)
     {
         if (!h->tileToPlace)
         {
-            Map *m = g->current_map;
+            Map *m = g->currentMap;
             h->tileToPlace = addEntity(m);
             *h->tileToPlace = emptyEntity();
             Entity *tile = h->tileToPlace;

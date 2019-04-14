@@ -11,12 +11,6 @@ bool32 isTileFlagSet(Entity *e, TileProperty prop)
     return result;
 }
 
-// void lightFire(Tile *t, Hero *h)
-// {
-//     (void)h;
-//     t->animation_is_active = true;
-// }
-
 // void initMap(Map* m, u32 cols, u32 rows, Tile** tiles, SDL_Renderer* renderer)
 // {
 //     m->cols = cols;
@@ -42,19 +36,17 @@ bool32 isTileFlagSet(Entity *e, TileProperty prop)
 //     }
 // }
 
-#if 0
-void updateMap(Game* g)
+void updateAnimatedTiles(Map *m, u32 dt)
 {
-    Map* m = g->current_map;
-    for (size_t i = 0; i < m->rows * m->cols; ++i)
+    for (size_t entityIndex = 0; entityIndex < m->entityCount; ++entityIndex)
     {
-        Tile* tp = m->tiles[i];
-        updateAnimation(&tp->animation, g->dt, tp->active);
+        Entity *e = &m->entities[entityIndex];
+        if (e->type == ET_TILE && e->animation.totalFrames > 0)
+        {
+            updateAnimation(&e->animation, dt, e->active);
+        }
     }
-
-    updateEntityList(g);
 }
-#endif
 
 SDL_Rect getTileRect(Entity *tile)
 {
@@ -67,14 +59,13 @@ void drawTile(Game *g, Entity *e, bool32 isBeingPlaced)
 {
     SDL_Rect tileRect = getTileRect(e);
 
-    if (e->sprite_sheet.sheet)
+    if (e->spriteSheet.sheet)
     {
-        // TODO(chj): Animated tiles
-        // if (t->has_animation && t->animation_is_active)
-        // {
-        //     t->sprite_rect.x = t->sprite_rect.w * t->animation.current_frame;
-        // }
-        SDL_RenderCopy(g->renderer, e->sprite_sheet.sheet, NULL, &tileRect);
+        if (e->animation.totalFrames > 0)
+        {
+            e->spriteRect.x = e->spriteRect.w * e->animation.currentFrame;
+        }
+        SDL_RenderCopy(g->renderer, e->spriteSheet.sheet, &e->spriteRect, &tileRect);
     }
     else
     {
@@ -98,7 +89,7 @@ void drawTile(Game *g, Entity *e, bool32 isBeingPlaced)
 
 void drawMap(Game* g)
 {
-    Map* map = g->current_map;
+    Map* map = g->currentMap;
     Camera* c = &g->camera;
 
     // Draw background
@@ -117,51 +108,7 @@ void drawMap(Game* g)
     drawEntities(g);
 }
 
-#if 0
-void map_do_warp(Game* g)
-{
-    // TODO: Make this more generic
-    Map* map1 = g->maps->maps[0];
-    Map* map2 = g->maps->maps[1];
-    Map* map3 = g->maps->maps[2];
-
-    if (map1->current)
-    {
-        // Transitioning to map2
-        g->current_map = map2;
-        map1->current = false;
-        map2->current = true;
-        map_deactivate_entities(map1);
-        map_deactivate_tiles(map1);
-        map_activate_entities(map2);
-        map_activate_tiles(map2);
-    }
-    else if (map2->current)
-    {
-        // Transitioning to map3
-        g->current_map = map3;
-        map2->current = false;
-        map3->current = true;
-        map_deactivate_entities(map2);
-        map_activate_entities(map3);
-        map_deactivate_tiles(map2);
-        map_activate_tiles(map3);
-    }
-    else if (map3->current)
-    {
-        // Transitioning to map1
-        g->current_map = map1;
-        map1->current = true;
-        map3->current = false;
-        map_deactivate_entities(map3);
-        map_activate_entities(map1);
-        map_deactivate_tiles(map3);
-        map_activate_tiles(map1);
-    }
-}
-#endif
-
-void map_destroy(Map* m)
+void destroyMap(Map* m)
 {
     SDL_DestroyTexture(m->texture);
 }

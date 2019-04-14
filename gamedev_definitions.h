@@ -51,11 +51,4 @@ enum Direction
     DIR_UP_LEFT,
     DIR_COUNT
 };
-
-enum Sounds
-{
-    SOUND_MUD,
-    SOUND_COUNT
-};
-
 #endif

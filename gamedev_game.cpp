@@ -61,7 +61,7 @@ void destroyGame(Game* g)
 
 void initColors(Game* g)
 {
-    SDL_PixelFormat* window_pixel_format = g->window_surface->format;
+    SDL_PixelFormat* window_pixel_format = g->windowSurface->format;
     g->colors[COLOR_NONE] = 0;
     g->colors[COLOR_GREEN] = SDL_MapRGB(window_pixel_format, 37, 71, 0);
     g->colors[COLOR_BLUE] = SDL_MapRGB(window_pixel_format, 0, 0, 255);
@@ -79,37 +79,37 @@ void initColors(Game* g)
 
 void initCamera(Game* g)
 {
-    g->camera.viewport.w = g->screen_width;
-    g->camera.viewport.h = g->screen_height;
-    g->camera.starting_pos = {0, 0};
+    g->camera.viewport.w = g->screenWidth;
+    g->camera.viewport.h = g->screenHeight;
+    g->camera.startingPos = {0, 0};
 
-    if (g->camera.viewport.w >= g->current_map->widthPixels)
+    if (g->camera.viewport.w >= g->currentMap->widthPixels)
     {
-        g->camera.max_x = 0;
+        g->camera.maxX = 0;
     }
     else
     {
-        g->camera.max_x = g->current_map->widthPixels - g->camera.viewport.w;
+        g->camera.maxX = g->currentMap->widthPixels - g->camera.viewport.w;
     }
-    if (g->camera.viewport.h >= g->current_map->heightPixels)
+    if (g->camera.viewport.h >= g->currentMap->heightPixels)
     {
-        g->camera.max_y = 0;
+        g->camera.maxY = 0;
     }
     else
     {
-        g->camera.max_y = absInt32(g->current_map->heightPixels - g->camera.viewport.h);
+        g->camera.maxY = absInt32(g->currentMap->heightPixels - g->camera.viewport.h);
     }
-    g->camera.y_pixel_movement_threshold = g->screen_height / 2;
-    g->camera.x_pixel_movement_threshold = g->screen_width / 2;
+    g->camera.yPixelMovementThreshold = g->screenHeight / 2;
+    g->camera.xPixelMovementThreshold = g->screenWidth / 2;
 }
 
 void initGame(Game* g, u32 width, u32 height)
 {
-    g->screen_width = width;
-    g->screen_height = height;
-    g->target_fps = 60;
-    g->dt = (i32)((1.0f / (f32)g->target_fps) * 1000);
-    g->target_ms_per_frame = (u32)(1000.0f / (f32)g->target_fps);
+    g->screenWidth = width;
+    g->screenHeight = height;
+    g->targetFps = 60;
+    g->dt = (i32)((1.0f / (f32)g->targetFps) * 1000);
+    g->targetMsPerFrame = (u32)(1000.0f / (f32)g->targetFps);
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) < 0)
     {
@@ -126,8 +126,8 @@ void initGame(Game* g, u32 width, u32 height)
     g->window = SDL_CreateWindow("gamedev",
                                  30,
                                  50,
-                                 g->screen_width,
-                                 g->screen_height,
+                                 g->screenWidth,
+                                 g->screenHeight,
                                  SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
 
     if (g->window == NULL)
@@ -135,7 +135,7 @@ void initGame(Game* g, u32 width, u32 height)
         printf("Could not create window: %s\n", SDL_GetError());
         exit(1);
     }
-    g->window_surface = SDL_GetWindowSurface(g->window);
+    g->windowSurface = SDL_GetWindowSurface(g->window);
 
     g->renderer = SDL_CreateRenderer(g->window, -1, SDL_RENDERER_ACCELERATED);
 
@@ -156,7 +156,7 @@ void initGame(Game* g, u32 width, u32 height)
 
 void updateGame(Game *g, Input *input)
 {
-    if (input->key_pressed[KEY_ESCAPE])
+    if (input->keyPressed[KEY_ESCAPE])
     {
         g->running = false;
     }
@@ -176,7 +176,7 @@ void endDialogMode(Game *g)
 
 void updateDialogMode(Game *g, Input *input)
 {
-    if (input->key_pressed[KEY_ESCAPE])
+    if (input->keyPressed[KEY_ESCAPE])
     {
         endDialogMode(g);
     }
@@ -194,7 +194,7 @@ void endInventoryMode(Game *g)
 
 void updateInventoryMode(Game *g, Input *input)
 {
-    if (input->key_pressed[KEY_ESCAPE])
+    if (input->keyPressed[KEY_ESCAPE])
     {
         endInventoryMode(g);
     }
@@ -302,11 +302,11 @@ void drawCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
 
 void sleepIfAble(Game* g)
 {
-    if (g->dt < g->target_ms_per_frame)
+    if (g->dt < g->targetMsPerFrame)
     {
-        while (g->dt < g->target_ms_per_frame)
+        while (g->dt < g->targetMsPerFrame)
         {
-            u32 sleep_ms = g->target_ms_per_frame - g->dt;
+            u32 sleep_ms = g->targetMsPerFrame - g->dt;
             g->dt += sleep_ms;
             SDL_Delay(sleep_ms);
         }
@@ -318,5 +318,5 @@ void sleepIfAble(Game* g)
 #endif
     }
 
-    g->total_frames_elapsed++;
+    g->totalFramesElapsed++;
 }

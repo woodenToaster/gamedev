@@ -1,5 +1,5 @@
 
-SDL_Texture* create_texture_from_png(const char* fname, SDL_Renderer *renderer)
+SDL_Texture* createTextureFromPng(const char* fname, SDL_Renderer *renderer)
 {
     unsigned char *img_data;
     int width;

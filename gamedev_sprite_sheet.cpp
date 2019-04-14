@@ -1,11 +1,11 @@
 #include "gamedev_sprite_sheet.h"
 
-void initSpriteSheet(SpriteSheet* ss, SDL_Texture *texture, int x_sprites, int y_sprites)
+void initSpriteSheet(SpriteSheet* ss, SDL_Texture *texture, int xSprites, int ySprites)
 {
     ss->sheet = texture;
     SDL_QueryTexture(ss->sheet, NULL, NULL, &ss->width, &ss->height);
-    ss->sprite_width = ss->width / x_sprites;
-    ss->sprite_height = ss->height / y_sprites;
-    ss->num_x = x_sprites;
-    ss->num_y = y_sprites;
+    ss->spriteWidth = ss->width / xSprites;
+    ss->spriteHeight = ss->height / ySprites;
+    ss->numX = xSprites;
+    ss->numY = ySprites;
 }
