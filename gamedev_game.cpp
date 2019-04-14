@@ -57,7 +57,6 @@ void destroyGame(Game* g)
     SDL_DestroyRenderer(g->renderer);
     SDL_DestroyWindow(g->window);
     SDL_Quit();
-
 }
 
 void initColors(Game* g)
@@ -84,21 +83,21 @@ void initCamera(Game* g)
     g->camera.viewport.h = g->screen_height;
     g->camera.starting_pos = {0, 0};
 
-    if (g->camera.viewport.w >= g->current_map->width_pixels)
+    if (g->camera.viewport.w >= g->current_map->widthPixels)
     {
         g->camera.max_x = 0;
     }
     else
     {
-        g->camera.max_x = g->current_map->width_pixels - g->camera.viewport.w;
+        g->camera.max_x = g->current_map->widthPixels - g->camera.viewport.w;
     }
-    if (g->camera.viewport.h >= g->current_map->height_pixels)
+    if (g->camera.viewport.h >= g->current_map->heightPixels)
     {
         g->camera.max_y = 0;
     }
     else
     {
-        g->camera.max_y = absInt32(g->current_map->height_pixels - g->camera.viewport.h);
+        g->camera.max_y = absInt32(g->current_map->heightPixels - g->camera.viewport.h);
     }
     g->camera.y_pixel_movement_threshold = g->screen_height / 2;
     g->camera.x_pixel_movement_threshold = g->screen_width / 2;
@@ -214,7 +213,7 @@ void drawDialogScreen(Game *g, FontMetadata *fontMetadata)
     drawText(g, fontMetadata, g->dialog, dialogBoxX, dialogBoxY);
 }
 
-void drawInventoryScreen(Game *g, Hero *h, FontMetadata *fontMetadata)
+void drawInventoryScreen(Game *g, Entity *h, FontMetadata *fontMetadata)
 {
     // TODO(chj): Don't draw every frame
     int thirdOfWidth = (int)(g->camera.viewport.w / 3);
@@ -234,7 +233,7 @@ void drawInventoryScreen(Game *g, Hero *h, FontMetadata *fontMetadata)
     drawText(g, fontMetadata, trees, dialogBoxX, dialogBoxY + 25);
 }
 
-void drawHUD(Game *g, Hero *h)
+void drawHUD(Game *g, Entity *h)
 {
     u8 beltSlots = 8;
     u8 slotSize = 40;
@@ -249,6 +248,10 @@ void drawHUD(Game *g, Hero *h)
         SDL_Rect dest = {destX + i*slotSize, destY, slotSize, slotSize};
         SDL_RenderDrawRect(g->renderer, &dest);
         // TODO(chj): Draw hero inventory
+        if (h->inventory[INV_TREES])
+        {
+            
+        }
     }
 }
 

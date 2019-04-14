@@ -21,7 +21,6 @@
 #include "gamedev_definitions.h"
 #include "gamedev_animation.cpp"
 
-#include "gamedev_plan.h"
 #include "gamedev_math.h"
 #include "gamedev_font.h"
 #include "gamedev_sound.h"
@@ -39,7 +38,6 @@
 #include "gamedev_input.cpp"
 #include "gamedev_game.cpp"
 #include "gamedev_sprite_sheet.cpp"
-#include "gamedev_plan.cpp"
 #include "gamedev_entity.cpp"
 #include "gamedev_tilemap.cpp"
 #include "gamedev_memory.cpp"
@@ -87,65 +85,37 @@ int main(int argc, char* argv[])
     FontMetadata fontMetadata = {};
     generateFontData(&fontMetadata, game);
 
-    Hero hero = {};
-    initEntitySpriteSheet(&hero.e, game->linkTexture, 11, 5);
-    hero.e.sprite_sheet.scale = 2;
-    hero.e.width = 20;
-    hero.e.height = 10;
-    hero.e.spriteDims = {45, 60};
-    initAnimation(&hero.e.animation, 8, 80);
-    hero.e.starting_pos = {120, 120};
-    hero.e.position = hero.e.starting_pos;
-    hero.e.bb_x_offset = 10;
-    hero.e.bb_y_offset = 18;
-    hero.e.bounding_box = {0, 0, hero.e.width - 2 * hero.e.bb_x_offset, hero.e.height - hero.e.bb_y_offset};
-    hero.e.speed = 2000;
-    hero.e.active = true;
-    hero.e.type = ET_HERO;
-
-    // Tiles
-    // Tile wr = {};
-    // wr.width = wr.height = 80;
-    // initTile(&wr, tile_properties[TP_WARP], game->colors[COLOR_RUST], game->renderer);
-    // wr.destination_map = 2;
-
-    // Tile fire = {};
-    // fire.width = fire.height = 80;
-    // initTile(&fire, tile_properties[TP_FIRE] | tile_properties[TP_INTERACTIVE],
-    //          game->colors[COLOR_GREY], game->renderer, "sprites/Campfire.png");
-    // setTileSpriteSize(&fire, 64, 64);
-    // initAnimation(&fire.animation, 11, 100);
-    // fire.active = true;
-    // fire.has_animation = true;
-    // fire.onHeroInteract = lightFire;
-
+    // Map
     u32 tileWidth = 80;
     u32 tileHeight = 80;
     Map *map0 = PushStruct(&arena, Map);
-    map0->tile_width = tileWidth;
-    map0->tile_height = tileHeight;
-    map0->current = true;
+    map0->tileWidth = tileWidth;
+    map0->tileHeight = tileHeight;
     map0->rows = 10;
     map0->cols = 12;
+    map0->widthPixels = map0->cols * tileWidth;
+    map0->heightPixels = map0->rows * tileHeight;
+    map0->texture = SDL_CreateTexture(game->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
+                                      map0->widthPixels, map0->heightPixels);
 
     for (u32 row = 0; row < map0->rows; ++row)
     {
         for (u32 col = 0; col < map0->cols; ++col)
         {
-            Entity *tile = &map0->entities[map0->entityCount++];
-            tile->width = tileWidth;
-            tile->height = tileHeight;
+            Entity *tile = addEntity(map0);
+            tile->width = map0->tileWidth;
+            tile->height = map0->tileHeight;
             tile->position = {col*tile->width + 0.5f*tile->width, row*tile->height + 0.5f*tile->height};
             if (row == 0 || col == 0 || row == map0->rows - 1 || col == map0->cols - 1)
             {
-                tile->tileFlags = tile_properties[TP_SOLID];
+                addTileFlags(tile, TP_SOLID);
                 tile->color = game->colors[COLOR_GREEN];
                 tile->collides = true;
             }
             if (row == 4 && col == 1)
             {
                 // Quicksand
-                tile->tileFlags = tile_properties[TP_QUICKSAND];
+                addTileFlags(tile, TP_QUICKSAND);
                 tile->color = game->colors[COLOR_BROWN];
                 tile->collides = false;
             }
@@ -153,7 +123,7 @@ int main(int argc, char* argv[])
                 ((row == 3 || row == 4 || row == 5 || row == 6) && col == 7))
             {
                 // Harvestable tree
-                tile->tileFlags = tile_properties[TP_HARVEST];
+                addTileFlags(tile, (u32)(TP_HARVEST | TP_SOLID));
                 tile->color = game->colors[COLOR_NONE];
                 tile->collides = true;
                 tile->unharvestedSprite = game->treeTexture;
@@ -163,48 +133,63 @@ int main(int argc, char* argv[])
                 tile->isHarvestable = true;
                 tile->harvestedItem = INV_LEAVES;
             }
+
+            // if (row == 1 && col == 7)
+            // {
+                // Lightable fire
+                // addTileFlags(tile, TP_FIRE | TP_INTERACTIVE);
+                // tile->color = game->colors[COLOR_GREY];
+                // TODO(chj): Create fire texture
+                // TODO(chj): Set sprite to "sprites/Campfire.png"
+                // initAnimation(&fire.animation, 11, 100);
+                // tile->active = true;
+                // tile->has_animation = true;
+                // tile->onHeroInteract = lightFire;
+            // }
         }
     }
-    map0->width_pixels = map0->cols * tileWidth;
-    map0->height_pixels = map0->rows * tileHeight;
-    map0->texture = SDL_CreateTexture(game->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
-                                     map0->width_pixels, map0->height_pixels);
+
+
+    // Hero
+    Entity *hero = addEntity(map0);
+    initEntitySpriteSheet(hero, game->linkTexture, 11, 5);
+    hero->sprite_sheet.scale = 2;
+    hero->width = 20;
+    hero->height = 10;
+    hero->spriteDims = {45, 60};
+    initAnimation(&hero->animation, 8, 80);
+    hero->position = {120, 120};
+    hero->speed = 2000;
+    hero->active = true;
+    hero->type = ET_HERO;
 
     // Harlod
-    Entity *harlod = &map0->entities[map0->entityCount++];
+    Entity *harlod = addEntity(map0);
     *harlod = {};
     initEntitySpriteSheet(harlod, game->harlodTexture, 1, 1);
     harlod->collides = true;
+    harlod->active = true;
     harlod->width = 20;
     harlod->height = 10;
     harlod->spriteDims = {60, 60};
-    harlod->starting_pos = {300, 300};
-    harlod->position = harlod->starting_pos;
+    harlod->position = {300, 300};
     harlod->speed = 10;
-    harlod->type = ET_HARLOD;
-    // harlod->onHeroInteract = &harlodInteractWithHero;
     harlod->active = true;
+    harlod->type = ET_HARLOD;
 
     // Knight
-    Entity *knight = &map0->entities[map0->entityCount++];
+    Entity *knight = addEntity(map0);
     initEntitySpriteSheet(knight, game->knightTexture, 8, 5);
     knight->collides = true;
     knight->width = 20;
     knight->height = 10;
     knight->spriteDims = {45, 45};
-    knight->starting_pos = {500, 500};
-    knight->position = knight->starting_pos;
-    knight->can_move = true;
+    knight->position = {500, 500};
     knight->speed = 1000;
-    knight->collision_pt_offset = 25;
     knight->type = ET_ENEMY;
     knight->active = true;
     knight->sprite_rect.y = knight->sprite_rect.h * 3 + 4;
     initAnimation(&knight->animation, 2, 400);
-
-    Entity* map0_entities[] = {&hero.e, knight, harlod};
-    map0->active_entities.entities = map0_entities;
-    map0->active_entities.count = ArrayCount(map0_entities);
 
     game->current_map = map0;
     initCamera(game);
@@ -230,22 +215,23 @@ int main(int argc, char* argv[])
             case GAME_MODE_PLAYING:
             {
                 updateGame(game, &input);
-                // updateMap(game);
-                updateHero(&hero, &input, game);
-                updateCamera(&game->camera, hero.e.position);
-                // updateEntityList(&entity_list, game->current_map, game->dt);
-                updateAnimation(&hero.e.animation, game->dt, hero.isMoving);
+                updateHero(hero, &input, game);
+                updateCamera(&game->camera, hero->position);
+                updateAnimation(&hero->animation, game->dt, hero->isMoving);
                 playQueuedSounds(&game->sounds, now);
                 updateAnimation(&knight->animation, game->dt, true);
-            } break;
+                break;
+            }
             case GAME_MODE_DIALOG:
             {
                 updateDialogMode(game, &input);
-            } break;
+                break;
+            }
             case GAME_MODE_INVENTORY:
             {
                 updateInventoryMode(game, &input);
-            } break;
+                break;
+            }
         }
 
         /*********************************************************************/
@@ -253,44 +239,10 @@ int main(int argc, char* argv[])
         /*********************************************************************/
         SDL_SetRenderTarget(game->renderer, game->current_map->texture);
         drawMap(game);
-        drawPlacingTile(game, &hero);
-        drawHUD(game, &hero);
+        drawPlacingTile(game, hero);
+        drawHUD(game, hero);
 
-        // Player interaction region
-        // drawCircle(game->renderer, (int)hero.e.position.x, (int)(hero.e.position.y - hero.e.height), 30);
-
-        if (game->current_map == map0)
-        {
-            // Draw sword for knight attacking to right
-            Sprite attackingSwordRaised = {};
-            attackingSwordRaised.x = 188;
-            attackingSwordRaised.y = 1;
-            attackingSwordRaised.width = 16;
-            attackingSwordRaised.height = 50;
-            attackingSwordRaised.offsetX = 2;
-            attackingSwordRaised.offsetY = -25;
-
-            Sprite attackingSwordDown = {};
-            attackingSwordDown.x = 307;
-            attackingSwordDown.y = 1;
-            attackingSwordDown.width = 50;
-            attackingSwordDown.height = 16;
-            attackingSwordDown.offsetX = 12;
-            attackingSwordDown.offsetY = 11;
-
-            int currentFrame = knight->sprite_rect.x / knight->sprite_rect.w;
-            Sprite *currentSwordSprite = currentFrame == 0 ? &attackingSwordRaised : &attackingSwordDown;
-
-            SDL_Rect raisedSwordLocationInSheet = {currentSwordSprite->x, currentSwordSprite->y,
-                                                currentSwordSprite->width, currentSwordSprite->height};
-
-            SDL_Rect raisedSwordLocationOnMap = {(int)knight->position.x + currentSwordSprite->offsetX,
-                                                 (int)knight->position.y + currentSwordSprite->offsetY,
-                                                 currentSwordSprite->width, currentSwordSprite->height};
-            // SDL_RenderCopy(game->renderer, knight.e.sprite_sheet.sheet,
-            //             &raisedSwordLocationInSheet, &raisedSwordLocationOnMap);
-        }
-
+        // Hero interaction region
         // SDL_SetRenderDrawColor(game->renderer, 255, 255, 0, 255);
         // drawCircle(game->renderer, (i32)heroInteractionRegion.center.x,
         //                 (i32)heroInteractionRegion.center.y, (i32)heroInteractionRegion.radius);
@@ -304,7 +256,7 @@ int main(int argc, char* argv[])
         if (game->mode == GAME_MODE_INVENTORY)
         {
             darkenBackground(game);
-            drawInventoryScreen(game, &hero, &fontMetadata);
+            drawInventoryScreen(game, hero, &fontMetadata);
         }
 
         /**************************************************************************/
@@ -335,7 +287,6 @@ int main(int argc, char* argv[])
     /* Cleanup                                                                */
     /**************************************************************************/
     destroyFontMetadata(&fontMetadata);
-    // destroyEntityList(&entity_list);
     destroyControllers(&input);
     destroyGame(game);
     destroyArena(&arena);

@@ -2,17 +2,20 @@
 #+Startup: nologdone
 
 * Build
-** TODO game code DLL (tough)
+** TODO game code DLL (tough with SDL)
 * Gameplay
 ** TODO Crafting system
-*** DONE Craft tree from leaves
-*** DONE Place tree tile in world
 *** TODO Show item belt at bottom of screen (HUD)
 *** TODO Scroll through belt to place tiles
 ** TODO Tile placement
 *** TODO Need to know type of tile we're placing before the tile exists
 **** TODO Place a different type of tile to see how this will work
 ** TODO Combat system
+*** TODO Normal/heavy swing
+*** TODO Shield
+*** TODO Parry/backstab
+*** TODO Dodge
+*** TODO Each move takes time, and the longer it takes, the more damage it does.
 ** TODO Dialog system
 *** TODO reenable
 ** TODO Basic enemy to prototype combat system
@@ -20,36 +23,20 @@
 *** TODO Make items selectable
 ** TODO Base building system
 * Architecture
-** TODO Debug system
-** TODO Use arena instead of stack
+** TODO push buffer rendering
+*** TODO Update function pushes pieces onto a render queue and the draw step sorts and draws the queue
 ** TODO Hot loading (tough)
 *** TODO All game state in one chunk of memory
 *** TODO Separate platform layer
 *** TODO Looped live editing
-* Graphics
-** TODO Hero art
-** TODO Level art (gothic castles)
-** TODO Enemy art
 * Design
 ** TODO 2D fantasy survival crafting
 ** TODO Dark Souls style combat
-*** TODO vim style keyboard bindings?
-*** TODO Normal/heavy swing
-*** TODO Shield
-*** TODO Parry/backstab
-*** TODO Dodge
-*** TODO Each move takes time, and the longer it takes, the more damage it does.
 ** TODO Dark Souls atmosphere
 *** TODO See far away parts of the level that you eventually reach
 ***** TODO How can I simulate this effect in 2d? Parallax scrolling.
-** TODO Crafting
-** A room full of breakables that a shop keeper later rewards you if unbroken
-* TODO Mechanics
-** TODO Crafting
-** TODO Block placement
-** TODO Rolling
-** TODO Blocking
-* Story
+* Story Ideas
 ** Enemies are sad, misinformed people instead of monsters?
+** A room full of breakables that a shop keeper later rewards you if unbroken
 * Bugs
-** TODO Quicksand sound doesn't play at appropriate interval
+** TODO Quicksand sound doesn't play at appropriate interval (tweak collision)

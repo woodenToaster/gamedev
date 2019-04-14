@@ -45,7 +45,7 @@ struct Game
     u32 colors[COLOR_LAST];
     Camera camera;
     Map *current_map;
-    MapList *maps;
+    // MapList *maps;
     SoundList sounds;
     GameMode mode;
     char *dialog;
