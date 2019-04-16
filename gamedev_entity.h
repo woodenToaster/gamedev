@@ -62,5 +62,7 @@ struct Entity
     bool32 placingItem;
     Entity *tileToPlace;
     u32 inventory[INV_COUNT];
+    u32 beltItemCount;
+    InventoryItemType beltItems[8];
 };
 #endif

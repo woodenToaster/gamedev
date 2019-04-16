@@ -238,7 +238,7 @@ int main(int argc, char* argv[])
         SDL_SetRenderTarget(game->renderer, game->currentMap->texture);
         drawMap(game);
         drawPlacingTile(game, hero);
-        drawHUD(game, hero);
+        drawHUD(game, hero, &fontMetadata);
 
         // Hero interaction region
         // SDL_SetRenderDrawColor(game->renderer, 255, 255, 0, 255);

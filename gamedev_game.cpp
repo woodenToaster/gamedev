@@ -233,7 +233,7 @@ void drawInventoryScreen(Game *g, Entity *h, FontMetadata *fontMetadata)
     drawText(g, fontMetadata, trees, dialogBoxX, dialogBoxY + 25);
 }
 
-void drawHUD(Game *g, Entity *h)
+void drawHUD(Game *g, Entity *h, FontMetadata *font)
 {
     u8 beltSlots = 8;
     u8 slotSize = 40;
@@ -241,17 +241,41 @@ void drawHUD(Game *g, Entity *h)
     i32 destX = slotCenterX - ((beltSlots / 2) * slotSize);
     i32 destY = g->camera.viewport.h + g->camera.viewport.y - slotSize;
 
-    SDL_SetRenderDrawColor(g->renderer, 255, 255, 255, 255);
+    SDL_Rect backgroundDest = {destX, destY, beltSlots * slotSize, slotSize};
 
+    // Draw transparent black background
+    SDL_SetRenderDrawBlendMode(g->renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(g->renderer, 0, 0, 0, 128);
+    SDL_RenderFillRect(g->renderer, &backgroundDest);
+
+    SDL_SetRenderDrawColor(g->renderer, 255, 255, 255, 255);
     for (int i = 0; i < beltSlots; ++i)
     {
         SDL_Rect dest = {destX + i*slotSize, destY, slotSize, slotSize};
-        SDL_RenderDrawRect(g->renderer, &dest);
-        // TODO(chj): Draw hero inventory
-        if (h->inventory[INV_TREES])
+
+        if ((u32)i < h->beltItemCount)
         {
-            
+            InventoryItemType *item = &h->beltItems[i];
+
+            switch (*item)
+            {
+            case INV_TREES:
+            {
+                // Draw inventory picture
+                SDL_RenderCopy(g->renderer, g->treeTexture, NULL, &dest);
+            }
+            break;
+            default:
+                break;
+            }
+
+            // Draw inventory number
+            assert(h->inventory[*item] <= 999);
+            char numItems[4] = {};
+            snprintf(numItems, 4, "%d", h->inventory[*item]);
+            drawText(g, font, numItems, dest.x, dest.y);
         }
+        SDL_RenderDrawRect(g->renderer, &dest);
     }
 }
 

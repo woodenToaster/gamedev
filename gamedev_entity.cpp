@@ -209,6 +209,19 @@ void harlodInteractWithEntity(Entity *e, Entity *h, Game *g)
     startDialogMode(g, (char*)e->dialogFile.contents);
 }
 
+internal InventoryItemType *findItemInBelt(Entity *h, InventoryItemType item)
+{
+    InventoryItemType *result = 0;
+    for (u32 itemIndex = 0; itemIndex < h->beltItemCount; ++itemIndex)
+    {
+        if (h->beltItems[itemIndex] == item)
+        {
+            result = &h->beltItems[itemIndex];
+        }
+    }
+    return result;
+}
+
 internal void craftItem(Entity *h, CraftableItemType item)
 {
     switch (item)
@@ -220,6 +233,14 @@ internal void craftItem(Entity *h, CraftableItemType item)
         {
             h->inventory[INV_LEAVES] -= leavesRequiredForTree;
             ++h->inventory[INV_TREES];
+
+            // Add to belt if it's not already there
+            if (!findItemInBelt(h, INV_TREES))
+            {
+                assert(h->beltItemCount < ArrayCount(h->beltItems));
+                InventoryItemType *beltItem = &h->beltItems[h->beltItemCount++];
+                *beltItem = INV_TREES;
+            }
         }
         break;
     }
@@ -242,6 +263,16 @@ internal void placeItem(Map *m, Entity *h)
                 tile->isHarvestable = true;
 
                 h->inventory[INV_TREES]--;
+
+                if (h->inventory[INV_TREES] == 0)
+                {
+                    // Remove from belt if it's there
+                    InventoryItemType *item = findItemInBelt(h, INV_TREES);
+                    if (item)
+                    {
+                        *item = h->beltItems[--h->beltItemCount];
+                    }
+                }
 
                 if (tile->deleteAfterPlacement)
                 {
