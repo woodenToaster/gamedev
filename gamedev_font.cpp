@@ -57,6 +57,7 @@ void generateFontData(FontMetadata *fontMetadata, Game *game)
                                             &cpMeta->x0, &cpMeta->y0, &cpMeta->x1, &cpMeta->y1);
         i32 bitmapWidth = cpMeta->x1 - cpMeta->x0;
         i32 bitmapHeight = cpMeta->y1 - cpMeta->y0;
+        // TODO(chj): Arena instead of malloc (transient storage)
         u8* stb_bitmap = (u8*)malloc(sizeof(u8) * bitmapWidth * bitmapHeight);
         stbtt_MakeCodepointBitmapSubpixel(&fontMetadata->info, stb_bitmap, bitmapWidth, bitmapHeight, bitmapWidth,
                                           fontMetadata->scale, fontMetadata->scale, /* x_shift */ 0, 0, codepoint);

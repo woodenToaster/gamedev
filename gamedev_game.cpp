@@ -47,6 +47,8 @@ void renderFilledRect(SDL_Renderer* renderer, SDL_Rect* dest, u32 color, u8 alph
 
 void destroyGame(Game* g)
 {
+    // TODO(chj): This should be stored in gameMemory instead of malloced
+    free(g->dialogue);
     SDL_DestroyTexture(g->linkTexture);
     SDL_DestroyTexture(g->treeTexture);
     SDL_DestroyTexture(g->treeStumpTexture);
@@ -162,16 +164,16 @@ void updateGame(Game *g, Input *input)
     }
 }
 
-void startDialogMode(Game *g, char *dialog)
+void startDialogueMode(Game *g, char *dialogue)
 {
-    g->mode = GAME_MODE_DIALOG;
-    g->dialog = dialog;
+    g->mode = GAME_MODE_DIALOGUE;
+    g->dialogue = dialogue;
 }
 
 void endDialogMode(Game *g)
 {
     g->mode = GAME_MODE_PLAYING;
-    g->dialog = NULL;
+    g->dialogue = NULL;
 }
 
 void updateDialogMode(Game *g, Input *input)
@@ -204,13 +206,13 @@ void drawDialogScreen(Game *g, FontMetadata *fontMetadata)
 {
     int thirdOfWidth = (int)(g->camera.viewport.w / 3);
     int fourthOfHeight = (int)(g->camera.viewport.h / 4);
-    int dialogBoxX = (int)(0.5 * (thirdOfWidth)) + g->camera.viewport.x;
-    int dialogBoxY = (int)((3 * (fourthOfHeight)) - 0.5 * fourthOfHeight) + g->camera.viewport.y;
-    int dialogBoxWidth = 2 * (thirdOfWidth);
-    int dialogBoxHeight = fourthOfHeight;
-    SDL_Rect dialogBoxDest = {dialogBoxX,dialogBoxY, dialogBoxWidth, dialogBoxHeight};
-    renderFilledRect(g->renderer, &dialogBoxDest, g->colors[COLOR_BABY_BLUE]);
-    drawText(g, fontMetadata, g->dialog, dialogBoxX, dialogBoxY);
+    int dialogueBoxX = (int)(0.5 * (thirdOfWidth)) + g->camera.viewport.x;
+    int dialogueBoxY = (int)((3 * (fourthOfHeight)) - 0.5 * fourthOfHeight) + g->camera.viewport.y;
+    int dialogueBoxWidth = 2 * (thirdOfWidth);
+    int dialogueBoxHeight = fourthOfHeight;
+    SDL_Rect dialogueBoxDest = {dialogueBoxX,dialogueBoxY, dialogueBoxWidth, dialogueBoxHeight};
+    renderFilledRect(g->renderer, &dialogueBoxDest, g->colors[COLOR_BABY_BLUE]);
+    drawText(g, fontMetadata, g->dialogue, dialogueBoxX, dialogueBoxY);
 }
 
 void drawInventoryScreen(Game *g, Entity *h, FontMetadata *fontMetadata)

@@ -220,7 +220,7 @@ int main(int argc, char* argv[])
                 updateAnimatedTiles(map0, game->dt);
                 break;
             }
-            case GAME_MODE_DIALOG:
+            case GAME_MODE_DIALOGUE:
             {
                 updateDialogMode(game, &input);
                 break;
@@ -245,7 +245,7 @@ int main(int argc, char* argv[])
         // drawCircle(game->renderer, (i32)heroInteractionRegion.center.x,
         //                 (i32)heroInteractionRegion.center.y, (i32)heroInteractionRegion.radius);
 
-        if (game->mode == GAME_MODE_DIALOG)
+        if (game->mode == GAME_MODE_DIALOGUE)
         {
             darkenBackground(game);
             drawDialogScreen(game, &fontMetadata);

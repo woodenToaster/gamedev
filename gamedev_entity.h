@@ -64,5 +64,8 @@ struct Entity
     u32 inventory[INV_COUNT];
     u32 beltItemCount;
     InventoryItemType beltItems[8];
+
+    // Harlod
+    EntireFile dialogueFile;
 };
 #endif

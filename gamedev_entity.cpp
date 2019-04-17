@@ -152,38 +152,6 @@ void heroInteract(Entity *h, Game *g)
             }
         }
     }
-
-    // Check for interactive tiles
-    Point heroCenterPoint = {(i32)heroCenter.x, (i32)heroCenter.y};
-    const u32 stencilSize = 9;
-    Tile *tileStencil[stencilSize] = {};
-    u32 stencilIndex = 0;
-    for (i32 tileIndexY = heroCenterPoint.y - g->currentMap->tile_height;
-         tileIndexY <= heroCenterPoint.y + (i32)g->currentMap->tile_height;
-         tileIndexY += g->currentMap->tile_height)
-    {
-        for (i32 tileIndexX = heroCenterPoint.x - g->currentMap->tile_width;
-             tileIndexX <= heroCenterPoint.x + (i32)g->currentMap->tile_width;
-             tileIndexX += g->currentMap->tile_width)
-        {
-            SDL_Rect tileRect = {tileIndexX, tileIndexY,
-                                 (i32)g->currentMap->tile_width, (i32)g->currentMap->tile_height};
-            if (circleOverlapsRect(&heroInteractionRegion, &tileRect))
-            {
-                Point tileIndexPoint = {tileIndexX, tileIndexY};
-                tileStencil[stencilIndex] = map_get_tile_at_point(g->currentMap, tileIndexPoint);
-            }
-            stencilIndex++;
-        }
-    }
-
-    for (u32 y = 0; y < stencilSize; ++y)
-    {
-        if (tileStencil[y] && tile_is_interactive(tileStencil[y]) && tileStencil[y]->onEntityInteract)
-        {
-            tileStencil[y]->onEntityInteract(tileStencil[y], h);
-        }
-    }
 #endif
 }
 
@@ -193,20 +161,6 @@ Entity *addEntity(Map *m)
     Entity *result = &m->entities[m->entityCount++];
 
     return result;
-}
-
-void harlodInteractWithEntity(Entity *e, Entity *h, Game *g)
-{
-    (void)h;
-    if (!e->dialogFile.contents)
-    {
-        e->dialogFile = readEntireFile("dialogs/harlod_dialogs.txt");
-        // TODO(chj): Need to null terminate everything. This will change. We
-        // want to parse files for strings and tokenize, etc. For now it's hard coded
-        e->dialogFile.contents[9] = '\0';
-        // TODO(chj): Free dialog.contents
-    }
-    startDialogMode(g, (char*)e->dialogFile.contents);
 }
 
 internal InventoryItemType *findItemInBelt(Entity *h, InventoryItemType item)
@@ -394,12 +348,6 @@ internal bool32 isValidTilePlacment(Map *m, Entity *tileToPlace)
         }
     }
 
-    return result;
-}
-
-internal Entity emptyEntity()
-{
-    Entity result = {};
     return result;
 }
 
@@ -630,6 +578,25 @@ internal void updateHero(Entity* h, Input* input, Game* g)
                     }
                     break;
                 }
+                case ET_HARLOD:
+                {
+                    SDL_Rect harlodCollisionRegion = {(i32)(testEntity->position.x - 0.5f*testEntity->width),
+                                                      (i32)(testEntity->position.y - testEntity->height),
+                                                      testEntity->width, testEntity->height};
+
+                    if (rectsOverlap(&h->heroInteractionRect, &harlodCollisionRegion))
+                    {
+                        if (!testEntity->dialogueFile.contents)
+                        {
+                            testEntity->dialogueFile = readEntireFile("dialogues/harlod_dialogues.txt");
+                            // TODO(chj): Need to null terminate everything. This will change. We
+                            // want to parse files for strings and tokenize, etc. For now it's hard coded
+                            testEntity->dialogueFile.contents[9] = '\0';
+                        }
+                        startDialogueMode(g, (char*)testEntity->dialogueFile.contents);
+                    }
+                    break;
+                }
                 default:
                     break;
             }
@@ -648,7 +615,7 @@ internal void updateHero(Entity* h, Input* input, Game* g)
         {
             Map *m = g->currentMap;
             h->tileToPlace = addEntity(m);
-            *h->tileToPlace = emptyEntity();
+            *h->tileToPlace = {};
             Entity *tile = h->tileToPlace;
             tile->width = 80;
             tile->height = 80;

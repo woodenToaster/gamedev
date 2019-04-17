@@ -24,9 +24,18 @@ enum Colors
 enum GameMode
 {
     GAME_MODE_PLAYING,
-    GAME_MODE_DIALOG,
+    GAME_MODE_DIALOGUE,
     GAME_MODE_INVENTORY,
     GAME_MODE_COUNT
+};
+
+struct GameMemory
+{
+    u64 permanentStorageSize;
+    void *permanentStorage;
+
+    u64 transientStorageSize;
+    void *transientStorage;
 };
 
 struct Game
@@ -47,7 +56,7 @@ struct Game
     Map *currentMap;
     SoundList sounds;
     GameMode mode;
-    char *dialog;
+    char *dialogue;
 
     SDL_Texture *linkTexture;
     SDL_Texture *treeTexture;
@@ -62,8 +71,8 @@ struct Game
     // Sound *sounds[16];
 };
 
-void startDialogMode(Game *g, char *dialog);
-void endDialogMode(Game *g);
+void startDialogueMode(Game *g, char *dialogue);
+void endDialogueMode(Game *g);
 void startInventoryMode(Game *g);
 void endInventoryMode(Game *g);
 #endif

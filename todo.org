@@ -5,11 +5,11 @@
 ** TODO game code DLL (tough with SDL)
 * Gameplay
 ** TODO Crafting system
-*** TODO Show item belt at bottom of screen (HUD)
 *** TODO Scroll through belt to place tiles
 ** TODO Tile placement
 *** TODO Need to know type of tile we're placing before the tile exists
 **** TODO Place a different type of tile to see how this will work
+*** TODO Harvestable and harvested tiles should be on same sheet.
 ** TODO Combat system
 *** TODO Normal/heavy swing
 *** TODO Shield
@@ -40,3 +40,4 @@
 ** A room full of breakables that a shop keeper later rewards you if unbroken
 * Bugs
 ** TODO Quicksand sound doesn't play at appropriate interval (tweak collision)
+** TODO Can place tree tile in my own square and become stuck in it
