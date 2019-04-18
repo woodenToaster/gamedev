@@ -7,6 +7,7 @@ enum CraftableItemType
 {
     CRAFTABLE_NONE,
     CRAFTABLE_TREE,
+    CRAFTABLE_GLOW_JUICE,
     CRAFTABLE_COUNT
 };
 
@@ -15,6 +16,7 @@ enum InventoryItemType
     INV_NONE,
     INV_LEAVES,
     INV_TREES,
+    INV_GLOW,
     INV_COUNT
 };
 
@@ -61,9 +63,10 @@ struct Entity
     bool32 harvesting;
     bool32 placingItem;
     Entity *tileToPlace;
+    // TODO(chj): inventory[0] is always 0 because of INV_NONE
     u32 inventory[INV_COUNT];
     u32 beltItemCount;
-    InventoryItemType beltItems[8];
+    CraftableItemType beltItems[8];
 
     // Harlod
     EntireFile dialogueFile;

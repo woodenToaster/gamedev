@@ -77,6 +77,7 @@ int main(int argc, char* argv[])
     game->harlodTexture = createTextureFromPng("sprites/Harlod_the_caveman.png", game->renderer);
     game->knightTexture = createTextureFromPng("sprites/knight_alligned.png", game->renderer);
     game->fireTileTexture = createTextureFromPng("sprites/Campfire.png", game->renderer);
+    game->glowTreeTexture = createTextureFromPng("sprites/glow_tree.png", game->renderer);
 
     // Input
     Input input = {};
@@ -133,6 +134,18 @@ int main(int argc, char* argv[])
                 tile->active = true;
                 tile->isHarvestable = true;
                 tile->harvestedItem = INV_LEAVES;
+            }
+
+            if (row == 2 && col == 2)
+            {
+                // Glow tree
+                addTileFlags(tile, (u32)(TP_HARVEST | TP_SOLID));
+                tile->color = game->colors[COLOR_NONE];
+                tile->collides = true;
+                initEntitySpriteSheet(tile, game->glowTreeTexture, 2, 1);
+                tile->active = true;
+                tile->isHarvestable = true;
+                tile->harvestedItem = INV_GLOW;
             }
 
             if (row == 1 && col == 7)

@@ -54,6 +54,7 @@ void destroyGame(Game* g)
     SDL_DestroyTexture(g->treeStumpTexture);
     SDL_DestroyTexture(g->harlodTexture);
     SDL_DestroyTexture(g->knightTexture);
+    SDL_DestroyTexture(g->glowTreeTexture);
 
     Mix_Quit();
     SDL_DestroyRenderer(g->renderer);
@@ -226,13 +227,28 @@ void drawInventoryScreen(Game *g, Entity *h, FontMetadata *fontMetadata)
     int dialogBoxHeight = fourthOfHeight;
     SDL_Rect dialogBoxDest = {dialogBoxX,dialogBoxY, dialogBoxWidth, dialogBoxHeight};
     renderFilledRect(g->renderer, &dialogBoxDest, g->colors[COLOR_BABY_BLUE]);
-    char leaves[30];
-    snprintf(leaves, 30, "Leaves: %d", h->inventory[INV_LEAVES]);
-    drawText(g, fontMetadata, leaves, dialogBoxX, dialogBoxY);
-    char trees[30];
-    snprintf(trees, 30, "Trees: %d", h->inventory[INV_TREES]);
-    // TODO(chj): Figure out correct y offset for next line
-    drawText(g, fontMetadata, trees, dialogBoxX, dialogBoxY + 25);
+
+    for (int inventoryIndex = 1; inventoryIndex < INV_COUNT; ++inventoryIndex)
+    {
+        char itemString[30] = {};
+        switch ((InventoryItemType)inventoryIndex)
+        {
+        case INV_LEAVES:
+            snprintf(itemString, 30, "Leaves: %d", h->inventory[INV_LEAVES]);
+            break;
+        case INV_TREES:
+            snprintf(itemString, 30, "Trees: %d", h->inventory[INV_TREES]);
+            break;
+        case INV_GLOW:
+            snprintf(itemString, 30, "Glow: %d", h->inventory[INV_GLOW]);
+            break;
+        default:
+            assert(!"Wrong inventory type");
+        }
+        drawText(g, fontMetadata, itemString, dialogBoxX, dialogBoxY);
+        // TODO(chj): Figure out correct y offset for next line
+        dialogBoxY += 25;
+    }
 }
 
 void drawHUD(Game *g, Entity *h, FontMetadata *font)
@@ -257,7 +273,7 @@ void drawHUD(Game *g, Entity *h, FontMetadata *font)
 
         if ((u32)i < h->beltItemCount)
         {
-            InventoryItemType *item = &h->beltItems[i];
+            CraftableItemType *item = &h->beltItems[i];
 
             switch (*item)
             {

@@ -163,9 +163,9 @@ Entity *addEntity(Map *m)
     return result;
 }
 
-internal InventoryItemType *findItemInBelt(Entity *h, InventoryItemType item)
+internal CraftableItemType *findItemInBelt(Entity *h, CraftableItemType item)
 {
-    InventoryItemType *result = 0;
+    CraftableItemType *result = 0;
     for (u32 itemIndex = 0; itemIndex < h->beltItemCount; ++itemIndex)
     {
         if (h->beltItems[itemIndex] == item)
@@ -178,28 +178,36 @@ internal InventoryItemType *findItemInBelt(Entity *h, InventoryItemType item)
 
 internal void craftItem(Entity *h, CraftableItemType item)
 {
+    u32 numRequiredItems = 0;
+    InventoryItemType requiredItem = INV_NONE;
+
     switch (item)
     {
-    case CRAFTABLE_TREE:
-    {
-        u32 leavesRequiredForTree = 2;
-        if (h->inventory[INV_LEAVES] >= leavesRequiredForTree)
-        {
-            h->inventory[INV_LEAVES] -= leavesRequiredForTree;
-            ++h->inventory[INV_TREES];
-
-            // Add to belt if it's not already there
-            if (!findItemInBelt(h, INV_TREES))
-            {
-                assert(h->beltItemCount < ArrayCount(h->beltItems));
-                InventoryItemType *beltItem = &h->beltItems[h->beltItemCount++];
-                *beltItem = INV_TREES;
-            }
-        }
-        break;
+        case CRAFTABLE_TREE:
+            numRequiredItems = 2;
+            requiredItem = INV_LEAVES;
+            break;
+        case CRAFTABLE_GLOW_JUICE:
+            numRequiredItems = 1;
+            requiredItem = INV_GLOW;
+            break;
+        default:
+            break;
     }
-    default:
-        break;
+
+    if (h->inventory[requiredItem] >= numRequiredItems)
+    {
+        h->inventory[requiredItem] -= numRequiredItems;
+        ++h->inventory[item];
+
+        // Add to belt if it's not already there
+        if (!findItemInBelt(h, item))
+        {
+            assert(requiredItem != INV_NONE);
+            assert(h->beltItemCount < ArrayCount(h->beltItems));
+            CraftableItemType *beltItem = &h->beltItems[h->beltItemCount++];
+            *beltItem = item;
+        }
     }
 }
 
@@ -221,7 +229,7 @@ internal void placeItem(Map *m, Entity *h)
                 if (h->inventory[INV_TREES] == 0)
                 {
                     // Remove from belt if it's there
-                    InventoryItemType *item = findItemInBelt(h, INV_TREES);
+                    CraftableItemType *item = findItemInBelt(h, CRAFTABLE_TREE);
                     if (item)
                     {
                         *item = h->beltItems[--h->beltItemCount];
@@ -564,7 +572,14 @@ internal void updateHero(Entity* h, Input* input, Game* g)
                         {
                             testEntity->isHarvestable = false;
                             testEntity->collides = false;
-                            initSpriteSheet(&testEntity->spriteSheet, testEntity->harvestedSprite, 1, 1);
+                            if (testEntity->harvestedSprite)
+                            {
+                                initSpriteSheet(&testEntity->spriteSheet, testEntity->harvestedSprite, 1, 1);
+                            }
+                            else
+                            {
+                                testEntity->spriteRect.x += map->tileWidth;
+                            }
                             h->inventory[testEntity->harvestedItem]++;
                         }
 
