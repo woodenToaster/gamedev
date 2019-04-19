@@ -15,9 +15,14 @@ enum InventoryItemType
 {
     INV_NONE,
     INV_LEAVES,
-    INV_TREES,
     INV_GLOW,
     INV_COUNT
+};
+
+struct BeltItem
+{
+    CraftableItemType type;
+    u32 count;
 };
 
 struct Entity
@@ -59,14 +64,15 @@ struct Entity
 
     // Hero
     SDL_Rect heroInteractionRect;
-    bool32 craft;
+    bool32 craftTree;
+    bool32 craftGlowJuice;
     bool32 harvesting;
     bool32 placingItem;
     Entity *tileToPlace;
     // TODO(chj): inventory[0] is always 0 because of INV_NONE
     u32 inventory[INV_COUNT];
     u32 beltItemCount;
-    CraftableItemType beltItems[8];
+    BeltItem beltItems[8];
 
     // Harlod
     EntireFile dialogueFile;

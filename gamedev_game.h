@@ -38,6 +38,13 @@ struct GameMemory
     void *transientStorage;
 };
 
+struct Arena
+{
+    size_t used;
+    size_t maxCap;
+    u8 *start;
+};
+
 struct Game
 {
     u32 dt;
@@ -70,6 +77,9 @@ struct Game
     // TODO(chj): Replace SoundList
     // u32 soundCount;
     // Sound *sounds[16];
+
+    Arena worldArena;
+    Arena transientArena;
 };
 
 void startDialogueMode(Game *g, char *dialogue);

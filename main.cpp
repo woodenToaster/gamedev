@@ -21,6 +21,7 @@
 #include "gamedev_definitions.h"
 #include "gamedev_animation.cpp"
 
+#include "gamedev_memory.h"
 #include "gamedev_math.h"
 #include "gamedev_font.h"
 #include "gamedev_sound.h"
@@ -32,6 +33,7 @@
 #include "gamedev_entity.h"
 #include "gamedev_camera.h"
 
+#include "gamedev_memory.cpp"
 #include "gamedev_font.cpp"
 #include "gamedev_sound.cpp"
 #include "gamedev_asset_loading.cpp"
@@ -40,7 +42,6 @@
 #include "gamedev_sprite_sheet.cpp"
 #include "gamedev_entity.cpp"
 #include "gamedev_tilemap.cpp"
-#include "gamedev_memory.cpp"
 
 
 int main(int argc, char* argv[])
@@ -48,14 +49,21 @@ int main(int argc, char* argv[])
     (void)argc;
     (void)argv;
 
-    Arena arena = {};
-    initArena(&arena, (size_t)MEGABYTES(1));
+    GameMemory memory = {};
+    memory.permanentStorageSize = (size_t)MEGABYTES(1);
+    memory.transientStorageSize = (size_t)MEGABYTES(2);
+    memory.permanentStorage = calloc(memory.permanentStorageSize + memory.transientStorageSize, sizeof(u8));
+    memory.transientStorage = (u8*)memory.permanentStorage + memory.permanentStorageSize;
+
+    // Game
+    assert(sizeof(Game) < memory.permanentStorageSize);
+    Game* game = (Game*)memory.permanentStorage;
+    initArena(&game->worldArena, memory.permanentStorageSize - sizeof(Game),
+              (u8*)memory.permanentStorage + sizeof(Game));
+    initArena(&game->transientArena, memory.transientStorageSize, (u8*)memory.transientStorage);
 
     u32 screenWidth = 960;
     u32 screenHeight = 540;
-
-    // Game
-    Game* game = PushStruct(&arena, Game);
     initGame(game, screenWidth, screenHeight);
 
     // OpenGL
@@ -90,7 +98,7 @@ int main(int argc, char* argv[])
     // Map
     u32 tileWidth = 80;
     u32 tileHeight = 80;
-    Map *map0 = PushStruct(&arena, Map);
+    Map *map0 = PushStruct(&game->worldArena, Map);
     map0->tileWidth = tileWidth;
     map0->tileHeight = tileHeight;
     map0->rows = 10;
@@ -292,6 +300,7 @@ int main(int argc, char* argv[])
         SDL_SetRenderTarget(game->renderer, NULL);
         SDL_RenderCopy(game->renderer, game->currentMap->texture, &game->camera.viewport, NULL);
         game->dt = SDL_GetTicks() - now;
+        game->transientArena.used = 0;
         sleepIfAble(game);
         SDL_RenderPresent(game->renderer);
     }
@@ -303,7 +312,7 @@ int main(int argc, char* argv[])
     destroyControllers(&input);
     SDL_DestroyTexture(map0->texture);
     destroyGame(game);
-    destroyArena(&arena);
+    free(memory.permanentStorage);
 
     return 0;
 }

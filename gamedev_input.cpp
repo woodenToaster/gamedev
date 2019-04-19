@@ -80,6 +80,9 @@ static void updateInput(Input* input, SDL_Scancode key, bool32 isDown)
     case SDL_SCANCODE_I:
         setKeyState(input, KEY_I, isDown);
         break;
+    case SDL_SCANCODE_V:
+        setKeyState(input, KEY_V, isDown);
+        break;
     default:
         // char* action = pressed ? "pressed" : "released";
         // printf("Key %s: %s\n", action, SDL_GetKeyName(SDL_GetKeyFromScancode(key)));

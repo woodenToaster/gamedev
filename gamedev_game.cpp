@@ -1,5 +1,23 @@
 #include "gamedev_game.h"
 
+void initArena(Arena *arena, size_t bytes, u8 *start)
+{
+    arena->start = start;
+    arena->maxCap = bytes;
+    arena->used = 0;
+}
+
+#define PushStruct(arena, type) ((type*)pushSize((arena), sizeof(type)))
+
+u8* pushSize(Arena *arena, size_t size)
+{
+    assert(size + arena->used < arena->maxCap);
+    u8* result = arena->start + arena->used;
+    arena->used += size;
+    memset(result, 0, size);
+    return result;
+}
+
 // TODO(chj): These should support different endians
 u8 getAlphaFromU32(u32 color)
 {
@@ -236,9 +254,6 @@ void drawInventoryScreen(Game *g, Entity *h, FontMetadata *fontMetadata)
         case INV_LEAVES:
             snprintf(itemString, 30, "Leaves: %d", h->inventory[INV_LEAVES]);
             break;
-        case INV_TREES:
-            snprintf(itemString, 30, "Trees: %d", h->inventory[INV_TREES]);
-            break;
         case INV_GLOW:
             snprintf(itemString, 30, "Glow: %d", h->inventory[INV_GLOW]);
             break;
@@ -273,24 +288,29 @@ void drawHUD(Game *g, Entity *h, FontMetadata *font)
 
         if ((u32)i < h->beltItemCount)
         {
-            CraftableItemType *item = &h->beltItems[i];
+            BeltItem *item = &h->beltItems[i];
+            SDL_Texture *textureToDraw = NULL;
 
-            switch (*item)
+            switch (item->type)
             {
-            case INV_TREES:
-            {
-                // Draw inventory picture
-                SDL_RenderCopy(g->renderer, g->treeTexture, NULL, &dest);
-            }
-            break;
+            case CRAFTABLE_TREE:
+                textureToDraw = g->treeTexture;
+                break;
+            case CRAFTABLE_GLOW_JUICE:
+                textureToDraw = g->glowTreeTexture;
+                break;
             default:
                 break;
             }
 
+            if (textureToDraw)
+            {
+                SDL_RenderCopy(g->renderer, textureToDraw, NULL, &dest);
+            }
             // Draw inventory number
-            assert(h->inventory[*item] <= 999);
+            assert(item->count <= 999);
             char numItems[4] = {};
-            snprintf(numItems, 4, "%d", h->inventory[*item]);
+            snprintf(numItems, 4, "%d", item->count);
             drawText(g, font, numItems, dest.x, dest.y);
         }
         SDL_RenderDrawRect(g->renderer, &dest);

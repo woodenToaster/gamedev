@@ -163,12 +163,12 @@ Entity *addEntity(Map *m)
     return result;
 }
 
-internal CraftableItemType *findItemInBelt(Entity *h, CraftableItemType item)
+internal BeltItem *findItemInBelt(Entity *h, CraftableItemType item)
 {
-    CraftableItemType *result = 0;
+    BeltItem *result = 0;
     for (u32 itemIndex = 0; itemIndex < h->beltItemCount; ++itemIndex)
     {
-        if (h->beltItems[itemIndex] == item)
+        if (h->beltItems[itemIndex].type == item)
         {
             result = &h->beltItems[itemIndex];
         }
@@ -195,18 +195,25 @@ internal void craftItem(Entity *h, CraftableItemType item)
             break;
     }
 
-    if (h->inventory[requiredItem] >= numRequiredItems)
+    if (requiredItem != INV_NONE)
     {
-        h->inventory[requiredItem] -= numRequiredItems;
-        ++h->inventory[item];
-
-        // Add to belt if it's not already there
-        if (!findItemInBelt(h, item))
+        if (h->inventory[requiredItem] >= numRequiredItems)
         {
-            assert(requiredItem != INV_NONE);
-            assert(h->beltItemCount < ArrayCount(h->beltItems));
-            CraftableItemType *beltItem = &h->beltItems[h->beltItemCount++];
-            *beltItem = item;
+            if (h->beltItemCount < ArrayCount(h->beltItems))
+            {
+                h->inventory[requiredItem] -= numRequiredItems;
+                BeltItem *beltItem = findItemInBelt(h, item);
+                if (beltItem)
+                {
+                    beltItem->count++;
+                }
+                else
+                {
+                    beltItem = &h->beltItems[h->beltItemCount++];
+                    beltItem->type = item;
+                    beltItem->count = 1;
+                }
+            }
         }
     }
 }
@@ -224,16 +231,11 @@ internal void placeItem(Map *m, Entity *h)
                 tile->active = true;
                 tile->isHarvestable = true;
 
-                h->inventory[INV_TREES]--;
-
-                if (h->inventory[INV_TREES] == 0)
+                BeltItem *item = findItemInBelt(h, CRAFTABLE_TREE);
+                if (--item->count == 0)
                 {
-                    // Remove from belt if it's there
-                    CraftableItemType *item = findItemInBelt(h, CRAFTABLE_TREE);
-                    if (item)
-                    {
-                        *item = h->beltItems[--h->beltItemCount];
-                    }
+                    // Remove it from the belt
+                    *item = h->beltItems[--h->beltItemCount];
                 }
 
                 if (tile->deleteAfterPlacement)
@@ -539,10 +541,12 @@ internal void updateHero(Entity* h, Input* input, Game* g)
 
     // Actions
     h->harvesting = input->keyPressed[KEY_SPACE] || input->buttonPressed[BUTTON_A];
-    h->craft = input->keyPressed[KEY_C];
+    h->craftTree = input->keyPressed[KEY_C];
+    h->craftGlowJuice = input->keyPressed[KEY_V];
     if (input->keyPressed[KEY_P])
     {
-        if (h->inventory[INV_TREES] > 0)
+        BeltItem *item = findItemInBelt(h, CRAFTABLE_TREE);
+        if (item && item->count > 0)
         {
             h->placingItem = true;
         }
@@ -618,9 +622,14 @@ internal void updateHero(Entity* h, Input* input, Game* g)
         }
     }
 
-    if (h->craft)
+    if (h->craftTree)
     {
         CraftableItemType item = CRAFTABLE_TREE;
+        craftItem(h, item);
+    }
+    if (h->craftGlowJuice)
+    {
+        CraftableItemType item = CRAFTABLE_GLOW_JUICE;
         craftItem(h, item);
     }
 
