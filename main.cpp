@@ -307,7 +307,7 @@ int main(int argc, char* argv[])
     /**************************************************************************/
     destroyFontMetadata(&fontMetadata);
     destroyControllers(&input);
-    SDL_DestroyTexture(map0->texture);
+    destroyMap(map0);
     destroyGame(game);
     free(memory.permanentStorage);
 

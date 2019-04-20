@@ -11,31 +11,6 @@ bool32 isTileFlagSet(Entity *e, TileProperty prop)
     return result;
 }
 
-// void initMap(Map* m, u32 cols, u32 rows, Tile** tiles, SDL_Renderer* renderer)
-// {
-//     m->cols = cols;
-//     m->rows = rows;
-//     m->tile_width = tiles[0][0].width;
-//     m->tile_height = tiles[0][0].height;
-//     m->tiles = tiles;
-//     m->widthPixels = cols * tiles[0]->width;
-//     m->heightPixels = rows * tiles[0]->height;
-
-//     m->texture = SDL_CreateTexture(
-//         renderer,
-//         SDL_PIXELFORMAT_RGB888,
-//         SDL_TEXTUREACCESS_TARGET,
-//         m->widthPixels,
-//         m->heightPixels
-//     );
-
-//     if (!m->texture)
-//     {
-//         printf("Failed to create surface: %s\n", SDL_GetError());
-//         exit(1);
-//     }
-// }
-
 void updateAnimatedTiles(Map *m, u32 dt)
 {
     for (size_t entityIndex = 0; entityIndex < m->entityCount; ++entityIndex)
@@ -48,16 +23,17 @@ void updateAnimatedTiles(Map *m, u32 dt)
     }
 }
 
-SDL_Rect getTileRect(Entity *tile)
+SDL_Rect getEntityRect(Entity *e)
 {
-    SDL_Rect result = {(int)(tile->position.x - 0.5f*tile->width), (int)(tile->position.y - 0.5f*tile->height),
-                       (int)tile->width, (int)tile->height};
+    f32 yPercent = e->type == ET_TILE ? 0.5f : 1.0f;
+    SDL_Rect result = {(int)(e->position.x - 0.5f*e->width), (int)(e->position.y - yPercent*e->height),
+                       (int)e->width, (int)e->height};
     return result;
 }
 
 void drawTile(Game *g, Entity *e, bool32 isBeingPlaced)
 {
-    SDL_Rect tileRect = getTileRect(e);
+    SDL_Rect tileRect = getEntityRect(e);
 
     if (e->spriteSheet.sheet)
     {
@@ -78,6 +54,7 @@ void drawTile(Game *g, Entity *e, bool32 isBeingPlaced)
         if (e->validPlacement)
         {
             // TODO(chj): Draw green filter?
+            // renderFilledRect(g->renderer, &tileRect, g->colors[COLOR_GREEN], 128);
         }
         else
         {

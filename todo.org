@@ -1,15 +1,14 @@
 #+Startup: showall
 #+Startup: nologdone
 
-* Build
-** TODO game code DLL (tough with SDL)
 * Gameplay
+** TODO Inventory system
+*** TODO Make items selectable
 ** TODO Crafting system
 *** TODO Scroll through belt to place tiles
 ** TODO Tile placement
 *** TODO Need to know type of tile we're placing before the tile exists
 **** TODO Place a different type of tile to see how this will work
-*** TODO Harvestable and harvested tiles should be on same sheet.
 ** TODO Combat system
 *** TODO Normal/heavy swing
 *** TODO Shield
@@ -19,12 +18,11 @@
 ** TODO Dialog system
 *** TODO reenable
 ** TODO Basic enemy to prototype combat system
-** TODO Inventory system
-*** TODO Make items selectable
 ** TODO Base building system
 * Architecture
 ** TODO push buffer rendering
 *** TODO Update function pushes pieces onto a render queue and the draw step sorts and draws the queue
+** TODO game code DLL (tough with SDL)
 ** TODO Hot loading (tough)
 *** TODO All game state in one chunk of memory
 *** TODO Separate platform layer
@@ -35,9 +33,9 @@
 ** TODO Dark Souls atmosphere
 *** TODO See far away parts of the level that you eventually reach
 ***** TODO How can I simulate this effect in 2d? Parallax scrolling.
+* Build
 * Story Ideas
 ** Enemies are sad, misinformed people instead of monsters?
 ** A room full of breakables that a shop keeper later rewards you if unbroken
 * Bugs
 ** TODO Quicksand sound doesn't play at appropriate interval (tweak collision)
-** TODO Can place tree tile in my own square and become stuck in it

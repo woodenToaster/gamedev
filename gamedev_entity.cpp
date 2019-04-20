@@ -95,9 +95,8 @@ void clampEntityToMap(Entity* h, Map* map)
     h->position.y = clampFloat(h->position.y, 0, (f32)map->heightPixels - 0.5f*h->height);
 }
 
-void heroInteract(Entity *h, Game *g)
+void updateHeroInteractionRegion(Entity *h)
 {
-    (void)g;
     // Check for harvestable tile
     Point pointToHarvest = {(i32)h->position.x, (i32)h->position.y};
     i32 interactionRectWidth = h->width;
@@ -129,30 +128,6 @@ void heroInteract(Entity *h, Game *g)
     }
 
     h->heroInteractionRect = {pointToHarvest.x, pointToHarvest.y, interactionRectWidth, interactionRectHeight};
-
-#if 0
-    // Check for entities to interact with in a circle
-    Vec2 heroCenter = {};
-    heroCenter.x = h->position.x + (0.5f * h->width);
-    heroCenter.y = h->position.y + (0.5f * h->height);
-    heroInteractionRegion.center = heroCenter;
-    heroInteractionRegion.radius = maxFloat32((f32)h->width, (f32)h->height) * 0.666666f;
-
-    // See if there is an entity there
-    for (u32 entityIndex = 0; entityIndex < g->currentMap->active_entities.count; ++entityIndex)
-    {
-        Entity *e = g->currentMap->active_entities.entities[entityIndex];
-        if (entityIsHarlod(e))
-        {
-            if(circleOverlapsRect(&heroInteractionRegion, &e->bounding_box))
-            {
-                // TODO(chj): Find a cleaner way to do this
-                interactWithEntity *f = (interactWithEntity*)((u8*)e + offsetof(Harlod, onEntityInteract));
-                (*f)(e, h, g);
-            }
-        }
-    }
-#endif
 }
 
 Entity *addEntity(Map *m)
@@ -296,22 +271,25 @@ internal Vec2 getTilePlacementPosition(Game *g, Entity *h)
     Entity *tile = h->tileToPlace;
     if (tile)
     {
-        // Calculate position to place new tile from hero's position
+        // Calculate position to place new tile from hero's position, with Minkowski sum
         u32 col = (u32)(h->position.x / tile->width);
         u32 row = (u32)(h->position.y / tile->height);
 
         switch (h->direction)
         {
         case DIR_UP:
+            row = (u32)((h->position.y - h->height) / tile->height);
             row--;
             break;
         case DIR_DOWN:
             row++;
             break;
         case DIR_LEFT:
+            col = (u32)((h->position.x - 0.5f*h->width) / tile->width);
             col--;
             break;
         case DIR_RIGHT:
+            col = (u32)((h->position.x + 0.5f*h->width) / tile->width);
             col++;
             break;
         default:
@@ -337,8 +315,8 @@ internal bool32 isValidTilePlacment(Map *m, Entity *tileToPlace)
 
         if (testEntity != tileToPlace)
         {
-            SDL_Rect tileRect = getTileRect(tileToPlace);
-            SDL_Rect testRect = getTileRect(testEntity);
+            SDL_Rect tileRect = getEntityRect(tileToPlace);
+            SDL_Rect testRect = getEntityRect(testEntity);
 
             if (rectsOverlap(&tileRect, &testRect))
             {
@@ -554,7 +532,7 @@ internal void updateHero(Entity* h, Input* input, Game* g)
 
     if (h->harvesting && !h->placingItem)
     {
-        heroInteract(h, g);
+        updateHeroInteractionRegion(h);
 
         for (u32 entityIndex = 0; entityIndex < map->entityCount; ++entityIndex)
         {
