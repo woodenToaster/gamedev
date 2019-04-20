@@ -6,7 +6,7 @@
 enum Colors
 {
     COLOR_NONE,
-    COLOR_GREEN,
+    COLOR_DARK_GREEN,
     COLOR_BLUE,
     COLOR_YELLOW,
     COLOR_BROWN,
@@ -18,6 +18,7 @@ enum Colors
     COLOR_DARK_BLUE,
     COLOR_BABY_BLUE,
     COLOR_DARK_ORANGE,
+    COLOR_LIME_GREEN,
     COLOR_COUNT
 };
 

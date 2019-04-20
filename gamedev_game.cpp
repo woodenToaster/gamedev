@@ -83,7 +83,7 @@ void initColors(Game* g)
 {
     SDL_PixelFormat* window_pixel_format = g->windowSurface->format;
     g->colors[COLOR_NONE] = 0;
-    g->colors[COLOR_GREEN] = SDL_MapRGB(window_pixel_format, 37, 71, 0);
+    g->colors[COLOR_DARK_GREEN] = SDL_MapRGB(window_pixel_format, 37, 71, 0);
     g->colors[COLOR_BLUE] = SDL_MapRGB(window_pixel_format, 0, 0, 255);
     g->colors[COLOR_YELLOW] = SDL_MapRGB(window_pixel_format, 235, 245, 65);
     g->colors[COLOR_BROWN] = SDL_MapRGB(window_pixel_format, 153, 102, 0);
@@ -95,6 +95,7 @@ void initColors(Game* g)
     g->colors[COLOR_DARK_BLUE] = SDL_MapRGB(window_pixel_format, 0, 51, 102);
     g->colors[COLOR_DARK_ORANGE] = SDL_MapRGB(window_pixel_format, 255, 140, 0);
     g->colors[COLOR_BABY_BLUE] = SDL_MapRGB(window_pixel_format, 137, 207, 240);
+    g->colors[COLOR_LIME_GREEN] = SDL_MapRGB(window_pixel_format, 106, 190, 48);
 }
 
 void initCamera(Game* g)

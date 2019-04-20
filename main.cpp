@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
             if (row == 0 || col == 0 || row == map0->rows - 1 || col == map0->cols - 1)
             {
                 addTileFlags(tile, TP_SOLID);
-                tile->color = game->colors[COLOR_GREEN];
+                tile->color = game->colors[COLOR_DARK_GREEN];
                 tile->collides = true;
             }
             if (row == 4 && col == 1)

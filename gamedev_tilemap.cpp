@@ -71,7 +71,7 @@ void drawMap(Game* g)
 
     // Draw background
     SDL_Rect dest = {c->viewport.x, c->viewport.y, c->viewport.w, c->viewport.h};
-    renderFilledRect(g->renderer, &dest, g->colors[COLOR_BLUE]);
+    renderFilledRect(g->renderer, &dest, g->colors[COLOR_LIME_GREEN]);
 
     // Draw tile entities
     for (u32 entityIndex = 0; entityIndex < map->entityCount; ++entityIndex)
