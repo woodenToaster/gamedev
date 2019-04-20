@@ -68,8 +68,7 @@ void destroyGame(Game* g)
     // TODO(chj): This should be stored in gameMemory instead of malloced
     free(g->dialogue);
     SDL_DestroyTexture(g->linkTexture);
-    SDL_DestroyTexture(g->treeTexture);
-    SDL_DestroyTexture(g->treeStumpTexture);
+    SDL_DestroyTexture(g->harvestableTreeTexture);
     SDL_DestroyTexture(g->harlodTexture);
     SDL_DestroyTexture(g->knightTexture);
     SDL_DestroyTexture(g->glowTreeTexture);
@@ -290,14 +289,21 @@ void drawHUD(Game *g, Entity *h, FontMetadata *font)
         {
             BeltItem *item = &h->beltItems[i];
             SDL_Texture *textureToDraw = NULL;
+            SDL_Rect tileRect = {};
 
             switch (item->type)
             {
             case CRAFTABLE_TREE:
-                textureToDraw = g->treeTexture;
+                textureToDraw = g->harvestableTreeTexture;
+                // TODO(chj): Get sprite widht height
+                tileRect.w = 64;
+                tileRect.h = 64;
                 break;
             case CRAFTABLE_GLOW_JUICE:
                 textureToDraw = g->glowTreeTexture;
+                // TODO(chj): Get sprite widht height
+                tileRect.w = 80;
+                tileRect.h = 80;
                 break;
             default:
                 break;
@@ -305,7 +311,7 @@ void drawHUD(Game *g, Entity *h, FontMetadata *font)
 
             if (textureToDraw)
             {
-                SDL_RenderCopy(g->renderer, textureToDraw, NULL, &dest);
+                SDL_RenderCopy(g->renderer, textureToDraw, &tileRect, &dest);
             }
             // Draw inventory number
             assert(item->count <= 999);

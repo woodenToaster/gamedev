@@ -66,8 +66,7 @@ struct Game
     char *dialogue;
 
     SDL_Texture *linkTexture;
-    SDL_Texture *treeTexture;
-    SDL_Texture *treeStumpTexture;
+    SDL_Texture *harvestableTreeTexture;
     SDL_Texture *glowTreeTexture;
     SDL_Texture *harlodTexture;
     SDL_Texture *knightTexture;

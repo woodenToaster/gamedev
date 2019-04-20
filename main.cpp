@@ -80,8 +80,7 @@ int main(int argc, char* argv[])
     }
 
     game->linkTexture = createTextureFromPng("sprites/link_walking.png", game->renderer);
-    game->treeTexture = createTextureFromPng("sprites/tree.png", game->renderer);
-    game->treeStumpTexture = createTextureFromPng("sprites/tree_stump.png", game->renderer);
+    game->harvestableTreeTexture = createTextureFromPng("sprites/harvestable_tree.png", game->renderer);
     game->harlodTexture = createTextureFromPng("sprites/Harlod_the_caveman.png", game->renderer);
     game->knightTexture = createTextureFromPng("sprites/knight_alligned.png", game->renderer);
     game->fireTileTexture = createTextureFromPng("sprites/Campfire.png", game->renderer);
@@ -136,9 +135,7 @@ int main(int argc, char* argv[])
                 addTileFlags(tile, (u32)(TP_HARVEST | TP_SOLID));
                 tile->color = game->colors[COLOR_NONE];
                 tile->collides = true;
-                tile->unharvestedSprite = game->treeTexture;
-                tile->harvestedSprite = game->treeStumpTexture;
-                initEntitySpriteSheet(tile, tile->unharvestedSprite, 1, 1);
+                initEntitySpriteSheet(tile, game->harvestableTreeTexture, 2, 1);
                 tile->active = true;
                 tile->isHarvestable = true;
                 tile->harvestedItem = INV_LEAVES;

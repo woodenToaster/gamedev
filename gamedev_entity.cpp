@@ -576,14 +576,7 @@ internal void updateHero(Entity* h, Input* input, Game* g)
                         {
                             testEntity->isHarvestable = false;
                             testEntity->collides = false;
-                            if (testEntity->harvestedSprite)
-                            {
-                                initSpriteSheet(&testEntity->spriteSheet, testEntity->harvestedSprite, 1, 1);
-                            }
-                            else
-                            {
-                                testEntity->spriteRect.x += map->tileWidth;
-                            }
+                            testEntity->spriteRect.x += testEntity->spriteRect.w;
                             h->inventory[testEntity->harvestedItem]++;
                         }
 
@@ -644,9 +637,8 @@ internal void updateHero(Entity* h, Input* input, Game* g)
             tile->width = 80;
             tile->height = 80;
 
-            tile->unharvestedSprite = g->treeTexture;
-            tile->harvestedSprite = g->treeStumpTexture;
-            initEntitySpriteSheet(tile, tile->unharvestedSprite, 1, 1);
+            // TODO(chj): Don't hard code
+            initEntitySpriteSheet(tile, g->harvestableTreeTexture, 2, 1);
             tile->color = g->colors[COLOR_NONE];
             tile->harvestedItem = INV_LEAVES;
             // TODO(chj): Need to know the type before we fill all the specifics out
