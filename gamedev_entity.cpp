@@ -557,12 +557,13 @@ internal void updateHero(Entity* h, Input* input, Game* g)
                             testEntity->spriteRect.x += testEntity->spriteRect.w;
                             h->inventory[testEntity->harvestedItem]++;
                         }
-
+                        // TODO(chj): Do we need TP_INTERACTIVE?
                         if (isTileFlagSet(testEntity, TP_INTERACTIVE))
                         {
                             if (isTileFlagSet(testEntity, TP_FIRE))
                             {
                                 testEntity->active = !testEntity->active;
+                                testEntity->animation.currentFrame = 0;
                             }
                         }
                     }

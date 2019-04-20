@@ -160,6 +160,8 @@ int main(int argc, char* argv[])
                 tile->color = game->colors[COLOR_GREY];
                 initEntitySpriteSheet(tile, game->fireTileTexture, 11, 1);
                 initAnimation(&tile->animation, 11, 100);
+                tile->animation.skipFrame = true;
+                tile->animation.frameToSkip = 0;
             }
         }
     }

@@ -14,6 +14,14 @@ void updateAnimation(Animation* a, u32 elapsed_last_frame, bool32 active)
         if (a->currentFrame > a->totalFrames - 1) {
             a->currentFrame = 0;
         }
+        // TODO(chj): This is only a convenience for now, but should go away
+        if (a->skipFrame && a->currentFrame == a->frameToSkip)
+        {
+            a->currentFrame++;
+        }
+        if (a->currentFrame > a->totalFrames - 1) {
+            a->currentFrame = 0;
+        }
         a->elapsed = 0;
     }
 }

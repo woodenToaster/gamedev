@@ -5,6 +5,8 @@ struct Animation
 {
     int totalFrames;
     int currentFrame;
+    bool32 skipFrame;
+    int frameToSkip;
     u32 delay;
     u32 elapsed;
 };

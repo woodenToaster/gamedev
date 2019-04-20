@@ -39,3 +39,4 @@
 ** A room full of breakables that a shop keeper later rewards you if unbroken
 * Bugs
 ** TODO Quicksand sound doesn't play at appropriate interval (tweak collision)
+** TODO Harvest region is drawn when placing a tile
