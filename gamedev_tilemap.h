@@ -7,14 +7,11 @@ enum TileProperty
 {
     TP_NONE = (0x0),
     TP_SOLID = (0x01 << 0),
-    TP_WATER = (0x01 << 1),
     TP_QUICKSAND = (0x01 << 2),
-    TP_STICKY = (0x01 << 3),
-    TP_REVERSE = (0x01 << 4),
-    TP_WARP = (0x01 << 5),
-    TP_FIRE = (0x01 << 6),
+    TP_CAMPFIRE = (0x01 << 6),
     TP_HARVEST = (0x01 << 7),
     TP_INTERACTIVE = (0x01 << 8),
+    TP_FLAME = (0x01 << 9)
 };
 
 struct Map

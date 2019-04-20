@@ -134,6 +134,7 @@ Entity *addEntity(Map *m)
 {
     assert(m->entityCount < ArrayCount(m->entities));
     Entity *result = &m->entities[m->entityCount++];
+    *result = {};
 
     return result;
 }
@@ -560,10 +561,23 @@ internal void updateHero(Entity* h, Input* input, Game* g)
                         // TODO(chj): Do we need TP_INTERACTIVE?
                         if (isTileFlagSet(testEntity, TP_INTERACTIVE))
                         {
-                            if (isTileFlagSet(testEntity, TP_FIRE))
+                            if (isTileFlagSet(testEntity, TP_CAMPFIRE))
                             {
-                                testEntity->active = !testEntity->active;
-                                testEntity->animation.currentFrame = 0;
+                                if (!testEntity->active)
+                                {
+                                    Entity *flame = addEntity(map);;
+                                    flame->width = 80;
+                                    flame->height = 80;
+                                    initEntitySpriteSheet(flame, g->flameTexture, 10, 1);
+                                    initAnimation(&flame->animation, 10, 100);
+                                    flame->color = g->colors[COLOR_NONE];
+                                    flame->active = true;
+                                    flame->position = testEntity->position;
+                                }
+                                else
+                                {
+                                    // TODO(chj): Remove flame Entity
+                                }
                             }
                         }
                     }

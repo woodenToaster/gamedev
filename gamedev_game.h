@@ -71,7 +71,8 @@ struct Game
     SDL_Texture *glowTreeTexture;
     SDL_Texture *harlodTexture;
     SDL_Texture *knightTexture;
-    SDL_Texture *fireTileTexture;
+    SDL_Texture *flameTexture;
+    SDL_Texture *firePitTexture;
 
     Sound mudSound;
     // TODO(chj): Replace SoundList

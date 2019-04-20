@@ -59,8 +59,6 @@ struct Entity
     InventoryItemType harvestedItem;
     CraftableItemType craftableItem;
     Entity *deleteAfterPlacement;
-    SDL_Texture *unharvestedSprite;
-    SDL_Texture *harvestedSprite;
 
     // Hero
     SDL_Rect heroInteractionRect;

@@ -83,7 +83,8 @@ int main(int argc, char* argv[])
     game->harvestableTreeTexture = createTextureFromPng("sprites/harvestable_tree.png", game->renderer);
     game->harlodTexture = createTextureFromPng("sprites/Harlod_the_caveman.png", game->renderer);
     game->knightTexture = createTextureFromPng("sprites/knight_alligned.png", game->renderer);
-    game->fireTileTexture = createTextureFromPng("sprites/Campfire.png", game->renderer);
+    game->flameTexture = createTextureFromPng("sprites/flame.png", game->renderer);
+    game->firePitTexture = createTextureFromPng("sprites/fire_pit.png", game->renderer);
     game->glowTreeTexture = createTextureFromPng("sprites/glow_tree.png", game->renderer);
 
     // Input
@@ -156,12 +157,9 @@ int main(int argc, char* argv[])
             if (row == 1 && col == 7)
             {
                 // Lightable fire
-                addTileFlags(tile, TP_FIRE | TP_INTERACTIVE);
-                tile->color = game->colors[COLOR_GREY];
-                initEntitySpriteSheet(tile, game->fireTileTexture, 11, 1);
-                initAnimation(&tile->animation, 11, 100);
-                tile->animation.skipFrame = true;
-                tile->animation.frameToSkip = 0;
+                addTileFlags(tile, TP_CAMPFIRE | TP_INTERACTIVE);
+                tile->color = game->colors[COLOR_NONE];
+                initEntitySpriteSheet(tile, game->firePitTexture, 1, 1);
             }
         }
     }
