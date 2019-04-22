@@ -303,12 +303,18 @@ bool rectsOverlap(SDL_Rect* r1, SDL_Rect* r2)
     return x_overlap && y_overlap;
 }
 
-bool32 pointInRect(Point point, SDL_Rect *rect)
+bool32 pointIsInRect(Point point, SDL_Rect *rect)
 {
     SDL_Rect pointRect = {};
     pointRect.x = point.x;
     pointRect.y = point.y;
     return rectsOverlap(&pointRect, rect);
+}
+
+bool32 positionIsInRect(Vec2 pos, SDL_Rect *rect)
+{
+    Point point = {(i32)pos.x, (i32)pos.y};
+    return pointIsInRect(point, rect);
 }
 
 f32 minimumDistanceBetweenPointAndLine(Vec2 a, Vec2 b, Vec2 p) {
@@ -347,7 +353,7 @@ bool32 circleOverlapsRect(Circle *circle, SDL_Rect *rect)
     Point b = {rect->x + rect->w, rect->y};
     Point c = {rect->x + rect->w, rect->y + rect->h};
     Point d = {rect->x, rect->y + rect->h};
-    return (pointInRect(p, rect) ||
+    return (pointIsInRect(p, rect) ||
             lineIntersectsCircle(a, b, circle) ||
             lineIntersectsCircle(b, c, circle) ||
             lineIntersectsCircle(c, d, circle) ||

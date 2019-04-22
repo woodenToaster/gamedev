@@ -113,6 +113,7 @@ int main(int argc, char* argv[])
         for (u32 col = 0; col < map0->cols; ++col)
         {
             Entity *tile = addEntity(map0);
+            tile->type = ET_TILE;
             tile->width = map0->tileWidth;
             tile->height = map0->tileHeight;
             tile->position = {col*tile->width + 0.5f*tile->width, row*tile->height + 0.5f*tile->height};
@@ -133,7 +134,7 @@ int main(int argc, char* argv[])
                 ((row == 3 || row == 4 || row == 5 || row == 6) && col == 7))
             {
                 // Harvestable tree
-                addTileFlags(tile, (u32)(TP_HARVEST | TP_SOLID));
+                addTileFlags(tile, (u32)(TP_HARVEST | TP_SOLID | TP_FLAMMABLE));
                 tile->color = game->colors[COLOR_NONE];
                 tile->collides = true;
                 initEntitySpriteSheet(tile, game->harvestableTreeTexture, 2, 1);
@@ -233,9 +234,9 @@ int main(int argc, char* argv[])
                 updateHero(hero, &input, game);
                 updateCamera(&game->camera, hero->position);
                 updateAnimation(&hero->animation, game->dt, hero->isMoving);
-                playQueuedSounds(&game->sounds, now);
                 updateAnimation(&knight->animation, game->dt, true);
-                updateAnimatedTiles(map0, game->dt);
+                playQueuedSounds(&game->sounds, now);
+                updateTiles(game);
                 break;
             }
             case GAME_MODE_DIALOGUE:

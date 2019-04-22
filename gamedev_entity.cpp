@@ -139,6 +139,22 @@ Entity *addEntity(Map *m)
     return result;
 }
 
+Entity *addFlame(Game *g, Vec2 pos)
+{
+    Map *m = g->currentMap;
+    Entity *result = addEntity(m);;
+    result->width = 80;
+    result->height = 80;
+    initEntitySpriteSheet(result, g->flameTexture, 10, 1);
+    initAnimation(&result->animation, 10, 100);
+    result->color = g->colors[COLOR_NONE];
+    result->active = true;
+    result->position = pos;
+    addTileFlags(result, TP_FLAME);
+
+    return result;
+}
+
 internal BeltItem *findItemInBelt(Entity *h, CraftableItemType item)
 {
     BeltItem *result = 0;
@@ -263,6 +279,27 @@ internal bool32 testWall(f32 wall, f32 relX, f32 relY, f32 playerDeltaX, f32 pla
     }
 
     return hit;
+}
+
+internal Entity *getTileAtPosition(Map *m, Vec2 pos)
+{
+    Entity *result = 0;
+
+    for (size_t entityIndex = 0; entityIndex < m->entityCount; ++entityIndex)
+    {
+        Entity *e = &m->entities[entityIndex];
+        if (e->type == ET_TILE)
+        {
+            SDL_Rect tileRect = getEntityRect(e);
+            if (positionIsInRect(pos, &tileRect))
+            {
+                result = e;
+                break;
+            }
+        }
+    }
+
+    return result;
 }
 
 internal Vec2 getTilePlacementPosition(Game *g, Entity *h)
@@ -565,14 +602,7 @@ internal void updateHero(Entity* h, Input* input, Game* g)
                             {
                                 if (!testEntity->active)
                                 {
-                                    Entity *flame = addEntity(map);;
-                                    flame->width = 80;
-                                    flame->height = 80;
-                                    initEntitySpriteSheet(flame, g->flameTexture, 10, 1);
-                                    initAnimation(&flame->animation, 10, 100);
-                                    flame->color = g->colors[COLOR_NONE];
-                                    flame->active = true;
-                                    flame->position = testEntity->position;
+                                    addFlame(g, testEntity->position);
                                 }
                                 else
                                 {

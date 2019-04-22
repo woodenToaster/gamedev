@@ -10,8 +10,8 @@
 *** TODO Need to know type of tile we're placing before the tile exists
 **** TODO Place a different type of tile to see how this will work
 *** TODO Placing a burnable tile on a fire should catch the new tile on fire
-**** DONE Separate campfire sprite from the actual flame
 **** TODO Flame should spread to adjacent burnable tiles
+*** TODO Need an easy way to check a position for entities
 ** TODO Combat system
 *** TODO Normal/heavy swing
 *** TODO Shield

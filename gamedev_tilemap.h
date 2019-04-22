@@ -11,7 +11,8 @@ enum TileProperty
     TP_CAMPFIRE = (0x01 << 6),
     TP_HARVEST = (0x01 << 7),
     TP_INTERACTIVE = (0x01 << 8),
-    TP_FLAME = (0x01 << 9)
+    TP_FLAME = (0x01 << 9),
+    TP_FLAMMABLE = (0x01 << 10)
 };
 
 struct Map

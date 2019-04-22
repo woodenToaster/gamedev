@@ -11,14 +11,38 @@ bool32 isTileFlagSet(Entity *e, TileProperty prop)
     return result;
 }
 
-void updateAnimatedTiles(Map *m, u32 dt)
+void updateTiles(Game *g)
 {
+    Map *m = g->currentMap;
     for (size_t entityIndex = 0; entityIndex < m->entityCount; ++entityIndex)
     {
         Entity *e = &m->entities[entityIndex];
-        if (e->type == ET_TILE && e->animation.totalFrames > 0)
+        if (e->type == ET_TILE)
         {
-            updateAnimation(&e->animation, dt, e->active);
+            if (e->animation.totalFrames > 0) {
+                updateAnimation(&e->animation, g->dt, e->active);
+            }
+        }
+        if (isTileFlagSet(e, TP_FLAME))
+        {
+            // Check all adjacent tiles for the TP_FLAMMABLE property.
+            // If something is flammable, catch it on fire.
+            for (int rowIndex = -1; rowIndex <= 1; ++rowIndex) {
+                for (int colIndex = -1; colIndex <= 1; ++colIndex) {
+                    if (rowIndex == 0 && colIndex == 0) {
+                        continue;
+                    }
+                    Vec2 testPos = {e->position.x + colIndex*(int)m->tileWidth,
+                                    e->position.y + rowIndex*(int)m->tileHeight};
+
+                    Entity *testTile = getTileAtPosition(m, testPos);
+                    if (testTile && isTileFlagSet(testTile, TP_FLAMMABLE) && !testTile->onFire)
+                    {
+                        addFlame(g, testPos);
+                        testTile->onFire = true;
+                    }
+                }
+            }
         }
     }
 }

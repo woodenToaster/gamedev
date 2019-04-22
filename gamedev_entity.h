@@ -56,6 +56,7 @@ struct Entity
     u32 tileFlags;
     bool32 isHarvestable;
     bool32 validPlacement;
+    bool32 onFire;
     InventoryItemType harvestedItem;
     CraftableItemType craftableItem;
     Entity *deleteAfterPlacement;
