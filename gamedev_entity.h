@@ -19,6 +19,13 @@ enum InventoryItemType
     INV_COUNT
 };
 
+enum FireState
+{
+    FIRE_NONE,
+    FIRE_STARTED,
+    FIRE_CAUGHT,
+    FIRE_BURNT
+};
 struct BeltItem
 {
     CraftableItemType type;
@@ -57,6 +64,9 @@ struct Entity
     bool32 isHarvestable;
     bool32 validPlacement;
     bool32 onFire;
+    FireState fireState;
+    i32 timeToCatchFire;
+    i32 timeSpentOnFire;
     InventoryItemType harvestedItem;
     CraftableItemType craftableItem;
     Entity *deleteAfterPlacement;

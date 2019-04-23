@@ -661,7 +661,7 @@ internal void updateHero(Entity* h, Input* input, Game* g)
             tile->height = 80;
 
             // TODO(chj): Don't hard code
-            initEntitySpriteSheet(tile, g->harvestableTreeTexture, 2, 1);
+            initEntitySpriteSheet(tile, g->harvestableTreeTexture, 3, 1);
             tile->color = g->colors[COLOR_NONE];
             tile->harvestedItem = INV_LEAVES;
             // TODO(chj): Need to know the type before we fill all the specifics out

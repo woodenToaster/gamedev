@@ -9,8 +9,7 @@
 ** TODO Tile placement
 *** TODO Need to know type of tile we're placing before the tile exists
 **** TODO Place a different type of tile to see how this will work
-*** TODO Placing a burnable tile on a fire should catch the new tile on fire
-**** TODO Flame should spread to adjacent burnable tiles
+*** TODO Burning tiles should show an ashed husk after a while
 *** TODO Need an easy way to check a position for entities
 ** TODO Combat system
 *** TODO Normal/heavy swing

@@ -137,7 +137,7 @@ int main(int argc, char* argv[])
                 addTileFlags(tile, (u32)(TP_HARVEST | TP_SOLID | TP_FLAMMABLE));
                 tile->color = game->colors[COLOR_NONE];
                 tile->collides = true;
-                initEntitySpriteSheet(tile, game->harvestableTreeTexture, 2, 1);
+                initEntitySpriteSheet(tile, game->harvestableTreeTexture, 3, 1);
                 tile->active = true;
                 tile->isHarvestable = true;
                 tile->harvestedItem = INV_LEAVES;

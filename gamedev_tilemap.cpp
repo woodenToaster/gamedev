@@ -38,8 +38,42 @@ void updateTiles(Game *g)
                     Entity *testTile = getTileAtPosition(m, testPos);
                     if (testTile && isTileFlagSet(testTile, TP_FLAMMABLE) && !testTile->onFire)
                     {
-                        addFlame(g, testPos);
-                        testTile->onFire = true;
+                        // TODO(chj): Check e, not testTile for burning out
+                        // TODO(chj): Need to associate flame entity with tile under it
+                        if (testTile->fireState == FIRE_NONE)
+                        {
+                            testTile->fireState = FIRE_STARTED;
+                            testTile->timeToCatchFire = 3000;
+
+                        }
+                        else if (testTile->fireState == FIRE_STARTED)
+                        {
+                            if (testTile->timeToCatchFire < 0)
+                            {
+                                addFlame(g, testPos);
+                                testTile->onFire = true;
+                                testTile->fireState = FIRE_CAUGHT;
+                                testTile->timeToCatchFire = 0;
+                                testTile->timeSpentOnFire = 0;
+                            }
+                            else
+                            {
+                                testTile->timeToCatchFire -= g->dt;
+                            }
+                        }
+                        else if (testTile->fireState == FIRE_CAUGHT)
+                        {
+                            testTile->timeSpentOnFire += g->dt;
+                            if (testTile->timeSpentOnFire > 3000)
+                            {
+                                testTile->fireState = FIRE_BURNT;
+                                testTile->timeSpentOnFire = 0;
+                                // TODO(chj): Remove flame
+                                testTile->spriteRect.x += testTile->width;
+                            }
+                        }
+
+
                     }
                 }
             }
