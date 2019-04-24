@@ -3,6 +3,17 @@
 
 #include "gamedev_sprite_sheet.h"
 
+enum EntityType
+{
+    ET_TILE,
+    ET_BUFFALO,
+    ET_HERO,
+    ET_HARLOD,
+    ET_ENEMY,
+    ET_FLAME,
+    ET_NUM_TYPES
+};
+
 enum CraftableItemType
 {
     CRAFTABLE_NONE,
@@ -63,7 +74,6 @@ struct Entity
     u32 tileFlags;
     bool32 isHarvestable;
     bool32 validPlacement;
-    bool32 onFire;
     FireState fireState;
     i32 timeToCatchFire;
     i32 timeSpentOnFire;

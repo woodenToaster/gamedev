@@ -20,16 +20,6 @@ typedef int32_t bool32;
 #define MEGABYTES(n) ((n) * 1024 * 1024)
 #define ArrayCount(arr) (sizeof(arr) / sizeof((arr)[0]))
 
-enum EntityType
-{
-    ET_TILE,
-    ET_BUFFALO,
-    ET_HERO,
-    ET_HARLOD,
-    ET_ENEMY,
-    ET_NUM_TYPES
-};
-
 enum CardinalDir
 {
     CARDINAL_NORTH,

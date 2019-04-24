@@ -5,6 +5,11 @@ void addTileFlags(Entity *e, u32 prop)
     e->tileFlags |= prop;
 }
 
+void removeTileFlags(Entity *e, u32 prop)
+{
+    e->tileFlags ^= prop;
+}
+
 bool32 isTileFlagSet(Entity *e, TileProperty prop)
 {
     bool32 result = e->tileFlags & prop;
@@ -23,6 +28,7 @@ void updateTiles(Game *g)
                 updateAnimation(&e->animation, g->dt, e->active);
             }
         }
+
         if (isTileFlagSet(e, TP_FLAME))
         {
             // Check all adjacent tiles for the TP_FLAMMABLE property.
@@ -36,47 +42,52 @@ void updateTiles(Game *g)
                                     e->position.y + rowIndex*(int)m->tileHeight};
 
                     Entity *testTile = getTileAtPosition(m, testPos);
-                    if (testTile && isTileFlagSet(testTile, TP_FLAMMABLE) && !testTile->onFire)
+                    if (testTile && isTileFlagSet(testTile, TP_FLAMMABLE) && testTile->fireState == FIRE_NONE)
                     {
-                        // TODO(chj): Check e, not testTile for burning out
-                        // TODO(chj): Need to associate flame entity with tile under it
-                        if (testTile->fireState == FIRE_NONE)
-                        {
-                            testTile->fireState = FIRE_STARTED;
-                            testTile->timeToCatchFire = 3000;
-
-                        }
-                        else if (testTile->fireState == FIRE_STARTED)
-                        {
-                            if (testTile->timeToCatchFire < 0)
-                            {
-                                addFlame(g, testPos);
-                                testTile->onFire = true;
-                                testTile->fireState = FIRE_CAUGHT;
-                                testTile->timeToCatchFire = 0;
-                                testTile->timeSpentOnFire = 0;
-                            }
-                            else
-                            {
-                                testTile->timeToCatchFire -= g->dt;
-                            }
-                        }
-                        else if (testTile->fireState == FIRE_CAUGHT)
-                        {
-                            testTile->timeSpentOnFire += g->dt;
-                            if (testTile->timeSpentOnFire > 3000)
-                            {
-                                testTile->fireState = FIRE_BURNT;
-                                testTile->timeSpentOnFire = 0;
-                                // TODO(chj): Remove flame
-                                testTile->spriteRect.x += testTile->width;
-                            }
-                        }
-
-
+                        testTile->fireState = FIRE_STARTED;
+                        testTile->timeToCatchFire = 3000;
                     }
                 }
             }
+        }
+
+        // Update Flammable tiles
+        switch (e->fireState)
+        {
+            case FIRE_STARTED:
+            {
+                if (e->timeToCatchFire < 0)
+                {
+                    addFlame(g, e->position);
+                    e->fireState = FIRE_CAUGHT;
+                    addTileFlags(e, TP_FLAME);
+                    e->timeToCatchFire = 0;
+                    e->timeSpentOnFire = 0;
+                }
+                else
+                {
+                    e->timeToCatchFire -= g->dt;
+                }
+            } break;
+            case FIRE_CAUGHT:
+            {
+                e->timeSpentOnFire += g->dt;
+                if (e->timeSpentOnFire > 3000)
+                {
+                    e->fireState = FIRE_BURNT;
+                    e->timeSpentOnFire = 0;
+                    removeTileFlags(e, TP_FLAME);
+                    removeEntity(m, e->position, TP_FLAME);
+                    // TODO(chj): Need a more general way to get the "burnt" sprite for a tile
+                    e->spriteRect.x += 2*e->spriteSheet.spriteWidth;
+                }
+            } break;
+            case FIRE_NONE:
+                // Fall through
+            case FIRE_BURNT:
+                // Fall through
+            default:
+                break;
         }
     }
 }

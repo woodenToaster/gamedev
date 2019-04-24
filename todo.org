@@ -7,10 +7,9 @@
 ** TODO Crafting system
 *** TODO Scroll through belt to place tiles
 ** TODO Tile placement
+*** TODO What happens when multiple entities exist in one tile space? How do we select the right one?
 *** TODO Need to know type of tile we're placing before the tile exists
 **** TODO Place a different type of tile to see how this will work
-*** TODO Burning tiles should show an ashed husk after a while
-*** TODO Need an easy way to check a position for entities
 ** TODO Combat system
 *** TODO Normal/heavy swing
 *** TODO Shield

@@ -142,7 +142,7 @@ Entity *addEntity(Map *m)
 Entity *addFlame(Game *g, Vec2 pos)
 {
     Map *m = g->currentMap;
-    Entity *result = addEntity(m);;
+    Entity *result = addEntity(m);
     result->width = 80;
     result->height = 80;
     initEntitySpriteSheet(result, g->flameTexture, 10, 1);
@@ -153,6 +153,19 @@ Entity *addFlame(Game *g, Vec2 pos)
     addTileFlags(result, TP_FLAME);
 
     return result;
+}
+
+void removeEntity(Map *m, Vec2 pos, TileProperty prop)
+{
+    for (u32 i = 0; i < m->entityCount; ++i) {
+        Entity *e = m->entities + i;
+        SDL_Rect entityRect = getEntityRect(e);
+        if (isTileFlagSet(e, prop) && positionIsInRect(pos, &entityRect))
+        {
+            *e = m->entities[--m->entityCount];
+            break;
+        }
+    }
 }
 
 internal BeltItem *findItemInBelt(Entity *h, CraftableItemType item)
@@ -603,10 +616,12 @@ internal void updateHero(Entity* h, Input* input, Game* g)
                                 if (!testEntity->active)
                                 {
                                     addFlame(g, testEntity->position);
+                                    testEntity->active = true;
                                 }
                                 else
                                 {
-                                    // TODO(chj): Remove flame Entity
+                                    removeEntity(map, testEntity->position, TP_FLAME);
+                                    testEntity->active = false;
                                 }
                             }
                         }
