@@ -78,8 +78,7 @@ void updateTiles(Game *g)
                     e->timeSpentOnFire = 0;
                     removeTileFlags(e, TP_FLAME);
                     removeEntity(m, e->position, TP_FLAME);
-                    // TODO(chj): Need a more general way to get the "burnt" sprite for a tile
-                    e->spriteRect.x += 2*e->spriteSheet.spriteWidth;
+                    e->spriteRect.x = e->burntTileIndex*e->spriteSheet.spriteWidth;
                 }
             } break;
             case FIRE_NONE:

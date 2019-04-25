@@ -77,6 +77,7 @@ struct Entity
     FireState fireState;
     i32 timeToCatchFire;
     i32 timeSpentOnFire;
+    u32 burntTileIndex;
     InventoryItemType harvestedItem;
     CraftableItemType craftableItem;
     Entity *deleteAfterPlacement;

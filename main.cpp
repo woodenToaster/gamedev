@@ -137,6 +137,7 @@ int main(int argc, char* argv[])
                 addTileFlags(tile, (u32)(TP_HARVEST | TP_SOLID | TP_FLAMMABLE));
                 tile->color = game->colors[COLOR_NONE];
                 tile->collides = true;
+                tile->burntTileIndex = 2;
                 initEntitySpriteSheet(tile, game->harvestableTreeTexture, 3, 1);
                 tile->active = true;
                 tile->isHarvestable = true;
@@ -180,32 +181,32 @@ int main(int argc, char* argv[])
     hero->type = ET_HERO;
 
     // Harlod
-    Entity *harlod = addEntity(map0);
-    *harlod = {};
-    initEntitySpriteSheet(harlod, game->harlodTexture, 1, 1);
-    harlod->collides = true;
-    harlod->active = true;
-    harlod->width = 20;
-    harlod->height = 10;
-    harlod->spriteDims = {60, 60};
-    harlod->position = {300, 300};
-    harlod->speed = 10;
-    harlod->active = true;
-    harlod->type = ET_HARLOD;
+    // Entity *harlod = addEntity(map0);
+    // *harlod = {};
+    // initEntitySpriteSheet(harlod, game->harlodTexture, 1, 1);
+    // harlod->collides = true;
+    // harlod->active = true;
+    // harlod->width = 20;
+    // harlod->height = 10;
+    // harlod->spriteDims = {60, 60};
+    // harlod->position = {300, 300};
+    // harlod->speed = 10;
+    // harlod->active = true;
+    // harlod->type = ET_HARLOD;
 
     // Knight
-    Entity *knight = addEntity(map0);
-    initEntitySpriteSheet(knight, game->knightTexture, 8, 5);
-    knight->collides = true;
-    knight->width = 20;
-    knight->height = 10;
-    knight->spriteDims = {45, 45};
-    knight->position = {500, 500};
-    knight->speed = 1000;
-    knight->type = ET_ENEMY;
-    knight->active = true;
-    knight->spriteRect.y = knight->spriteRect.h * 3 + 4;
-    initAnimation(&knight->animation, 2, 400);
+    // Entity *knight = addEntity(map0);
+    // initEntitySpriteSheet(knight, game->knightTexture, 8, 5);
+    // knight->collides = true;
+    // knight->width = 20;
+    // knight->height = 10;
+    // knight->spriteDims = {45, 45};
+    // knight->position = {500, 500};
+    // knight->speed = 1000;
+    // knight->type = ET_ENEMY;
+    // knight->active = true;
+    // knight->spriteRect.y = knight->spriteRect.h * 3 + 4;
+    // initAnimation(&knight->animation, 2, 400);
 
     game->currentMap = map0;
     initCamera(game);
@@ -234,7 +235,6 @@ int main(int argc, char* argv[])
                 updateHero(hero, &input, game);
                 updateCamera(&game->camera, hero->position);
                 updateAnimation(&hero->animation, game->dt, hero->isMoving);
-                updateAnimation(&knight->animation, game->dt, true);
                 playQueuedSounds(&game->sounds, now);
                 updateTiles(game);
                 break;
