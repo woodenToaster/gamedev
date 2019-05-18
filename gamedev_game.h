@@ -43,7 +43,14 @@ struct Arena
 {
     size_t used;
     size_t maxCap;
+    i32 tmpCount;
     u8 *start;
+};
+
+struct TemporaryMemory
+{
+    Arena *arena;
+    size_t used;
 };
 
 struct Game

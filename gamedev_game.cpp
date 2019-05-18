@@ -5,9 +5,35 @@ void initArena(Arena *arena, size_t bytes, u8 *start)
     arena->start = start;
     arena->maxCap = bytes;
     arena->used = 0;
+    arena->tmpCount = 0;
+}
+
+internal TemporaryMemory beginTemporaryMemory(Arena *arena)
+{
+    TemporaryMemory result = {};
+    result.arena = arena;
+    result.used = arena->used;
+    arena->tmpCount++;
+
+    return result;
+}
+
+internal void endTemporaryMemory(TemporaryMemory tempMem)
+{
+    Arena *arena = tempMem.arena;
+    assert(arena->used >= tempMem.used);
+    arena->used = tempMem.used;
+    assert(arena->tmpCount > 0);
+    --arena->tmpCount;
+}
+
+internal void checkArena(Arena *arena)
+{
+    assert(arena->tmpCount == 0);
 }
 
 #define PushStruct(arena, type) ((type*)pushSize((arena), sizeof(type)))
+#define PushSize(arena, size) (pushSize(arena, size))
 
 u8* pushSize(Arena *arena, size_t size)
 {
@@ -71,6 +97,8 @@ void destroyGame(Game* g)
     SDL_DestroyTexture(g->harvestableTreeTexture);
     SDL_DestroyTexture(g->harlodTexture);
     SDL_DestroyTexture(g->knightTexture);
+    SDL_DestroyTexture(g->flameTexture);
+    SDL_DestroyTexture(g->firePitTexture);
     SDL_DestroyTexture(g->glowTreeTexture);
 
     Mix_Quit();
@@ -153,7 +181,7 @@ void initGame(Game* g, u32 width, u32 height)
 
     if (g->window == NULL)
     {
-        printf("Could not create window: %s\n", SDL_GetError());
+        fprintf(stderr, "Could not create window: %s\n", SDL_GetError());
         exit(1);
     }
     g->windowSurface = SDL_GetWindowSurface(g->window);

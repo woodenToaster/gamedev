@@ -5,6 +5,8 @@
 #define local_persist static
 #define global_variable static
 
+#define InvalidCodePath assert(!"InvalidCodePath")
+
 typedef uint8_t u8;
 typedef uint16_t u16;
 typedef uint32_t u32;

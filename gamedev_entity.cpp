@@ -22,7 +22,7 @@ void setRenderDrawColor(SDL_Renderer *renderer, u32 color)
                            getBlueFromU32(color), 255);
 }
 
-void drawEntity(Entity* e, Game* g)
+void drawEntity(RenderGroup *group, Entity* e, Game* g)
 {
     if (e->active && e->type != ET_TILE)
     {
@@ -41,7 +41,7 @@ void drawEntity(Entity* e, Game* g)
         i32 width = e->spriteDims.x;
         i32 height = e->spriteDims.y;
         dest = {(int)(e->position.x - 0.5f*width), (int)(e->position.y - height), width, height};
-        SDL_RenderCopy(g->renderer, e->spriteSheet.sheet, &e->spriteRect, &dest);
+        pushSprite(group, dest, e->spriteRect, e->spriteSheet.sheet);
 
         // Entity interactionRect
         // TODO(chj): This is visible when placing a tile. Push buffer rendering will fix that
@@ -79,13 +79,13 @@ void reverseDirection(Entity* e)
     }
 }
 
-void drawEntities(Game* g)
+void drawEntities(RenderGroup *group, Game* g)
 {
     Map *m = g->currentMap;
     for (u32 entityIndex = 0; entityIndex < m->entityCount; ++entityIndex)
     {
         Entity *e = &m->entities[entityIndex];
-        drawEntity(e, g);
+        drawEntity(group, e, g);
     }
 }
 

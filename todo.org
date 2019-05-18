@@ -7,6 +7,7 @@
 ** TODO Crafting system
 *** TODO Scroll through belt to place tiles
 ** TODO Tile placement
+*** TODO Nail down collision rules with burnt tiles (sometimes they block, other times not)
 *** TODO What happens when multiple entities exist in one tile space? How do we select the right one?
 *** TODO Need to know type of tile we're placing before the tile exists
 **** TODO Place a different type of tile to see how this will work
@@ -41,3 +42,4 @@
 * Bugs
 ** TODO Quicksand sound doesn't play at appropriate interval (tweak collision)
 ** TODO Harvest region is drawn when placing a tile
+** TODO A replaced tile doesn't catch on fire

@@ -56,7 +56,7 @@ void updateTiles(Game *g)
         {
             case FIRE_STARTED:
             {
-                if (e->timeToCatchFire < 0)
+                if	(e->timeToCatchFire < 0)
                 {
                     addFlame(g, e->position);
                     e->fireState = FIRE_CAUGHT;
@@ -132,14 +132,14 @@ void drawTile(Game *g, Entity *e, bool32 isBeingPlaced)
     }
 }
 
-void drawMap(Game* g)
+void drawMap(RenderGroup *group, Game* g)
 {
     Map* map = g->currentMap;
     Camera* c = &g->camera;
 
     // Draw background
     SDL_Rect dest = {c->viewport.x, c->viewport.y, c->viewport.w, c->viewport.h};
-    renderFilledRect(g->renderer, &dest, g->colors[COLOR_LIME_GREEN]);
+    renderFilledRect(g->renderer, &dest, g->colors[COLOR_GREY]);
 
     // Draw tile entities
     for (u32 entityIndex = 0; entityIndex < map->entityCount; ++entityIndex)
@@ -150,7 +150,7 @@ void drawMap(Game* g)
             drawTile(g, e);
         }
     }
-    drawEntities(g);
+    drawEntities(group, g);
 }
 
 void destroyMap(Map* m)

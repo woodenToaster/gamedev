@@ -32,6 +32,7 @@
 #include "gamedev_tilemap.h"
 #include "gamedev_entity.h"
 #include "gamedev_camera.h"
+#include "gamedev_renderer.h"
 
 #include "gamedev_memory.cpp"
 #include "gamedev_font.cpp"
@@ -42,6 +43,7 @@
 #include "gamedev_sprite_sheet.cpp"
 #include "gamedev_entity.cpp"
 #include "gamedev_tilemap.cpp"
+#include "gamedev_renderer.cpp"
 
 
 int main(int argc, char* argv[])
@@ -51,7 +53,7 @@ int main(int argc, char* argv[])
 
     GameMemory memory = {};
     memory.permanentStorageSize = (size_t)MEGABYTES(1);
-    memory.transientStorageSize = (size_t)MEGABYTES(2);
+    memory.transientStorageSize = (size_t)MEGABYTES(4);
     memory.permanentStorage = calloc(memory.permanentStorageSize + memory.transientStorageSize, sizeof(u8));
     memory.transientStorage = (u8*)memory.permanentStorage + memory.permanentStorageSize;
 
@@ -135,7 +137,7 @@ int main(int argc, char* argv[])
             {
                 // Harvestable tree
                 addTileFlags(tile, (u32)(TP_HARVEST | TP_SOLID | TP_FLAMMABLE));
-                tile->color = game->colors[COLOR_NONE];
+                // tile->color = game->colors[COLOR_NONE];
                 tile->collides = true;
                 tile->burntTileIndex = 2;
                 initEntitySpriteSheet(tile, game->harvestableTreeTexture, 3, 1);
@@ -148,7 +150,6 @@ int main(int argc, char* argv[])
             {
                 // Glow tree
                 addTileFlags(tile, (u32)(TP_HARVEST | TP_SOLID));
-                tile->color = game->colors[COLOR_NONE];
                 tile->collides = true;
                 initEntitySpriteSheet(tile, game->glowTreeTexture, 2, 1);
                 tile->active = true;
@@ -160,12 +161,10 @@ int main(int argc, char* argv[])
             {
                 // Lightable fire
                 addTileFlags(tile, TP_CAMPFIRE | TP_INTERACTIVE);
-                tile->color = game->colors[COLOR_NONE];
                 initEntitySpriteSheet(tile, game->firePitTexture, 1, 1);
             }
         }
     }
-
 
     // Hero
     Entity *hero = addEntity(map0);
@@ -254,8 +253,11 @@ int main(int argc, char* argv[])
         /*********************************************************************/
         /* Draw                                                              */
         /*********************************************************************/
+        TemporaryMemory renderMemory = beginTemporaryMemory(&game->transientArena);
+        RenderGroup *group = allocateRenderGroup(&game->transientArena, MEGABYTES(2));
+
         SDL_SetRenderTarget(game->renderer, game->currentMap->texture);
-        drawMap(game);
+        drawMap(group, game);
         drawPlacingTile(game, hero);
         drawHUD(game, hero, &fontMetadata);
 
@@ -275,6 +277,8 @@ int main(int argc, char* argv[])
             darkenBackground(game);
             drawInventoryScreen(game, hero, &fontMetadata);
         }
+
+        drawRenderGroup(game->renderer, group);
 
         /**************************************************************************/
         /* Debug text                                                             */
@@ -298,9 +302,13 @@ int main(int argc, char* argv[])
         SDL_SetRenderTarget(game->renderer, NULL);
         SDL_RenderCopy(game->renderer, game->currentMap->texture, &game->camera.viewport, NULL);
         game->dt = SDL_GetTicks() - now;
-        game->transientArena.used = 0;
         sleepIfAble(game);
         SDL_RenderPresent(game->renderer);
+
+        endTemporaryMemory(renderMemory);
+
+        checkArena(&game->transientArena);
+        checkArena(&game->worldArena);
     }
 
     /**************************************************************************/
