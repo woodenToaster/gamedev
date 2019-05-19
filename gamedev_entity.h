@@ -89,7 +89,7 @@ struct Entity
     bool32 harvesting;
     bool32 placingItem;
     Entity *tileToPlace;
-    // TODO(chj): inventory[0] is always 0 because of INV_NONE
+    // TODO(cjh): inventory[0] is always 0 because of INV_NONE
     u32 inventory[INV_COUNT];
     u32 beltItemCount;
     BeltItem beltItems[8];

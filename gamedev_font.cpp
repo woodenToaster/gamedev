@@ -19,19 +19,19 @@ EntireFile readEntireFile(char *filename)
             }
             else
             {
-                // TODO(chj):
+                // TODO(cjh):
                 // printf(stderr, "%s\n", SDL_GetError());
             }
         }
         else
         {
-            // TODO(chj):
+            // TODO(cjh):
             // printf("%s\n", SDL_GetError());
         }
     }
     else
     {
-        // TODO(chj):
+        // TODO(cjh):
         // fprintf(stderr, "%s\n", SDL_GetError());
     }
     return result;
@@ -95,8 +95,8 @@ void destroyFontMetadata(FontMetadata *fmd)
     }
 }
 
-// TODO(chj): Account for wrapping off the viewport
-void drawText(Game* g, FontMetadata *fontMetadata, char* text, i32 x=0, i32 y=0)
+// TODO(cjh): Account for wrapping off the viewport
+void drawText(RenderGroup *group, FontMetadata *fontMetadata, char* text, i32 x=0, i32 y=0)
 {
     // Leave a little padding in case the character extends left
     i32 xpos = 2 + x;
@@ -113,12 +113,13 @@ void drawText(Game* g, FontMetadata *fontMetadata, char* text, i32 x=0, i32 y=0)
 	    if (text[at] != ' ')
         {
             SDL_Texture *t = fontMetadata->textures[text[at]];
-            SDL_RenderCopy(g->renderer, t, NULL, &dest);
+            SDL_Rect fullTexture = {0, 0, 0, 0};
+            pushSprite(group, t, fullTexture, dest);
             xpos += (int)(cpm->advance * fontMetadata->scale);
         }
         else
         {
-            // TODO(chj): Don't hardcode space size. We'd like to get it from cpm->advance
+            // TODO(cjh): Don't hardcode space size. We'd like to get it from cpm->advance
             // but we don't store any metadata for a space
             xpos += (int)(750 * fontMetadata->scale);
         }
@@ -126,8 +127,8 @@ void drawText(Game* g, FontMetadata *fontMetadata, char* text, i32 x=0, i32 y=0)
         if (text[at + 1])
         {
             // add kerning value specific to this character and the next
-            xpos += (int)(fontMetadata->scale * stbtt_GetCodepointKernAdvance(&fontMetadata->info,
-                                                                              text[at], text[at + 1]));
+            int toAdvance = stbtt_GetCodepointKernAdvance(&fontMetadata->info, text[at], text[at + 1]);
+            xpos += (int)(fontMetadata->scale * toAdvance);
         }
         ++at;
     }

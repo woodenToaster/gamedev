@@ -2,7 +2,7 @@
 
 static void initControllers(Input *input)
 {
-    // TODO(chj): Handle SDL_CONTROLLERDEVICEADDED, SDL_CONTROLLERDEVICEREMOVED, and SDL_CONTROLLERDEVICEREMAPPED
+    // TODO(cjh): Handle SDL_CONTROLLERDEVICEADDED, SDL_CONTROLLERDEVICEREMOVED, and SDL_CONTROLLERDEVICEREMAPPED
     int maxJoysticks = SDL_NumJoysticks();
     for (int joystickIndex = 0; joystickIndex < maxJoysticks; ++joystickIndex)
     {
@@ -107,7 +107,7 @@ static f32 normalizeStickInput(short unnormalizedStick)
 static void pollInput(Input* input, Game* game)
 {
     // Reset all button presses
-    // TODO(chj): This seems wasteful
+    // TODO(cjh): This seems wasteful
     for (u32 key = 0; key < KEY_COUNT; ++key)
     {
         input->keyPressed[key] = 0;
@@ -137,14 +137,14 @@ static void pollInput(Input* input, Game* game)
         }
     }
     // Check controller input
-    // TODO(chj): Should we use events for this? What's the difference?
+    // TODO(cjh): Should we use events for this? What's the difference?
     for (int controllerIndex = 0; controllerIndex < MAX_CONTROLLERS; ++controllerIndex)
     {
         SDL_GameController *controller = input->controllerHandles[controllerIndex];
         if(controller && SDL_GameControllerGetAttached(controller))
         {
-            // TODO(chj): Handle remaining buttons
-            // TODO(chj): Handle keyPressed as distinct from keyDown
+            // TODO(cjh): Handle remaining buttons
+            // TODO(cjh): Handle keyPressed as distinct from keyDown
             bool32 *pressed = input->buttonPressed;
             pressed[BUTTON_UP] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_UP);
             pressed[BUTTON_DOWN] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_DOWN);

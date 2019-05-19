@@ -99,7 +99,7 @@ SDL_Rect getEntityRect(Entity *e)
     return result;
 }
 
-void drawTile(Game *g, Entity *e, bool32 isBeingPlaced)
+void drawTile(RenderGroup *group, Game *g, Entity *e, bool32 isBeingPlaced)
 {
     SDL_Rect tileRect = getEntityRect(e);
 
@@ -109,51 +109,50 @@ void drawTile(Game *g, Entity *e, bool32 isBeingPlaced)
         {
             e->spriteRect.x = e->spriteRect.w * e->animation.currentFrame;
         }
-        SDL_RenderCopy(g->renderer, e->spriteSheet.sheet, &e->spriteRect, &tileRect);
+        pushSprite(group, e->spriteSheet.sheet, e->spriteRect, tileRect);
     }
     else
     {
         u32 tileColor = e->color;
-        renderFilledRect(g->renderer, &tileRect, tileColor);
+        pushFilledRect(group, tileRect, tileColor);
     }
 
     if (isBeingPlaced)
     {
         if (e->validPlacement)
         {
-            // TODO(chj): Draw green filter?
-            // renderFilledRect(g->renderer, &tileRect, g->colors[COLOR_GREEN], 128);
+            // TODO(cjh): Draw green filter?
+            // pushFilledRect(group, tileRect, g->colors[Color_Green], 128);
         }
         else
         {
             // Draw red filter on top
-            renderFilledRect(g->renderer, &tileRect, g->colors[COLOR_RED], 128);
+            pushFilledRect(group, tileRect, g->colors[Color_Red], 128);
         }
     }
 }
 
-void drawMap(RenderGroup *group, Game* g)
+void drawTiles(RenderGroup *group, Game *g)
 {
     Map* map = g->currentMap;
-    Camera* c = &g->camera;
-
-    // Draw background
-    SDL_Rect dest = {c->viewport.x, c->viewport.y, c->viewport.w, c->viewport.h};
-    renderFilledRect(g->renderer, &dest, g->colors[COLOR_GREY]);
-
-    // Draw tile entities
     for (u32 entityIndex = 0; entityIndex < map->entityCount; ++entityIndex)
     {
         Entity *e = &map->entities[entityIndex];
         if (e->type == ET_TILE)
         {
-            drawTile(g, e);
+            drawTile(group, g, e);
         }
     }
-    drawEntities(group, g);
 }
 
 void destroyMap(Map* m)
 {
     SDL_DestroyTexture(m->texture);
+}
+
+void drawBackground(RenderGroup *group, Game *g)
+{
+    Camera *c = &g->camera;
+    SDL_Rect backgroundDest = {c->viewport.x, c->viewport.y, c->viewport.w, c->viewport.h};
+    pushFilledRect(group, backgroundDest, g->colors[Color_Grey]);
 }

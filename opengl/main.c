@@ -169,7 +169,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
     }
     else
     {
-        // TODO(chj): logging
+        // TODO(cjh): logging
     }
 
     return 0;

@@ -5,21 +5,22 @@
 
 enum Colors
 {
-    COLOR_NONE,
-    COLOR_DARK_GREEN,
-    COLOR_BLUE,
-    COLOR_YELLOW,
-    COLOR_BROWN,
-    COLOR_RUST,
-    COLOR_MAGENTA,
-    COLOR_BLACK,
-    COLOR_RED,
-    COLOR_GREY,
-    COLOR_DARK_BLUE,
-    COLOR_BABY_BLUE,
-    COLOR_DARK_ORANGE,
-    COLOR_LIME_GREEN,
-    COLOR_COUNT
+    Color_None,
+    Color_White,
+    Color_DarkGreen,
+    Color_Blue,
+    Color_Yellow,
+    Color_Brown,
+    Color_Rust,
+    Color_Magenta,
+    Color_Black,
+    Color_Red,
+    Color_Grey,
+    Color_DarkBlue,
+    Color_BabyBlue,
+    Color_DarkOrange,
+    Color_LimeGreen,
+    Color_Count
 };
 
 enum GameMode
@@ -66,7 +67,7 @@ struct Game
     SDL_Window *window;
     SDL_Surface *windowSurface;
     SDL_Renderer *renderer;
-    u32 colors[COLOR_COUNT];
+    u32 colors[Color_Count];
     Camera camera;
     Map *currentMap;
     SoundList sounds;
@@ -82,7 +83,7 @@ struct Game
     SDL_Texture *firePitTexture;
 
     Sound mudSound;
-    // TODO(chj): Replace SoundList
+    // TODO(cjh): Replace SoundList
     // u32 soundCount;
     // Sound *sounds[16];
 
@@ -90,6 +91,9 @@ struct Game
     Arena transientArena;
 };
 
+#define PushStruct(arena, type) ((type*)pushSize((arena), sizeof(type)))
+#define PushSize(arena, size) (pushSize(arena, size))
+u8* pushSize(Arena *arena, size_t size);
 void startDialogueMode(Game *g, char *dialogue);
 void endDialogueMode(Game *g);
 void startInventoryMode(Game *g);

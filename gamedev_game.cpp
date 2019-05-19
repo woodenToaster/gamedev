@@ -32,9 +32,6 @@ internal void checkArena(Arena *arena)
     assert(arena->tmpCount == 0);
 }
 
-#define PushStruct(arena, type) ((type*)pushSize((arena), sizeof(type)))
-#define PushSize(arena, size) (pushSize(arena, size))
-
 u8* pushSize(Arena *arena, size_t size)
 {
     assert(size + arena->used < arena->maxCap);
@@ -44,7 +41,7 @@ u8* pushSize(Arena *arena, size_t size)
     return result;
 }
 
-// TODO(chj): These should support different endians
+// NOTE(cjh): SDL has already taken care of endianness for these color accessors
 u8 getAlphaFromU32(u32 color)
 {
     u8 a = (u8)((color & 0xFF000000) >> 24);
@@ -69,29 +66,9 @@ u8 getBlueFromU32(u32 color)
     return b;
 }
 
-
-void renderFilledRect(SDL_Renderer* renderer, SDL_Rect* dest, u32 color, u8 alpha=255)
-{
-    // COLOR_NONE is 0. Set a tile's background color to COLOR_NONE to avoid
-    // extra rendering.
-    if (color)
-    {
-        u8 r = (u8)((color & 0x00FF0000) >> 16);
-        u8 g = (u8)((color & 0x0000FF00) >> 8);
-        u8 b = (u8)((color & 0x000000FF) >> 0);
-
-        SDL_BlendMode blendMode;
-        SDL_GetRenderDrawBlendMode(renderer, &blendMode);
-        SDL_SetRenderDrawColor(renderer, r, g, b, alpha);
-        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-        SDL_RenderFillRect(renderer, dest);
-        SDL_SetRenderDrawBlendMode(renderer, blendMode);
-    }
-}
-
 void destroyGame(Game* g)
 {
-    // TODO(chj): This should be stored in gameMemory instead of malloced
+    // TODO(cjh): This should be stored in gameMemory instead of malloced
     free(g->dialogue);
     SDL_DestroyTexture(g->linkTexture);
     SDL_DestroyTexture(g->harvestableTreeTexture);
@@ -110,20 +87,21 @@ void destroyGame(Game* g)
 void initColors(Game* g)
 {
     SDL_PixelFormat* window_pixel_format = g->windowSurface->format;
-    g->colors[COLOR_NONE] = 0;
-    g->colors[COLOR_DARK_GREEN] = SDL_MapRGB(window_pixel_format, 37, 71, 0);
-    g->colors[COLOR_BLUE] = SDL_MapRGB(window_pixel_format, 0, 0, 255);
-    g->colors[COLOR_YELLOW] = SDL_MapRGB(window_pixel_format, 235, 245, 65);
-    g->colors[COLOR_BROWN] = SDL_MapRGB(window_pixel_format, 153, 102, 0);
-    g->colors[COLOR_RUST] = SDL_MapRGB(window_pixel_format, 153, 70, 77);
-    g->colors[COLOR_MAGENTA] = SDL_MapRGB(window_pixel_format, 255, 0, 255);
-    g->colors[COLOR_BLACK] = SDL_MapRGB(window_pixel_format, 0, 0, 0);
-    g->colors[COLOR_RED] = SDL_MapRGB(window_pixel_format, 255, 0, 0);
-    g->colors[COLOR_GREY] = SDL_MapRGB(window_pixel_format, 135, 135, 135);
-    g->colors[COLOR_DARK_BLUE] = SDL_MapRGB(window_pixel_format, 0, 51, 102);
-    g->colors[COLOR_DARK_ORANGE] = SDL_MapRGB(window_pixel_format, 255, 140, 0);
-    g->colors[COLOR_BABY_BLUE] = SDL_MapRGB(window_pixel_format, 137, 207, 240);
-    g->colors[COLOR_LIME_GREEN] = SDL_MapRGB(window_pixel_format, 106, 190, 48);
+    g->colors[Color_None] = 0;
+    g->colors[Color_White] = SDL_MapRGB(window_pixel_format, 255, 255, 255);
+    g->colors[Color_DarkGreen] = SDL_MapRGB(window_pixel_format, 37, 71, 0);
+    g->colors[Color_Blue] = SDL_MapRGB(window_pixel_format, 0, 0, 255);
+    g->colors[Color_Yellow] = SDL_MapRGB(window_pixel_format, 235, 245, 65);
+    g->colors[Color_Brown] = SDL_MapRGB(window_pixel_format, 153, 102, 0);
+    g->colors[Color_Rust] = SDL_MapRGB(window_pixel_format, 153, 70, 77);
+    g->colors[Color_Magenta] = SDL_MapRGB(window_pixel_format, 255, 0, 255);
+    g->colors[Color_Black] = SDL_MapRGB(window_pixel_format, 0, 0, 0);
+    g->colors[Color_Red] = SDL_MapRGB(window_pixel_format, 255, 0, 0);
+    g->colors[Color_Grey] = SDL_MapRGB(window_pixel_format, 135, 135, 135);
+    g->colors[Color_DarkBlue] = SDL_MapRGB(window_pixel_format, 0, 51, 102);
+    g->colors[Color_DarkOrange] = SDL_MapRGB(window_pixel_format, 255, 140, 0);
+    g->colors[Color_BabyBlue] = SDL_MapRGB(window_pixel_format, 137, 207, 240);
+    g->colors[Color_LimeGreen] = SDL_MapRGB(window_pixel_format, 106, 190, 48);
 }
 
 void initCamera(Game* g)
@@ -249,7 +227,7 @@ void updateInventoryMode(Game *g, Input *input)
     }
 }
 
-void drawDialogScreen(Game *g, FontMetadata *fontMetadata)
+void drawDialogScreen(RenderGroup *group, Game *g, FontMetadata *fontMetadata)
 {
     int thirdOfWidth = (int)(g->camera.viewport.w / 3);
     int fourthOfHeight = (int)(g->camera.viewport.h / 4);
@@ -258,21 +236,20 @@ void drawDialogScreen(Game *g, FontMetadata *fontMetadata)
     int dialogueBoxWidth = 2 * (thirdOfWidth);
     int dialogueBoxHeight = fourthOfHeight;
     SDL_Rect dialogueBoxDest = {dialogueBoxX,dialogueBoxY, dialogueBoxWidth, dialogueBoxHeight};
-    renderFilledRect(g->renderer, &dialogueBoxDest, g->colors[COLOR_BABY_BLUE]);
-    drawText(g, fontMetadata, g->dialogue, dialogueBoxX, dialogueBoxY);
+    pushFilledRect(group, dialogueBoxDest, g->colors[Color_BabyBlue]);
+    drawText(group, fontMetadata, g->dialogue, dialogueBoxX, dialogueBoxY);
 }
 
-void drawInventoryScreen(Game *g, Entity *h, FontMetadata *fontMetadata)
+void drawInventoryScreen(RenderGroup *group, Game *g, Entity *h, FontMetadata *fontMetadata)
 {
-    // TODO(chj): Don't draw every frame
     int thirdOfWidth = (int)(g->camera.viewport.w / 3);
     int fourthOfHeight = (int)(g->camera.viewport.h / 4);
-    int dialogBoxX = (int)(0.5 * thirdOfWidth) + g->camera.viewport.x;
-    int dialogBoxY = (int)(0.5 * fourthOfHeight) + g->camera.viewport.y;
-    int dialogBoxWidth = 2 * (thirdOfWidth);
-    int dialogBoxHeight = fourthOfHeight;
-    SDL_Rect dialogBoxDest = {dialogBoxX,dialogBoxY, dialogBoxWidth, dialogBoxHeight};
-    renderFilledRect(g->renderer, &dialogBoxDest, g->colors[COLOR_BABY_BLUE]);
+    int dialogueBoxX = (int)(0.5 * thirdOfWidth) + g->camera.viewport.x;
+    int dialogueBoxY = (int)(0.5 * fourthOfHeight) + g->camera.viewport.y;
+    int dialogueBoxWidth = 2 * (thirdOfWidth);
+    int dialogueBoxHeight = fourthOfHeight;
+    SDL_Rect dialogueBoxDest = {dialogueBoxX, dialogueBoxY, dialogueBoxWidth, dialogueBoxHeight};
+    pushFilledRect(group, dialogueBoxDest, g->colors[Color_BabyBlue]);
 
     for (int inventoryIndex = 1; inventoryIndex < INV_COUNT; ++inventoryIndex)
     {
@@ -288,13 +265,13 @@ void drawInventoryScreen(Game *g, Entity *h, FontMetadata *fontMetadata)
         default:
             assert(!"Wrong inventory type");
         }
-        drawText(g, fontMetadata, itemString, dialogBoxX, dialogBoxY);
-        // TODO(chj): Figure out correct y offset for next line
-        dialogBoxY += 25;
+        drawText(group, fontMetadata, itemString, dialogueBoxX, dialogueBoxY);
+        // TODO(cjh): Figure out correct y offset for next line
+        dialogueBoxY += 25;
     }
 }
 
-void drawHUD(Game *g, Entity *h, FontMetadata *font)
+void drawHUD(RenderGroup *group, Game *g, Entity *h, FontMetadata *font)
 {
     u8 beltSlots = 8;
     u8 slotSize = 40;
@@ -305,9 +282,10 @@ void drawHUD(Game *g, Entity *h, FontMetadata *font)
     SDL_Rect backgroundDest = {destX, destY, beltSlots * slotSize, slotSize};
 
     // Draw transparent black background
-    SDL_SetRenderDrawBlendMode(g->renderer, SDL_BLENDMODE_BLEND);
-    SDL_SetRenderDrawColor(g->renderer, 0, 0, 0, 128);
-    SDL_RenderFillRect(g->renderer, &backgroundDest);
+    pushFilledRect(group, backgroundDest, g->colors[Color_Black], 128);
+    // SDL_SetRenderDrawBlendMode(g->renderer, SDL_BLENDMODE_BLEND);
+    // SDL_SetRenderDrawColor(g->renderer, 0, 0, 0, 128);
+    // SDL_RenderFillRect(g->renderer, &backgroundDest);
 
     SDL_SetRenderDrawColor(g->renderer, 255, 255, 255, 255);
     for (int i = 0; i < beltSlots; ++i)
@@ -324,13 +302,13 @@ void drawHUD(Game *g, Entity *h, FontMetadata *font)
             {
             case CRAFTABLE_TREE:
                 textureToDraw = g->harvestableTreeTexture;
-                // TODO(chj): Get sprite widht height
+                // TODO(cjh): Get sprite width height
                 tileRect.w = 64;
                 tileRect.h = 64;
                 break;
             case CRAFTABLE_GLOW_JUICE:
                 textureToDraw = g->glowTreeTexture;
-                // TODO(chj): Get sprite widht height
+                // TODO(cjh): Get sprite width height
                 tileRect.w = 80;
                 tileRect.h = 80;
                 break;
@@ -340,20 +318,23 @@ void drawHUD(Game *g, Entity *h, FontMetadata *font)
 
             if (textureToDraw)
             {
-                SDL_RenderCopy(g->renderer, textureToDraw, &tileRect, &dest);
+                pushSprite(group, textureToDraw, tileRect, dest);
+                // SDL_RenderCopy(g->renderer, textureToDraw, &tileRect, &dest);
             }
             // Draw inventory number
             assert(item->count <= 999);
             char numItems[4] = {};
             snprintf(numItems, 4, "%d", item->count);
-            drawText(g, font, numItems, dest.x, dest.y);
+            drawText(group, font, numItems, dest.x, dest.y);
         }
+        pushRect(group, dest, g->colors[Color_White]);
         SDL_RenderDrawRect(g->renderer, &dest);
     }
 }
 
 void darkenBackground(Game *g)
 {
+    // TODO(cjh): Use RenderGroup
     SDL_SetRenderDrawBlendMode(g->renderer, SDL_BLENDMODE_BLEND);
     SDL_SetRenderDrawColor(g->renderer, 0, 0, 0, 64);
     SDL_RenderFillRect(g->renderer, NULL);

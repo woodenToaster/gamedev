@@ -2,6 +2,7 @@
 #define GD_TILE_MAP_H
 
 #include "gamedev_entity.h"
+struct RenderGroup;
 
 enum TileProperty
 {
@@ -28,7 +29,7 @@ struct Map
     Entity entities[256];
 };
 
-void drawTile(Game *g, Entity *e, bool32 isBeingPlace=false);
+void drawTile(RenderGroup *group, Game *g, Entity *e, bool32 isBeingPlace=false);
 SDL_Rect getEntityRect(Entity *e);
 void addTileFlags(Entity *e, u32 prop);
 bool32 isTileFlagSet(Entity *e, TileProperty prop);

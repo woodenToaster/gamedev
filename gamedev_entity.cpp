@@ -26,37 +26,33 @@ void drawEntity(RenderGroup *group, Entity* e, Game* g)
 {
     if (e->active && e->type != ET_TILE)
     {
-        SDL_Rect dest = {};
-        e->spriteRect.x = e->spriteRect.w * e->animation.currentFrame;
         // Draw collision box
-        setRenderDrawColor(g->renderer, g->colors[COLOR_YELLOW]);
         SDL_Rect collisionRect = {(int)(e->position.x - 0.5f * e->width), (int)(e->position.y - e->height),
-                                e->width, e->height};
-        SDL_RenderFillRect(g->renderer, &collisionRect);
+                                  e->width, e->height};
+        pushFilledRect(group, collisionRect, g->colors[Color_Yellow]);
 
-        // Draw position point
-        // setRenderDrawColor(g->renderer, g->colors[COLOR_BLACK]);
-        // SDL_RenderDrawPoint(g->renderer, (int)e->position.x, (int)e->position.y);
-
+        // Draw sprite
         i32 width = e->spriteDims.x;
         i32 height = e->spriteDims.y;
-        dest = {(int)(e->position.x - 0.5f*width), (int)(e->position.y - height), width, height};
-        pushSprite(group, dest, e->spriteRect, e->spriteSheet.sheet);
+        // TODO(cjh): Setting the animation frame probably doesn't belong in here
+        e->spriteRect.x = e->spriteRect.w * e->animation.currentFrame;
+        SDL_Rect dest = {(int)(e->position.x - 0.5f*width), (int)(e->position.y - height), width, height};
+        pushSprite(group, e->spriteSheet.sheet, e->spriteRect, dest);
 
-        // Entity interactionRect
-        // TODO(chj): This is visible when placing a tile. Push buffer rendering will fix that
+        // Draw entity interactionRect
         if (e->harvesting)
         {
-            renderFilledRect(g->renderer, &e->heroInteractionRect, g->colors[COLOR_DARK_ORANGE]);
+            // TODO(cjh): This is visible when placing a tile. Push buffer rendering will fix that
+            pushFilledRect(group, e->heroInteractionRect, g->colors[Color_DarkOrange]);
         }
     }
 }
 
-void drawPlacingTile(Game *g, Entity *h)
+void drawPlacingTile(RenderGroup *group, Game *g, Entity *h)
 {
     if (h->tileToPlace && h->placingItem)
     {
-        drawTile(g, h->tileToPlace, true);
+        drawTile(group, g, h->tileToPlace, true);
     }
 }
 
@@ -147,7 +143,7 @@ Entity *addFlame(Game *g, Vec2 pos)
     result->height = 80;
     initEntitySpriteSheet(result, g->flameTexture, 10, 1);
     initAnimation(&result->animation, 10, 100);
-    result->color = g->colors[COLOR_NONE];
+    result->color = g->colors[Color_None];
     result->active = true;
     result->position = pos;
     addTileFlags(result, TP_FLAME);
@@ -393,7 +389,7 @@ internal bool32 isValidTilePlacment(Map *m, Entity *tileToPlace)
 internal void updateHero(Entity* h, Input* input, Game* g)
 {
     Map *map = g->currentMap;
-    // TODO(chj): Handle joystick and keyboard on separate paths
+    // TODO(cjh): Handle joystick and keyboard on separate paths
     Vec2 acceleration = {};
     acceleration.x = input->stickX;
     acceleration.y = input->stickY;
@@ -417,7 +413,7 @@ internal void updateHero(Entity* h, Input* input, Game* g)
 
     if (acceleration.x == 0.0f && acceleration.y == 0.0f)
     {
-        // TODO(chj): should this really be false when skidding to a stop?
+        // TODO(cjh): should this really be false when skidding to a stop?
         h->isMoving = false;
     }
     else
@@ -521,9 +517,9 @@ internal void updateHero(Entity* h, Input* input, Game* g)
 
                 if (inQuicksand)
                 {
-                    // TODO(chj): Slow hero down
-                    // TODO(chj): Need constant sound
-                    // TODO(chj): Move to harvesting loop below (a collision loop)
+                    // TODO(cjh): Slow hero down
+                    // TODO(cjh): Need constant sound
+                    // TODO(cjh): Move to harvesting loop below (a collision loop)
                     if (h->isMoving)
                     {
                         queueSound(&g->sounds, &g->mudSound);
@@ -600,7 +596,7 @@ internal void updateHero(Entity* h, Input* input, Game* g)
 
                     if (rectsOverlap(&h->heroInteractionRect, &tileBoundingBox))
                     {
-                        // TODO(chj): Use tileFlags
+                        // TODO(cjh): Use tileFlags
                         if (testEntity->isHarvestable)
                         {
                             testEntity->isHarvestable = false;
@@ -608,7 +604,7 @@ internal void updateHero(Entity* h, Input* input, Game* g)
                             testEntity->spriteRect.x += testEntity->spriteRect.w;
                             h->inventory[testEntity->harvestedItem]++;
                         }
-                        // TODO(chj): Do we need TP_INTERACTIVE?
+                        // TODO(cjh): Do we need TP_INTERACTIVE?
                         if (isTileFlagSet(testEntity, TP_INTERACTIVE))
                         {
                             if (isTileFlagSet(testEntity, TP_CAMPFIRE))
@@ -639,7 +635,7 @@ internal void updateHero(Entity* h, Input* input, Game* g)
                         if (!testEntity->dialogueFile.contents)
                         {
                             testEntity->dialogueFile = readEntireFile("dialogues/harlod_dialogues.txt");
-                            // TODO(chj): Need to null terminate everything. This will change. We
+                            // TODO(cjh): Need to null terminate everything. This will change. We
                             // want to parse files for strings and tokenize, etc. For now it's hard coded
                             testEntity->dialogueFile.contents[9] = '\0';
                         }
@@ -675,11 +671,11 @@ internal void updateHero(Entity* h, Input* input, Game* g)
             tile->width = 80;
             tile->height = 80;
 
-            // TODO(chj): Don't hard code
+            // TODO(cjh): Don't hard code
             initEntitySpriteSheet(tile, g->harvestableTreeTexture, 3, 1);
-            tile->color = g->colors[COLOR_NONE];
+            tile->color = g->colors[Color_None];
             tile->harvestedItem = INV_LEAVES;
-            // TODO(chj): Need to know the type before we fill all the specifics out
+            // TODO(cjh): Need to know the type before we fill all the specifics out
             tile->craftableItem = CRAFTABLE_TREE;
         }
 

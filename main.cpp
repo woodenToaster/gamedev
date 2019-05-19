@@ -12,7 +12,7 @@
 #include "SDL_opengl.h"
 #include "SDL_mixer.h"
 
-// TODO(chj): Remove standard library dependency
+// TODO(cjh): Remove standard library dependency
 #include "stdint.h"
 #include "stdio.h"
 #include "stdlib.h"
@@ -22,6 +22,7 @@
 #include "gamedev_animation.cpp"
 
 #include "gamedev_memory.h"
+#include "gamedev_renderer.h"
 #include "gamedev_math.h"
 #include "gamedev_font.h"
 #include "gamedev_sound.h"
@@ -32,9 +33,9 @@
 #include "gamedev_tilemap.h"
 #include "gamedev_entity.h"
 #include "gamedev_camera.h"
-#include "gamedev_renderer.h"
 
 #include "gamedev_memory.cpp"
+#include "gamedev_renderer.cpp"
 #include "gamedev_font.cpp"
 #include "gamedev_sound.cpp"
 #include "gamedev_asset_loading.cpp"
@@ -43,7 +44,6 @@
 #include "gamedev_sprite_sheet.cpp"
 #include "gamedev_entity.cpp"
 #include "gamedev_tilemap.cpp"
-#include "gamedev_renderer.cpp"
 
 
 int main(int argc, char* argv[])
@@ -122,14 +122,14 @@ int main(int argc, char* argv[])
             if (row == 0 || col == 0 || row == map0->rows - 1 || col == map0->cols - 1)
             {
                 addTileFlags(tile, TP_SOLID);
-                tile->color = game->colors[COLOR_DARK_GREEN];
+                tile->color = game->colors[Color_DarkGreen];
                 tile->collides = true;
             }
             if (row == 4 && col == 1)
             {
                 // Quicksand
                 addTileFlags(tile, TP_QUICKSAND);
-                tile->color = game->colors[COLOR_BROWN];
+                tile->color = game->colors[Color_Brown];
                 tile->collides = false;
             }
             if ((row == 2 && (col == 4 || col == 5 || col == 6 || col == 7)) ||
@@ -137,7 +137,7 @@ int main(int argc, char* argv[])
             {
                 // Harvestable tree
                 addTileFlags(tile, (u32)(TP_HARVEST | TP_SOLID | TP_FLAMMABLE));
-                // tile->color = game->colors[COLOR_NONE];
+                // tile->color = game->colors[Color_None];
                 tile->collides = true;
                 tile->burntTileIndex = 2;
                 initEntitySpriteSheet(tile, game->harvestableTreeTexture, 3, 1);
@@ -257,9 +257,11 @@ int main(int argc, char* argv[])
         RenderGroup *group = allocateRenderGroup(&game->transientArena, MEGABYTES(2));
 
         SDL_SetRenderTarget(game->renderer, game->currentMap->texture);
-        drawMap(group, game);
-        drawPlacingTile(game, hero);
-        drawHUD(game, hero, &fontMetadata);
+        drawBackground(group, game);
+        drawTiles(group, game);
+        drawEntities(group, game);
+        drawPlacingTile(group, game, hero);
+        drawHUD(group, game, hero, &fontMetadata);
 
         // Hero interaction region
         // SDL_SetRenderDrawColor(game->renderer, 255, 255, 0, 255);
@@ -269,15 +271,16 @@ int main(int argc, char* argv[])
         if (game->mode == GAME_MODE_DIALOGUE)
         {
             darkenBackground(game);
-            drawDialogScreen(game, &fontMetadata);
+            drawDialogScreen(group, game, &fontMetadata);
         }
 
         if (game->mode == GAME_MODE_INVENTORY)
         {
             darkenBackground(game);
-            drawInventoryScreen(game, hero, &fontMetadata);
+            drawInventoryScreen(group, game, hero, &fontMetadata);
         }
 
+        // sortRenderGroup(group);
         drawRenderGroup(game->renderer, group);
 
         /**************************************************************************/
@@ -288,15 +291,15 @@ int main(int argc, char* argv[])
         f32 fps = 1000.0f / game->dt;
         char fpsText[9] = {0};
         snprintf(fpsText, 9, "FPS: %03d", (u32)fps);
-        drawText(game, &fontMetadata, fpsText, game->camera.viewport.x, game->camera.viewport.y);
+        drawText(group, &fontMetadata, fpsText, game->camera.viewport.x, game->camera.viewport.y);
 
         char heroPosition[20] = {0};
-        snprintf(heroPosition, 20, "x: %.2f, y: %.2f", hero.e.position.x, hero.e.position.y);
-        drawText(game, &fontMetadata, heroPosition, game->camera.viewport.x, game->camera.viewport.y);
+        snprintf(heroPosition, 20, "x: %.2f, y: %.2f", hero->position.x, hero->position.y);
+        drawText(group, &fontMetadata, heroPosition, game->camera.viewport.x, game->camera.viewport.y);
 
         char bytesUsed[35] = {};
-        snprintf(bytesUsed, 35, "%zu / %zu bytes in use", arena.used, arena.maxCap);
-        drawText(game, &fontMetadata, bytesUsed, game->camera.viewport.x, game->camera.viewport.y);
+        snprintf(bytesUsed, 35, "%zu / %zu bytes in use", game->worldArena.used, game->worldArena.maxCap);
+        drawText(group, &fontMetadata, bytesUsed, game->camera.viewport.x, game->camera.viewport.y);
 #endif
 
         SDL_SetRenderTarget(game->renderer, NULL);

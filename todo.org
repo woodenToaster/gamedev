@@ -23,7 +23,11 @@
 ** TODO Base building system
 * Architecture
 ** TODO push buffer rendering
-*** TODO Update function pushes pieces onto a render queue and the draw step sorts and draws the queue
+*** TODO HUD transparent black background
+*** TODO Text
+*** TODO interactionRect is drawn when placing tiles
+*** TODO inventory screen
+*** TODO dialogue screen
 ** TODO game code DLL (tough with SDL)
 ** TODO Hot loading (tough)
 *** TODO All game state in one chunk of memory
