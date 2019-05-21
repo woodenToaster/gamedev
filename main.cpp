@@ -116,6 +116,7 @@ int main(int argc, char* argv[])
         {
             Entity *tile = addEntity(map0);
             tile->type = ET_TILE;
+            tile->color = game->colors[Color_None];
             tile->width = map0->tileWidth;
             tile->height = map0->tileHeight;
             tile->position = {col*tile->width + 0.5f*tile->width, row*tile->height + 0.5f*tile->height};
@@ -137,7 +138,7 @@ int main(int argc, char* argv[])
             {
                 // Harvestable tree
                 addTileFlags(tile, (u32)(TP_HARVEST | TP_SOLID | TP_FLAMMABLE));
-                // tile->color = game->colors[Color_None];
+                tile->color = game->colors[Color_None];
                 tile->collides = true;
                 tile->burntTileIndex = 2;
                 initEntitySpriteSheet(tile, game->harvestableTreeTexture, 3, 1);
@@ -270,13 +271,13 @@ int main(int argc, char* argv[])
 
         if (game->mode == GAME_MODE_DIALOGUE)
         {
-            darkenBackground(game);
+            darkenBackground(group, game);
             drawDialogScreen(group, game, &fontMetadata);
         }
 
         if (game->mode == GAME_MODE_INVENTORY)
         {
-            darkenBackground(game);
+            darkenBackground(group, game);
             drawInventoryScreen(group, game, hero, &fontMetadata);
         }
 

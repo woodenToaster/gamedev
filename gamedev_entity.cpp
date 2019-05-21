@@ -34,7 +34,6 @@ void drawEntity(RenderGroup *group, Entity* e, Game* g)
         // Draw sprite
         i32 width = e->spriteDims.x;
         i32 height = e->spriteDims.y;
-        // TODO(cjh): Setting the animation frame probably doesn't belong in here
         e->spriteRect.x = e->spriteRect.w * e->animation.currentFrame;
         SDL_Rect dest = {(int)(e->position.x - 0.5f*width), (int)(e->position.y - height), width, height};
         pushSprite(group, e->spriteSheet.sheet, e->spriteRect, dest);
@@ -42,7 +41,6 @@ void drawEntity(RenderGroup *group, Entity* e, Game* g)
         // Draw entity interactionRect
         if (e->harvesting)
         {
-            // TODO(cjh): This is visible when placing a tile. Push buffer rendering will fix that
             pushFilledRect(group, e->heroInteractionRect, g->colors[Color_DarkOrange]);
         }
     }
@@ -686,5 +684,8 @@ internal void updateHero(Entity* h, Input* input, Game* g)
     if (h->harvesting && h->placingItem)
     {
         placeItem(map, h);
+        // NOTE(cjh): So we don't draw the interactionRect while placing a tile
+        h->harvesting = false;
+
     }
 }
