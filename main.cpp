@@ -281,9 +281,6 @@ int main(int argc, char* argv[])
             drawInventoryScreen(group, game, hero, &fontMetadata);
         }
 
-        // sortRenderGroup(group);
-        drawRenderGroup(game->renderer, group);
-
         /**************************************************************************/
         /* Debug text                                                             */
         /**************************************************************************/
@@ -302,6 +299,9 @@ int main(int argc, char* argv[])
         snprintf(bytesUsed, 35, "%zu / %zu bytes in use", game->worldArena.used, game->worldArena.maxCap);
         drawText(group, &fontMetadata, bytesUsed, game->camera.viewport.x, game->camera.viewport.y);
 #endif
+
+        // sortRenderGroup(group);
+        drawRenderGroup(game->renderer, group);
 
         SDL_SetRenderTarget(game->renderer, NULL);
         SDL_RenderCopy(game->renderer, game->currentMap->texture, &game->camera.viewport, NULL);

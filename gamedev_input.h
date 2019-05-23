@@ -12,6 +12,8 @@ enum Key
     KEY_LEFT,
     KEY_RIGHT,
     KEY_ESCAPE,
+    KEY_LSHIFT,
+    KEY_RSHIFT,
     KEY_A,
     KEY_B,
     KEY_C,

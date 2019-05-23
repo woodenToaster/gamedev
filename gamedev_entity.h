@@ -92,6 +92,7 @@ struct Entity
     // TODO(cjh): inventory[0] is always 0 because of INV_NONE
     u32 inventory[INV_COUNT];
     u32 beltItemCount;
+    i32 activeBeltItemIndex;
     BeltItem beltItems[8];
 
     // Harlod

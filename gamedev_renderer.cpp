@@ -131,7 +131,8 @@ void drawHUD(RenderGroup *group, Game *g, Entity *h, FontMetadata *font)
             snprintf(numItems, 4, "%d", item->count);
             drawText(group, font, numItems, dest.x, dest.y);
         }
-        pushRect(group, dest, g->colors[Color_White]);
+        u8 alpha = i == h->activeBeltItemIndex ? 255 : 128;
+        pushRect(group, dest, g->colors[Color_White], alpha);
     }
 }
 

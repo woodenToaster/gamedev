@@ -40,6 +40,16 @@ static void setKeyState(Input* input, Key key, bool32 isDown)
 
 static void updateInput(Input* input, SDL_Scancode key, bool32 isDown)
 {
+    SDL_Keymod keyMod = SDL_GetModState();
+    if (keyMod & KMOD_LSHIFT)
+    {
+        setKeyState(input, KEY_LSHIFT, isDown);
+    }
+    if (keyMod & KMOD_RSHIFT)
+    {
+        setKeyState(input, KEY_RSHIFT, isDown);
+    }
+
     switch (key)
     {
     case SDL_SCANCODE_RIGHT:
@@ -82,6 +92,9 @@ static void updateInput(Input* input, SDL_Scancode key, bool32 isDown)
         break;
     case SDL_SCANCODE_V:
         setKeyState(input, KEY_V, isDown);
+        break;
+    case SDL_SCANCODE_X:
+        setKeyState(input, KEY_X, isDown);
         break;
     default:
         // char* action = pressed ? "pressed" : "released";

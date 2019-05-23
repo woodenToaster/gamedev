@@ -686,6 +686,11 @@ internal void updateHero(Entity* h, Input* input, Game* g)
         placeItem(map, h);
         // NOTE(cjh): So we don't draw the interactionRect while placing a tile
         h->harvesting = false;
+    }
 
+    if (input->keyPressed[KEY_X])
+    {
+        h->activeBeltItemIndex++;
+        h->activeBeltItemIndex %= ArrayCount(h->beltItems);
     }
 }

@@ -7,6 +7,7 @@
 ** TODO Crafting system
 *** TODO Scroll through belt to place tiles
 ** TODO Tile placement
+*** TODO Allow entities to be placed anywhere, not just 80x80. Snap to smaller grid?
 *** TODO Nail down collision rules with burnt tiles (sometimes they block, other times not)
 *** TODO What happens when multiple entities exist in one tile space? How do we select the right one?
 *** TODO Need to know type of tile we're placing before the tile exists
@@ -23,11 +24,7 @@
 ** TODO Base building system
 * Architecture
 ** TODO push buffer rendering
-*** TODO HUD transparent black background
-*** TODO Text
-*** TODO interactionRect is drawn when placing tiles
-*** TODO inventory screen
-*** TODO dialogue screen
+*** TODO Sort based on layers, and then based on position.y
 ** TODO game code DLL (tough with SDL)
 ** TODO Hot loading (tough)
 *** TODO All game state in one chunk of memory
@@ -39,11 +36,10 @@
 ** TODO Dark Souls atmosphere
 *** TODO See far away parts of the level that you eventually reach
 ***** TODO How can I simulate this effect in 2d? Parallax scrolling.
-* Build
 * Story Ideas
 ** Enemies are sad, misinformed people instead of monsters?
 ** A room full of breakables that a shop keeper later rewards you if unbroken
 * Bugs
 ** TODO Quicksand sound doesn't play at appropriate interval (tweak collision)
-** TODO Harvest region is drawn when placing a tile
 ** TODO A replaced tile doesn't catch on fire
+** TODO Tile to place can become fire sprite
