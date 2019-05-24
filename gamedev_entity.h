@@ -16,10 +16,10 @@ enum EntityType
 
 enum CraftableItemType
 {
-    CRAFTABLE_NONE,
-    CRAFTABLE_TREE,
-    CRAFTABLE_GLOW_JUICE,
-    CRAFTABLE_COUNT
+    Craftable_None,
+    Craftable_Tree,
+    Craftable_Glow_Juice,
+    Craftable_Count
 };
 
 enum InventoryItemType

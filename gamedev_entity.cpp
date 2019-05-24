@@ -6,6 +6,28 @@ void initEntitySpriteSheet(Entity* e, SDL_Texture *texture, int num_x, int num_y
     e->spriteSheet.scale = 1;
 }
 
+void initHarvestableTree(Entity *tile, Game *game)
+{
+    addTileFlags(tile, (u32)(TP_HARVEST | TP_SOLID | TP_FLAMMABLE));
+    tile->color = game->colors[Color_None];
+    tile->collides = true;
+    tile->burntTileIndex = 2;
+    initEntitySpriteSheet(tile, game->harvestableTreeTexture, 3, 1);
+    tile->active = true;
+    tile->isHarvestable = true;
+    tile->harvestedItem = INV_LEAVES;
+}
+
+void initGlowTree(Entity *tile, Game *game)
+{
+    addTileFlags(tile, (u32)(TP_HARVEST | TP_SOLID));
+    tile->collides = true;
+    initEntitySpriteSheet(tile, game->glowTreeTexture, 2, 1);
+    tile->active = true;
+    tile->isHarvestable = true;
+    tile->harvestedItem = INV_GLOW;
+}
+
 bool32 isEntity(Entity *e)
 {
     bool32 result = 0;
@@ -182,11 +204,11 @@ internal void craftItem(Entity *h, CraftableItemType item)
 
     switch (item)
     {
-        case CRAFTABLE_TREE:
+        case Craftable_Tree:
             numRequiredItems = 2;
             requiredItem = INV_LEAVES;
             break;
-        case CRAFTABLE_GLOW_JUICE:
+        case Craftable_Glow_Juice:
             numRequiredItems = 1;
             requiredItem = INV_GLOW;
             break;
@@ -217,36 +239,40 @@ internal void craftItem(Entity *h, CraftableItemType item)
     }
 }
 
-internal void placeItem(Map *m, Entity *h)
+internal void placeItem(Game *g, Entity *h)
 {
+    Map *m = g->currentMap;
     if (h->tileToPlace && h->tileToPlace->validPlacement)
     {
+        Entity *tile = h->tileToPlace;
+        BeltItem *item = h->beltItems + h->activeBeltItemIndex;
+        if (--item->count == 0)
+        {
+            // Remove it from the belt
+            *item = h->beltItems[--h->beltItemCount];
+        }
+
         switch (h->tileToPlace->craftableItem)
         {
-            case CRAFTABLE_TREE:
-            {
-                Entity *tile = h->tileToPlace;
-                tile->collides = true;
-                tile->active = true;
-                tile->isHarvestable = true;
-
-                BeltItem *item = findItemInBelt(h, CRAFTABLE_TREE);
-                if (--item->count == 0)
-                {
-                    // Remove it from the belt
-                    *item = h->beltItems[--h->beltItemCount];
-                }
-
-                if (tile->deleteAfterPlacement)
-                {
-                    u64 indexToRemove = tile->deleteAfterPlacement - m->entities;
-                    m->entities[indexToRemove] = m->entities[--m->entityCount];
-                    tile->deleteAfterPlacement = NULL;
-                }
-            } break;
-            default:
-                break;
+        case Craftable_Tree:
+            // TODO(cjh): Calls initEntitySpriteSheet twice, which does QueryTexture
+            initHarvestableTree(tile, g);
+            break;
+        case Craftable_Glow_Juice:
+            // TODO(cjh): Calls initEntitySpriteSheet twice, which does QueryTexture
+            initGlowTree(tile, g);
+            break;
+        default:
+            break;
         }
+
+        if (tile->deleteAfterPlacement)
+        {
+            u64 indexToRemove = tile->deleteAfterPlacement - m->entities;
+            m->entities[indexToRemove] = m->entities[--m->entityCount];
+            tile->deleteAfterPlacement = NULL;
+        }
+
         h->placingItem = false;
         h->tileToPlace = NULL;
     }
@@ -566,12 +592,18 @@ internal void updateHero(Entity* h, Input* input, Game* g)
     h->harvesting = input->keyPressed[KEY_SPACE] || input->buttonPressed[BUTTON_A];
     h->craftTree = input->keyPressed[KEY_C];
     h->craftGlowJuice = input->keyPressed[KEY_V];
+
+    CraftableItemType itemTypeToPlace = Craftable_None;
     if (input->keyPressed[KEY_P])
     {
-        BeltItem *item = findItemInBelt(h, CRAFTABLE_TREE);
-        if (item && item->count > 0)
+        if (h->activeBeltItemIndex < (i32)h->beltItemCount)
         {
-            h->placingItem = true;
+            BeltItem *item = h->beltItems + h->activeBeltItemIndex;
+            if (item->count > 0)
+            {
+                h->placingItem = true;
+                itemTypeToPlace = item->type;
+            }
         }
     }
 
@@ -649,12 +681,12 @@ internal void updateHero(Entity* h, Input* input, Game* g)
 
     if (h->craftTree)
     {
-        CraftableItemType item = CRAFTABLE_TREE;
+        CraftableItemType item = Craftable_Tree;
         craftItem(h, item);
     }
     if (h->craftGlowJuice)
     {
-        CraftableItemType item = CRAFTABLE_GLOW_JUICE;
+        CraftableItemType item = Craftable_Glow_Juice;
         craftItem(h, item);
     }
 
@@ -669,12 +701,16 @@ internal void updateHero(Entity* h, Input* input, Game* g)
             tile->width = 80;
             tile->height = 80;
 
-            // TODO(cjh): Don't hard code
-            initEntitySpriteSheet(tile, g->harvestableTreeTexture, 3, 1);
-            tile->color = g->colors[Color_None];
-            tile->harvestedItem = INV_LEAVES;
-            // TODO(cjh): Need to know the type before we fill all the specifics out
-            tile->craftableItem = CRAFTABLE_TREE;
+            switch (itemTypeToPlace)
+            {
+            case Craftable_Tree:
+                // TODO(cjh): This is called again in placeItem
+                initEntitySpriteSheet(tile, g->harvestableTreeTexture, 3, 1);
+                break;
+            case Craftable_Glow_Juice:
+                initEntitySpriteSheet(tile, g->glowTreeTexture, 2, 1);
+                break;
+            }
         }
 
         h->tileToPlace->position = getTilePlacementPosition(g, h);
@@ -683,7 +719,7 @@ internal void updateHero(Entity* h, Input* input, Game* g)
 
     if (h->harvesting && h->placingItem)
     {
-        placeItem(map, h);
+        placeItem(g, h);
         // NOTE(cjh): So we don't draw the interactionRect while placing a tile
         h->harvesting = false;
     }
@@ -693,4 +729,10 @@ internal void updateHero(Entity* h, Input* input, Game* g)
         h->activeBeltItemIndex++;
         h->activeBeltItemIndex %= ArrayCount(h->beltItems);
     }
+    if (input->keyPressed[KEY_Z])
+    {
+        --h->activeBeltItemIndex;
+        h->activeBeltItemIndex %= ArrayCount(h->beltItems);
+    }
 }
+

@@ -4,14 +4,10 @@
 * Gameplay
 ** TODO Inventory system
 *** TODO Make items selectable
-** TODO Crafting system
-*** TODO Scroll through belt to place tiles
 ** TODO Tile placement
 *** TODO Allow entities to be placed anywhere, not just 80x80. Snap to smaller grid?
 *** TODO Nail down collision rules with burnt tiles (sometimes they block, other times not)
 *** TODO What happens when multiple entities exist in one tile space? How do we select the right one?
-*** TODO Need to know type of tile we're placing before the tile exists
-**** TODO Place a different type of tile to see how this will work
 ** TODO Combat system
 *** TODO Normal/heavy swing
 *** TODO Shield

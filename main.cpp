@@ -136,26 +136,13 @@ int main(int argc, char* argv[])
             if ((row == 2 && (col == 4 || col == 5 || col == 6 || col == 7)) ||
                 ((row == 3 || row == 4 || row == 5 || row == 6) && col == 7))
             {
-                // Harvestable tree
-                addTileFlags(tile, (u32)(TP_HARVEST | TP_SOLID | TP_FLAMMABLE));
-                tile->color = game->colors[Color_None];
-                tile->collides = true;
-                tile->burntTileIndex = 2;
-                initEntitySpriteSheet(tile, game->harvestableTreeTexture, 3, 1);
-                tile->active = true;
-                tile->isHarvestable = true;
-                tile->harvestedItem = INV_LEAVES;
+                initHarvestableTree(tile, game);
             }
 
             if (row == 2 && col == 2)
             {
                 // Glow tree
-                addTileFlags(tile, (u32)(TP_HARVEST | TP_SOLID));
-                tile->collides = true;
-                initEntitySpriteSheet(tile, game->glowTreeTexture, 2, 1);
-                tile->active = true;
-                tile->isHarvestable = true;
-                tile->harvestedItem = INV_GLOW;
+                initGlowTree(tile, game);
             }
 
             if (row == 1 && col == 7)

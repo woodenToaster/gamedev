@@ -105,13 +105,13 @@ void drawHUD(RenderGroup *group, Game *g, Entity *h, FontMetadata *font)
 
             switch (item->type)
             {
-            case CRAFTABLE_TREE:
+            case Craftable_Tree:
                 textureToDraw = g->harvestableTreeTexture;
                 // TODO(cjh): Get sprite width height
                 tileRect.w = 64;
                 tileRect.h = 64;
                 break;
-            case CRAFTABLE_GLOW_JUICE:
+            case Craftable_Glow_Juice:
                 textureToDraw = g->glowTreeTexture;
                 // TODO(cjh): Get sprite width height
                 tileRect.w = 80;
