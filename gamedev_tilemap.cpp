@@ -52,6 +52,7 @@ void updateTiles(Game *g)
         }
 
         // Update Flammable tiles
+        // TODO(cjh): Do burnt tiles become non-collidable and unharvestable?
         switch (e->fireState)
         {
             case FIRE_STARTED:
@@ -76,9 +77,10 @@ void updateTiles(Game *g)
                 {
                     e->fireState = FIRE_BURNT;
                     e->timeSpentOnFire = 0;
-                    removeTileFlags(e, TP_FLAME);
+                    removeTileFlags(e, TP_FLAME | TP_HARVEST | TP_SOLID);
                     removeEntity(m, e->position, TP_FLAME);
                     e->spriteRect.x = e->burntTileIndex*e->spriteSheet.spriteWidth;
+                    e->collides = false;
                 }
             } break;
             case FIRE_NONE:

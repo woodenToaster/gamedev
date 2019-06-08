@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
                 tile->color = game->colors[Color_DarkGreen];
                 tile->collides = true;
             }
-            if (row == 4 && col == 1)
+            if (row == 4 && (col == 1 || col == 2 || col == 3 || col ==4))
             {
                 // Quicksand
                 addTileFlags(tile, TP_QUICKSAND);

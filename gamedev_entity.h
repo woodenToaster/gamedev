@@ -66,13 +66,11 @@ struct Entity
     bool32 isMoving;
     bool32 inQuicksand;
 
-    EntireFile dialogFile;
     EntityType type;
 
     // Tile
     u32 color;
     u32 tileFlags;
-    bool32 isHarvestable;
     bool32 validPlacement;
     FireState fireState;
     i32 timeToCatchFire;

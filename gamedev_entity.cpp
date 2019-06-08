@@ -14,7 +14,6 @@ void initHarvestableTree(Entity *tile, Game *game)
     tile->burntTileIndex = 2;
     initEntitySpriteSheet(tile, game->harvestableTreeTexture, 3, 1);
     tile->active = true;
-    tile->isHarvestable = true;
     tile->harvestedItem = INV_LEAVES;
 }
 
@@ -24,7 +23,6 @@ void initGlowTree(Entity *tile, Game *game)
     tile->collides = true;
     initEntitySpriteSheet(tile, game->glowTreeTexture, 2, 1);
     tile->active = true;
-    tile->isHarvestable = true;
     tile->harvestedItem = INV_GLOW;
 }
 
@@ -399,8 +397,8 @@ internal bool32 isValidTilePlacment(Map *m, Entity *tileToPlace)
                 else
                 {
                     // A tile can be placed here because this is not a colliding tile.
-                    // However, we need to remember it so we can delete it after we
-                    // place a tile here.
+                    // However, we need to remember the tile that will be replaced so
+                    // we can delete it after we place the new tile here.
                     tileToPlace->deleteAfterPlacement = testEntity;
                 }
             }
@@ -626,10 +624,9 @@ internal void updateHero(Entity* h, Input* input, Game* g)
 
                     if (rectsOverlap(&h->heroInteractionRect, &tileBoundingBox))
                     {
-                        // TODO(cjh): Use tileFlags
-                        if (testEntity->isHarvestable)
+                        if (isTileFlagSet(testEntity, TP_HARVEST))
                         {
-                            testEntity->isHarvestable = false;
+                            removeTileFlags(testEntity, TP_HARVEST);
                             testEntity->collides = false;
                             testEntity->spriteRect.x += testEntity->spriteRect.w;
                             h->inventory[testEntity->harvestedItem]++;
