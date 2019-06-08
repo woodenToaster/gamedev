@@ -700,6 +700,7 @@ internal void updateHero(Entity* h, Input* input, Game* g)
             Entity *tile = h->tileToPlace;
             tile->width = 80;
             tile->height = 80;
+            tile->craftableItem = itemTypeToPlace;
 
             switch (itemTypeToPlace)
             {

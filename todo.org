@@ -7,17 +7,18 @@
 ** TODO Tile placement
 *** TODO Allow entities to be placed anywhere, not just 80x80. Snap to smaller grid?
 *** TODO Nail down collision rules with burnt tiles (sometimes they block, other times not)
+*** TODO Nail down tile placing rules. 2 layers? tile and entity
 *** TODO What happens when multiple entities exist in one tile space? How do we select the right one?
+** TODO Dialog system
+*** TODO reenable
+** TODO Basic enemy to prototype combat system
+** TODO Base building system
 ** TODO Combat system
 *** TODO Normal/heavy swing
 *** TODO Shield
 *** TODO Parry/backstab
 *** TODO Dodge
 *** TODO Each move takes time, and the longer it takes, the more damage it does.
-** TODO Dialog system
-*** TODO reenable
-** TODO Basic enemy to prototype combat system
-** TODO Base building system
 * Architecture
 ** TODO push buffer rendering
 *** TODO Sort based on layers, and then based on position.y
@@ -27,15 +28,15 @@
 *** TODO Separate platform layer
 *** TODO Looped live editing
 * Design
-** TODO 2D fantasy survival crafting
+** TODO 2D fantasy [survival | crafting | puzzle]
 ** TODO Dark Souls style combat
 ** TODO Dark Souls atmosphere
 *** TODO See far away parts of the level that you eventually reach
-***** TODO How can I simulate this effect in 2d? Parallax scrolling.
 * Story Ideas
 ** Enemies are sad, misinformed people instead of monsters?
 ** A room full of breakables that a shop keeper later rewards you if unbroken
 * Bugs
 ** TODO Quicksand sound doesn't play at appropriate interval (tweak collision)
-** TODO A replaced tile doesn't catch on fire
-** TODO Tile to place can become fire sprite
+** TODO A placed tile doesn't catch on fire
+** TODO Tile to place can become a fire sprite
+** TODO Can place tree on top of fire pit, but still light it on fire
