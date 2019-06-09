@@ -539,16 +539,15 @@ internal void updateHero(Entity* h, Input* input, Game* g)
 
                 if (inQuicksand)
                 {
-                    // TODO(cjh): Slow hero down
-                    // TODO(cjh): Need constant sound
-                    // TODO(cjh): Move to harvesting loop below (a collision loop)
                     if (h->isMoving)
                     {
                         queueSound(&g->sounds, &g->mudSound);
                     }
+                    // TODO(cjh): This isn't quite the effect I'm looking for
+                    h->velocity -= 0.95f*h->velocity;
                 }
             }
-
+            // TODO(cjh): Use tileFlags TP_SOLID instead of collides for tiles
             if (testEntity->collides)
             {
                 if (testWall(minCorner.x, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,

@@ -37,6 +37,4 @@
 ** Enemies are sad, misinformed people instead of monsters?
 ** A room full of breakables that a shop keeper later rewards you if unbroken
 * Bugs
-** TODO Quicksand sound doesn't play at appropriate interval (tweak collision)
 ** TODO Tile to place can become a fire sprite
-** TODO Can harvest burnt tree if it caught fire as a stump

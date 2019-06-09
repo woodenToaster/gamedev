@@ -7,6 +7,7 @@ void addTileFlags(Entity *e, u32 prop)
 
 void removeTileFlags(Entity *e, u32 prop)
 {
+    addTileFlags(e, prop);
     e->tileFlags ^= prop;
 }
 
