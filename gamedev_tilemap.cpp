@@ -112,12 +112,12 @@ void drawTile(RenderGroup *group, Game *g, Entity *e, bool32 isBeingPlaced)
         {
             e->spriteRect.x = e->spriteRect.w * e->animation.currentFrame;
         }
-        pushSprite(group, e->spriteSheet.sheet, e->spriteRect, tileRect);
+        pushSprite(group, e->spriteSheet.sheet, e->spriteRect, tileRect, RenderLayer_Entities);
     }
     else
     {
         u32 tileColor = e->color;
-        pushFilledRect(group, tileRect, tileColor);
+        pushFilledRect(group, tileRect, tileColor, RenderLayer_Ground);
     }
 
     if (isBeingPlaced)
@@ -130,7 +130,7 @@ void drawTile(RenderGroup *group, Game *g, Entity *e, bool32 isBeingPlaced)
         else
         {
             // Draw red filter on top
-            pushFilledRect(group, tileRect, g->colors[Color_Red], 128);
+            pushFilledRect(group, tileRect, g->colors[Color_Red], RenderLayer_Entities, 128);
         }
     }
 }
@@ -157,5 +157,5 @@ void drawBackground(RenderGroup *group, Game *g)
 {
     Camera *c = &g->camera;
     SDL_Rect backgroundDest = {c->viewport.x, c->viewport.y, c->viewport.w, c->viewport.h};
-    pushFilledRect(group, backgroundDest, g->colors[Color_Grey]);
+    pushFilledRect(group, backgroundDest, g->colors[Color_Grey], RenderLayer_Ground);
 }

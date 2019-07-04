@@ -96,6 +96,7 @@ int main(int argc, char* argv[])
     // Font
     FontMetadata fontMetadata = {};
     generateFontData(&fontMetadata, game);
+    game->fontMetadata = &fontMetadata;
 
     // Map
     u32 tileWidth = 80;
@@ -205,6 +206,9 @@ int main(int argc, char* argv[])
     {
         u32 now = SDL_GetTicks();
 
+        TemporaryMemory renderMemory = beginTemporaryMemory(&game->transientArena);
+        RenderGroup *group = allocateRenderGroup(&game->transientArena, MEGABYTES(2));
+
         /*********************************************************************/
         /* Input                                                             */
         /*********************************************************************/
@@ -219,7 +223,7 @@ int main(int argc, char* argv[])
             case GAME_MODE_PLAYING:
             {
                 updateGame(game, &input);
-                updateHero(hero, &input, game);
+                updateHero(group, hero, &input, game);
                 updateCamera(&game->camera, hero->position);
                 updateAnimation(&hero->animation, game->dt, hero->isMoving);
                 playQueuedSounds(&game->sounds, now);
@@ -241,8 +245,6 @@ int main(int argc, char* argv[])
         /*********************************************************************/
         /* Draw                                                              */
         /*********************************************************************/
-        TemporaryMemory renderMemory = beginTemporaryMemory(&game->transientArena);
-        RenderGroup *group = allocateRenderGroup(&game->transientArena, MEGABYTES(2));
 
         SDL_SetRenderTarget(game->renderer, game->currentMap->texture);
         drawBackground(group, game);

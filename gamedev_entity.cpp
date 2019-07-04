@@ -49,19 +49,19 @@ void drawEntity(RenderGroup *group, Entity* e, Game* g)
         // Draw collision box
         SDL_Rect collisionRect = {(int)(e->position.x - 0.5f * e->width), (int)(e->position.y - e->height),
                                   e->width, e->height};
-        pushFilledRect(group, collisionRect, g->colors[Color_Yellow]);
+        pushFilledRect(group, collisionRect, g->colors[Color_Yellow], RenderLayer_Entities);
 
         // Draw sprite
         i32 width = e->spriteDims.x;
         i32 height = e->spriteDims.y;
         e->spriteRect.x = e->spriteRect.w * e->animation.currentFrame;
         SDL_Rect dest = {(int)(e->position.x - 0.5f*width), (int)(e->position.y - height), width, height};
-        pushSprite(group, e->spriteSheet.sheet, e->spriteRect, dest);
+        pushSprite(group, e->spriteSheet.sheet, e->spriteRect, dest, RenderLayer_Entities);
 
         // Draw entity interactionRect
         if (e->harvesting)
         {
-            pushFilledRect(group, e->heroInteractionRect, g->colors[Color_DarkOrange]);
+            pushFilledRect(group, e->heroInteractionRect, g->colors[Color_DarkOrange], RenderLayer_Entities);
         }
     }
 }
@@ -408,7 +408,7 @@ internal bool32 isValidTilePlacment(Map *m, Entity *tileToPlace)
     return result;
 }
 
-internal void updateHero(Entity* h, Input* input, Game* g)
+internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game* g)
 {
     Map *map = g->currentMap;
     // TODO(cjh): Handle joystick and keyboard on separate paths
@@ -487,7 +487,10 @@ internal void updateHero(Entity* h, Input* input, Game* g)
         h->spriteRect.x = 0;
     }
 
-    for (int iter = 0; iter < 4; ++iter)
+    int iters = 4;
+    int lastIter = iters - 1;
+    Entity *harvestableThisFrame = 0;
+    for (int iter = 0; iter < iters; ++iter)
     {
         f32 tMin = 1.0f;
         Vec2 wallNormal = {};
@@ -498,6 +501,98 @@ internal void updateHero(Entity* h, Input* input, Game* g)
         {
             Entity *testEntity = &map->entities[entityIndex];
 
+            // NOTE(cjh): Check for interactable entities, but only on last iteration
+            if (iter == lastIter)
+            {
+                updateHeroInteractionRegion(h);
+                switch (testEntity->type)
+                {
+                case ET_TILE:
+                {
+                    // Tile position is at center of tile
+                    SDL_Rect tileBoundingBox = {(i32)testEntity->position.x - (i32)(0.5f*testEntity->width),
+                                                (i32)testEntity->position.y - (i32)(0.5f*testEntity->height),
+                                                testEntity->width, testEntity->height};
+
+                    if (rectsOverlap(&h->heroInteractionRect, &tileBoundingBox))
+                    {
+                        if (isTileFlagSet(testEntity, TP_HARVEST))
+                        {
+                            harvestableThisFrame = testEntity;
+                            char text[] = "SPC to harvest";
+                            i32 textLength = (i32)strlen(text);
+                            i32 screenCenterX = g->camera.viewport.w / 2;
+                            // TODO(cjh): Get total pixel size of all the sprites creating the text
+                            i32 fontWidth = 10;
+                            i32 destX = screenCenterX - ((textLength / 2) * fontWidth);
+                            // TODO(cjh): Duplicated in drawHUD
+                            i32 beltHeight = 80;
+                            i32 destY = g->camera.viewport.h + g->camera.viewport.y - beltHeight;
+                            drawText(renderGroup, g->fontMetadata, text, destX, destY);
+                        }
+                        // TODO(cjh): Do we need TP_INTERACTIVE?
+                        if (isTileFlagSet(testEntity, TP_INTERACTIVE))
+                        {
+                            // NOTE(cjh): Light campfire
+                            if (isTileFlagSet(testEntity, TP_CAMPFIRE))
+                            {
+                                if (!testEntity->active)
+                                {
+                                    // TODO(cjh): interactableThisFrame = testEntity;
+                                    char text[] = "SPC to light campfire";
+                                    i32 textLength = (i32)strlen(text);
+                                    i32 screenCenterX = g->camera.viewport.w / 2;
+                                    // TODO(cjh): Get total pixel size of all the sprites creating the text
+                                    i32 fontWidth = 10;
+                                    i32 destX = screenCenterX - ((textLength / 2) * fontWidth);
+                                    // TODO(cjh): Duplicated in drawHUD
+                                    i32 beltHeight = 80;
+                                    i32 destY = g->camera.viewport.h + g->camera.viewport.y - beltHeight;
+                                    drawText(renderGroup, g->fontMetadata, text, destX, destY);
+                                }
+                                else
+                                {
+                                    char text[] = "SPC to extinguish campfire";
+                                    i32 textLength = (i32)strlen(text);
+                                    i32 screenCenterX = g->camera.viewport.w / 2;
+                                    // TODO(cjh): Get total pixel size of all the sprites creating the text
+                                    i32 fontWidth = 10;
+                                    i32 destX = screenCenterX - ((textLength / 2) * fontWidth);
+                                    // TODO(cjh): Duplicated in drawHUD
+                                    i32 beltHeight = 80;
+                                    i32 destY = g->camera.viewport.h + g->camera.viewport.y - beltHeight;
+                                    drawText(renderGroup, g->fontMetadata, text, destX, destY);
+                                }
+                            }
+                        }
+                    }
+                    break;
+                }
+                case ET_HARLOD:
+                {
+                    SDL_Rect harlodCollisionRegion = {(i32)(testEntity->position.x - 0.5f*testEntity->width),
+                                                      (i32)(testEntity->position.y - testEntity->height),
+                                                      testEntity->width, testEntity->height};
+
+                    if (rectsOverlap(&h->heroInteractionRect, &harlodCollisionRegion))
+                    {
+                        if (!testEntity->dialogueFile.contents)
+                        {
+                            testEntity->dialogueFile = readEntireFile("dialogues/harlod_dialogues.txt");
+                            // TODO(cjh): Need to null terminate everything. This will change. We
+                            // want to parse files for strings and tokenize, etc. For now it's hard coded
+                            testEntity->dialogueFile.contents[9] = '\0';
+                        }
+                        startDialogueMode(g, (char*)testEntity->dialogueFile.contents);
+                    }
+                    break;
+                }
+                default:
+                    break;
+                }
+            }
+
+            // NOTE(cjh): Collision checks
             f32 heightOffset = 0.5f*h->height;
             if (testEntity->type == ET_TILE)
             {
@@ -543,8 +638,8 @@ internal void updateHero(Entity* h, Input* input, Game* g)
                     {
                         queueSound(&g->sounds, &g->mudSound);
                     }
-                    // TODO(cjh): This isn't quite the effect I'm looking for
-                    h->velocity -= 0.95f*h->velocity;
+                    // TODO(cjh): This isn't quite the effect I'm looking for.
+                    h->velocity -= 0.98f*h->velocity;
                 }
             }
             // TODO(cjh): Use tileFlags TP_SOLID instead of collides for tiles
@@ -608,10 +703,13 @@ internal void updateHero(Entity* h, Input* input, Game* g)
     {
         updateHeroInteractionRegion(h);
 
+        // TODO(cjh): Can we do this in the main loop above instead of looping
+        // through the entities twice?
         for (u32 entityIndex = 0; entityIndex < map->entityCount; ++entityIndex)
         {
             Entity *testEntity = &map->entities[entityIndex];
 
+            // TODO(cjh): Use harvestableThisFrame from above (we already loop through the tiles)
             switch (testEntity->type)
             {
                 case ET_TILE:
@@ -633,6 +731,7 @@ internal void updateHero(Entity* h, Input* input, Game* g)
                         // TODO(cjh): Do we need TP_INTERACTIVE?
                         if (isTileFlagSet(testEntity, TP_INTERACTIVE))
                         {
+                            // NOTE(cjh): Light campfire
                             if (isTileFlagSet(testEntity, TP_CAMPFIRE))
                             {
                                 if (!testEntity->active)
@@ -677,13 +776,11 @@ internal void updateHero(Entity* h, Input* input, Game* g)
 
     if (h->craftTree)
     {
-        CraftableItemType item = Craftable_Tree;
-        craftItem(h, item);
+        craftItem(h, Craftable_Tree);
     }
     if (h->craftGlowJuice)
     {
-        CraftableItemType item = Craftable_Glow_Juice;
-        craftItem(h, item);
+        craftItem(h, Craftable_Glow_Juice);
     }
 
     if (h->placingItem)

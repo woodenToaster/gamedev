@@ -18,7 +18,7 @@ void drawText(RenderGroup *group, FontMetadata *fontMetadata, char* text, i32 x=
         {
             SDL_Texture *t = fontMetadata->textures[text[at]];
             SDL_Rect fullTexture = {0, 0, 0, 0};
-            pushSprite(group, t, fullTexture, dest);
+            pushSprite(group, t, fullTexture, dest, RenderLayer_HUD);
             xpos += (int)(cpm->advance * fontMetadata->scale);
         }
         else
@@ -47,7 +47,7 @@ void drawDialogScreen(RenderGroup *group, Game *g, FontMetadata *fontMetadata)
     int dialogueBoxWidth = 2 * (thirdOfWidth);
     int dialogueBoxHeight = fourthOfHeight;
     SDL_Rect dialogueBoxDest = {dialogueBoxX,dialogueBoxY, dialogueBoxWidth, dialogueBoxHeight};
-    pushFilledRect(group, dialogueBoxDest, g->colors[Color_BabyBlue]);
+    pushFilledRect(group, dialogueBoxDest, g->colors[Color_BabyBlue], RenderLayer_HUD);
     drawText(group, fontMetadata, g->dialogue, dialogueBoxX, dialogueBoxY);
 }
 
@@ -60,7 +60,7 @@ void drawInventoryScreen(RenderGroup *group, Game *g, Entity *h, FontMetadata *f
     int dialogueBoxWidth = 2 * (thirdOfWidth);
     int dialogueBoxHeight = fourthOfHeight;
     SDL_Rect dialogueBoxDest = {dialogueBoxX, dialogueBoxY, dialogueBoxWidth, dialogueBoxHeight};
-    pushFilledRect(group, dialogueBoxDest, g->colors[Color_BabyBlue]);
+    pushFilledRect(group, dialogueBoxDest, g->colors[Color_BabyBlue], RenderLayer_HUD);
 
     for (int inventoryIndex = 1; inventoryIndex < INV_COUNT; ++inventoryIndex)
     {
@@ -92,7 +92,7 @@ void drawHUD(RenderGroup *group, Game *g, Entity *h, FontMetadata *font)
 
     // Transparent black background
     SDL_Rect backgroundDest = {destX, destY, beltSlots * slotSize, slotSize};
-    pushFilledRect(group, backgroundDest, g->colors[Color_Black], 128);
+    pushFilledRect(group, backgroundDest, g->colors[Color_Black], RenderLayer_HUD, 128);
 
     for (int i = 0; i < beltSlots; ++i)
     {
@@ -123,7 +123,7 @@ void drawHUD(RenderGroup *group, Game *g, Entity *h, FontMetadata *font)
 
             if (textureToDraw)
             {
-                pushSprite(group, textureToDraw, tileRect, dest);
+                pushSprite(group, textureToDraw, tileRect, dest, RenderLayer_HUD);
             }
             // Draw inventory number
             assert(item->count <= 999);
@@ -132,14 +132,14 @@ void drawHUD(RenderGroup *group, Game *g, Entity *h, FontMetadata *font)
             drawText(group, font, numItems, dest.x, dest.y);
         }
         u8 alpha = i == h->activeBeltItemIndex ? 255 : 128;
-        pushRect(group, dest, g->colors[Color_White], alpha);
+        pushRect(group, dest, g->colors[Color_White], RenderLayer_HUD, alpha);
     }
 }
 
 void darkenBackground(RenderGroup *group, Game *g)
 {
     SDL_Rect dest = {};
-    pushFilledRect(group, dest, g->colors[Color_Black], 64);
+    pushFilledRect(group, dest, g->colors[Color_Black], RenderLayer_HUD, 64);
 }
 
 void renderRect(SDL_Renderer *renderer, SDL_Rect *dest, u32 color, u8 alpha=255)
@@ -198,7 +198,7 @@ internal void *pushRenderElement_(RenderGroup *group, u32 size, RenderEntryType 
     return result;
 }
 
-internal void pushRect(RenderGroup *group, SDL_Rect dest, u32 color, u8 alpha)
+internal void pushRect(RenderGroup *group, SDL_Rect dest, u32 color, RenderLayer layer, u8 alpha)
 {
     RenderEntryRect *rect = PushRenderElement(group, RenderEntryRect);
     if (rect)
@@ -206,10 +206,11 @@ internal void pushRect(RenderGroup *group, SDL_Rect dest, u32 color, u8 alpha)
         rect->dest = dest;
         rect->color = color;
         rect->alpha = alpha;
+        rect->layer = layer;
     }
 }
 
-internal void pushFilledRect(RenderGroup *group, SDL_Rect dest, u32 color, u8 alpha)
+internal void pushFilledRect(RenderGroup *group, SDL_Rect dest, u32 color, RenderLayer layer, u8 alpha)
 {
     RenderEntryFilledRect *filledRect = PushRenderElement(group, RenderEntryFilledRect);
     if (filledRect)
@@ -217,10 +218,11 @@ internal void pushFilledRect(RenderGroup *group, SDL_Rect dest, u32 color, u8 al
         filledRect->dest = dest;
         filledRect->color = color;
         filledRect->alpha = alpha;
+        filledRect->layer = layer;
     }
 }
 
-internal void pushSprite(RenderGroup *group, SDL_Texture *sheet, SDL_Rect source, SDL_Rect dest)
+internal void pushSprite(RenderGroup *group, SDL_Texture *sheet, SDL_Rect source, SDL_Rect dest, RenderLayer layer)
 {
     RenderEntrySprite *sprite = PushRenderElement(group, RenderEntrySprite);
     if (sprite)
@@ -228,6 +230,7 @@ internal void pushSprite(RenderGroup *group, SDL_Texture *sheet, SDL_Rect source
         sprite->dest = dest;
         sprite->source = source;
         sprite->sheet = sheet;
+        sprite->layer = layer;
     }
 }
 
@@ -252,40 +255,52 @@ internal SDL_Rect *checkForNullRect(SDL_Rect *rect)
 
 internal void drawRenderGroup(SDL_Renderer *renderer, RenderGroup *group)
 {
-    for (u32 baseAddress = 0; baseAddress < group->bufferSize;)
+    for (int layerIndex = 0; layerIndex < RenderLayer_Count; ++layerIndex)
     {
-        RenderEntryHeader *header = (RenderEntryHeader*)(group->bufferBase + baseAddress);
-        baseAddress += sizeof(*header);
+        for (u32 baseAddress = 0; baseAddress < group->bufferSize;)
+        {
+            RenderEntryHeader *header = (RenderEntryHeader*)(group->bufferBase + baseAddress);
+            baseAddress += sizeof(*header);
 
-        void *data = (u8*)header + sizeof(*header);
-        switch (header->type)
-        {
-        case RenderEntryType_RenderEntryRect:
-        {
-            RenderEntryRect *entry = (RenderEntryRect*)data;
-            SDL_Rect *dest = checkForNullRect(&entry->dest);
-            renderRect(renderer, dest, entry->color, entry->alpha);
-            baseAddress += sizeof(*entry);
-        } break;
-        case RenderEntryType_RenderEntryFilledRect:
-        {
-            RenderEntryFilledRect *entry = (RenderEntryFilledRect*)data;
-            SDL_Rect *dest = checkForNullRect(&entry->dest);
-            renderFilledRect(renderer, dest, entry->color, entry->alpha);
-            baseAddress += sizeof(*entry);
-        } break;
+            void *data = (u8*)header + sizeof(*header);
+            switch (header->type)
+            {
+            case RenderEntryType_RenderEntryRect:
+            {
+                RenderEntryRect *entry = (RenderEntryRect*)data;
+                if (entry->layer == layerIndex)
+                {
+                    SDL_Rect *dest = checkForNullRect(&entry->dest);
+                    renderRect(renderer, dest, entry->color, entry->alpha);
+                }
+                baseAddress += sizeof(*entry);
+            } break;
+            case RenderEntryType_RenderEntryFilledRect:
+            {
+                RenderEntryFilledRect *entry = (RenderEntryFilledRect*)data;
+                if (entry->layer == layerIndex)
+                {
+                    SDL_Rect *dest = checkForNullRect(&entry->dest);
+                    renderFilledRect(renderer, dest, entry->color, entry->alpha);
+                }
+                baseAddress += sizeof(*entry);
+            } break;
 
-        case RenderEntryType_RenderEntrySprite:
-        {
-            RenderEntrySprite *entry = (RenderEntrySprite*)data;
-            SDL_Rect *source = checkForNullRect(&entry->source);
-            SDL_Rect *dest = checkForNullRect(&entry->dest);
-            SDL_RenderCopy(renderer, entry->sheet, source, dest);
-            baseAddress += sizeof(*entry);
-        } break;
+            case RenderEntryType_RenderEntrySprite:
+            {
+                RenderEntrySprite *entry = (RenderEntrySprite*)data;
+                if (entry->layer == layerIndex)
+                {
+                    SDL_Rect *source = checkForNullRect(&entry->source);
+                    SDL_Rect *dest = checkForNullRect(&entry->dest);
+                    SDL_RenderCopy(renderer, entry->sheet, source, dest);
+                }
+                baseAddress += sizeof(*entry);
+            } break;
 
-        default:
-            InvalidCodePath;
+            default:
+                InvalidCodePath;
+            }
         }
     }
 }

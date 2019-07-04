@@ -73,6 +73,7 @@ struct Game
     SoundList sounds;
     GameMode mode;
     char *dialogue;
+    FontMetadata *fontMetadata;
 
     SDL_Texture *linkTexture;
     SDL_Texture *harvestableTreeTexture;

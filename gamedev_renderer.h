@@ -3,14 +3,16 @@ enum RenderLayer
 {
     RenderLayer_Ground,
     RenderLayer_Entities,
-    RenderLayer_HUD
+    RenderLayer_HUD,
+    RenderLayer_Count
 };
 
 enum RenderEntryType
 {
     RenderEntryType_RenderEntryRect,
     RenderEntryType_RenderEntryFilledRect,
-    RenderEntryType_RenderEntrySprite
+    RenderEntryType_RenderEntrySprite,
+    RenderEntryType_Count
 };
 
 struct RenderEntryHeader
@@ -25,6 +27,7 @@ struct RenderEntryRect
     u32 color;
     SDL_Rect dest;
     u8 alpha;
+    RenderLayer layer;
 };
 
 struct RenderEntryFilledRect
@@ -32,6 +35,7 @@ struct RenderEntryFilledRect
     u32 color;
     SDL_Rect dest;
     u8 alpha;
+    RenderLayer layer;
 };
 
 struct RenderEntrySprite
@@ -39,6 +43,7 @@ struct RenderEntrySprite
     SDL_Rect source;
     SDL_Rect dest;
     SDL_Texture *sheet;
+    RenderLayer layer;
 };
 
 struct RenderGroup
@@ -48,6 +53,6 @@ struct RenderGroup
     u8 *bufferBase;
 };
 
-internal void pushRect(RenderGroup *group, SDL_Rect dest, u32 color, u8 alpha=255);
-internal void pushFilledRect(RenderGroup *group, SDL_Rect dest, u32 color, u8 alpha=255);
-internal void pushSprite(RenderGroup *group, SDL_Texture *sheet, SDL_Rect source, SDL_Rect dest);
+internal void pushRect(RenderGroup *group, SDL_Rect dest, u32 color, RenderLayer layer, u8 alpha=255);
+internal void pushFilledRect(RenderGroup *group, SDL_Rect dest, u32 color, RenderLayer layer,  u8 alpha=255);
+internal void pushSprite(RenderGroup *group, SDL_Texture *sheet, SDL_Rect source, SDL_Rect dest, RenderLayer layer);

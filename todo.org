@@ -2,16 +2,17 @@
 #+Startup: nologdone
 
 * Gameplay
-** TODO Inventory system
-*** TODO Make items selectable
 ** TODO Tile placement
-*** TODO Allow entities to be placed anywhere, not just 80x80. Snap to smaller grid?
-*** TODO Nail down collision rules with burnt tiles
-**** TODO They collide before being harvested but not after
+*** TODO Allow entities to be placed anywhere, not just in an 80x80 grid. Snap to smaller grid?
 *** TODO Nail down tile placing rules. 2 layers? tile and entity
 *** TODO What happens when multiple entities exist in one tile space? How do we select the right one?
+** TODO Show tooltip when something can be interacted with
+*** TODO 'p' to place tile
+*** TODO 'space' to start dialogue
+*** TODO Use harvestableThisFrame instead of doing second loop for if(h->harvest)
+** TODO Inventory system
+*** TODO Make items selectable
 ** TODO Dialog system
-*** TODO reenable
 ** TODO Basic enemy to prototype combat system
 ** TODO Base building system
 ** TODO Combat system
@@ -33,8 +34,5 @@
 ** TODO Dark Souls style combat
 ** TODO Dark Souls atmosphere
 *** TODO See far away parts of the level that you eventually reach
-* Story Ideas
-** Enemies are sad, misinformed people instead of monsters?
-** A room full of breakables that a shop keeper later rewards you if unbroken
+* Ideas
 * Bugs
-** TODO Tile to place can become a fire sprite
