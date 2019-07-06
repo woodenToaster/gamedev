@@ -407,6 +407,18 @@ internal bool32 isValidTilePlacment(Map *m, Entity *tileToPlace)
 
     return result;
 }
+void pushInteractionHint(RenderGroup *group, Game *g, char *text)
+{
+    i32 textLength = (i32)strlen(text);
+    i32 screenCenterX = g->camera.viewport.w / 2;
+    // TODO(cjh): Get total pixel size of all the sprites creating the text
+    i32 fontWidth = 10;
+    i32 destX = screenCenterX - ((textLength / 2) * fontWidth);
+    // TODO(cjh): Duplicated in drawHUD
+    i32 beltHeight = 80;
+    i32 destY = g->camera.viewport.h + g->camera.viewport.y - beltHeight;
+    drawText(group, g->fontMetadata, text, destX, destY);
+}
 
 internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game* g)
 {
@@ -519,16 +531,7 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
                         if (isTileFlagSet(testEntity, TP_HARVEST))
                         {
                             harvestableThisFrame = testEntity;
-                            char text[] = "SPC to harvest";
-                            i32 textLength = (i32)strlen(text);
-                            i32 screenCenterX = g->camera.viewport.w / 2;
-                            // TODO(cjh): Get total pixel size of all the sprites creating the text
-                            i32 fontWidth = 10;
-                            i32 destX = screenCenterX - ((textLength / 2) * fontWidth);
-                            // TODO(cjh): Duplicated in drawHUD
-                            i32 beltHeight = 80;
-                            i32 destY = g->camera.viewport.h + g->camera.viewport.y - beltHeight;
-                            drawText(renderGroup, g->fontMetadata, text, destX, destY);
+                            pushInteractionHint(renderGroup, g, "SPC to harvest");
                         }
                         // TODO(cjh): Do we need TP_INTERACTIVE?
                         if (isTileFlagSet(testEntity, TP_INTERACTIVE))
@@ -539,29 +542,11 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
                                 if (!testEntity->active)
                                 {
                                     // TODO(cjh): interactableThisFrame = testEntity;
-                                    char text[] = "SPC to light campfire";
-                                    i32 textLength = (i32)strlen(text);
-                                    i32 screenCenterX = g->camera.viewport.w / 2;
-                                    // TODO(cjh): Get total pixel size of all the sprites creating the text
-                                    i32 fontWidth = 10;
-                                    i32 destX = screenCenterX - ((textLength / 2) * fontWidth);
-                                    // TODO(cjh): Duplicated in drawHUD
-                                    i32 beltHeight = 80;
-                                    i32 destY = g->camera.viewport.h + g->camera.viewport.y - beltHeight;
-                                    drawText(renderGroup, g->fontMetadata, text, destX, destY);
+                                    pushInteractionHint(renderGroup, g, "SPC to light campfire");
                                 }
                                 else
                                 {
-                                    char text[] = "SPC to extinguish campfire";
-                                    i32 textLength = (i32)strlen(text);
-                                    i32 screenCenterX = g->camera.viewport.w / 2;
-                                    // TODO(cjh): Get total pixel size of all the sprites creating the text
-                                    i32 fontWidth = 10;
-                                    i32 destX = screenCenterX - ((textLength / 2) * fontWidth);
-                                    // TODO(cjh): Duplicated in drawHUD
-                                    i32 beltHeight = 80;
-                                    i32 destY = g->camera.viewport.h + g->camera.viewport.y - beltHeight;
-                                    drawText(renderGroup, g->fontMetadata, text, destX, destY);
+                                    pushInteractionHint(renderGroup, g, "SPC to extinguish campfire");
                                 }
                             }
                         }
@@ -576,14 +561,15 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
 
                     if (rectsOverlap(&h->heroInteractionRect, &harlodCollisionRegion))
                     {
-                        if (!testEntity->dialogueFile.contents)
-                        {
-                            testEntity->dialogueFile = readEntireFile("dialogues/harlod_dialogues.txt");
-                            // TODO(cjh): Need to null terminate everything. This will change. We
-                            // want to parse files for strings and tokenize, etc. For now it's hard coded
-                            testEntity->dialogueFile.contents[9] = '\0';
-                        }
-                        startDialogueMode(g, (char*)testEntity->dialogueFile.contents);
+                        pushInteractionHint(renderGroup, g, "Talk")
+                        // if (!testEntity->dialogueFile.contents)
+                        // {
+                        //     testEntity->dialogueFile = readEntireFile("dialogues/harlod_dialogues.txt");
+                        //     // TODO(cjh): Need to null terminate everything. This will change. We
+                        //     // want to parse files for strings and tokenize, etc. For now it's hard coded
+                        //     testEntity->dialogueFile.contents[9] = '\0';
+                        // }
+                        // startDialogueMode(g, (char*)testEntity->dialogueFile.contents);
                     }
                     break;
                 }
