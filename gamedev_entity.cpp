@@ -407,14 +407,14 @@ internal bool32 isValidTilePlacment(Map *m, Entity *tileToPlace)
 
     return result;
 }
+
 void pushInteractionHint(RenderGroup *group, Game *g, char *text)
 {
     i32 textLength = (i32)strlen(text);
     i32 screenCenterX = g->camera.viewport.w / 2;
-    // TODO(cjh): Get total pixel size of all the sprites creating the text
+    // TODO(cjh): Get total pixel size of all the sprites creating the text (for centering)
     i32 fontWidth = 10;
     i32 destX = screenCenterX - ((textLength / 2) * fontWidth);
-    // TODO(cjh): Duplicated in drawHUD
     i32 beltHeight = 80;
     i32 destY = g->camera.viewport.h + g->camera.viewport.y - beltHeight;
     drawText(group, g->fontMetadata, text, destX, destY);
@@ -501,7 +501,7 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
 
     int iters = 4;
     int lastIter = iters - 1;
-    Entity *harvestableThisFrame = 0;
+    Entity *interactableThisFrame = 0;
     for (int iter = 0; iter < iters; ++iter)
     {
         f32 tMin = 1.0f;
@@ -514,7 +514,7 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
             Entity *testEntity = &map->entities[entityIndex];
 
             // NOTE(cjh): Check for interactable entities, but only on last iteration
-            if (iter == lastIter)
+            if (iter == lastIter && !h->placingItem)
             {
                 updateHeroInteractionRegion(h);
                 switch (testEntity->type)
@@ -530,7 +530,7 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
                     {
                         if (isTileFlagSet(testEntity, TP_HARVEST))
                         {
-                            harvestableThisFrame = testEntity;
+                            interactableThisFrame = testEntity;
                             pushInteractionHint(renderGroup, g, "SPC to harvest");
                         }
                         // TODO(cjh): Do we need TP_INTERACTIVE?
@@ -541,11 +541,12 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
                             {
                                 if (!testEntity->active)
                                 {
-                                    // TODO(cjh): interactableThisFrame = testEntity;
+                                    interactableThisFrame = testEntity;
                                     pushInteractionHint(renderGroup, g, "SPC to light campfire");
                                 }
                                 else
                                 {
+                                    interactableThisFrame = testEntity;
                                     pushInteractionHint(renderGroup, g, "SPC to extinguish campfire");
                                 }
                             }
@@ -561,15 +562,8 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
 
                     if (rectsOverlap(&h->heroInteractionRect, &harlodCollisionRegion))
                     {
-                        pushInteractionHint(renderGroup, g, "Talk")
-                        // if (!testEntity->dialogueFile.contents)
-                        // {
-                        //     testEntity->dialogueFile = readEntireFile("dialogues/harlod_dialogues.txt");
-                        //     // TODO(cjh): Need to null terminate everything. This will change. We
-                        //     // want to parse files for strings and tokenize, etc. For now it's hard coded
-                        //     testEntity->dialogueFile.contents[9] = '\0';
-                        // }
-                        // startDialogueMode(g, (char*)testEntity->dialogueFile.contents);
+                        interactableThisFrame = testEntity;
+                        pushInteractionHint(renderGroup, g, "SPC to talk");
                     }
                     break;
                 }
@@ -687,49 +681,41 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
 
     if (h->harvesting && !h->placingItem)
     {
-        updateHeroInteractionRegion(h);
+        // NOTE(cjh): It's possible that the movement applied this frame could
+        // invalidate the interation region since the movement is applied after
+        // interactables are checked. This could result in bugs if we have large
+        // movements like teleportation
 
-        // TODO(cjh): Can we do this in the main loop above instead of looping
-        // through the entities twice?
-        for (u32 entityIndex = 0; entityIndex < map->entityCount; ++entityIndex)
+        // updateHeroInteractionRegion(h);
+        if (interactableThisFrame)
         {
-            Entity *testEntity = &map->entities[entityIndex];
-
-            // TODO(cjh): Use harvestableThisFrame from above (we already loop through the tiles)
+            Entity *testEntity = interactableThisFrame;
             switch (testEntity->type)
             {
                 case ET_TILE:
                 {
-                    // Tile position is at center of tile
-                    SDL_Rect tileBoundingBox = {(i32)testEntity->position.x - (i32)(0.5f*testEntity->width),
-                                                (i32)testEntity->position.y - (i32)(0.5f*testEntity->height),
-                                                testEntity->width, testEntity->height};
-
-                    if (rectsOverlap(&h->heroInteractionRect, &tileBoundingBox))
+                    if (isTileFlagSet(testEntity, TP_HARVEST))
                     {
-                        if (isTileFlagSet(testEntity, TP_HARVEST))
+                        removeTileFlags(testEntity, TP_HARVEST);
+                        testEntity->collides = false;
+                        testEntity->spriteRect.x += testEntity->spriteRect.w;
+                        h->inventory[testEntity->harvestedItem]++;
+                    }
+                    // TODO(cjh): Do we need TP_INTERACTIVE?
+                    if (isTileFlagSet(testEntity, TP_INTERACTIVE))
+                    {
+                        // NOTE(cjh): Light campfire
+                        if (isTileFlagSet(testEntity, TP_CAMPFIRE))
                         {
-                            removeTileFlags(testEntity, TP_HARVEST);
-                            testEntity->collides = false;
-                            testEntity->spriteRect.x += testEntity->spriteRect.w;
-                            h->inventory[testEntity->harvestedItem]++;
-                        }
-                        // TODO(cjh): Do we need TP_INTERACTIVE?
-                        if (isTileFlagSet(testEntity, TP_INTERACTIVE))
-                        {
-                            // NOTE(cjh): Light campfire
-                            if (isTileFlagSet(testEntity, TP_CAMPFIRE))
+                            if (!testEntity->active)
                             {
-                                if (!testEntity->active)
-                                {
-                                    addFlame(g, testEntity->position);
-                                    testEntity->active = true;
-                                }
-                                else
-                                {
-                                    removeEntity(map, testEntity->position, TP_FLAME);
-                                    testEntity->active = false;
-                                }
+                                addFlame(g, testEntity->position);
+                                testEntity->active = true;
+                            }
+                            else
+                            {
+                                removeEntity(map, testEntity->position, TP_FLAME);
+                                testEntity->active = false;
                             }
                         }
                     }
@@ -737,22 +723,15 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
                 }
                 case ET_HARLOD:
                 {
-                    SDL_Rect harlodCollisionRegion = {(i32)(testEntity->position.x - 0.5f*testEntity->width),
-                                                      (i32)(testEntity->position.y - testEntity->height),
-                                                      testEntity->width, testEntity->height};
-
-                    if (rectsOverlap(&h->heroInteractionRect, &harlodCollisionRegion))
+                    if (!testEntity->dialogueFile.contents)
                     {
-                        if (!testEntity->dialogueFile.contents)
-                        {
-                            testEntity->dialogueFile = readEntireFile("dialogues/harlod_dialogues.txt");
-                            // TODO(cjh): Need to null terminate everything. This will change. We
-                            // want to parse files for strings and tokenize, etc. For now it's hard coded
-                            testEntity->dialogueFile.contents[9] = '\0';
-                        }
-                        startDialogueMode(g, (char*)testEntity->dialogueFile.contents);
+                        testEntity->dialogueFile = readEntireFile("dialogues/harlod_dialogues.txt");
+                        // TODO(cjh): Need to null terminate everything. This will change. We
+                        // want to parse files for strings and tokenize, etc. For now it's hard coded
+                        testEntity->dialogueFile.contents[9] = '\0';
                     }
-                    break;
+                    startDialogueMode(g, (char*)testEntity->dialogueFile.contents);
+                break;
                 }
                 default:
                     break;
@@ -771,6 +750,7 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
 
     if (h->placingItem)
     {
+        pushInteractionHint(renderGroup, g, "SPC to place tile");
         if (!h->tileToPlace)
         {
             Map *m = g->currentMap;

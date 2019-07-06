@@ -6,16 +6,12 @@
 *** TODO Allow entities to be placed anywhere, not just in an 80x80 grid. Snap to smaller grid?
 *** TODO Nail down tile placing rules. 2 layers? tile and entity
 *** TODO What happens when multiple entities exist in one tile space? How do we select the right one?
-** TODO Show tooltip when something can be interacted with
-*** TODO 'p' to place tile
-*** TODO 'space' to start dialogue
-*** TODO Use harvestableThisFrame instead of doing second loop for if(h->harvest)
 ** TODO Inventory system
 *** TODO Make items selectable
 ** TODO Dialog system
-** TODO Basic enemy to prototype combat system
 ** TODO Base building system
 ** TODO Combat system
+*** TODO Basic enemy for prototyping
 *** TODO Normal/heavy swing
 *** TODO Shield
 *** TODO Parry/backstab
@@ -36,3 +32,4 @@
 *** TODO See far away parts of the level that you eventually reach
 * Ideas
 * Bugs
+** TODO Can sometimes end up with a flame tile in placing slot
