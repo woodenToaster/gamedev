@@ -757,6 +757,7 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
             h->tileToPlace = addEntity(m);
             *h->tileToPlace = {};
             Entity *tile = h->tileToPlace;
+            // TODO(cjh): No hard coded values
             tile->width = 80;
             tile->height = 80;
             tile->craftableItem = itemTypeToPlace;

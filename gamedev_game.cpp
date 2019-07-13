@@ -173,10 +173,6 @@ void initGame(Game* g, u32 width, u32 height)
     }
     initColors(g);
 
-    // Sounds
-    g->mudSound.delay = 250;
-    g->mudSound.chunk = loadWav("sounds/mud_walk.wav");
-
     g->initialized = true;
     g->running = true;
 }

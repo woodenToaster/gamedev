@@ -13,27 +13,27 @@
 #include "SDL_mixer.h"
 
 // TODO(cjh): Remove standard library dependency
-#include "stdint.h"
-#include "stdio.h"
-#include "stdlib.h"
-#include "math.h"
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 
 #include "gamedev_definitions.h"
-#include "gamedev_animation.cpp"
-
+#include "gamedev_animation.h"
 #include "gamedev_memory.h"
 #include "gamedev_renderer.h"
 #include "gamedev_math.h"
 #include "gamedev_font.h"
 #include "gamedev_sound.h"
 #include "gamedev_input.h"
-#include "gamedev_camera.cpp"
+#include "gamedev_camera.h"
 #include "gamedev_game.h"
 #include "gamedev_sprite_sheet.h"
 #include "gamedev_tilemap.h"
 #include "gamedev_entity.h"
-#include "gamedev_camera.h"
 
+#include "gamedev_animation.cpp"
+#include "gamedev_camera.cpp"
 #include "gamedev_memory.cpp"
 #include "gamedev_renderer.cpp"
 #include "gamedev_font.cpp"
@@ -81,22 +81,31 @@ int main(int argc, char* argv[])
         exit(1);
     }
 
+    // Asset loading
+    // TODO(cjh): Packed asset file
+    // TODO(cjh): asset streaming
+
+    // PNGs
     game->linkTexture = createTextureFromPng("sprites/link_walking.png", game->renderer);
     game->harvestableTreeTexture = createTextureFromPng("sprites/harvestable_tree.png", game->renderer);
-    game->harlodTexture = createTextureFromPng("sprites/Harlod_the_caveman.png", game->renderer);
-    game->knightTexture = createTextureFromPng("sprites/knight_alligned.png", game->renderer);
+    // game->harlodTexture = createTextureFromPng("sprites/Harlod_the_caveman.png", game->renderer);
+    // game->knightTexture = createTextureFromPng("sprites/knight_alligned.png", game->renderer);
     game->flameTexture = createTextureFromPng("sprites/flame.png", game->renderer);
     game->firePitTexture = createTextureFromPng("sprites/fire_pit.png", game->renderer);
     game->glowTreeTexture = createTextureFromPng("sprites/glow_tree.png", game->renderer);
 
-    // Input
-    Input input = {};
-    initControllers(&input);
+    // Sounds
+    game->mudSound.delay = 250;
+    game->mudSound.chunk = loadWav("sounds/mud_walk.wav");
 
-    // Font
+    // Fonts
     FontMetadata fontMetadata = {};
     generateFontData(&fontMetadata, game);
     game->fontMetadata = &fontMetadata;
+
+    // Input
+    Input input = {};
+    initControllers(&input);
 
     // Map
     u32 tileWidth = 80;
@@ -289,7 +298,7 @@ int main(int argc, char* argv[])
         drawText(group, &fontMetadata, bytesUsed, game->camera.viewport.x, game->camera.viewport.y);
 #endif
 
-        // sortRenderGroup(group);
+        // TODO(cjh): sortRenderGroup(group);
         drawRenderGroup(game->renderer, group);
 
         SDL_SetRenderTarget(game->renderer, NULL);

@@ -25,6 +25,7 @@
 *** TODO All game state in one chunk of memory
 *** TODO Separate platform layer
 *** TODO Looped live editing
+** TODO Packed asset file
 * Design
 ** TODO 2D fantasy [survival | crafting | puzzle]
 ** TODO Dark Souls style combat
