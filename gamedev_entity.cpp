@@ -47,15 +47,15 @@ void drawEntity(RenderGroup *group, Entity* e, Game* g)
     if (e->active && e->type != ET_TILE)
     {
         // Draw collision box
-        SDL_Rect collisionRect = {(int)(e->position.x - 0.5f * e->width), (int)(e->position.y - e->height),
-                                  e->width, e->height};
+        Rect collisionRect = {(int)(e->position.x - 0.5f * e->width), (int)(e->position.y - e->height),
+                              e->width, e->height};
         pushFilledRect(group, collisionRect, g->colors[Color_Yellow], RenderLayer_Entities);
 
         // Draw sprite
         i32 width = e->spriteDims.x;
         i32 height = e->spriteDims.y;
         e->spriteRect.x = e->spriteRect.w * e->animation.currentFrame;
-        SDL_Rect dest = {(int)(e->position.x - 0.5f*width), (int)(e->position.y - height), width, height};
+        Rect dest = {(int)(e->position.x - 0.5f*width), (int)(e->position.y - height), width, height};
         pushSprite(group, e->spriteSheet.sheet, e->spriteRect, dest, RenderLayer_Entities);
 
         // Draw entity interactionRect
@@ -173,7 +173,7 @@ void removeEntity(Map *m, Vec2 pos, TileProperty prop)
 {
     for (u32 i = 0; i < m->entityCount; ++i) {
         Entity *e = m->entities + i;
-        SDL_Rect entityRect = getEntityRect(e);
+        Rect entityRect = getEntityRect(e);
         if (isTileFlagSet(e, prop) && positionIsInRect(pos, &entityRect))
         {
             *e = m->entities[--m->entityCount];
@@ -321,7 +321,7 @@ internal Entity *getTileAtPosition(Map *m, Vec2 pos)
         Entity *e = &m->entities[entityIndex];
         if (e->type == ET_TILE)
         {
-            SDL_Rect tileRect = getEntityRect(e);
+            Rect tileRect = getEntityRect(e);
             if (positionIsInRect(pos, &tileRect))
             {
                 result = e;
@@ -384,8 +384,8 @@ internal bool32 isValidTilePlacment(Map *m, Entity *tileToPlace)
 
         if (testEntity != tileToPlace)
         {
-            SDL_Rect tileRect = getEntityRect(tileToPlace);
-            SDL_Rect testRect = getEntityRect(testEntity);
+            Rect tileRect = getEntityRect(tileToPlace);
+            Rect testRect = getEntityRect(testEntity);
 
             if (rectsOverlap(&tileRect, &testRect))
             {
@@ -522,9 +522,9 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
                 case ET_TILE:
                 {
                     // Tile position is at center of tile
-                    SDL_Rect tileBoundingBox = {(i32)testEntity->position.x - (i32)(0.5f*testEntity->width),
-                                                (i32)testEntity->position.y - (i32)(0.5f*testEntity->height),
-                                                testEntity->width, testEntity->height};
+                    Rect tileBoundingBox = {(i32)testEntity->position.x - (i32)(0.5f*testEntity->width),
+                                            (i32)testEntity->position.y - (i32)(0.5f*testEntity->height),
+                                            testEntity->width, testEntity->height};
 
                     if (rectsOverlap(&h->heroInteractionRect, &tileBoundingBox))
                     {
@@ -556,9 +556,9 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
                 }
                 case ET_HARLOD:
                 {
-                    SDL_Rect harlodCollisionRegion = {(i32)(testEntity->position.x - 0.5f*testEntity->width),
-                                                      (i32)(testEntity->position.y - testEntity->height),
-                                                      testEntity->width, testEntity->height};
+                    Rect harlodCollisionRegion = {(i32)(testEntity->position.x - 0.5f*testEntity->width),
+                                                  (i32)(testEntity->position.y - testEntity->height),
+                                                  testEntity->width, testEntity->height};
 
                     if (rectsOverlap(&h->heroInteractionRect, &harlodCollisionRegion))
                     {

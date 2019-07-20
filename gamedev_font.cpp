@@ -1,42 +1,5 @@
 #include "gamedev_font.h"
 
-EntireFile readEntireFile(char *filename)
-{
-    EntireFile result = {};
-    SDL_RWops *file = SDL_RWFromFile(filename, "rb");
-
-    if (file)
-    {
-        Sint64 fileSize = SDL_RWseek(file, 0, RW_SEEK_END);
-        if (fileSize >= 0)
-        {
-            result.size = (u64)fileSize;
-            if (SDL_RWseek(file, 0, RW_SEEK_SET) >= 0)
-            {
-                result.contents = (u8*)malloc(result.size);
-                SDL_RWread(file, (void*)result.contents, 1, result.size);
-                SDL_RWclose(file);
-            }
-            else
-            {
-                // TODO(cjh):
-                // printf(stderr, "%s\n", SDL_GetError());
-            }
-        }
-        else
-        {
-            // TODO(cjh):
-            // printf("%s\n", SDL_GetError());
-        }
-    }
-    else
-    {
-        // TODO(cjh):
-        // fprintf(stderr, "%s\n", SDL_GetError());
-    }
-    return result;
-}
-
 void generateFontData(FontMetadata *fontMetadata, Game *game)
 {
     EntireFile fontFile = readEntireFile("fonts/arialbd.ttf");

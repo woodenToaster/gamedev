@@ -49,7 +49,7 @@ struct Entity
     i32 height;
 
     // The current rectangle in the sprite sheet to be drawn
-    SDL_Rect spriteRect;
+    Rect spriteRect;
     SpriteSheet spriteSheet;
     Point spriteDims;
     Animation animation;
@@ -81,7 +81,7 @@ struct Entity
     Entity *deleteAfterPlacement;
 
     // Hero
-    SDL_Rect heroInteractionRect;
+    Rect heroInteractionRect;
     bool32 craftTree;
     bool32 craftGlowJuice;
     bool32 harvesting;

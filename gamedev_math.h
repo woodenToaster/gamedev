@@ -21,6 +21,14 @@ struct Circle
     f32 radius;
 };
 
+struct Rect
+{
+    int x;
+    int y;
+    int w;
+    int h;
+};
+
 Vec2 vec2(f32 x, f32 y)
 {
     Vec2 v = {x, y};
@@ -296,22 +304,22 @@ Circle circle(Vec2 center, f32 radius)
     return result;
 }
 
-bool rectsOverlap(SDL_Rect* r1, SDL_Rect* r2)
+bool rectsOverlap(Rect* r1, Rect* r2)
 {
     bool x_overlap = r1->x + r1->w > r2->x && r1->x < r2->x + r2->w;
     bool y_overlap = r1->y + r1->h > r2->y && r1->y < r2->y + r2->h;
     return x_overlap && y_overlap;
 }
 
-bool32 pointIsInRect(Point point, SDL_Rect *rect)
+bool32 pointIsInRect(Point point, Rect *rect)
 {
-    SDL_Rect pointRect = {};
+    Rect pointRect = {};
     pointRect.x = point.x;
     pointRect.y = point.y;
     return rectsOverlap(&pointRect, rect);
 }
 
-bool32 positionIsInRect(Vec2 pos, SDL_Rect *rect)
+bool32 positionIsInRect(Vec2 pos, Rect *rect)
 {
     Point point = {(i32)pos.x, (i32)pos.y};
     return pointIsInRect(point, rect);
@@ -344,7 +352,7 @@ bool32 lineIntersectsCircle(Point a, Point b, Circle *c)
     return minimumDistanceBetweenPointAndLine(u, v, p) <= c->radius;
 }
 
-bool32 circleOverlapsRect(Circle *circle, SDL_Rect *rect)
+bool32 circleOverlapsRect(Circle *circle, Rect *rect)
 {
     Point p = {};
     p.x = (i32)(circle->center.x + 0.5f);

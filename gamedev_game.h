@@ -25,12 +25,16 @@ enum Colors
 
 enum GameMode
 {
-    GAME_MODE_PLAYING,
-    GAME_MODE_DIALOGUE,
-    GAME_MODE_INVENTORY,
-    GAME_MODE_COUNT
+    GameMode_Playing,
+    GameMode_Dialogue,
+    GameMode_Inventory,
+    GameMode_Count
 };
 
+typedef  EntireFile platform_read_entire_file(char *);
+typedef void platform_free_file_memory(EntireFile *);
+
+platform_free_file_memory platformFreeFileMemory;
 struct GameMemory
 {
     u64 permanentStorageSize;
@@ -38,6 +42,9 @@ struct GameMemory
 
     u64 transientStorageSize;
     void *transientStorage;
+
+    platform_read_entire_file *platformReadEntireFile;
+    platform_free_file_memory *platformFreeFileMemory;
 };
 
 struct Arena

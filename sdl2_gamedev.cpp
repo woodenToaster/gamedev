@@ -6,6 +6,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#include "gamedev_platform.h"
+
 // #define SDL_MAIN_HANDLED
 
 #include "SDL.h"
@@ -18,11 +20,12 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "sdl2_gamedev.h"
 #include "gamedev_definitions.h"
 #include "gamedev_animation.h"
 #include "gamedev_memory.h"
-#include "gamedev_renderer.h"
 #include "gamedev_math.h"
+#include "gamedev_renderer.h"
 #include "gamedev_font.h"
 #include "gamedev_sound.h"
 #include "gamedev_input.h"
@@ -45,6 +48,107 @@
 #include "gamedev_entity.cpp"
 #include "gamedev_tilemap.cpp"
 
+internal SDL_Texture* SDLCreateTextureFromPng(const char* fname, SDL_Renderer *renderer)
+{
+    unsigned char *img_data;
+    int width;
+    int height;
+    int channels_in_file;
+    img_data = stbi_load(fname, &width, &height, &channels_in_file, 0);
+
+    if (!img_data)
+    {
+        printf("Loading image failed: %s\n", stbi_failure_reason());
+        exit(1);
+    }
+    u32 rmask;
+    u32 gmask;
+    u32 bmask;
+    u32 amask;
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+    bool bigEndian = true;
+    int shift = (channels_in_file == STBI_rgb) ? 8 : 0;
+    rmask = 0xff000000 >> shift;
+    gmask = 0x00ff0000 >> shift;
+    bmask = 0x0000ff00 >> shift;
+    amask = 0x000000ff >> shift;
+#else
+    bool bigEndian = false;
+    rmask = 0x000000ff;
+    gmask = 0x0000ff00;
+    bmask = 0x00ff0000;
+    amask = (channels_in_file == STBI_rgb) ? 0 : 0xff000000;
+#endif
+
+    int depth;
+    int pitch;
+    u32 pixelFormat;
+    if (channels_in_file == STBI_rgb)
+    {
+        depth = 24;
+        pitch = 3 * width;
+        pixelFormat = bigEndian ? SDL_PIXELFORMAT_RGB888 : SDL_PIXELFORMAT_BGR888;
+    }
+    else
+    {
+        depth = 32;
+        pitch = 4 * width;
+        pixelFormat = bigEndian ? SDL_PIXELFORMAT_RGBA8888 : SDL_PIXELFORMAT_ABGR8888;
+    }
+
+    SDL_Texture *texture = SDL_CreateTexture(renderer, pixelFormat, SDL_TEXTUREACCESS_STATIC, width, height);
+    SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+    SDL_UpdateTexture(texture, NULL, (void*)img_data, pitch);
+
+    stbi_image_free(img_data);
+
+    return texture;
+}
+
+EntireFile SDLReadEntireFile(char *filename)
+{
+    EntireFile result = {};
+    SDL_RWops *file = SDL_RWFromFile(filename, "rb");
+
+    if (file)
+    {
+        Sint64 fileSize = SDL_RWseek(file, 0, RW_SEEK_END);
+        if (fileSize >= 0)
+        {
+            result.size = (u64)fileSize;
+            if (SDL_RWseek(file, 0, RW_SEEK_SET) >= 0)
+            {
+                result.contents = (u8*)malloc(result.size);
+                SDL_RWread(file, (void*)result.contents, 1, result.size);
+                SDL_RWclose(file);
+            }
+            else
+            {
+                // TODO(cjh):
+                // printf(stderr, "%s\n", SDL_GetError());
+            }
+        }
+        else
+        {
+            // TODO(cjh):
+            // printf("%s\n", SDL_GetError());
+        }
+    }
+    else
+    {
+        // TODO(cjh):
+        // fprintf(stderr, "%s\n", SDL_GetError());
+    }
+    return result;
+}
+
+void SDLFreeFileMemory(EntireFile *file)
+{
+    if (file->contents)
+    {
+        free(file->contents);
+    }
+}
 
 int main(int argc, char* argv[])
 {
@@ -56,6 +160,8 @@ int main(int argc, char* argv[])
     memory.transientStorageSize = (size_t)MEGABYTES(4);
     memory.permanentStorage = calloc(memory.permanentStorageSize + memory.transientStorageSize, sizeof(u8));
     memory.transientStorage = (u8*)memory.permanentStorage + memory.permanentStorageSize;
+    memory.platformReadEntireFile = SDLReadEntireFile;
+    memory.platformFreeFileMemory = SDLFreeFileMemory;
 
     // Game
     assert(sizeof(Game) < memory.permanentStorageSize);
@@ -86,13 +192,13 @@ int main(int argc, char* argv[])
     // TODO(cjh): asset streaming
 
     // PNGs
-    game->linkTexture = createTextureFromPng("sprites/link_walking.png", game->renderer);
-    game->harvestableTreeTexture = createTextureFromPng("sprites/harvestable_tree.png", game->renderer);
-    // game->harlodTexture = createTextureFromPng("sprites/Harlod_the_caveman.png", game->renderer);
-    // game->knightTexture = createTextureFromPng("sprites/knight_alligned.png", game->renderer);
-    game->flameTexture = createTextureFromPng("sprites/flame.png", game->renderer);
-    game->firePitTexture = createTextureFromPng("sprites/fire_pit.png", game->renderer);
-    game->glowTreeTexture = createTextureFromPng("sprites/glow_tree.png", game->renderer);
+    game->linkTexture = SDLCreateTextureFromPng("sprites/link_walking.png", game->renderer);
+    game->harvestableTreeTexture = SDLCreateTextureFromPng("sprites/harvestable_tree.png", game->renderer);
+    // game->harlodTexture = SDLCreateTextureFromPng("sprites/Harlod_the_caveman.png", game->renderer);
+    // game->knightTexture = SDLCreateTextureFromPng("sprites/knight_alligned.png", game->renderer);
+    game->flameTexture = SDLCreateTextureFromPng("sprites/flame.png", game->renderer);
+    game->firePitTexture = SDLCreateTextureFromPng("sprites/fire_pit.png", game->renderer);
+    game->glowTreeTexture = SDLCreateTextureFromPng("sprites/glow_tree.png", game->renderer);
 
     // Sounds
     game->mudSound.delay = 250;
@@ -229,7 +335,7 @@ int main(int argc, char* argv[])
 
         switch (game->mode)
         {
-            case GAME_MODE_PLAYING:
+            case GameMode_Playing:
             {
                 updateGame(game, &input);
                 updateHero(group, hero, &input, game);
@@ -239,12 +345,12 @@ int main(int argc, char* argv[])
                 updateTiles(game);
                 break;
             }
-            case GAME_MODE_DIALOGUE:
+            case GameMode_Dialogue:
             {
                 updateDialogMode(game, &input);
                 break;
             }
-            case GAME_MODE_INVENTORY:
+            case GameMode_Inventory:
             {
                 updateInventoryMode(game, &input);
                 break;
@@ -267,13 +373,13 @@ int main(int argc, char* argv[])
         // drawCircle(game->renderer, (i32)heroInteractionRegion.center.x,
         //                 (i32)heroInteractionRegion.center.y, (i32)heroInteractionRegion.radius);
 
-        if (game->mode == GAME_MODE_DIALOGUE)
+        if (game->mode == GameMode_Dialogue)
         {
             darkenBackground(group, game);
             drawDialogScreen(group, game, &fontMetadata);
         }
 
-        if (game->mode == GAME_MODE_INVENTORY)
+        if (game->mode == GameMode_Inventory)
         {
             darkenBackground(group, game);
             drawInventoryScreen(group, game, hero, &fontMetadata);
@@ -302,7 +408,9 @@ int main(int argc, char* argv[])
         drawRenderGroup(game->renderer, group);
 
         SDL_SetRenderTarget(game->renderer, NULL);
-        SDL_RenderCopy(game->renderer, game->currentMap->texture, &game->camera.viewport, NULL);
+        SDL_Rect viewport = {game->camera.viewport.x, game->camera.viewport.y,
+                             game->camera.viewport.w, game->camera.viewport.h};
+        SDL_RenderCopy(game->renderer, game->currentMap->texture, &viewport, NULL);
         game->dt = SDL_GetTicks() - now;
         sleepIfAble(game);
         SDL_RenderPresent(game->renderer);

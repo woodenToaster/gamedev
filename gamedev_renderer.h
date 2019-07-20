@@ -53,6 +53,6 @@ struct RenderGroup
     u8 *bufferBase;
 };
 
-internal void pushRect(RenderGroup *group, SDL_Rect dest, u32 color, RenderLayer layer, u8 alpha=255);
-internal void pushFilledRect(RenderGroup *group, SDL_Rect dest, u32 color, RenderLayer layer,  u8 alpha=255);
-internal void pushSprite(RenderGroup *group, SDL_Texture *sheet, SDL_Rect source, SDL_Rect dest, RenderLayer layer);
+internal void pushRect(RenderGroup *group, Rect dest, u32 color, RenderLayer layer, u8 alpha=255);
+internal void pushFilledRect(RenderGroup *group, Rect dest, u32 color, RenderLayer layer,  u8 alpha=255);
+internal void pushSprite(RenderGroup *group, SDL_Texture *sheet, Rect source, Rect dest, RenderLayer layer);

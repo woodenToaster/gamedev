@@ -15,7 +15,7 @@ set LIB=%LIBPATH%;%LIB%;
 set COMPILERFLAGS="/DDEBUG /W4 /Gm- /Zi /GR- /nologo /EHa- /MTd /Oi /Od"
 set LINK_LIBS=SDL2.lib SDL2main.lib SDL2_mixer.lib
 
-cl "%COMPILERFLAGS%" ..\main.cpp /link %LINK_LIBS% /SUBSYSTEM:WINDOWS
+cl "%COMPILERFLAGS%" ..\sdl2_gamedev.cpp /link %LINK_LIBS% /SUBSYSTEM:WINDOWS
 
 popd
 if %errorlevel% neq 0 exit /b %errorlevel%

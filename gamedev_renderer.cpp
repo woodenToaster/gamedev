@@ -12,12 +12,12 @@ void drawText(RenderGroup *group, FontMetadata *fontMetadata, char* text, i32 x=
         i32 width = cpm->x1 - cpm->x0;
         i32 height = cpm->y1 - cpm->y0;
         SDL_Rect source = {cpm->x0, cpm->y0, width, height};
-        SDL_Rect dest = {xpos, baseline + cpm->y0, width, height};
+        Rect dest = {xpos, baseline + cpm->y0, width, height};
 
 	    if (text[at] != ' ')
         {
             SDL_Texture *t = fontMetadata->textures[text[at]];
-            SDL_Rect fullTexture = {0, 0, 0, 0};
+            Rect fullTexture = {0, 0, 0, 0};
             pushSprite(group, t, fullTexture, dest, RenderLayer_HUD);
             xpos += (int)(cpm->advance * fontMetadata->scale);
         }
@@ -46,7 +46,7 @@ void drawDialogScreen(RenderGroup *group, Game *g, FontMetadata *fontMetadata)
     int dialogueBoxY = (int)((3 * (fourthOfHeight)) - 0.5 * fourthOfHeight) + g->camera.viewport.y;
     int dialogueBoxWidth = 2 * (thirdOfWidth);
     int dialogueBoxHeight = fourthOfHeight;
-    SDL_Rect dialogueBoxDest = {dialogueBoxX,dialogueBoxY, dialogueBoxWidth, dialogueBoxHeight};
+    Rect dialogueBoxDest = {dialogueBoxX,dialogueBoxY, dialogueBoxWidth, dialogueBoxHeight};
     pushFilledRect(group, dialogueBoxDest, g->colors[Color_BabyBlue], RenderLayer_HUD);
     drawText(group, fontMetadata, g->dialogue, dialogueBoxX, dialogueBoxY);
 }
@@ -59,7 +59,7 @@ void drawInventoryScreen(RenderGroup *group, Game *g, Entity *h, FontMetadata *f
     int dialogueBoxY = (int)(0.5 * fourthOfHeight) + g->camera.viewport.y;
     int dialogueBoxWidth = 2 * (thirdOfWidth);
     int dialogueBoxHeight = fourthOfHeight;
-    SDL_Rect dialogueBoxDest = {dialogueBoxX, dialogueBoxY, dialogueBoxWidth, dialogueBoxHeight};
+    Rect dialogueBoxDest = {dialogueBoxX, dialogueBoxY, dialogueBoxWidth, dialogueBoxHeight};
     pushFilledRect(group, dialogueBoxDest, g->colors[Color_BabyBlue], RenderLayer_HUD);
 
     for (int inventoryIndex = 1; inventoryIndex < INV_COUNT; ++inventoryIndex)
@@ -91,17 +91,17 @@ void drawHUD(RenderGroup *group, Game *g, Entity *h, FontMetadata *font)
     i32 destY = g->camera.viewport.h + g->camera.viewport.y - slotSize;
 
     // Transparent black background
-    SDL_Rect backgroundDest = {destX, destY, beltSlots * slotSize, slotSize};
+    Rect backgroundDest = {destX, destY, beltSlots * slotSize, slotSize};
     pushFilledRect(group, backgroundDest, g->colors[Color_Black], RenderLayer_HUD, 128);
 
     for (int i = 0; i < beltSlots; ++i)
     {
-        SDL_Rect dest = {destX + i*slotSize, destY, slotSize, slotSize};
+        Rect dest = {destX + i*slotSize, destY, slotSize, slotSize};
         if ((u32)i < h->beltItemCount)
         {
             BeltItem *item = &h->beltItems[i];
             SDL_Texture *textureToDraw = NULL;
-            SDL_Rect tileRect = {};
+            Rect tileRect = {};
 
             switch (item->type)
             {
@@ -138,7 +138,7 @@ void drawHUD(RenderGroup *group, Game *g, Entity *h, FontMetadata *font)
 
 void darkenBackground(RenderGroup *group, Game *g)
 {
-    SDL_Rect dest = {};
+    Rect dest = {};
     pushFilledRect(group, dest, g->colors[Color_Black], RenderLayer_HUD, 64);
 }
 
@@ -198,37 +198,41 @@ internal void *pushRenderElement_(RenderGroup *group, u32 size, RenderEntryType 
     return result;
 }
 
-internal void pushRect(RenderGroup *group, SDL_Rect dest, u32 color, RenderLayer layer, u8 alpha)
+internal void pushRect(RenderGroup *group, Rect dest, u32 color, RenderLayer layer, u8 alpha)
 {
     RenderEntryRect *rect = PushRenderElement(group, RenderEntryRect);
     if (rect)
     {
-        rect->dest = dest;
+        SDL_Rect sdlDest = {dest.x, dest.y, dest.w, dest.h};
+        rect->dest = sdlDest;
         rect->color = color;
         rect->alpha = alpha;
         rect->layer = layer;
     }
 }
 
-internal void pushFilledRect(RenderGroup *group, SDL_Rect dest, u32 color, RenderLayer layer, u8 alpha)
+internal void pushFilledRect(RenderGroup *group, Rect dest, u32 color, RenderLayer layer, u8 alpha)
 {
     RenderEntryFilledRect *filledRect = PushRenderElement(group, RenderEntryFilledRect);
     if (filledRect)
     {
-        filledRect->dest = dest;
+        SDL_Rect sdlDest = {dest.x, dest.y, dest.w, dest.h};
+        filledRect->dest = sdlDest;
         filledRect->color = color;
         filledRect->alpha = alpha;
         filledRect->layer = layer;
     }
 }
 
-internal void pushSprite(RenderGroup *group, SDL_Texture *sheet, SDL_Rect source, SDL_Rect dest, RenderLayer layer)
+internal void pushSprite(RenderGroup *group, SDL_Texture *sheet, Rect source, Rect dest, RenderLayer layer)
 {
     RenderEntrySprite *sprite = PushRenderElement(group, RenderEntrySprite);
     if (sprite)
     {
-        sprite->dest = dest;
-        sprite->source = source;
+        SDL_Rect sdlDest = {dest.x, dest.y, dest.w, dest.h};
+        SDL_Rect sdlSource = {source.x, source.y, source.w, source.h};
+        sprite->dest = sdlDest;
+        sprite->source = sdlSource;
         sprite->sheet = sheet;
         sprite->layer = layer;
     }

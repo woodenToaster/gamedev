@@ -94,17 +94,17 @@ void updateTiles(Game *g)
     }
 }
 
-SDL_Rect getEntityRect(Entity *e)
+Rect getEntityRect(Entity *e)
 {
     f32 yPercent = e->type == ET_TILE ? 0.5f : 1.0f;
-    SDL_Rect result = {(int)(e->position.x - 0.5f*e->width), (int)(e->position.y - yPercent*e->height),
-                       (int)e->width, (int)e->height};
+    Rect result = {(int)(e->position.x - 0.5f*e->width), (int)(e->position.y - yPercent*e->height),
+                   (int)e->width, (int)e->height};
     return result;
 }
 
 void drawTile(RenderGroup *group, Game *g, Entity *e, bool32 isBeingPlaced)
 {
-    SDL_Rect tileRect = getEntityRect(e);
+    Rect tileRect = getEntityRect(e);
 
     if (e->spriteSheet.sheet)
     {
@@ -156,6 +156,6 @@ void destroyMap(Map* m)
 void drawBackground(RenderGroup *group, Game *g)
 {
     Camera *c = &g->camera;
-    SDL_Rect backgroundDest = {c->viewport.x, c->viewport.y, c->viewport.w, c->viewport.h};
+    Rect backgroundDest = {c->viewport.x, c->viewport.y, c->viewport.w, c->viewport.h};
     pushFilledRect(group, backgroundDest, g->colors[Color_Grey], RenderLayer_Ground);
 }

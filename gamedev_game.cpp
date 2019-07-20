@@ -187,13 +187,13 @@ void updateGame(Game *g, Input *input)
 
 void startDialogueMode(Game *g, char *dialogue)
 {
-    g->mode = GAME_MODE_DIALOGUE;
+    g->mode = GameMode_Dialogue;
     g->dialogue = dialogue;
 }
 
 void endDialogMode(Game *g)
 {
-    g->mode = GAME_MODE_PLAYING;
+    g->mode = GameMode_Playing;
     g->dialogue = NULL;
 }
 
@@ -207,12 +207,12 @@ void updateDialogMode(Game *g, Input *input)
 
 void startInventoryMode(Game *g)
 {
-    g->mode = GAME_MODE_INVENTORY;
+    g->mode = GameMode_Inventory;
 }
 
 void endInventoryMode(Game *g)
 {
-    g->mode = GAME_MODE_PLAYING;
+    g->mode = GameMode_Playing;
 }
 
 void updateInventoryMode(Game *g, Input *input)

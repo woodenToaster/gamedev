@@ -1,0 +1,4 @@
+#ifndef GAMEDEV_PLATFORM_H
+#define GAMEDEV_PLATFORM_H
+
+#endif

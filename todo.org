@@ -9,6 +9,7 @@
 ** TODO Inventory system
 *** TODO Make items selectable
 ** TODO Dialog system
+** TODO Particle system
 ** TODO Base building system
 ** TODO Combat system
 *** TODO Basic enemy for prototyping
@@ -18,8 +19,9 @@
 *** TODO Dodge
 *** TODO Each move takes time, and the longer it takes, the more damage it does.
 * Architecture
-** TODO push buffer rendering
-*** TODO Sort based on layers, and then based on position.y
+** TODO Generic platform API so platforms can be switched out
+   - SDL functions are only allowed in sdl2_gamedev.h/sdl2_gamedev.cpp
+** TODO RenderGroup sorting based on layers, and then based on position.y
 ** TODO game code DLL (tough with SDL)
 ** TODO Hot loading (tough)
 *** TODO All game state in one chunk of memory

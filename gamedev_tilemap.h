@@ -30,7 +30,7 @@ struct Map
 };
 
 void drawTile(RenderGroup *group, Game *g, Entity *e, bool32 isBeingPlace=false);
-SDL_Rect getEntityRect(Entity *e);
+Rect getEntityRect(Entity *e);
 void addTileFlags(Entity *e, u32 prop);
 bool32 isTileFlagSet(Entity *e, TileProperty prop);
 void removeTileFlags(Entity *e, u32 prop);
