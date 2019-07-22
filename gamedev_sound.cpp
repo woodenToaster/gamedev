@@ -16,7 +16,7 @@ void playSound(Sound *s, u64 now)
     if (now > s->last_play_time + s->delay)
     {
         Mix_PlayChannel(-1, s->chunk, 0);
-        s->last_play_time = SDL_GetTicks();
+        s->last_play_time = platform.getTicks();
     }
 }
 

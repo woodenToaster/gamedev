@@ -6,7 +6,7 @@ void initAnimation(Animation* a, int frames, int ms_delay)
     a->delay = ms_delay;
 }
 
-void updateAnimation(Animation* a, u32 elapsed_last_frame, bool32 active)
+void updateAnimation(Animation* a, u32 elapsed_last_frame, b32 active)
 {
     a->elapsed += elapsed_last_frame;
     if (a->elapsed > a->delay && active) {

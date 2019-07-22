@@ -29,7 +29,7 @@ static void destroyControllers(Input *input)
     }
 }
 
-static void setKeyState(Input* input, Key key, bool32 isDown)
+static void setKeyState(Input* input, Key key, b32 isDown)
 {
     if (input->keyDown[key] && !isDown)
     {
@@ -38,7 +38,7 @@ static void setKeyState(Input* input, Key key, bool32 isDown)
     input->keyDown[key] = isDown;
 }
 
-static void updateInput(Input* input, SDL_Scancode key, bool32 isDown)
+static void updateInput(Input* input, SDL_Scancode key, b32 isDown)
 {
     SDL_Keymod keyMod = SDL_GetModState();
     if (keyMod & KMOD_LSHIFT)
@@ -161,7 +161,7 @@ static void pollInput(Input* input, Game* game)
         {
             // TODO(cjh): Handle remaining buttons
             // TODO(cjh): Handle keyPressed as distinct from keyDown
-            bool32 *pressed = input->buttonPressed;
+            b32 *pressed = input->buttonPressed;
             pressed[BUTTON_UP] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_UP);
             pressed[BUTTON_DOWN] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_DOWN);
             pressed[BUTTON_LEFT] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_LEFT);

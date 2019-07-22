@@ -31,10 +31,6 @@ enum GameMode
     GameMode_Count
 };
 
-typedef  EntireFile platform_read_entire_file(char *);
-typedef void platform_free_file_memory(EntireFile *);
-
-platform_free_file_memory platformFreeFileMemory;
 struct GameMemory
 {
     u64 permanentStorageSize;
@@ -43,8 +39,7 @@ struct GameMemory
     u64 transientStorageSize;
     void *transientStorage;
 
-    platform_read_entire_file *platformReadEntireFile;
-    platform_free_file_memory *platformFreeFileMemory;
+    PlatformAPI platformAPI;
 };
 
 struct Arena
@@ -82,13 +77,13 @@ struct Game
     char *dialogue;
     FontMetadata *fontMetadata;
 
-    SDL_Texture *linkTexture;
-    SDL_Texture *harvestableTreeTexture;
-    SDL_Texture *glowTreeTexture;
-    SDL_Texture *harlodTexture;
-    SDL_Texture *knightTexture;
-    SDL_Texture *flameTexture;
-    SDL_Texture *firePitTexture;
+    TextureHandle linkTexture;
+    TextureHandle harvestableTreeTexture;
+    TextureHandle glowTreeTexture;
+    TextureHandle harlodTexture;
+    TextureHandle knightTexture;
+    TextureHandle flameTexture;
+    TextureHandle firePitTexture;
 
     Sound mudSound;
     // TODO(cjh): Replace SoundList

@@ -21,11 +21,13 @@
 * Architecture
 ** TODO Generic platform API so platforms can be switched out
    - SDL functions are only allowed in sdl2_gamedev.h/sdl2_gamedev.cpp
+*** TODO gamedev_game.cpp
+*** TODO gamedev_input.cpp
+*** TODO gamedev_renderer.cpp
 ** TODO RenderGroup sorting based on layers, and then based on position.y
 ** TODO game code DLL (tough with SDL)
 ** TODO Hot loading (tough)
 *** TODO All game state in one chunk of memory
-*** TODO Separate platform layer
 *** TODO Looped live editing
 ** TODO Packed asset file
 * Design

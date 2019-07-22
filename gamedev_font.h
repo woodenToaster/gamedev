@@ -21,13 +21,7 @@ struct FontMetadata
     i32 descent;
     i32 lineGap;
     stbtt_fontinfo info;
-    SDL_Texture *textures[128];
+    TextureHandle textures[128];
     CodepointMetadata codepointMetadata[128];
-};
-
-struct EntireFile
-{
-    u8 *contents;
-    u64 size;
 };
 #endif

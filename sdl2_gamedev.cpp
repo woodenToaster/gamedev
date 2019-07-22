@@ -20,6 +20,9 @@
 #include <stdlib.h>
 #include <math.h>
 
+global_variable PlatformAPI platform = {};
+global_variable platformCreateTextureFromGreyscaleBitmap *createTextureFromGreyscaleBitmap;
+
 #include "sdl2_gamedev.h"
 #include "gamedev_definitions.h"
 #include "gamedev_animation.h"
@@ -105,6 +108,37 @@ internal SDL_Texture* SDLCreateTextureFromPng(const char* fname, SDL_Renderer *r
     return texture;
 }
 
+
+TextureHandle SDLCreateTextureFromGreyscaleBitmap(Game *g, u8 *bitmap, i32 width, i32 height)
+{
+    TextureHandle result = {};
+
+    SDL_Surface* surface = SDL_CreateRGBSurface(0, width, height, 32,
+                                                0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF);
+    if (!surface)
+    {
+        printf("%s\n", SDL_GetError());
+        exit(1);
+    }
+
+    SDL_LockSurface(surface);
+    u8 *srcPixel = bitmap;
+    u32 *destPixel = (u32*)surface->pixels;
+
+    for (int i = 0; i < height * width; ++i)
+    {
+        u8 val = *srcPixel++;
+        *destPixel++ = ((val << 24) | (val << 16) | (val << 8) | (val << 0));
+    }
+    SDL_UnlockSurface(surface);
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(g->renderer, surface);
+    result.texture = texture;
+    stbtt_FreeBitmap(bitmap, 0);
+    SDL_FreeSurface(surface);
+
+    return result;
+}
+
 EntireFile SDLReadEntireFile(char *filename)
 {
     EntireFile result = {};
@@ -150,6 +184,7 @@ void SDLFreeFileMemory(EntireFile *file)
     }
 }
 
+
 int main(int argc, char* argv[])
 {
     (void)argc;
@@ -160,8 +195,13 @@ int main(int argc, char* argv[])
     memory.transientStorageSize = (size_t)MEGABYTES(4);
     memory.permanentStorage = calloc(memory.permanentStorageSize + memory.transientStorageSize, sizeof(u8));
     memory.transientStorage = (u8*)memory.permanentStorage + memory.permanentStorageSize;
-    memory.platformReadEntireFile = SDLReadEntireFile;
-    memory.platformFreeFileMemory = SDLFreeFileMemory;
+    memory.platformAPI.readEntireFile = SDLReadEntireFile;
+    memory.platformAPI.freeFileMemory = SDLFreeFileMemory;
+    memory.platformAPI.getTicks = SDL_GetTicks;
+
+    createTextureFromGreyscaleBitmap = SDLCreateTextureFromGreyscaleBitmap;
+
+    platform = memory.platformAPI;
 
     // Game
     assert(sizeof(Game) < memory.permanentStorageSize);
@@ -192,13 +232,13 @@ int main(int argc, char* argv[])
     // TODO(cjh): asset streaming
 
     // PNGs
-    game->linkTexture = SDLCreateTextureFromPng("sprites/link_walking.png", game->renderer);
-    game->harvestableTreeTexture = SDLCreateTextureFromPng("sprites/harvestable_tree.png", game->renderer);
+    game->linkTexture.texture = SDLCreateTextureFromPng("sprites/link_walking.png", game->renderer);
+    game->harvestableTreeTexture.texture = SDLCreateTextureFromPng("sprites/harvestable_tree.png", game->renderer);
     // game->harlodTexture = SDLCreateTextureFromPng("sprites/Harlod_the_caveman.png", game->renderer);
     // game->knightTexture = SDLCreateTextureFromPng("sprites/knight_alligned.png", game->renderer);
-    game->flameTexture = SDLCreateTextureFromPng("sprites/flame.png", game->renderer);
-    game->firePitTexture = SDLCreateTextureFromPng("sprites/fire_pit.png", game->renderer);
-    game->glowTreeTexture = SDLCreateTextureFromPng("sprites/glow_tree.png", game->renderer);
+    game->flameTexture.texture = SDLCreateTextureFromPng("sprites/flame.png", game->renderer);
+    game->firePitTexture.texture = SDLCreateTextureFromPng("sprites/fire_pit.png", game->renderer);
+    game->glowTreeTexture.texture = SDLCreateTextureFromPng("sprites/glow_tree.png", game->renderer);
 
     // Sounds
     game->mudSound.delay = 250;
@@ -223,8 +263,8 @@ int main(int argc, char* argv[])
     map0->cols = 12;
     map0->widthPixels = map0->cols * tileWidth;
     map0->heightPixels = map0->rows * tileHeight;
-    map0->texture = SDL_CreateTexture(game->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
-                                      map0->widthPixels, map0->heightPixels);
+    map0->texture.texture = SDL_CreateTexture(game->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
+                                              map0->widthPixels, map0->heightPixels);
 
     for (u32 row = 0; row < map0->rows; ++row)
     {
@@ -361,7 +401,7 @@ int main(int argc, char* argv[])
         /* Draw                                                              */
         /*********************************************************************/
 
-        SDL_SetRenderTarget(game->renderer, game->currentMap->texture);
+        SDL_SetRenderTarget(game->renderer, (SDL_Texture*)game->currentMap->texture.texture);
         drawBackground(group, game);
         drawTiles(group, game);
         drawEntities(group, game);
@@ -410,7 +450,7 @@ int main(int argc, char* argv[])
         SDL_SetRenderTarget(game->renderer, NULL);
         SDL_Rect viewport = {game->camera.viewport.x, game->camera.viewport.y,
                              game->camera.viewport.w, game->camera.viewport.h};
-        SDL_RenderCopy(game->renderer, game->currentMap->texture, &viewport, NULL);
+        SDL_RenderCopy(game->renderer, (SDL_Texture*)game->currentMap->texture.texture, &viewport, NULL);
         game->dt = SDL_GetTicks() - now;
         sleepIfAble(game);
         SDL_RenderPresent(game->renderer);

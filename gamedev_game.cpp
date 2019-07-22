@@ -41,42 +41,17 @@ u8* pushSize(Arena *arena, size_t size)
     return result;
 }
 
-// NOTE(cjh): SDL has already taken care of endianness for these color accessors
-u8 getAlphaFromU32(u32 color)
-{
-    u8 a = (u8)((color & 0xFF000000) >> 24);
-    return a;
-}
-
-u8 getRedFromU32(u32 color)
-{
-    u8 r = (u8)((color & 0x00FF0000) >> 16);
-    return r;
-}
-
-u8 getGreenFromU32(u32 color)
-{
-    u8 g = (u8)((color & 0x0000FF00) >> 8);
-    return g;
-}
-
-u8 getBlueFromU32(u32 color)
-{
-    u8 b = (u8)((color & 0x000000FF) >> 0);
-    return b;
-}
-
 void destroyGame(Game* g)
 {
     // TODO(cjh): This should be stored in gameMemory instead of malloced
     free(g->dialogue);
-    SDL_DestroyTexture(g->linkTexture);
-    SDL_DestroyTexture(g->harvestableTreeTexture);
-    SDL_DestroyTexture(g->harlodTexture);
-    SDL_DestroyTexture(g->knightTexture);
-    SDL_DestroyTexture(g->flameTexture);
-    SDL_DestroyTexture(g->firePitTexture);
-    SDL_DestroyTexture(g->glowTreeTexture);
+    destroyTexture(g->linkTexture);
+    destroyTexture(g->harvestableTreeTexture);
+    destroyTexture(g->harlodTexture);
+    destroyTexture(g->knightTexture);
+    destroyTexture(g->flameTexture);
+    destroyTexture(g->firePitTexture);
+    destroyTexture(g->glowTreeTexture);
 
     Mix_Quit();
     SDL_DestroyRenderer(g->renderer);

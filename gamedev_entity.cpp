@@ -1,4 +1,4 @@
-void initEntitySpriteSheet(Entity* e, SDL_Texture *texture, int num_x, int num_y)
+void initEntitySpriteSheet(Entity* e, TextureHandle texture, int num_x, int num_y)
 {
     initSpriteSheet(&e->spriteSheet, texture, num_x, num_y);
     e->spriteRect.w = e->spriteSheet.spriteWidth;
@@ -26,20 +26,14 @@ void initGlowTree(Entity *tile, Game *game)
     tile->harvestedItem = INV_GLOW;
 }
 
-bool32 isEntity(Entity *e)
+b32 isEntity(Entity *e)
 {
-    bool32 result = 0;
+    b32 result = 0;
     if (e)
     {
         result = e->type == ET_HERO;
     }
     return result;
-}
-
-void setRenderDrawColor(SDL_Renderer *renderer, u32 color)
-{
-    SDL_SetRenderDrawColor(renderer, getRedFromU32(color), getGreenFromU32(color),
-                           getBlueFromU32(color), 255);
 }
 
 void drawEntity(RenderGroup *group, Entity* e, Game* g)
@@ -277,9 +271,9 @@ internal void placeItem(Game *g, Entity *h)
 }
 
 #if 0
-internal bool32 isInMap(Game *g, Vec2 pos)
+internal b32 isInMap(Game *g, Vec2 pos)
 {
-    bool32 result = true;
+    b32 result = true;
     if (pos.x < 0 || pos.x > g->currentMap->widthPixels - 1 ||
         pos.y < 0 || pos.y > g->currentMap->heightPixels - 1)
     {
@@ -289,10 +283,10 @@ internal bool32 isInMap(Game *g, Vec2 pos)
 }
 #endif
 
-internal bool32 testWall(f32 wall, f32 relX, f32 relY, f32 playerDeltaX, f32 playerDeltaY,
+internal b32 testWall(f32 wall, f32 relX, f32 relY, f32 playerDeltaX, f32 playerDeltaY,
                          f32 *tMin, f32 minY, f32 maxY)
 {
-    bool32 hit = false;
+    b32 hit = false;
 
     f32 tEpsilon = 0.001f;
     if (playerDeltaX != 0.0f)
@@ -373,9 +367,9 @@ internal Vec2 getTilePlacementPosition(Game *g, Entity *h)
     return result;
 }
 
-internal bool32 isValidTilePlacment(Map *m, Entity *tileToPlace)
+internal b32 isValidTilePlacment(Map *m, Entity *tileToPlace)
 {
-    bool32 result = true;
+    b32 result = true;
     tileToPlace->deleteAfterPlacement = NULL;
 
     for (u32 entityIndex = 0; entityIndex < m->entityCount; ++entityIndex)
@@ -506,7 +500,7 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
     {
         f32 tMin = 1.0f;
         Vec2 wallNormal = {};
-        bool32 hit = false;
+        b32 hit = false;
         Vec2 desiredPosition = h->position + playerDelta;
 
         for (u32 entityIndex = 0; entityIndex < map->entityCount; ++entityIndex)
@@ -590,7 +584,7 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
 
             if (isTileFlagSet(testEntity, TP_QUICKSAND))
             {
-                bool32 inQuicksand = false;
+                b32 inQuicksand = false;
                 if (testWall(minCorner.x, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
                              &tMin, minCorner.y, maxCorner.y))
                 {
@@ -725,7 +719,7 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
                 {
                     if (!testEntity->dialogueFile.contents)
                     {
-                        testEntity->dialogueFile = readEntireFile("dialogues/harlod_dialogues.txt");
+                        testEntity->dialogueFile = platform.readEntireFile("dialogues/harlod_dialogues.txt");
                         // TODO(cjh): Need to null terminate everything. This will change. We
                         // want to parse files for strings and tokenize, etc. For now it's hard coded
                         testEntity->dialogueFile.contents[9] = '\0';

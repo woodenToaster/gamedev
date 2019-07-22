@@ -24,14 +24,14 @@ struct Map
     u32 tileHeight;
     int widthPixels;
     int heightPixels;
-    SDL_Texture* texture;
+    TextureHandle texture;
     u32 entityCount;
     Entity entities[256];
 };
 
-void drawTile(RenderGroup *group, Game *g, Entity *e, bool32 isBeingPlace=false);
+void drawTile(RenderGroup *group, Game *g, Entity *e, b32 isBeingPlace=false);
 Rect getEntityRect(Entity *e);
 void addTileFlags(Entity *e, u32 prop);
-bool32 isTileFlagSet(Entity *e, TileProperty prop);
+b32 isTileFlagSet(Entity *e, TileProperty prop);
 void removeTileFlags(Entity *e, u32 prop);
 #endif

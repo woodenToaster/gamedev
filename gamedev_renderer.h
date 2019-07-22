@@ -15,6 +15,12 @@ enum RenderEntryType
     RenderEntryType_Count
 };
 
+struct TextureDims
+{
+    i32 width;
+    i32 height;
+};
+
 struct RenderEntryHeader
 {
     RenderEntryType type;
@@ -42,7 +48,7 @@ struct RenderEntrySprite
 {
     SDL_Rect source;
     SDL_Rect dest;
-    SDL_Texture *sheet;
+    TextureHandle sheet;
     RenderLayer layer;
 };
 
@@ -55,4 +61,4 @@ struct RenderGroup
 
 internal void pushRect(RenderGroup *group, Rect dest, u32 color, RenderLayer layer, u8 alpha=255);
 internal void pushFilledRect(RenderGroup *group, Rect dest, u32 color, RenderLayer layer,  u8 alpha=255);
-internal void pushSprite(RenderGroup *group, SDL_Texture *sheet, Rect source, Rect dest, RenderLayer layer);
+internal void pushSprite(RenderGroup *group, TextureHandle sheet, Rect source, Rect dest, RenderLayer layer);

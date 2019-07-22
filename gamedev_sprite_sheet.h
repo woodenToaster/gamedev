@@ -20,6 +20,6 @@ struct SpriteSheet
     int spriteWidth;
     int spriteHeight;
     int scale;
-    SDL_Texture* sheet;
+    TextureHandle sheet;
 };
 #endif

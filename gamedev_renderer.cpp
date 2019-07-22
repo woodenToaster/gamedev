@@ -1,4 +1,49 @@
 
+// NOTE(cjh): SDL has already taken care of endianness for these color accessors
+u8 getAlphaFromU32(u32 color)
+{
+    u8 a = (u8)((color & 0xFF000000) >> 24);
+    return a;
+}
+
+u8 getRedFromU32(u32 color)
+{
+    u8 r = (u8)((color & 0x00FF0000) >> 16);
+    return r;
+}
+
+u8 getGreenFromU32(u32 color)
+{
+    u8 g = (u8)((color & 0x0000FF00) >> 8);
+    return g;
+}
+
+u8 getBlueFromU32(u32 color)
+{
+    u8 b = (u8)((color & 0x000000FF) >> 0);
+    return b;
+}
+
+TextureDims getTextureDims(TextureHandle texture)
+{
+    SDL_Texture *sdlTexture = (SDL_Texture*)texture.texture;
+    TextureDims result = {};
+    SDL_QueryTexture(sdlTexture, NULL, NULL, &result.width, &result.height);
+
+    return result;
+}
+
+void destroyTexture(TextureHandle t)
+{
+    SDL_DestroyTexture((SDL_Texture*)t.texture);
+}
+
+void setRenderDrawColor(SDL_Renderer *renderer, u32 color)
+{
+    SDL_SetRenderDrawColor(renderer, getRedFromU32(color), getGreenFromU32(color),
+                           getBlueFromU32(color), 255);
+}
+
 // TODO(cjh): Account for wrapping off the viewport
 void drawText(RenderGroup *group, FontMetadata *fontMetadata, char* text, i32 x=0, i32 y=0)
 {
@@ -16,7 +61,8 @@ void drawText(RenderGroup *group, FontMetadata *fontMetadata, char* text, i32 x=
 
 	    if (text[at] != ' ')
         {
-            SDL_Texture *t = fontMetadata->textures[text[at]];
+            TextureHandle t = {};
+            t.texture = fontMetadata->textures[text[at]].texture;
             Rect fullTexture = {0, 0, 0, 0};
             pushSprite(group, t, fullTexture, dest, RenderLayer_HUD);
             xpos += (int)(cpm->advance * fontMetadata->scale);
@@ -100,7 +146,7 @@ void drawHUD(RenderGroup *group, Game *g, Entity *h, FontMetadata *font)
         if ((u32)i < h->beltItemCount)
         {
             BeltItem *item = &h->beltItems[i];
-            SDL_Texture *textureToDraw = NULL;
+            TextureHandle textureToDraw = {};
             Rect tileRect = {};
 
             switch (item->type)
@@ -112,7 +158,7 @@ void drawHUD(RenderGroup *group, Game *g, Entity *h, FontMetadata *font)
                 tileRect.h = 64;
                 break;
             case Craftable_Glow_Juice:
-                textureToDraw = g->glowTreeTexture;
+                textureToDraw= g->glowTreeTexture;
                 // TODO(cjh): Get sprite width height
                 tileRect.w = 80;
                 tileRect.h = 80;
@@ -121,7 +167,7 @@ void drawHUD(RenderGroup *group, Game *g, Entity *h, FontMetadata *font)
                 break;
             }
 
-            if (textureToDraw)
+            if (textureToDraw.texture)
             {
                 pushSprite(group, textureToDraw, tileRect, dest, RenderLayer_HUD);
             }
@@ -224,7 +270,7 @@ internal void pushFilledRect(RenderGroup *group, Rect dest, u32 color, RenderLay
     }
 }
 
-internal void pushSprite(RenderGroup *group, SDL_Texture *sheet, Rect source, Rect dest, RenderLayer layer)
+internal void pushSprite(RenderGroup *group, TextureHandle sheet, Rect source, Rect dest, RenderLayer layer)
 {
     RenderEntrySprite *sprite = PushRenderElement(group, RenderEntrySprite);
     if (sprite)
@@ -297,7 +343,7 @@ internal void drawRenderGroup(SDL_Renderer *renderer, RenderGroup *group)
                 {
                     SDL_Rect *source = checkForNullRect(&entry->source);
                     SDL_Rect *dest = checkForNullRect(&entry->dest);
-                    SDL_RenderCopy(renderer, entry->sheet, source, dest);
+                    SDL_RenderCopy(renderer, (SDL_Texture*)entry->sheet.texture, source, dest);
                 }
                 baseAddress += sizeof(*entry);
             } break;

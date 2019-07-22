@@ -60,18 +60,18 @@ struct Entity
     Vec2 velocity;
     Vec2 acceleration;
 
-    bool32 collides;
+    b32 collides;
 
-    bool32 active;
-    bool32 isMoving;
-    bool32 inQuicksand;
+    b32 active;
+    b32 isMoving;
+    b32 inQuicksand;
 
     EntityType type;
 
     // Tile
     u32 color;
     u32 tileFlags;
-    bool32 validPlacement;
+    b32 validPlacement;
     FireState fireState;
     i32 timeToCatchFire;
     i32 timeSpentOnFire;
@@ -82,10 +82,10 @@ struct Entity
 
     // Hero
     Rect heroInteractionRect;
-    bool32 craftTree;
-    bool32 craftGlowJuice;
-    bool32 harvesting;
-    bool32 placingItem;
+    b32 craftTree;
+    b32 craftGlowJuice;
+    b32 harvesting;
+    b32 placingItem;
     Entity *tileToPlace;
     // TODO(cjh): inventory[0] is always 0 because of INV_NONE
     u32 inventory[INV_COUNT];

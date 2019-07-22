@@ -229,10 +229,10 @@ void clamp_size_t(size_t* val, size_t min, size_t max)
     }
 }
 
-bool32 isClose(f32 a, f32 b, f32 tol=0.001f)
+b32 isClose(f32 a, f32 b, f32 tol=0.001f)
 {
     f32 diff = fabsf(a - b);
-    bool32 result = diff < tol;
+    b32 result = diff < tol;
     return result;
 }
 
@@ -311,7 +311,7 @@ bool rectsOverlap(Rect* r1, Rect* r2)
     return x_overlap && y_overlap;
 }
 
-bool32 pointIsInRect(Point point, Rect *rect)
+b32 pointIsInRect(Point point, Rect *rect)
 {
     Rect pointRect = {};
     pointRect.x = point.x;
@@ -319,7 +319,7 @@ bool32 pointIsInRect(Point point, Rect *rect)
     return rectsOverlap(&pointRect, rect);
 }
 
-bool32 positionIsInRect(Vec2 pos, Rect *rect)
+b32 positionIsInRect(Vec2 pos, Rect *rect)
 {
     Point point = {(i32)pos.x, (i32)pos.y};
     return pointIsInRect(point, rect);
@@ -344,7 +344,7 @@ f32 minimumDistanceBetweenPointAndLine(Vec2 a, Vec2 b, Vec2 p) {
     return vec2_distance(&p, &projection);
 }
 
-bool32 lineIntersectsCircle(Point a, Point b, Circle *c)
+b32 lineIntersectsCircle(Point a, Point b, Circle *c)
 {
     Vec2 u = {(f32)a.x, (f32)a.y};
     Vec2 v = {(f32)b.x, (f32)b.y};
@@ -352,7 +352,7 @@ bool32 lineIntersectsCircle(Point a, Point b, Circle *c)
     return minimumDistanceBetweenPointAndLine(u, v, p) <= c->radius;
 }
 
-bool32 circleOverlapsRect(Circle *circle, Rect *rect)
+b32 circleOverlapsRect(Circle *circle, Rect *rect)
 {
     Point p = {};
     p.x = (i32)(circle->center.x + 0.5f);

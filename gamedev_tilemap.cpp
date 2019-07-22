@@ -11,9 +11,9 @@ void removeTileFlags(Entity *e, u32 prop)
     e->tileFlags ^= prop;
 }
 
-bool32 isTileFlagSet(Entity *e, TileProperty prop)
+b32 isTileFlagSet(Entity *e, TileProperty prop)
 {
-    bool32 result = e->tileFlags & prop;
+    b32 result = e->tileFlags & prop;
     return result;
 }
 
@@ -102,11 +102,11 @@ Rect getEntityRect(Entity *e)
     return result;
 }
 
-void drawTile(RenderGroup *group, Game *g, Entity *e, bool32 isBeingPlaced)
+void drawTile(RenderGroup *group, Game *g, Entity *e, b32 isBeingPlaced)
 {
     Rect tileRect = getEntityRect(e);
 
-    if (e->spriteSheet.sheet)
+    if (e->spriteSheet.sheet.texture)
     {
         if (e->animation.totalFrames > 0)
         {
@@ -150,7 +150,7 @@ void drawTiles(RenderGroup *group, Game *g)
 
 void destroyMap(Map* m)
 {
-    SDL_DestroyTexture(m->texture);
+    destroyTexture(m->texture);
 }
 
 void drawBackground(RenderGroup *group, Game *g)

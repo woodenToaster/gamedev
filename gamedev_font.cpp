@@ -2,7 +2,7 @@
 
 void generateFontData(FontMetadata *fontMetadata, Game *game)
 {
-    EntireFile fontFile = readEntireFile("fonts/arialbd.ttf");
+    EntireFile fontFile = platform.readEntireFile("fonts/arialbd.ttf");
 
     fontMetadata->size = 20;
     stbtt_InitFont(&fontMetadata->info, fontFile.contents, 0);
@@ -24,37 +24,17 @@ void generateFontData(FontMetadata *fontMetadata, Game *game)
         stbtt_MakeCodepointBitmapSubpixel(&fontMetadata->info, stb_bitmap, bitmapWidth, bitmapHeight, bitmapWidth,
                                           fontMetadata->scale, fontMetadata->scale, /* x_shift */ 0, 0, codepoint);
 
-        SDL_Surface* surface = SDL_CreateRGBSurface(0, bitmapWidth, bitmapHeight, 32,
-                                                    0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF);
-        if (!surface)
-        {
-            printf("%s\n", SDL_GetError());
-            exit(1);
-        }
-
-        SDL_LockSurface(surface);
-        u8 *srcPixel = stb_bitmap;
-        u32 *destPixel = (u32*)surface->pixels;
-
-        for (int i = 0; i < bitmapHeight * bitmapWidth; ++i)
-        {
-            u8 val = *srcPixel++;
-            *destPixel++ = ((val << 24) | (val << 16) | (val << 8) | (val << 0));
-        }
-        SDL_UnlockSurface(surface);
-
-        SDL_Texture *texture = SDL_CreateTextureFromSurface(game->renderer, surface);
+        TextureHandle texture = createTextureFromGreyscaleBitmap(game, stb_bitmap, bitmapWidth, bitmapHeight);
         fontMetadata->textures[codepoint] = texture;
-        stbtt_FreeBitmap(stb_bitmap, 0);
-        SDL_FreeSurface(surface);
     }
+
 }
 
 void destroyFontMetadata(FontMetadata *fmd)
 {
     for (int i = '!'; i <= '~'; ++i)
     {
-        SDL_DestroyTexture(fmd->textures[i]);
+        destroyTexture(fmd->textures[i]);
     }
 }
 
