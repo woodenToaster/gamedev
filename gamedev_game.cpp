@@ -52,31 +52,6 @@ void destroyGame(Game* g)
     destroyTexture(g->flameTexture);
     destroyTexture(g->firePitTexture);
     destroyTexture(g->glowTreeTexture);
-
-    Mix_Quit();
-    SDL_DestroyRenderer(g->renderer);
-    SDL_DestroyWindow(g->window);
-    SDL_Quit();
-}
-
-void initColors(Game* g)
-{
-    SDL_PixelFormat* window_pixel_format = g->windowSurface->format;
-    g->colors[Color_None] = 0xFFFFFFFF;
-    g->colors[Color_White] = SDL_MapRGB(window_pixel_format, 255, 255, 255);
-    g->colors[Color_DarkGreen] = SDL_MapRGB(window_pixel_format, 37, 71, 0);
-    g->colors[Color_Blue] = SDL_MapRGB(window_pixel_format, 0, 0, 255);
-    g->colors[Color_Yellow] = SDL_MapRGB(window_pixel_format, 235, 245, 65);
-    g->colors[Color_Brown] = SDL_MapRGB(window_pixel_format, 153, 102, 0);
-    g->colors[Color_Rust] = SDL_MapRGB(window_pixel_format, 153, 70, 77);
-    g->colors[Color_Magenta] = SDL_MapRGB(window_pixel_format, 255, 0, 255);
-    g->colors[Color_Black] = SDL_MapRGB(window_pixel_format, 0, 0, 0);
-    g->colors[Color_Red] = SDL_MapRGB(window_pixel_format, 255, 0, 0);
-    g->colors[Color_Grey] = SDL_MapRGB(window_pixel_format, 135, 135, 135);
-    g->colors[Color_DarkBlue] = SDL_MapRGB(window_pixel_format, 0, 51, 102);
-    g->colors[Color_DarkOrange] = SDL_MapRGB(window_pixel_format, 255, 140, 0);
-    g->colors[Color_BabyBlue] = SDL_MapRGB(window_pixel_format, 137, 207, 240);
-    g->colors[Color_LimeGreen] = SDL_MapRGB(window_pixel_format, 106, 190, 48);
 }
 
 void initCamera(Game* g)
@@ -103,53 +78,6 @@ void initCamera(Game* g)
     }
     g->camera.yPixelMovementThreshold = g->screenHeight / 2;
     g->camera.xPixelMovementThreshold = g->screenWidth / 2;
-}
-
-void initGame(Game* g, u32 width, u32 height)
-{
-    g->screenWidth = width;
-    g->screenHeight = height;
-    g->targetFps = 60;
-    g->dt = (i32)((1.0f / (f32)g->targetFps) * 1000);
-    g->targetMsPerFrame = (u32)(1000.0f / (f32)g->targetFps);
-
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) < 0)
-    {
-        printf("SDL failed to initialize: %s\n", SDL_GetError());
-        exit(1);
-    }
-
-    if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
-    {
-        printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
-        exit(1);
-    }
-
-    g->window = SDL_CreateWindow("gamedev",
-                                 30,
-                                 50,
-                                 g->screenWidth,
-                                 g->screenHeight,
-                                 SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
-
-    if (g->window == NULL)
-    {
-        fprintf(stderr, "Could not create window: %s\n", SDL_GetError());
-        exit(1);
-    }
-    g->windowSurface = SDL_GetWindowSurface(g->window);
-
-    g->renderer = SDL_CreateRenderer(g->window, -1, SDL_RENDERER_ACCELERATED);
-
-    if (g->renderer == NULL)
-    {
-        fprintf(stderr, "Could not create renderer: %s\n", SDL_GetError());
-        exit(1);
-    }
-    initColors(g);
-
-    g->initialized = true;
-    g->running = true;
 }
 
 void updateGame(Game *g, Input *input)
@@ -198,23 +126,3 @@ void updateInventoryMode(Game *g, Input *input)
     }
 }
 
-void sleepIfAble(Game* g)
-{
-    if (g->dt < g->targetMsPerFrame)
-    {
-        while (g->dt < g->targetMsPerFrame)
-        {
-            u32 sleep_ms = g->targetMsPerFrame - g->dt;
-            g->dt += sleep_ms;
-            SDL_Delay(sleep_ms);
-        }
-    }
-    else
-    {
-#ifdef DEBUG
-        printf("Frame missed!\n");
-#endif
-    }
-
-    g->totalFramesElapsed++;
-}

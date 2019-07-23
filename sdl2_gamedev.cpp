@@ -108,6 +108,25 @@ internal SDL_Texture* SDLCreateTextureFromPng(const char* fname, SDL_Renderer *r
     return texture;
 }
 
+void SDLInitColors(Game *g, SDL_PixelFormat *pixelFormat)
+{
+    g->colors[Color_None] = 0xFFFFFFFF;
+    g->colors[Color_White] = SDL_MapRGB(pixelFormat, 255, 255, 255);
+    g->colors[Color_DarkGreen] = SDL_MapRGB(pixelFormat, 37, 71, 0);
+    g->colors[Color_Blue] = SDL_MapRGB(pixelFormat, 0, 0, 255);
+    g->colors[Color_Yellow] = SDL_MapRGB(pixelFormat, 235, 245, 65);
+    g->colors[Color_Brown] = SDL_MapRGB(pixelFormat, 153, 102, 0);
+    g->colors[Color_Rust] = SDL_MapRGB(pixelFormat, 153, 70, 77);
+    g->colors[Color_Magenta] = SDL_MapRGB(pixelFormat, 255, 0, 255);
+    g->colors[Color_Black] = SDL_MapRGB(pixelFormat, 0, 0, 0);
+    g->colors[Color_Red] = SDL_MapRGB(pixelFormat, 255, 0, 0);
+    g->colors[Color_Grey] = SDL_MapRGB(pixelFormat, 135, 135, 135);
+    g->colors[Color_DarkBlue] = SDL_MapRGB(pixelFormat, 0, 51, 102);
+    g->colors[Color_DarkOrange] = SDL_MapRGB(pixelFormat, 255, 140, 0);
+    g->colors[Color_BabyBlue] = SDL_MapRGB(pixelFormat, 137, 207, 240);
+    g->colors[Color_LimeGreen] = SDL_MapRGB(pixelFormat, 106, 190, 48);
+}
+
 
 TextureHandle SDLCreateTextureFromGreyscaleBitmap(Game *g, u8 *bitmap, i32 width, i32 height)
 {
@@ -184,6 +203,26 @@ void SDLFreeFileMemory(EntireFile *file)
     }
 }
 
+void SDLSleepIfAble(Game* g)
+{
+    if (g->dt < g->targetMsPerFrame)
+    {
+        while (g->dt < g->targetMsPerFrame)
+        {
+            u32 sleep_ms = g->targetMsPerFrame - g->dt;
+            g->dt += sleep_ms;
+            SDL_Delay(sleep_ms);
+        }
+    }
+    else
+    {
+#ifdef DEBUG
+        printf("Frame missed!\n");
+#endif
+    }
+
+    g->totalFramesElapsed++;
+}
 
 int main(int argc, char* argv[])
 {
@@ -210,16 +249,56 @@ int main(int argc, char* argv[])
               (u8*)memory.permanentStorage + sizeof(Game));
     initArena(&game->transientArena, memory.transientStorageSize, (u8*)memory.transientStorage);
 
-    u32 screenWidth = 960;
-    u32 screenHeight = 540;
-    initGame(game, screenWidth, screenHeight);
+    game->screenWidth = 960;
+    game->screenHeight = 540;
+    game->targetFps = 60;
+    game->dt = (i32)((1.0f / (f32)game->targetFps) * 1000);
+    game->targetMsPerFrame = (u32)(1000.0f / (f32)game->targetFps);
+
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) < 0)
+    {
+        printf("SDL failed to initialize: %s\n", SDL_GetError());
+        exit(1);
+    }
+
+    if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
+    {
+        printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
+        exit(1);
+    }
+
+    SDL_Window *window = SDL_CreateWindow("gamedev",
+                              30,
+                              50,
+                              game->screenWidth,
+                              game->screenHeight,
+                              SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+
+    if (window == NULL)
+    {
+        fprintf(stderr, "Could not create window: %s\n", SDL_GetError());
+        exit(1);
+    }
+
+    game->renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
+    if (game->renderer == NULL)
+    {
+        fprintf(stderr, "Could not create renderer: %s\n", SDL_GetError());
+        exit(1);
+    }
+    SDL_PixelFormat *pixelFormat = SDL_GetWindowSurface(window)->format;
+    SDLInitColors(game, pixelFormat);
+
+    game->initialized = true;
+    game->running = true;
 
     // OpenGL
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-    SDL_GLContext ogl_context = SDL_GL_CreateContext(game->window);
+    SDL_GLContext ogl_context = SDL_GL_CreateContext(window);
 
     if (ogl_context == NULL)
     {
@@ -452,7 +531,7 @@ int main(int argc, char* argv[])
                              game->camera.viewport.w, game->camera.viewport.h};
         SDL_RenderCopy(game->renderer, (SDL_Texture*)game->currentMap->texture.texture, &viewport, NULL);
         game->dt = SDL_GetTicks() - now;
-        sleepIfAble(game);
+        SDLSleepIfAble(game);
         SDL_RenderPresent(game->renderer);
 
         endTemporaryMemory(renderMemory);
@@ -468,7 +547,11 @@ int main(int argc, char* argv[])
     destroyControllers(&input);
     destroyMap(map0);
     destroyGame(game);
+    Mix_Quit();
+    SDL_DestroyRenderer(game->renderer);
     free(memory.permanentStorage);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
 
     return 0;
 }

@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28010.2046
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "sdl2_gamedev", "build\sdl2_gamedev.exe", "{8337FE1B-8175-420A-8CFD-EAAE5EE4D505}"
+Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "sdl2_gamedev", "build\sdl2_gamedev.exe", "{05C88BE3-7899-4802-9729-F9FE00088875}"
 	ProjectSection(DebuggerProjectSystem) = preProject
 		PortSupplier = 00000000-0000-0000-0000-000000000000
 		Executable = w:\gamedev\build\sdl2_gamedev.exe
@@ -21,12 +21,12 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{8337FE1B-8175-420A-8CFD-EAAE5EE4D505}.Release|x64.ActiveCfg = Release|x64
+		{05C88BE3-7899-4802-9729-F9FE00088875}.Release|x64.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {3947DD7B-68A7-4038-BCB7-ED438AE8DF67}
+		SolutionGuid = {96AA3E23-D469-40E6-AAB5-D7B58A9C23A0}
 	EndGlobalSection
 EndGlobal

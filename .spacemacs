@@ -32,7 +32,7 @@ values."
    dotspacemacs-configuration-layers
    '(
      markdown
-     lua
+     ;; lua
      yaml
      windows-scripts
      ;; ----------------------------------------------------------------
@@ -41,7 +41,7 @@ values."
      ;; <M-m f e R> (Emacs style) to install them.
      ;; ----------------------------------------------------------------
      c-c++
-     csharp
+     ;; csharp
      helm
      auto-completion
      ;; better-defaults

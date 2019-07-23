@@ -66,8 +66,6 @@ struct Game
     u32 targetMsPerFrame;
     bool running;
     u8 initialized;
-    SDL_Window *window;
-    SDL_Surface *windowSurface;
     SDL_Renderer *renderer;
     u32 colors[Color_Count];
     Camera camera;

@@ -22,6 +22,7 @@
 ** TODO Generic platform API so platforms can be switched out
    - SDL functions are only allowed in sdl2_gamedev.h/sdl2_gamedev.cpp
 *** TODO gamedev_game.cpp
+**** TODO renderer
 *** TODO gamedev_input.cpp
 *** TODO gamedev_renderer.cpp
 ** TODO RenderGroup sorting based on layers, and then based on position.y
