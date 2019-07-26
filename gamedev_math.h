@@ -238,6 +238,7 @@ b32 isClose(f32 a, f32 b, f32 tol=0.001f)
 
 // One piece of a circle split in 8 sections
 // The radians start at 2*PI on (1, 0) and go to zero counter-clockwise
+#if 0
 Direction get_direction_from_angle(f32 angle)
 {
     f32 direction_increment = (2.0f * PI) / 8.0f;
@@ -290,6 +291,7 @@ Direction get_direction_from_angle(f32 angle)
     }
     return result;
 }
+#endif
 
 f32 square(f32 x)
 {

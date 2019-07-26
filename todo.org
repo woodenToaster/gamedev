@@ -20,10 +20,7 @@
 *** TODO Each move takes time, and the longer it takes, the more damage it does.
 * Architecture
 ** TODO Generic platform API so platforms can be switched out
-   - SDL functions are only allowed in sdl2_gamedev.h/sdl2_gamedev.cpp
-*** TODO gamedev_game.cpp
-**** TODO renderer
-*** TODO gamedev_input.cpp
+   - SDL functions are only allowed in sdl2_gamedev.h/sdl2_gamedev.cpp and renderer
 *** TODO gamedev_renderer.cpp
 ** TODO RenderGroup sorting based on layers, and then based on position.y
 ** TODO game code DLL (tough with SDL)
