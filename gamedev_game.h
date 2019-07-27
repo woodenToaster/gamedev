@@ -40,6 +40,7 @@ struct GameMemory
     void *transientStorage;
 
     PlatformAPI platformAPI;
+    RendererAPI rendererAPI;
 };
 
 struct Arena
@@ -66,7 +67,7 @@ struct Game
     u32 targetMsPerFrame;
     bool running;
     u8 initialized;
-    SDL_Renderer *renderer;
+    RendererHandle renderer;
     u32 colors[Color_Count];
     Camera camera;
     Map *currentMap;

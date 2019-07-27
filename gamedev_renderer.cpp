@@ -24,24 +24,9 @@ u8 getBlueFromU32(u32 color)
     return b;
 }
 
-TextureDims getTextureDims(TextureHandle texture)
+b32 isZeroRect(Rect rect)
 {
-    SDL_Texture *sdlTexture = (SDL_Texture*)texture.texture;
-    TextureDims result = {};
-    SDL_QueryTexture(sdlTexture, NULL, NULL, &result.width, &result.height);
-
-    return result;
-}
-
-void destroyTexture(TextureHandle t)
-{
-    SDL_DestroyTexture((SDL_Texture*)t.texture);
-}
-
-void setRenderDrawColor(SDL_Renderer *renderer, u32 color)
-{
-    SDL_SetRenderDrawColor(renderer, getRedFromU32(color), getGreenFromU32(color),
-                           getBlueFromU32(color), 255);
+    return !(rect.x || rect.y || rect.w || rect.h);
 }
 
 // TODO(cjh): Account for wrapping off the viewport
@@ -56,7 +41,7 @@ void drawText(RenderGroup *group, FontMetadata *fontMetadata, char* text, i32 x=
         CodepointMetadata *cpm = &fontMetadata->codepointMetadata[text[at]];
         i32 width = cpm->x1 - cpm->x0;
         i32 height = cpm->y1 - cpm->y0;
-        SDL_Rect source = {cpm->x0, cpm->y0, width, height};
+        Rect source = {cpm->x0, cpm->y0, width, height};
         Rect dest = {xpos, baseline + cpm->y0, width, height};
 
 	    if (text[at] != ' ')
@@ -188,39 +173,6 @@ void darkenBackground(RenderGroup *group, Game *g)
     pushFilledRect(group, dest, g->colors[Color_Black], RenderLayer_HUD, 64);
 }
 
-void renderRect(SDL_Renderer *renderer, SDL_Rect *dest, u32 color, u8 alpha=255)
-{
-    u8 r = (u8)((color & 0x00FF0000) >> 16);
-    u8 g = (u8)((color & 0x0000FF00) >> 8);
-    u8 b = (u8)((color & 0x000000FF) >> 0);
-
-    SDL_BlendMode blendMode;
-    SDL_GetRenderDrawBlendMode(renderer, &blendMode);
-    SDL_SetRenderDrawColor(renderer, r, g, b, alpha);
-    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-    SDL_RenderDrawRect(renderer, dest);
-    SDL_SetRenderDrawBlendMode(renderer, blendMode);
-}
-
-void renderFilledRect(SDL_Renderer* renderer, SDL_Rect* dest, u32 color, u8 alpha=255)
-{
-    // Color_None is 0xFFFFFFFF. Set a tile's background color to Color_None to avoid
-    // extra rendering.
-    if (color != 0xFFFFFFFF)
-    {
-        u8 r = (u8)((color & 0x00FF0000) >> 16);
-        u8 g = (u8)((color & 0x0000FF00) >> 8);
-        u8 b = (u8)((color & 0x000000FF) >> 0);
-
-        SDL_BlendMode blendMode;
-        SDL_GetRenderDrawBlendMode(renderer, &blendMode);
-        SDL_SetRenderDrawColor(renderer, r, g, b, alpha);
-        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-        SDL_RenderFillRect(renderer, dest);
-        SDL_SetRenderDrawBlendMode(renderer, blendMode);
-    }
-}
-
 #define PushRenderElement(group, type) (type*)pushRenderElement_(group, sizeof(type), RenderEntryType_##type)
 
 internal void *pushRenderElement_(RenderGroup *group, u32 size, RenderEntryType type)
@@ -249,7 +201,7 @@ internal void pushRect(RenderGroup *group, Rect dest, u32 color, RenderLayer lay
     RenderEntryRect *rect = PushRenderElement(group, RenderEntryRect);
     if (rect)
     {
-        SDL_Rect sdlDest = {dest.x, dest.y, dest.w, dest.h};
+        Rect sdlDest = {dest.x, dest.y, dest.w, dest.h};
         rect->dest = sdlDest;
         rect->color = color;
         rect->alpha = alpha;
@@ -262,7 +214,7 @@ internal void pushFilledRect(RenderGroup *group, Rect dest, u32 color, RenderLay
     RenderEntryFilledRect *filledRect = PushRenderElement(group, RenderEntryFilledRect);
     if (filledRect)
     {
-        SDL_Rect sdlDest = {dest.x, dest.y, dest.w, dest.h};
+        Rect sdlDest = {dest.x, dest.y, dest.w, dest.h};
         filledRect->dest = sdlDest;
         filledRect->color = color;
         filledRect->alpha = alpha;
@@ -275,8 +227,8 @@ internal void pushSprite(RenderGroup *group, TextureHandle sheet, Rect source, R
     RenderEntrySprite *sprite = PushRenderElement(group, RenderEntrySprite);
     if (sprite)
     {
-        SDL_Rect sdlDest = {dest.x, dest.y, dest.w, dest.h};
-        SDL_Rect sdlSource = {source.x, source.y, source.w, source.h};
+        Rect sdlDest = {dest.x, dest.y, dest.w, dest.h};
+        Rect sdlSource = {source.x, source.y, source.w, source.h};
         sprite->dest = sdlDest;
         sprite->source = sdlSource;
         sprite->sheet = sheet;
@@ -294,16 +246,7 @@ internal RenderGroup *allocateRenderGroup(Arena *arena, u32 maxSize)
     return result;
 }
 
-internal SDL_Rect *checkForNullRect(SDL_Rect *rect)
-{
-    if (rect->x == 0 && rect->y == 0 && rect->w == 0 && rect->h == 0)
-    {
-        return NULL;
-    }
-    return rect;
-}
-
-internal void drawRenderGroup(SDL_Renderer *renderer, RenderGroup *group)
+internal void drawRenderGroup(RendererHandle renderer, RenderGroup *group)
 {
     for (int layerIndex = 0; layerIndex < RenderLayer_Count; ++layerIndex)
     {
@@ -320,8 +263,7 @@ internal void drawRenderGroup(SDL_Renderer *renderer, RenderGroup *group)
                 RenderEntryRect *entry = (RenderEntryRect*)data;
                 if (entry->layer == layerIndex)
                 {
-                    SDL_Rect *dest = checkForNullRect(&entry->dest);
-                    renderRect(renderer, dest, entry->color, entry->alpha);
+                    rendererAPI.renderRect(renderer, entry->dest, entry->color, entry->alpha);
                 }
                 baseAddress += sizeof(*entry);
             } break;
@@ -330,8 +272,7 @@ internal void drawRenderGroup(SDL_Renderer *renderer, RenderGroup *group)
                 RenderEntryFilledRect *entry = (RenderEntryFilledRect*)data;
                 if (entry->layer == layerIndex)
                 {
-                    SDL_Rect *dest = checkForNullRect(&entry->dest);
-                    renderFilledRect(renderer, dest, entry->color, entry->alpha);
+                    rendererAPI.renderFilledRect(renderer, entry->dest, entry->color, entry->alpha);
                 }
                 baseAddress += sizeof(*entry);
             } break;
@@ -341,9 +282,7 @@ internal void drawRenderGroup(SDL_Renderer *renderer, RenderGroup *group)
                 RenderEntrySprite *entry = (RenderEntrySprite*)data;
                 if (entry->layer == layerIndex)
                 {
-                    SDL_Rect *source = checkForNullRect(&entry->source);
-                    SDL_Rect *dest = checkForNullRect(&entry->dest);
-                    SDL_RenderCopy(renderer, (SDL_Texture*)entry->sheet.texture, source, dest);
+                    rendererAPI.renderSprite(renderer, entry->sheet, entry->source, entry->dest);
                 }
                 baseAddress += sizeof(*entry);
             } break;
@@ -360,41 +299,4 @@ internal void sortRenderGroup(RenderGroup *group)
 {
 }
 
-void drawCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
-{
-    i32 x = radius - 1;
-    if (radius == 0)
-    {
-        return;
-    }
-    i32 y = 0;
-    i32 tx = 1;
-    i32 ty = 1;
-    i32 err = tx - (2 * radius);
-    while (x >= y)
-    {
-        //  Each of the following renders an octant of the circle
-        SDL_RenderDrawPoint(renderer, _x + x, _y - y);
-        SDL_RenderDrawPoint(renderer, _x + x, _y + y);
-        SDL_RenderDrawPoint(renderer, _x - x, _y - y);
-        SDL_RenderDrawPoint(renderer, _x - x, _y + y);
-        SDL_RenderDrawPoint(renderer, _x + y, _y - x);
-        SDL_RenderDrawPoint(renderer, _x + y, _y + x);
-        SDL_RenderDrawPoint(renderer, _x - y, _y - x);
-        SDL_RenderDrawPoint(renderer, _x - y, _y + x);
-
-        if (err <= 0)
-        {
-            y++;
-            err += ty;
-            ty += 2;
-        }
-        if (err > 0)
-        {
-            x--;
-            tx += 2;
-            err += tx - (radius << 1);
-        }
-    }
-}
 #endif

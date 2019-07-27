@@ -34,7 +34,7 @@ void destroyFontMetadata(FontMetadata *fmd)
 {
     for (int i = '!'; i <= '~'; ++i)
     {
-        destroyTexture(fmd->textures[i]);
+        rendererAPI.destroyTexture(fmd->textures[i]);
     }
 }
 

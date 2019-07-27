@@ -150,7 +150,7 @@ void drawTiles(RenderGroup *group, Game *g)
 
 void destroyMap(Map* m)
 {
-    destroyTexture(m->texture);
+    rendererAPI.destroyTexture(m->texture);
 }
 
 void drawBackground(RenderGroup *group, Game *g)

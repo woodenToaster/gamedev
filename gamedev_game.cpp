@@ -45,13 +45,13 @@ void destroyGame(Game* g)
 {
     // TODO(cjh): This should be stored in gameMemory instead of malloced
     free(g->dialogue);
-    destroyTexture(g->linkTexture);
-    destroyTexture(g->harvestableTreeTexture);
-    destroyTexture(g->harlodTexture);
-    destroyTexture(g->knightTexture);
-    destroyTexture(g->flameTexture);
-    destroyTexture(g->firePitTexture);
-    destroyTexture(g->glowTreeTexture);
+    rendererAPI.destroyTexture(g->linkTexture);
+    rendererAPI.destroyTexture(g->harvestableTreeTexture);
+    rendererAPI.destroyTexture(g->harlodTexture);
+    rendererAPI.destroyTexture(g->knightTexture);
+    rendererAPI.destroyTexture(g->flameTexture);
+    rendererAPI.destroyTexture(g->firePitTexture);
+    rendererAPI.destroyTexture(g->glowTreeTexture);
 }
 
 void initCamera(Game* g)

@@ -28,6 +28,8 @@ global_variable PlatformAPI platform = {};
 global_variable platformCreateTextureFromGreyscaleBitmap *createTextureFromGreyscaleBitmap;
 
 #include "gamedev_renderer.h"
+global_variable RendererAPI rendererAPI = {};
+
 #include "gamedev_font.h"
 #include "gamedev_sound.h"
 #include "gamedev_game.h"
@@ -45,8 +47,11 @@ global_variable platformCreateTextureFromGreyscaleBitmap *createTextureFromGreys
 #include "gamedev_entity.cpp"
 #include "gamedev_tilemap.cpp"
 
-internal SDL_Texture* SDLCreateTextureFromPng(const char* fname, SDL_Renderer *renderer)
+#define GAMEDEV_SDL_RENDERER(game) ((SDL_Renderer*)((game)->renderer.renderer))
+
+internal SDL_Texture* SDLCreateTextureFromPng(const char* fname, RendererHandle renderer)
 {
+    SDL_Renderer *sdlRenderer = (SDL_Renderer*)renderer.renderer;
     unsigned char *img_data;
     int width;
     int height;
@@ -93,7 +98,7 @@ internal SDL_Texture* SDLCreateTextureFromPng(const char* fname, SDL_Renderer *r
         pixelFormat = bigEndian ? SDL_PIXELFORMAT_RGBA8888 : SDL_PIXELFORMAT_ABGR8888;
     }
 
-    SDL_Texture *texture = SDL_CreateTexture(renderer, pixelFormat, SDL_TEXTUREACCESS_STATIC, width, height);
+    SDL_Texture *texture = SDL_CreateTexture(sdlRenderer, pixelFormat, SDL_TEXTUREACCESS_STATIC, width, height);
     SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
     SDL_UpdateTexture(texture, NULL, (void*)img_data, pitch);
 
@@ -144,7 +149,7 @@ TextureHandle SDLCreateTextureFromGreyscaleBitmap(Game *g, u8 *bitmap, i32 width
         *destPixel++ = ((val << 24) | (val << 16) | (val << 8) | (val << 0));
     }
     SDL_UnlockSurface(surface);
-    SDL_Texture *texture = SDL_CreateTextureFromSurface(g->renderer, surface);
+    SDL_Texture *texture = SDL_CreateTextureFromSurface((SDL_Renderer*)g->renderer.renderer, surface);
     result.texture = texture;
     stbtt_FreeBitmap(bitmap, 0);
     SDL_FreeSurface(surface);
@@ -391,37 +396,127 @@ internal void SDLPollInput(Input *input, Game *game, SDL_GameController **handle
     }
 }
 
-// internal void SDLInputHandleMouse(Input* input)
-// {
-//     // get vector from center of player to mouse cursor
-//     Point hero_center = {
-//         hero.e.dest_rect.x + (i32)(0.5 * hero.e.dest_rect.w),
-//         hero.e.dest_rect.y + (i32)(0.5 * hero.e.dest_rect.h)
-//     };
-//     Vec2 mouse_relative_to_hero;
-//     mouse_relative_to_hero.x = hero_center.x - ((float)event.motion.x + camera.x);
-//     mouse_relative_to_hero.y = hero_center.y - ((float)event.motion.y + camera.y);
+// Rendering
 
-//     float angle = 0;
-//     if (mouse_relative_to_hero.x != 0 && mouse_relative_to_hero.y != 0)
-//     {
-//         angle = atan2f(mouse_relative_to_hero.y, mouse_relative_to_hero.x) + PI;
-//     }
+SDL_Rect SDLRectFromRect(Rect rect)
+{
+    SDL_Rect result = {};
+    result.x = rect.x;
+    result.y = rect.y;
+    result.w = rect.w;
+    result.h = rect.h;
 
-//     if (angle != 0)
-//     {
-//         hero.e.direction = get_direction_from_angle(angle);
-//     }
-//     break;
-// }
-// case SDL_MOUSEBUTTONUP:
-// {
-//     if (event.button.button == SDL_BUTTON_LEFT)
-//     {
-//         hero.swing_club = true;
-//     }
-//     break;
-// }
+    return result;
+}
+
+TextureDims SDLGetTextureDims(TextureHandle texture)
+{
+    SDL_Texture *sdlTexture = (SDL_Texture*)texture.texture;
+    TextureDims result = {};
+    SDL_QueryTexture(sdlTexture, NULL, NULL, &result.width, &result.height);
+
+    return result;
+}
+
+void SDLDestroyTexture(TextureHandle t)
+{
+    SDL_DestroyTexture((SDL_Texture*)t.texture);
+}
+
+void SDLSetRenderDrawColor(RendererHandle renderer, u32 color)
+{
+    SDL_SetRenderDrawColor((SDL_Renderer*)renderer.renderer, getRedFromU32(color), getGreenFromU32(color),
+                           getBlueFromU32(color), 255);
+}
+
+void SDLRenderRect(RendererHandle renderer, Rect dest, u32 color, u8 alpha=255)
+{
+    u8 r = (u8)((color & 0x00FF0000) >> 16);
+    u8 g = (u8)((color & 0x0000FF00) >> 8);
+    u8 b = (u8)((color & 0x000000FF) >> 0);
+
+    SDL_Renderer *sdlRenderer = (SDL_Renderer*)renderer.renderer;
+    SDL_Rect sdl_dest = SDLRectFromRect(dest);
+    SDL_Rect *sdl_dest_ptr = isZeroRect(dest) ? NULL : &sdl_dest;
+    SDL_BlendMode blendMode;
+    SDL_GetRenderDrawBlendMode(sdlRenderer, &blendMode);
+    SDL_SetRenderDrawColor(sdlRenderer, r, g, b, alpha);
+    SDL_SetRenderDrawBlendMode(sdlRenderer, SDL_BLENDMODE_BLEND);
+    SDL_RenderDrawRect(sdlRenderer, sdl_dest_ptr);
+    SDL_SetRenderDrawBlendMode(sdlRenderer, blendMode);
+}
+
+void SDLRenderFilledRect(RendererHandle renderer, Rect dest, u32 color, u8 alpha=255)
+{
+    // Color_None is 0xFFFFFFFF. Set a tile's background color to Color_None to avoid
+    // extra rendering.
+    if (color != 0xFFFFFFFF)
+    {
+        u8 r = (u8)((color & 0x00FF0000) >> 16);
+        u8 g = (u8)((color & 0x0000FF00) >> 8);
+        u8 b = (u8)((color & 0x000000FF) >> 0);
+
+        SDL_Renderer *sdlRenderer = (SDL_Renderer*)renderer.renderer;
+        SDL_Rect sdl_dest = SDLRectFromRect(dest);
+        SDL_Rect *sdl_dest_ptr = isZeroRect(dest) ? NULL : &sdl_dest;
+        SDL_BlendMode blendMode;
+        SDL_GetRenderDrawBlendMode(sdlRenderer, &blendMode);
+        SDL_SetRenderDrawColor(sdlRenderer, r, g, b, alpha);
+        SDL_SetRenderDrawBlendMode(sdlRenderer, SDL_BLENDMODE_BLEND);
+        SDL_RenderFillRect(sdlRenderer, sdl_dest_ptr);
+        SDL_SetRenderDrawBlendMode(sdlRenderer, blendMode);
+    }
+}
+
+void SDLRenderSprite(RendererHandle renderer, TextureHandle texture, Rect source, Rect dest)
+{
+    SDL_Renderer *sdlRenderer = (SDL_Renderer*)renderer.renderer;
+    SDL_Rect sdl_source = SDLRectFromRect(source);
+    SDL_Rect sdl_dest = SDLRectFromRect(dest);
+    SDL_Rect *sdl_source_ptr = isZeroRect(source) ? NULL : &sdl_source;
+    SDL_Rect *sdl_dest_ptr = isZeroRect(dest) ? NULL : &sdl_dest;
+    SDL_RenderCopy(sdlRenderer, (SDL_Texture*)texture.texture, sdl_source_ptr, sdl_dest_ptr);
+}
+
+#if 0
+void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
+{
+    i32 x = radius - 1;
+    if (radius == 0)
+    {
+        return;
+    }
+    i32 y = 0;
+    i32 tx = 1;
+    i32 ty = 1;
+    i32 err = tx - (2 * radius);
+    while (x >= y)
+    {
+        //  Each of the following renders an octant of the circle
+        SDL_RenderDrawPoint(renderer, _x + x, _y - y);
+        SDL_RenderDrawPoint(renderer, _x + x, _y + y);
+        SDL_RenderDrawPoint(renderer, _x - x, _y - y);
+        SDL_RenderDrawPoint(renderer, _x - x, _y + y);
+        SDL_RenderDrawPoint(renderer, _x + y, _y - x);
+        SDL_RenderDrawPoint(renderer, _x + y, _y + x);
+        SDL_RenderDrawPoint(renderer, _x - y, _y - x);
+        SDL_RenderDrawPoint(renderer, _x - y, _y + x);
+
+        if (err <= 0)
+        {
+            y++;
+            err += ty;
+            ty += 2;
+        }
+        if (err > 0)
+        {
+            x--;
+            tx += 2;
+            err += tx - (radius << 1);
+        }
+    }
+}
+#endif
 
 int main(int argc, char* argv[])
 {
@@ -433,13 +528,21 @@ int main(int argc, char* argv[])
     memory.transientStorageSize = (size_t)MEGABYTES(4);
     memory.permanentStorage = calloc(memory.permanentStorageSize + memory.transientStorageSize, sizeof(u8));
     memory.transientStorage = (u8*)memory.permanentStorage + memory.permanentStorageSize;
+
     memory.platformAPI.readEntireFile = SDLReadEntireFile;
     memory.platformAPI.freeFileMemory = SDLFreeFileMemory;
     memory.platformAPI.getTicks = SDL_GetTicks;
 
-    createTextureFromGreyscaleBitmap = SDLCreateTextureFromGreyscaleBitmap;
+    memory.rendererAPI.getTextureDims = SDLGetTextureDims;
+    memory.rendererAPI.destroyTexture = SDLDestroyTexture;
+    memory.rendererAPI.setRenderDrawColor = SDLSetRenderDrawColor;
+    memory.rendererAPI.renderRect = SDLRenderRect;
+    memory.rendererAPI.renderFilledRect = SDLRenderFilledRect;
+    memory.rendererAPI.renderSprite = SDLRenderSprite;
 
     platform = memory.platformAPI;
+    rendererAPI = memory.rendererAPI;
+    createTextureFromGreyscaleBitmap = SDLCreateTextureFromGreyscaleBitmap;
 
     // Game
     assert(sizeof(Game) < memory.permanentStorageSize);
@@ -479,9 +582,9 @@ int main(int argc, char* argv[])
         exit(1);
     }
 
-    game->renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    game->renderer.renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
-    if (game->renderer == NULL)
+    if (game->renderer.renderer == NULL)
     {
         fprintf(stderr, "Could not create renderer: %s\n", SDL_GetError());
         exit(1);
@@ -542,7 +645,7 @@ int main(int argc, char* argv[])
     map0->cols = 12;
     map0->widthPixels = map0->cols * tileWidth;
     map0->heightPixels = map0->rows * tileHeight;
-    map0->texture.texture = SDL_CreateTexture(game->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
+    map0->texture.texture = SDL_CreateTexture(GAMEDEV_SDL_RENDERER(game), SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
                                               map0->widthPixels, map0->heightPixels);
 
     for (u32 row = 0; row < map0->rows; ++row)
@@ -680,7 +783,7 @@ int main(int argc, char* argv[])
         /* Draw                                                              */
         /*********************************************************************/
 
-        SDL_SetRenderTarget(game->renderer, (SDL_Texture*)game->currentMap->texture.texture);
+        SDL_SetRenderTarget(GAMEDEV_SDL_RENDERER(game), (SDL_Texture*)game->currentMap->texture.texture);
         drawBackground(group, game);
         drawTiles(group, game);
         drawEntities(group, game);
@@ -726,13 +829,13 @@ int main(int argc, char* argv[])
         // TODO(cjh): sortRenderGroup(group);
         drawRenderGroup(game->renderer, group);
 
-        SDL_SetRenderTarget(game->renderer, NULL);
+        SDL_SetRenderTarget(GAMEDEV_SDL_RENDERER(game), NULL);
         SDL_Rect viewport = {game->camera.viewport.x, game->camera.viewport.y,
                              game->camera.viewport.w, game->camera.viewport.h};
-        SDL_RenderCopy(game->renderer, (SDL_Texture*)game->currentMap->texture.texture, &viewport, NULL);
+        SDL_RenderCopy(GAMEDEV_SDL_RENDERER(game), (SDL_Texture*)game->currentMap->texture.texture, &viewport, NULL);
         game->dt = SDL_GetTicks() - now;
         SDLSleepIfAble(game);
-        SDL_RenderPresent(game->renderer);
+        SDL_RenderPresent(GAMEDEV_SDL_RENDERER(game));
 
         endTemporaryMemory(renderMemory);
 
@@ -748,7 +851,7 @@ int main(int argc, char* argv[])
     destroyMap(map0);
     destroyGame(game);
     Mix_Quit();
-    SDL_DestroyRenderer(game->renderer);
+    SDL_DestroyRenderer(GAMEDEV_SDL_RENDERER(game));
     free(memory.permanentStorage);
     SDL_DestroyWindow(window);
     SDL_Quit();
