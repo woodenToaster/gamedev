@@ -633,9 +633,13 @@ int main(int argc, char *argv[])
 
     destroyFontMetadata(&memory.fontMetadata);
     SDLDestroyControllers(&controllerHandles[0]);
-    // TODO(cjh): Need these somewhere
-    // destroyMap(map0);
-    // destroyGame(game);
+
+    // TODO(cjh): This needs work
+    Game* game = (Game*)memory.permanentStorage;
+    destroyMap(game->currentMap);
+    destroyGame(game);
+    //
+
     Mix_Quit();
     SDL_DestroyRenderer(renderer);
     free(memory.permanentStorage);

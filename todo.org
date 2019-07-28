@@ -20,11 +20,10 @@
 *** TODO Each move takes time, and the longer it takes, the more damage it does.
 * Architecture
 ** TODO RenderGroup sorting based on layers, and then based on position.y
-** TODO game code DLL (tough with SDL)
-*** TODO Move game code out of platform layer. 
-** TODO Hot loading (tough)
+** TODO game code DLL
+** TODO Hot loading
 *** TODO All game state in one chunk of memory (SDL_Textures?)
-*** TODO Looped live editing
+** TODO Looped live editing
 ** TODO Packed asset file
 ** TODO Offline font rendering
 * Design
