@@ -1,6 +1,6 @@
 #include "gamedev_font.h"
 
-void generateFontData(FontMetadata *fontMetadata, Game *game)
+void generateFontData(FontMetadata *fontMetadata, RendererHandle renderer)
 {
     EntireFile fontFile = platform.readEntireFile("fonts/arialbd.ttf");
 
@@ -24,7 +24,8 @@ void generateFontData(FontMetadata *fontMetadata, Game *game)
         stbtt_MakeCodepointBitmapSubpixel(&fontMetadata->info, stb_bitmap, bitmapWidth, bitmapHeight, bitmapWidth,
                                           fontMetadata->scale, fontMetadata->scale, /* x_shift */ 0, 0, codepoint);
 
-        TextureHandle texture = createTextureFromGreyscaleBitmap(game, stb_bitmap, bitmapWidth, bitmapHeight);
+        TextureHandle texture = rendererAPI.createTextureFromGreyscaleBitmap(renderer, stb_bitmap, bitmapWidth,
+                                                                             bitmapHeight);
         fontMetadata->textures[codepoint] = texture;
     }
 

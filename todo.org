@@ -21,10 +21,12 @@
 * Architecture
 ** TODO RenderGroup sorting based on layers, and then based on position.y
 ** TODO game code DLL (tough with SDL)
+*** TODO Move game code out of platform layer. 
 ** TODO Hot loading (tough)
-*** TODO All game state in one chunk of memory
+*** TODO All game state in one chunk of memory (SDL_Textures?)
 *** TODO Looped live editing
 ** TODO Packed asset file
+** TODO Offline font rendering
 * Design
 ** TODO 2D fantasy [survival | crafting | puzzle]
 ** TODO Dark Souls style combat

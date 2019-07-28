@@ -15,12 +15,6 @@ enum RenderEntryType
     RenderEntryType_Count
 };
 
-struct TextureDims
-{
-    i32 width;
-    i32 height;
-};
-
 struct RenderEntryHeader
 {
     RenderEntryType type;
@@ -56,28 +50,6 @@ struct RenderGroup
     u32 maxBufferSize;
     u32 bufferSize;
     u8 *bufferBase;
-};
-
-struct RendererHandle
-{
-    void *renderer;
-};
-
-typedef TextureDims (GetTextureDims)(TextureHandle texture);
-typedef void (DestroyTexture)(TextureHandle t);
-typedef void (SetRenderDrawColor)(RendererHandle renderer, u32 color);
-typedef void (RenderRect)(RendererHandle renderer, Rect dest, u32 color, u8 alpha);
-typedef void (RenderFilledRect)(RendererHandle renderer, Rect dest, u32 color, u8 alpha);
-typedef void (RenderSprite)(RendererHandle renderer, TextureHandle texture, Rect source, Rect dest);
-
-struct RendererAPI
-{
-    GetTextureDims *getTextureDims;
-    DestroyTexture *destroyTexture;
-    SetRenderDrawColor *setRenderDrawColor;
-    RenderRect *renderRect;
-    RenderFilledRect *renderFilledRect;
-    RenderSprite *renderSprite;
 };
 
 internal void pushRect(RenderGroup *group, Rect dest, u32 color, RenderLayer layer, u8 alpha=255);

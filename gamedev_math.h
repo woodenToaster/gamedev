@@ -21,14 +21,6 @@ struct Circle
     f32 radius;
 };
 
-struct Rect
-{
-    int x;
-    int y;
-    int w;
-    int h;
-};
-
 Vec2 vec2(f32 x, f32 y)
 {
     Vec2 v = {x, y};

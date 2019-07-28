@@ -30,6 +30,9 @@ struct Map
 };
 
 void drawTile(RenderGroup *group, Game *g, Entity *e, b32 isBeingPlace=false);
+void drawTiles(RenderGroup *group, Game *g);
+void updateTiles(Game *g);
+void drawBackground(RenderGroup *group, Game *g);
 Rect getEntityRect(Entity *e);
 void addTileFlags(Entity *e, u32 prop);
 b32 isTileFlagSet(Entity *e, TileProperty prop);

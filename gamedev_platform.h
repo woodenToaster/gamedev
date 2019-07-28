@@ -32,24 +32,59 @@ struct EntireFile
     u64 size;
 };
 
-struct TextureHandle
-{
-    void *texture;
-};
-
 struct Game;
 typedef  EntireFile PlatformReadEntireFile(char *);
 typedef void PlatformFreeFileMemory(EntireFile *);
 typedef u32 PlatformGetTicks();
-
-// TODO(cjh): Should this be part of platformAPI? Probably not since it takes a Game argument
-typedef TextureHandle platformCreateTextureFromGreyscaleBitmap(Game *g, u8 *bitmap, i32 width, i32 height);
 
 struct PlatformAPI
 {
     PlatformReadEntireFile *readEntireFile;
     PlatformFreeFileMemory *freeFileMemory;
     PlatformGetTicks *getTicks;
+};
+
+struct RendererHandle
+{
+    void *renderer;
+};
+
+struct TextureHandle
+{
+    void *texture;
+};
+
+struct TextureDims
+{
+    i32 width;
+    i32 height;
+};
+
+struct Rect
+{
+    int x;
+    int y;
+    int w;
+    int h;
+};
+
+typedef TextureDims (GetTextureDims)(TextureHandle texture);
+typedef void (DestroyTexture)(TextureHandle t);
+typedef void (SetRenderDrawColor)(RendererHandle renderer, u32 color);
+typedef void (RenderRect)(RendererHandle renderer, Rect dest, u32 color, u8 alpha);
+typedef void (RenderFilledRect)(RendererHandle renderer, Rect dest, u32 color, u8 alpha);
+typedef void (RenderSprite)(RendererHandle renderer, TextureHandle texture, Rect source, Rect dest);
+typedef TextureHandle (CreateTextureFromGreyscaleBitmap)(RendererHandle renderer, u8 *bitmap, i32 width, i32 height);
+
+struct RendererAPI
+{
+    GetTextureDims *getTextureDims;
+    DestroyTexture *destroyTexture;
+    SetRenderDrawColor *setRenderDrawColor;
+    RenderRect *renderRect;
+    RenderFilledRect *renderFilledRect;
+    RenderSprite *renderSprite;
+    CreateTextureFromGreyscaleBitmap *createTextureFromGreyscaleBitmap;
 };
 
 enum Key
