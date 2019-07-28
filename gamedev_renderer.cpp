@@ -1,34 +1,4 @@
 
-// NOTE(cjh): SDL has already taken care of endianness for these color accessors
-u8 getAlphaFromU32(u32 color)
-{
-    u8 a = (u8)((color & 0xFF000000) >> 24);
-    return a;
-}
-
-u8 getRedFromU32(u32 color)
-{
-    u8 r = (u8)((color & 0x00FF0000) >> 16);
-    return r;
-}
-
-u8 getGreenFromU32(u32 color)
-{
-    u8 g = (u8)((color & 0x0000FF00) >> 8);
-    return g;
-}
-
-u8 getBlueFromU32(u32 color)
-{
-    u8 b = (u8)((color & 0x000000FF) >> 0);
-    return b;
-}
-
-b32 isZeroRect(Rect rect)
-{
-    return !(rect.x || rect.y || rect.w || rect.h);
-}
-
 // TODO(cjh): Account for wrapping off the viewport
 void drawText(RenderGroup *group, FontMetadata *fontMetadata, char* text, i32 x=0, i32 y=0)
 {
@@ -62,7 +32,7 @@ void drawText(RenderGroup *group, FontMetadata *fontMetadata, char* text, i32 x=
         if (text[at + 1])
         {
             // add kerning value specific to this character and the next
-            int toAdvance = stbtt_GetCodepointKernAdvance(&fontMetadata->info, text[at], text[at + 1]);
+            int toAdvance = fontAPI.getKernAdvancement(fontMetadata->info, text[at], text[at + 1]);
             xpos += (int)(fontMetadata->scale * toAdvance);
         }
         ++at;

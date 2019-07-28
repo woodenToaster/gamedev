@@ -148,11 +148,6 @@ void drawTiles(RenderGroup *group, Game *g)
     }
 }
 
-void destroyMap(Map* m)
-{
-    rendererAPI.destroyTexture(m->texture);
-}
-
 void drawBackground(RenderGroup *group, Game *g)
 {
     Camera *c = &g->camera;

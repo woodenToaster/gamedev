@@ -411,7 +411,7 @@ void pushInteractionHint(RenderGroup *group, Game *g, char *text)
     i32 destX = screenCenterX - ((textLength / 2) * fontWidth);
     i32 beltHeight = 80;
     i32 destY = g->camera.viewport.h + g->camera.viewport.y - beltHeight;
-    drawText(group, g->fontMetadata, text, destX, destY);
+    drawText(group, &g->fontMetadata, text, destX, destY);
 }
 
 internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game* g)

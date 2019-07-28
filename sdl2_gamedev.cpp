@@ -12,34 +12,210 @@
 #include "SDL_opengl.h"
 #include "SDL_mixer.h"
 
-// TODO(cjh): Remove standard library dependency
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-
 #include "gamedev_platform.h"
-#include "gamedev_math.h"
-#include "gamedev.h"
-#include "gamedev_renderer.h"
-
-#include "gamedev_font.h"
-#include "gamedev_sprite_sheet.h"
-#include "gamedev_tilemap.h"
-#include "gamedev_entity.h"
-
-#include "gamedev_renderer.cpp"
-#include "gamedev_font.cpp"
-#include "gamedev_sound.cpp"
-#include "gamedev_asset_loading.cpp"
-#include "gamedev_sprite_sheet.cpp"
-#include "gamedev_entity.cpp"
-#include "gamedev.cpp"
-#include "gamedev_tilemap.cpp"
+#include "sdl2_gamedev.h"
 
 #define RENDERER_HANDLE_TO_SDL(r) ((SDL_Renderer*)((r).renderer))
 
-internal SDL_Texture* SDLCreateTextureFromPng(const char* fname, RendererHandle renderer)
+EntireFile SDLReadEntireFile(char *filename)
+{
+    EntireFile result = {};
+    SDL_RWops *file = SDL_RWFromFile(filename, "rb");
+
+    if (file)
+    {
+        Sint64 fileSize = SDL_RWseek(file, 0, RW_SEEK_END);
+        if (fileSize >= 0)
+        {
+            result.size = (u64)fileSize;
+            if (SDL_RWseek(file, 0, RW_SEEK_SET) >= 0)
+            {
+                result.contents = (u8*)malloc(result.size);
+                SDL_RWread(file, (void*)result.contents, 1, result.size);
+                SDL_RWclose(file);
+            }
+            else
+            {
+                // TODO(cjh):
+                // printf(stderr, "%s\n", SDL_GetError());
+            }
+        }
+        else
+        {
+            // TODO(cjh):
+            // printf("%s\n", SDL_GetError());
+        }
+    }
+    else
+    {
+        // TODO(cjh):
+        // fprintf(stderr, "%s\n", SDL_GetError());
+    }
+    return result;
+}
+
+void SDLFreeFileMemory(EntireFile *file)
+{
+    if (file->contents)
+    {
+        free(file->contents);
+    }
+}
+
+// NOTE(cjh): SDL has already taken care of endianness for these color accessors
+#if 0
+internal u8 SDLGetAlphaFromU32(u32 color)
+{
+    u8 a = (u8)((color & 0xFF000000) >> 24);
+    return a;
+}
+#endif
+
+internal u8 SDLGetRedFromU32(u32 color)
+{
+    u8 r = (u8)((color & 0x00FF0000) >> 16);
+    return r;
+}
+
+internal u8 SDLGetGreenFromU32(u32 color)
+{
+    u8 g = (u8)((color & 0x0000FF00) >> 8);
+    return g;
+}
+
+internal u8 SDLGetBlueFromU32(u32 color)
+{
+    u8 b = (u8)((color & 0x000000FF) >> 0);
+    return b;
+}
+
+internal b32 SDLIsZeroRect(Rect rect)
+{
+    return !(rect.x || rect.y || rect.w || rect.h);
+}
+
+internal f32 SDLNormalizeStickInput(short unnormalizedStick)
+{
+    f32 result = 0.0f;
+    if (unnormalizedStick < 0)
+    {
+        result = (f32)unnormalizedStick / 32768.0f;
+    }
+    else
+    {
+        result = (f32)unnormalizedStick / 32767.0f;
+    }
+    return result;
+}
+
+internal void SDLSetKeyState(Input* input, Key key, b32 isDown)
+{
+    if (input->keyDown[key] && !isDown)
+    {
+        input->keyPressed[key] = true;
+    }
+    input->keyDown[key] = isDown;
+}
+
+internal SoundChunkHandle SDLLoadWav(const char *fname)
+{
+    Mix_Chunk *chunk = Mix_LoadWAV(fname);
+    if (chunk == NULL)
+    {
+        printf("Mix_LoadWAV error: %s\n", Mix_GetError());
+        exit(1);
+    }
+
+    SoundChunkHandle result = {};
+    result.chunk = chunk;
+
+    return result;
+}
+
+internal void SDLPlaySound(Sound *s, u64 now)
+{
+    if (now > s->last_play_time + s->delay)
+    {
+        Mix_PlayChannel(-1, (Mix_Chunk*)s->chunk.chunk, 0);
+        s->last_play_time = SDL_GetTicks();
+    }
+}
+
+internal void SDLDestroySound(Sound *s)
+{
+    Mix_FreeChunk((Mix_Chunk*)s->chunk.chunk);
+}
+
+TextureHandle SDLCreateTextureFromGreyscaleBitmap(RendererHandle renderer, u8 *bitmap, i32 width, i32 height)
+{
+    TextureHandle result = {};
+
+    SDL_Surface* surface = SDL_CreateRGBSurface(0, width, height, 32,
+                                                0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF);
+    if (!surface)
+    {
+        printf("%s\n", SDL_GetError());
+        exit(1);
+    }
+
+    SDL_LockSurface(surface);
+    u8 *srcPixel = bitmap;
+    u32 *destPixel = (u32*)surface->pixels;
+
+    for (int i = 0; i < height * width; ++i)
+    {
+        u8 val = *srcPixel++;
+        *destPixel++ = ((val << 24) | (val << 16) | (val << 8) | (val << 0));
+    }
+    SDL_UnlockSurface(surface);
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(RENDERER_HANDLE_TO_SDL(renderer), surface);
+    result.texture = texture;
+    stbtt_FreeBitmap(bitmap, 0);
+    SDL_FreeSurface(surface);
+
+    return result;
+}
+
+// TODO(cjh): This belongs n the asset preprocessor
+internal void SDLGenerateFontData(FontMetadata *fontMetadata, RendererHandle renderer)
+{
+    EntireFile fontFile = SDLReadEntireFile("fonts/arialbd.ttf");
+    static stbtt_fontinfo fontInfo;
+
+    fontMetadata->size = 20;
+    stbtt_InitFont(&fontInfo, fontFile.contents, 0);
+    fontMetadata->scale = stbtt_ScaleForPixelHeight(&fontInfo, fontMetadata->size);
+    stbtt_GetFontVMetrics(&fontInfo, &fontMetadata->ascent, &fontMetadata->descent, &fontMetadata->lineGap);
+    fontMetadata->baseline = (int)(fontMetadata->ascent * fontMetadata->scale);
+
+    for (char codepoint = '!'; codepoint <= '~'; ++codepoint)
+    {
+        CodepointMetadata *cpMeta = &fontMetadata->codepointMetadata[codepoint];
+        stbtt_GetCodepointHMetrics(&fontInfo, codepoint, &cpMeta->advance, &cpMeta->leftSideBearing);
+        stbtt_GetCodepointBitmapBoxSubpixel(&fontInfo, codepoint, fontMetadata->scale,
+                                            fontMetadata->scale, /* x_shift */ 0, 0,
+                                            &cpMeta->x0, &cpMeta->y0, &cpMeta->x1, &cpMeta->y1);
+        i32 bitmapWidth = cpMeta->x1 - cpMeta->x0;
+        i32 bitmapHeight = cpMeta->y1 - cpMeta->y0;
+        u8* stb_bitmap = (u8*)malloc(sizeof(u8) * bitmapWidth * bitmapHeight);
+        stbtt_MakeCodepointBitmapSubpixel(&fontInfo, stb_bitmap, bitmapWidth, bitmapHeight, bitmapWidth,
+                                          fontMetadata->scale, fontMetadata->scale, /* x_shift */ 0, 0, codepoint);
+
+        TextureHandle texture = SDLCreateTextureFromGreyscaleBitmap(renderer, stb_bitmap, bitmapWidth,
+                                                                    bitmapHeight);
+        fontMetadata->textures[codepoint] = texture;
+    }
+    fontMetadata->info.info = &fontInfo;
+}
+
+internal int SDLGetKernAdvancement(FontInfoHandle info, char a, char b)
+{
+    int result = stbtt_GetCodepointKernAdvance((stbtt_fontinfo*)info.info, a, b);
+
+    return result;
+}
+
+internal TextureHandle SDLCreateTextureFromPng(const char* fname, RendererHandle renderer)
 {
     SDL_Renderer *sdlRenderer = RENDERER_HANDLE_TO_SDL(renderer);
     unsigned char *img_data;
@@ -94,7 +270,10 @@ internal SDL_Texture* SDLCreateTextureFromPng(const char* fname, RendererHandle 
 
     stbi_image_free(img_data);
 
-    return texture;
+    TextureHandle result = {};
+    result.texture = texture;
+
+    return result;
 }
 
 void SDLInitColors(u32 *colors, SDL_PixelFormat *pixelFormat)
@@ -116,81 +295,6 @@ void SDLInitColors(u32 *colors, SDL_PixelFormat *pixelFormat)
     colors[Color_LimeGreen] = SDL_MapRGB(pixelFormat, 106, 190, 48);
 }
 
-
-TextureHandle SDLCreateTextureFromGreyscaleBitmap(RendererHandle renderer, u8 *bitmap, i32 width, i32 height)
-{
-    TextureHandle result = {};
-
-    SDL_Surface* surface = SDL_CreateRGBSurface(0, width, height, 32,
-                                                0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF);
-    if (!surface)
-    {
-        printf("%s\n", SDL_GetError());
-        exit(1);
-    }
-
-    SDL_LockSurface(surface);
-    u8 *srcPixel = bitmap;
-    u32 *destPixel = (u32*)surface->pixels;
-
-    for (int i = 0; i < height * width; ++i)
-    {
-        u8 val = *srcPixel++;
-        *destPixel++ = ((val << 24) | (val << 16) | (val << 8) | (val << 0));
-    }
-    SDL_UnlockSurface(surface);
-    SDL_Texture *texture = SDL_CreateTextureFromSurface(RENDERER_HANDLE_TO_SDL(renderer), surface);
-    result.texture = texture;
-    stbtt_FreeBitmap(bitmap, 0);
-    SDL_FreeSurface(surface);
-
-    return result;
-}
-
-EntireFile SDLReadEntireFile(char *filename)
-{
-    EntireFile result = {};
-    SDL_RWops *file = SDL_RWFromFile(filename, "rb");
-
-    if (file)
-    {
-        Sint64 fileSize = SDL_RWseek(file, 0, RW_SEEK_END);
-        if (fileSize >= 0)
-        {
-            result.size = (u64)fileSize;
-            if (SDL_RWseek(file, 0, RW_SEEK_SET) >= 0)
-            {
-                result.contents = (u8*)malloc(result.size);
-                SDL_RWread(file, (void*)result.contents, 1, result.size);
-                SDL_RWclose(file);
-            }
-            else
-            {
-                // TODO(cjh):
-                // printf(stderr, "%s\n", SDL_GetError());
-            }
-        }
-        else
-        {
-            // TODO(cjh):
-            // printf("%s\n", SDL_GetError());
-        }
-    }
-    else
-    {
-        // TODO(cjh):
-        // fprintf(stderr, "%s\n", SDL_GetError());
-    }
-    return result;
-}
-
-void SDLFreeFileMemory(EntireFile *file)
-{
-    if (file->contents)
-    {
-        free(file->contents);
-    }
-}
 
 internal void SDLInitControllers(SDL_GameController **handles)
 {
@@ -226,11 +330,11 @@ internal void SDLUpdateInput(Input* input, SDL_Scancode key, b32 isDown)
     SDL_Keymod keyMod = SDL_GetModState();
     if (keyMod & KMOD_LSHIFT)
     {
-        setKeyState(input, KEY_LSHIFT, isDown);
+        SDLSetKeyState(input, KEY_LSHIFT, isDown);
     }
     if (keyMod & KMOD_RSHIFT)
     {
-        setKeyState(input, KEY_RSHIFT, isDown);
+        SDLSetKeyState(input, KEY_RSHIFT, isDown);
     }
 
     switch (key)
@@ -238,49 +342,49 @@ internal void SDLUpdateInput(Input* input, SDL_Scancode key, b32 isDown)
     case SDL_SCANCODE_RIGHT:
     case SDL_SCANCODE_L:
     case SDL_SCANCODE_D:
-        setKeyState(input, KEY_RIGHT, isDown);
+        SDLSetKeyState(input, KEY_RIGHT, isDown);
         break;
     case SDL_SCANCODE_UP:
     case SDL_SCANCODE_K:
     case SDL_SCANCODE_W:
-        setKeyState(input, KEY_UP, isDown);
+        SDLSetKeyState(input, KEY_UP, isDown);
         break;
     case SDL_SCANCODE_DOWN:
     case SDL_SCANCODE_J:
     case SDL_SCANCODE_S:
-        setKeyState(input, KEY_DOWN, isDown);
+        SDLSetKeyState(input, KEY_DOWN, isDown);
         break;
     case SDL_SCANCODE_LEFT:
     case SDL_SCANCODE_H:
     case SDL_SCANCODE_A:
-        setKeyState(input, KEY_LEFT, isDown);
+        SDLSetKeyState(input, KEY_LEFT, isDown);
         break;
     case SDL_SCANCODE_ESCAPE:
-        setKeyState(input, KEY_ESCAPE, isDown);
+        SDLSetKeyState(input, KEY_ESCAPE, isDown);
         break;
     case SDL_SCANCODE_F:
-        setKeyState(input, KEY_F, isDown);
+        SDLSetKeyState(input, KEY_F, isDown);
         break;
     case SDL_SCANCODE_C:
-        setKeyState(input, KEY_C, isDown);
+        SDLSetKeyState(input, KEY_C, isDown);
         break;
     case SDL_SCANCODE_P:
-        setKeyState(input, KEY_P, isDown);
+        SDLSetKeyState(input, KEY_P, isDown);
         break;
     case SDL_SCANCODE_SPACE:
-        setKeyState(input, KEY_SPACE, isDown);
+        SDLSetKeyState(input, KEY_SPACE, isDown);
         break;
     case SDL_SCANCODE_I:
-        setKeyState(input, KEY_I, isDown);
+        SDLSetKeyState(input, KEY_I, isDown);
         break;
     case SDL_SCANCODE_V:
-        setKeyState(input, KEY_V, isDown);
+        SDLSetKeyState(input, KEY_V, isDown);
         break;
     case SDL_SCANCODE_X:
-        setKeyState(input, KEY_X, isDown);
+        SDLSetKeyState(input, KEY_X, isDown);
         break;
     case SDL_SCANCODE_Z:
-        setKeyState(input, KEY_Z, isDown);
+        SDLSetKeyState(input, KEY_Z, isDown);
         break;
     default:
         // char* action = pressed ? "pressed" : "released";
@@ -311,7 +415,7 @@ internal void SDLPollInput(Input *input, SDL_GameController **handles)
             SDLUpdateInput(input, event.key.keysym.scancode, 0);
             break;
         case SDL_QUIT:
-            globalRunning = 0;
+            globalRunning = false;
             break;
         case SDL_KEYDOWN:
             SDLUpdateInput(input, event.key.keysym.scancode, true);
@@ -346,8 +450,8 @@ internal void SDLPollInput(Input *input, SDL_GameController **handles)
 
             short sdlStickX = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTX);
             short sdlStickY = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTY);
-            f32 stickX = normalizeStickInput(sdlStickX);
-            f32 stickY = normalizeStickInput(sdlStickY);
+            f32 stickX = SDLNormalizeStickInput(sdlStickX);
+            f32 stickY = SDLNormalizeStickInput(sdlStickY);
 
             // Account for dead zone
             input->stickX = (stickX > -0.1f && stickX < 0.1f) ? 0.0f : stickX;
@@ -389,8 +493,8 @@ void SDLDestroyTexture(TextureHandle t)
 
 void SDLSetRenderDrawColor(RendererHandle renderer, u32 color)
 {
-    SDL_SetRenderDrawColor(RENDERER_HANDLE_TO_SDL(renderer), getRedFromU32(color), getGreenFromU32(color),
-                           getBlueFromU32(color), 255);
+    SDL_SetRenderDrawColor(RENDERER_HANDLE_TO_SDL(renderer), SDLGetRedFromU32(color), SDLGetGreenFromU32(color),
+                           SDLGetBlueFromU32(color), 255);
 }
 
 void SDLRenderRect(RendererHandle renderer, Rect dest, u32 color, u8 alpha=255)
@@ -401,7 +505,7 @@ void SDLRenderRect(RendererHandle renderer, Rect dest, u32 color, u8 alpha=255)
 
     SDL_Renderer *sdlRenderer = RENDERER_HANDLE_TO_SDL(renderer);
     SDL_Rect sdl_dest = SDLRectFromRect(dest);
-    SDL_Rect *sdl_dest_ptr = isZeroRect(dest) ? NULL : &sdl_dest;
+    SDL_Rect *sdl_dest_ptr = SDLIsZeroRect(dest) ? NULL : &sdl_dest;
     SDL_BlendMode blendMode;
     SDL_GetRenderDrawBlendMode(sdlRenderer, &blendMode);
     SDL_SetRenderDrawColor(sdlRenderer, r, g, b, alpha);
@@ -422,7 +526,7 @@ void SDLRenderFilledRect(RendererHandle renderer, Rect dest, u32 color, u8 alpha
 
         SDL_Renderer *sdlRenderer = RENDERER_HANDLE_TO_SDL(renderer);
         SDL_Rect sdl_dest = SDLRectFromRect(dest);
-        SDL_Rect *sdl_dest_ptr = isZeroRect(dest) ? NULL : &sdl_dest;
+        SDL_Rect *sdl_dest_ptr = SDLIsZeroRect(dest) ? NULL : &sdl_dest;
         SDL_BlendMode blendMode;
         SDL_GetRenderDrawBlendMode(sdlRenderer, &blendMode);
         SDL_SetRenderDrawColor(sdlRenderer, r, g, b, alpha);
@@ -437,8 +541,8 @@ void SDLRenderSprite(RendererHandle renderer, TextureHandle texture, Rect source
     SDL_Renderer *sdlRenderer = RENDERER_HANDLE_TO_SDL(renderer);
     SDL_Rect sdl_source = SDLRectFromRect(source);
     SDL_Rect sdl_dest = SDLRectFromRect(dest);
-    SDL_Rect *sdl_source_ptr = isZeroRect(source) ? NULL : &sdl_source;
-    SDL_Rect *sdl_dest_ptr = isZeroRect(dest) ? NULL : &sdl_dest;
+    SDL_Rect *sdl_source_ptr = SDLIsZeroRect(source) ? NULL : &sdl_source;
+    SDL_Rect *sdl_dest_ptr = SDLIsZeroRect(dest) ? NULL : &sdl_dest;
     SDL_RenderCopy(sdlRenderer, (SDL_Texture*)texture.texture, sdl_source_ptr, sdl_dest_ptr);
 }
 
@@ -503,10 +607,14 @@ int main(int argc, char *argv[])
     memory.rendererAPI.renderRect = SDLRenderRect;
     memory.rendererAPI.renderFilledRect = SDLRenderFilledRect;
     memory.rendererAPI.renderSprite = SDLRenderSprite;
+    memory.rendererAPI.createTextureFromPng = SDLCreateTextureFromPng;
     memory.rendererAPI.createTextureFromGreyscaleBitmap = SDLCreateTextureFromGreyscaleBitmap;
 
-    platform = memory.platformAPI;
-    rendererAPI = memory.rendererAPI;
+    memory.fontAPI.getKernAdvancement = SDLGetKernAdvancement;
+    memory.fontAPI.generateFontData = SDLGenerateFontData;
+
+    memory.audioAPI.playSound = SDLPlaySound;
+    memory.audioAPI.loadWav = SDLLoadWav;
 
     u32 targetFps = 60;
     memory.dt = (i32)((1.0f / (f32)targetFps) * 1000);
@@ -563,27 +671,6 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    // Asset loading
-    // TODO(cjh): Packed asset file
-    // TODO(cjh): asset streaming
-
-    // PNGs
-    // TODO(cjh): Don't store assets in GameMemory
-    memory.linkTexture.texture = SDLCreateTextureFromPng("sprites/link_walking.png", rendererHandle);
-    memory.harvestableTreeTexture.texture = SDLCreateTextureFromPng("sprites/harvestable_tree.png", rendererHandle);
-    // memory.harlodTexture = SDLCreateTextureFromPng("sprites/Harlod_the_caveman.png", game->renderer);
-    // memory.knightTexture = SDLCreateTextureFromPng("sprites/knight_alligned.png", game->renderer);
-    memory.flameTexture.texture = SDLCreateTextureFromPng("sprites/flame.png", rendererHandle);
-    memory.firePitTexture.texture = SDLCreateTextureFromPng("sprites/fire_pit.png", rendererHandle);
-    memory.glowTreeTexture.texture = SDLCreateTextureFromPng("sprites/glow_tree.png", rendererHandle);
-
-    // Sounds
-    memory.mudSound.delay = 250;
-    memory.mudSound.chunk = loadWav("sounds/mud_walk.wav");
-
-    // Fonts
-    generateFontData(&memory.fontMetadata, rendererHandle);
-
     // Input
     Input input = {};
     SDL_GameController *controllerHandles[MAX_CONTROLLERS] = {};
@@ -597,14 +684,29 @@ int main(int argc, char *argv[])
     backBuffer.texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
                                            cols * tileWidth, rows * tileHeight);
 
+    // TODO(cjh): win32 specific code
+    HMODULE gamedevDLL = LoadLibraryA("gamedev.dll");
+    if (!gamedevDLL)
+    {
+        fprintf(stdout, "Failed to load gamedev.dll\n");
+        exit(1);
+    }
+    GameUpdateAndRender *updateAndRender = (GameUpdateAndRender*)GetProcAddress(gamedevDLL, "gameUpdateAndRender");
+
+    if (!updateAndRender)
+    {
+        fprintf(stdout, "Failed to load gameUpdateAndRender\n");
+        exit(1);
+    }
+
     globalRunning = true;
     while(globalRunning)
     {
         memory.currentTickCount = SDL_GetTicks();
         SDLPollInput(&input, &controllerHandles[0]);
         SDL_SetRenderTarget(renderer, (SDL_Texture*)backBuffer.texture);
-        Rect viewport = {};
-        gameUpdateAndRender(&memory, &input, backBuffer, &viewport, rendererHandle, screenWidth, screenHeight);
+        Rect viewport = {0, 0, screenWidth, screenHeight};
+        updateAndRender(&memory, &input, backBuffer, &viewport, rendererHandle);
 
         // Hero interaction region
         // SDL_SetRenderDrawColor(game->renderer, 255, 255, 0, 255);
@@ -625,21 +727,21 @@ int main(int argc, char *argv[])
                 SDL_Delay(sleep_ms);
             }
         }
-        memory.dt = dt;
 
+        // TODO(cjh): Don't copy back and forth between game and platform
+        memory.dt = dt;
         SDL_RenderPresent(renderer);
     }
 
-    destroyFontMetadata(&memory.fontMetadata);
     SDLDestroyControllers(&controllerHandles[0]);
 
     // TODO(cjh): This needs work
-    Game* game = (Game*)memory.permanentStorage;
-    destroyMap(game->currentMap);
-    destroyGame(game);
-    //
+    // Game* game = (Game*)memory.permanentStorage;
+    // destroyGame(game);
+    // destroyFontMetadata(game->fontMetadata);
 
     Mix_Quit();
+    SDL_DestroyTexture((SDL_Texture*)backBuffer.texture);
     SDL_DestroyRenderer(renderer);
     free(memory.permanentStorage);
     SDL_DestroyWindow(window);

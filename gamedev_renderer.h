@@ -1,3 +1,5 @@
+#ifndef RENDERER_H
+#define RENDERER_H
 
 enum RenderLayer
 {
@@ -55,3 +57,4 @@ struct RenderGroup
 internal void pushRect(RenderGroup *group, Rect dest, u32 color, RenderLayer layer, u8 alpha=255);
 internal void pushFilledRect(RenderGroup *group, Rect dest, u32 color, RenderLayer layer,  u8 alpha=255);
 internal void pushSprite(RenderGroup *group, TextureHandle sheet, Rect source, Rect dest, RenderLayer layer);
+#endif

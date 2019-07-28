@@ -1,4 +1,21 @@
+#include "gamedev_platform.h"
+#include "gamedev_math.h"
 #include "gamedev.h"
+#include "gamedev_renderer.h"
+
+#include "gamedev_font.h"
+#include "gamedev_sprite_sheet.h"
+#include "gamedev_tilemap.h"
+#include "gamedev_entity.h"
+
+#include "gamedev_renderer.cpp"
+#include "gamedev_font.cpp"
+#include "gamedev_sound.cpp"
+#include "gamedev_asset_loading.cpp"
+#include "gamedev_sprite_sheet.cpp"
+#include "gamedev_entity.cpp"
+#include "gamedev_tilemap.cpp"
+
 
 void initArena(Arena *arena, size_t bytes, u8 *start)
 {
@@ -54,10 +71,10 @@ void destroyGame(Game* g)
     rendererAPI.destroyTexture(g->glowTreeTexture);
 }
 
-void initCamera(Game* g)
+void initCamera(Game* g, i32 screenWidth, i32 screenHeight)
 {
-    g->camera.viewport.w = g->screenWidth;
-    g->camera.viewport.h = g->screenHeight;
+    g->camera.viewport.w = screenWidth;
+    g->camera.viewport.h = screenHeight;
     g->camera.startingPos = {0, 0};
 
     if (g->camera.viewport.w >= g->currentMap->widthPixels)
@@ -76,8 +93,8 @@ void initCamera(Game* g)
     {
         g->camera.maxY = absInt32(g->currentMap->heightPixels - g->camera.viewport.h);
     }
-    g->camera.yPixelMovementThreshold = g->screenHeight / 2;
-    g->camera.xPixelMovementThreshold = g->screenWidth / 2;
+    g->camera.yPixelMovementThreshold = screenHeight / 2;
+    g->camera.xPixelMovementThreshold = screenWidth / 2;
 }
 
 void startDialogueMode(Game *g, char *dialogue)
@@ -118,29 +135,6 @@ void updateInventoryMode(Game *g, Input *input)
     }
 }
 
-internal void setKeyState(Input* input, Key key, b32 isDown)
-{
-    if (input->keyDown[key] && !isDown)
-    {
-        input->keyPressed[key] = true;
-    }
-    input->keyDown[key] = isDown;
-}
-
-internal f32 normalizeStickInput(short unnormalizedStick)
-{
-    f32 result = 0.0f;
-    if (unnormalizedStick < 0)
-    {
-        result = (f32)unnormalizedStick / 32768.0f;
-    }
-    else
-    {
-        result = (f32)unnormalizedStick / 32767.0f;
-    }
-    return result;
-}
-
 void initAnimation(Animation* a, int frames, int ms_delay)
 {
     a->totalFrames = frames;
@@ -172,15 +166,35 @@ internal void updateCamera(Camera* c, Vec2 centerPos)
     c->viewport.y = clampInt32(c->viewport.y, 0, c->maxY);
 }
 
-void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHandle outputTarget, Rect *viewport,
-                         RendererHandle renderer, i32 screenWidth, i32 screenHeight)
+internal void playQueuedSounds(SoundList *sl, u64 now)
 {
+    for (u32 i = 0; i < sl->count; ++i)
+    {
+        audioAPI.playSound(sl->items[i], now);
+        sl->items[i] = NULL;
+    }
+    sl->count = 0;
+}
+
+internal void queueSound(SoundList *sl, Sound *s)
+{
+    sl->items[sl->count++] = s;
+}
+
+void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHandle outputTarget, Rect *viewport,
+                         RendererHandle renderer)
+{
+    platform = memory->platformAPI;
+    rendererAPI = memory->rendererAPI;
+    fontAPI = memory->fontAPI;
+    audioAPI = memory->audioAPI;
+
     assert(sizeof(Game) < memory->permanentStorageSize);
     Game* game = (Game*)memory->permanentStorage;
     u64 now = memory->currentTickCount;
     game->dt = memory->dt;
 
-    if (!memory->isInitialized)
+    if (!game->isInitialized)
     {
         initArena(&game->worldArena, memory->permanentStorageSize - sizeof(Game),
                   (u8*)memory->permanentStorage + sizeof(Game));
@@ -191,17 +205,22 @@ void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHandle outputT
 
         game->renderer = renderer;
         game->colors = memory->colors;
-        game->linkTexture = memory->linkTexture;
-        game->harvestableTreeTexture = memory->harvestableTreeTexture;
-        game->flameTexture = memory->flameTexture;
-        game->firePitTexture = memory->firePitTexture;
-        game->glowTreeTexture = memory->glowTreeTexture;
-        game->mudSound = memory->mudSound;
-        game->fontMetadata = &memory->fontMetadata;
 
-        game->screenWidth = screenWidth;
-        game->screenHeight = screenHeight;
+        // Asset loading
+        // TODO(cjh): Packed asset file
+        // TODO(cjh): asset streaming
+        game->linkTexture = rendererAPI.createTextureFromPng("sprites/link_walking.png", renderer);
+        game->harvestableTreeTexture = rendererAPI.createTextureFromPng("sprites/harvestable_tree.png", renderer);
+        game->flameTexture = rendererAPI.createTextureFromPng("sprites/flame.png", renderer);
+        game->firePitTexture = rendererAPI.createTextureFromPng("sprites/fire_pit.png", renderer);
+        game->glowTreeTexture = rendererAPI.createTextureFromPng("sprites/glow_tree.png", renderer);
+        // game->harlodTexture = rendererAPI.createTextureFromPng("sprites/Harlod_the_caveman.png", renderer);
+        // game->knightTexture = rendererAPI.createTextureFromPng("sprites/knight_alligned.png", renderer);
 
+        game->mudSound.chunk = audioAPI.loadWav("sounds/mud_walk.wav");
+        game->mudSound.delay = 250;
+
+        fontAPI.generateFontData(&game->fontMetadata, renderer);
 
         // Map
         u32 tileWidth = 80;
@@ -288,9 +307,9 @@ void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHandle outputT
         // harlod->type = ET_HARLOD;
 
         game->currentMap = map0;
-        initCamera(game);
+        initCamera(game, viewport->w, viewport->h);
 
-        memory->isInitialized = true;
+        game->isInitialized = true;
     }
 
     TemporaryMemory renderMemory = beginTemporaryMemory(&game->transientArena);
@@ -306,13 +325,15 @@ void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHandle outputT
     {
     case GameMode_Playing:
     {
+        // TODO(cjh): FIXME
         if (input->keyPressed[KEY_ESCAPE])
         {
             globalRunning = false;
         }
         updateHero(group, hero, input, game);
         updateCamera(&game->camera, hero->position);
-        *viewport = game->camera.viewport;
+        viewport->x = game->camera.viewport.x;
+        viewport->y = game->camera.viewport.y;
         updateAnimation(&hero->animation, game->dt, hero->isMoving);
         playQueuedSounds(&game->sounds, now);
         updateTiles(game);
@@ -334,18 +355,18 @@ void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHandle outputT
     drawTiles(group, game);
     drawEntities(group, game);
     drawPlacingTile(group, game, hero);
-    drawHUD(group, game, hero, &memory->fontMetadata);
+    drawHUD(group, game, hero, &game->fontMetadata);
 
     if (game->mode == GameMode_Dialogue)
     {
         darkenBackground(group, game);
-        drawDialogScreen(group, game, &memory->fontMetadata);
+        drawDialogScreen(group, game, &game->fontMetadata);
     }
 
     if (game->mode == GameMode_Inventory)
     {
         darkenBackground(group, game);
-        drawInventoryScreen(group, game, hero, &memory->fontMetadata);
+        drawInventoryScreen(group, game, hero, &game->fontMetadata);
     }
 
     /**************************************************************************/
