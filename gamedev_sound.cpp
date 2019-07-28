@@ -1,4 +1,3 @@
-#include "gamedev_sound.h"
 
 Mix_Chunk *loadWav(const char *fname)
 {
