@@ -21,7 +21,6 @@
 * Architecture
 ** TODO RenderGroup sorting based on layers, and then based on position.y
 ** TODO Hot loading
-*** TODO All game state in one chunk of memory (SDL_Textures?)
 ** TODO Looped live editing
 ** TODO Packed asset file
 ** TODO Offline font rendering

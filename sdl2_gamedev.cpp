@@ -698,10 +698,30 @@ int main(int argc, char *argv[])
         fprintf(stdout, "Failed to load gameUpdateAndRender\n");
         exit(1);
     }
+    // TODO(cjh): win32 specific code
+    WIN32_FILE_ATTRIBUTE_DATA attributeData;
+    GetFileAttributesExA("w:\\gamedev\\build\\gamedev.dll", GetFileExInfoStandard, &attributeData);
+    FILETIME lastWriteTime = attributeData.ftLastWriteTime;
 
     globalRunning = true;
     while(globalRunning)
     {
+        // TODO(cjh): win32 specific code
+        GetFileAttributesExA("w:\\gamedev\\build\\gamedev.dll", GetFileExInfoStandard, &attributeData);
+        FILETIME newWriteTime = attributeData.ftLastWriteTime;
+        if (CompareFileTime(&lastWriteTime, &newWriteTime) != 0)
+        {
+            // TODO(cjh): win32 specific code
+            WIN32_FILE_ATTRIBUTE_DATA ignored;
+            if (!GetFileAttributesExA("lock.tmp", GetFileExInfoStandard, &ignored))
+            {
+                FreeLibrary(gamedevDLL);
+                lastWriteTime = newWriteTime;
+                CopyFile("gamedev.dll", "gamedev_temp.dll", FALSE);
+                gamedevDLL = LoadLibraryA("gamedev_temp.dll");
+                updateAndRender = (GameUpdateAndRender*)GetProcAddress(gamedevDLL, "gameUpdateAndRender");
+            }
+        }
         memory.currentTickCount = SDL_GetTicks();
         SDLPollInput(&input, &controllerHandles[0]);
         SDL_SetRenderTarget(renderer, (SDL_Texture*)backBuffer.texture);
