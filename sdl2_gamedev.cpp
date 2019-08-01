@@ -707,9 +707,10 @@ int main(int argc, char *argv[])
     while(globalRunning)
     {
         // TODO(cjh): win32 specific code
-        GetFileAttributesExA("w:\\gamedev\\build\\gamedev.dll", GetFileExInfoStandard, &attributeData);
-        FILETIME newWriteTime = attributeData.ftLastWriteTime;
-        if (CompareFileTime(&lastWriteTime, &newWriteTime) != 0)
+        WIN32_FILE_ATTRIBUTE_DATA w32FileAttributData;
+        GetFileAttributesExA("w:\\gamedev\\build\\gamedev.dll", GetFileExInfoStandard, &w32FileAttributData);
+        FILETIME newWriteTime = w32FileAttributData.ftLastWriteTime;
+        if (CompareFileTime(&newWriteTime, &lastWriteTime) != 0)
         {
             // TODO(cjh): win32 specific code
             WIN32_FILE_ATTRIBUTE_DATA ignored;
@@ -717,8 +718,8 @@ int main(int argc, char *argv[])
             {
                 FreeLibrary(gamedevDLL);
                 lastWriteTime = newWriteTime;
-                CopyFile("gamedev.dll", "gamedev_temp.dll", FALSE);
-                gamedevDLL = LoadLibraryA("gamedev_temp.dll");
+                CopyFile("w:\\gamedev\\build\\gamedev.dll", "w:\\gamedev\\build\\gamedev_temp.dll", FALSE);
+                gamedevDLL = LoadLibraryA("w:\\gamedev\\build\\gamedev_temp.dll");
                 updateAndRender = (GameUpdateAndRender*)GetProcAddress(gamedevDLL, "gameUpdateAndRender");
             }
         }

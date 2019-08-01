@@ -181,8 +181,8 @@ internal void queueSound(SoundList *sl, Sound *s)
     sl->items[sl->count++] = s;
 }
 
-void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHandle outputTarget, Rect *viewport,
-                         RendererHandle renderer)
+extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHandle outputTarget, Rect *viewport,
+                                    RendererHandle renderer)
 {
     platform = memory->platformAPI;
     rendererAPI = memory->rendererAPI;

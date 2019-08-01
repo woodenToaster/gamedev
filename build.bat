@@ -15,13 +15,14 @@ set LIB=%LIBPATH%;%LIB%;
 set COMPILERFLAGS="/DDEBUG /W4 /Gm- /Zi /GR- /nologo /EHa- /MTd /Oi /Od"
 set LINK_LIBS=SDL2.lib SDL2main.lib SDL2_mixer.lib
 
-del *.pdb > NUL 2> NUL
+del gamedev_*.pdb > NUL 2> NUL
 
 echo waiting for pdb > lock.tmp
 cl "%COMPILERFLAGS%" ..\gamedev.cpp /LD ^
   /link /incremental:no /opt:ref /pdb:gamedev_%random%.pdb /export:gameUpdateAndRender
 del lock.tmp
-cl "%COMPILERFLAGS%" ..\sdl2_gamedev.cpp /link /incremental:no /opt:ref %LINK_LIBS% /SUBSYSTEM:WINDOWS
+cl "%COMPILERFLAGS%" ..\sdl2_gamedev.cpp /Fmsdl2_gamedev.map ^
+  /link /incremental:no /opt:ref %LINK_LIBS% /SUBSYSTEM:WINDOWS
 
 popd
 if %errorlevel% neq 0 exit /b %errorlevel%
