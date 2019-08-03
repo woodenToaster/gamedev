@@ -194,7 +194,7 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHan
     u64 now = memory->currentTickCount;
     game->dt = memory->dt;
 
-    if (!game->isInitialized)
+    if (!memory->isInitialized)
     {
         initArena(&game->worldArena, memory->permanentStorageSize - sizeof(Game),
                   (u8*)memory->permanentStorage + sizeof(Game));
@@ -309,7 +309,7 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHan
         game->currentMap = map0;
         initCamera(game, viewport->w, viewport->h);
 
-        game->isInitialized = true;
+        memory->isInitialized = true;
     }
 
     TemporaryMemory renderMemory = beginTemporaryMemory(&game->transientArena);

@@ -72,7 +72,6 @@ struct Entity;
 
 struct Game
 {
-    b32 isInitialized;
     u32 dt;
     i32 targetFps;
     u32 totalFramesElapsed;

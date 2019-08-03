@@ -183,6 +183,7 @@ struct GameMemory
     u32 currentTickCount;
     u32 dt;
     u32 targetMsPerFrame;
+    b32 isInitialized;
     void *permanentStorage;
     void *transientStorage;
     PlatformAPI platformAPI;

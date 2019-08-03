@@ -20,7 +20,6 @@
 *** TODO Each move takes time, and the longer it takes, the more damage it does.
 * Architecture
 ** TODO RenderGroup sorting based on layers, and then based on position.y
-** TODO Hot loading
 ** TODO Looped live editing
 ** TODO Packed asset file
 ** TODO Offline font rendering
