@@ -28,13 +28,6 @@
 ** TODO Looped live editing
 ** TODO Packed asset file
 ** TODO Offline font rendering
-* Design
-** TODO 2D fantasy [survival | crafting | puzzle]
-** TODO Dark Souls style combat
-** TODO Dark Souls atmosphere
-*** TODO See far away parts of the level that you eventually reach
-**** TODO How would this work in 2d?
-* Ideas
 * Bugs
 ** TODO Can sometimes end up with a flame tile in placing slot
 ** TODO Can sometimes drop tile unexpectedly in tile placement mode
