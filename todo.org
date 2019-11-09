@@ -20,10 +20,9 @@
 *** TODO Dodge
 *** TODO Each move takes time, and the longer it takes, the more damage it does.
 ** TODO PS4 Controller
-*** TODO Enable same functionality as keyboard
 *** TODO Change tooltips based on input method
-**** TODO Mapping from device-specific button/key to generic game button
 * Architecture
+** TODO Different entities should be implemented as union in Entity struct
 ** TODO RenderGroup sorting based on layers, and then based on position.y
 ** TODO Looped live editing
 ** TODO Packed asset file
@@ -31,3 +30,4 @@
 * Bugs
 ** TODO Can sometimes end up with a flame tile in placing slot
 ** TODO Can sometimes drop tile unexpectedly in tile placement mode
+** TODO Can never see error messages because console closes

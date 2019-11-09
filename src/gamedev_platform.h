@@ -231,20 +231,28 @@ enum Key
     KEY_Y,
     KEY_Z,
     KEY_SPACE,
+
     KEY_COUNT
 };
 
-enum Buttons
+enum Button
 {
-    BUTTON_A,
-    BUTTON_B,
-    BUTTON_X,
-    BUTTON_Y,
-    BUTTON_UP,
-    BUTTON_DOWN,
-    BUTTON_LEFT,
-    BUTTON_RIGHT,
-    BUTTON_COUNT
+    BUTTON_A,         // 'x' on PS4 dualshock
+    BUTTON_B,         // 'o' on PS4 dualshock
+    BUTTON_X,         // 'square' on PS4 dualshock
+    BUTTON_Y,         // 'triangle' on PS4 dualshock
+    BUTTON_UP,        // dpad up
+    BUTTON_DOWN,      // dpad down
+    BUTTON_LEFT,      // dpad left
+    BUTTON_RIGHT,     // dpad right
+    BUTTON_START,     // 'options' on PS4 dualshock
+    BUTTON_BACK,      // 'share' on PS4 dualshock
+    BUTTON_RSHOULDER, // 'R1' on PS4 dualshock
+    BUTTON_LSHOULDER, // 'L1' on PS4 dualshock
+    BUTTON_RTRIGGER,  // 'R2' on PS4 dualshock
+    BUTTON_LTRIGGER,  // 'L2' on PS4 dualshock
+
+    BUTTON_COUNT,
 };
 
 struct Input

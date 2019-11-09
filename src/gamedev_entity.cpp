@@ -72,18 +72,18 @@ void reverseDirection(Entity* e)
 {
     switch (e->direction)
     {
-    case DIR_UP:
-        e->direction = DIR_DOWN;
-        break;
-    case DIR_DOWN:
-        e->direction = DIR_UP;
-        break;
-    case DIR_RIGHT:
-        e->direction = DIR_LEFT;
-        break;
-    case DIR_LEFT:
-        e->direction = DIR_RIGHT;
-        break;
+        case DIR_UP:
+            e->direction = DIR_DOWN;
+            break;
+        case DIR_DOWN:
+            e->direction = DIR_UP;
+            break;
+        case DIR_RIGHT:
+            e->direction = DIR_LEFT;
+            break;
+        case DIR_LEFT:
+            e->direction = DIR_RIGHT;
+            break;
     }
 }
 
@@ -112,27 +112,27 @@ void updateHeroInteractionRegion(Entity *h)
 
     switch (h->direction)
     {
-    case DIR_UP:
-        interactionRectWidth = h->height;
-        interactionRectHeight = h->width;
-        pointToHarvest.x -= (i32)(0.5f*interactionRectWidth);
-        pointToHarvest.y -= (interactionRectHeight + interactionRectWidth);
-        break;
-    case DIR_DOWN:
-        interactionRectWidth = h->height;
-        interactionRectHeight = h->width;
-        pointToHarvest.x -= (i32)(0.5f*interactionRectWidth);
-        break;
-    case DIR_LEFT:
-        pointToHarvest.x -= (i32)(1.5f*h->width);
-        pointToHarvest.y -= h->height;
-        break;
-    case DIR_RIGHT:
-        pointToHarvest.x += (i32)(0.5f*h->width);
-        pointToHarvest.y -= h->height;
-        break;
-    default:
-        break;
+        case DIR_UP:
+            interactionRectWidth = h->height;
+            interactionRectHeight = h->width;
+            pointToHarvest.x -= (i32)(0.5f*interactionRectWidth);
+            pointToHarvest.y -= (interactionRectHeight + interactionRectWidth);
+            break;
+        case DIR_DOWN:
+            interactionRectWidth = h->height;
+            interactionRectHeight = h->width;
+            pointToHarvest.x -= (i32)(0.5f*interactionRectWidth);
+            break;
+        case DIR_LEFT:
+            pointToHarvest.x -= (i32)(1.5f*h->width);
+            pointToHarvest.y -= h->height;
+            break;
+        case DIR_RIGHT:
+            pointToHarvest.x += (i32)(0.5f*h->width);
+            pointToHarvest.y -= h->height;
+            break;
+        default:
+            break;
     }
 
     h->heroInteractionRect = {pointToHarvest.x, pointToHarvest.y, interactionRectWidth, interactionRectHeight};
@@ -246,16 +246,16 @@ internal void placeItem(Game *g, Entity *h)
 
         switch (h->tileToPlace->craftableItem)
         {
-        case Craftable_Tree:
-            // TODO(cjh): Calls initEntitySpriteSheet twice, which does QueryTexture
-            initHarvestableTree(tile, g);
-            break;
-        case Craftable_Glow_Juice:
-            // TODO(cjh): Calls initEntitySpriteSheet twice, which does QueryTexture
-            initGlowTree(tile, g);
-            break;
-        default:
-            break;
+            case Craftable_Tree:
+                // TODO(cjh): Calls initEntitySpriteSheet twice, which does QueryTexture
+                initHarvestableTree(tile, g);
+                break;
+            case Craftable_Glow_Juice:
+                // TODO(cjh): Calls initEntitySpriteSheet twice, which does QueryTexture
+                initGlowTree(tile, g);
+                break;
+            default:
+                break;
         }
 
         if (tile->deleteAfterPlacement)
@@ -340,23 +340,23 @@ internal Vec2 getTilePlacementPosition(Game *g, Entity *h)
 
         switch (h->direction)
         {
-        case DIR_UP:
-            row = (u32)((h->position.y - h->height) / tile->height);
-            row--;
-            break;
-        case DIR_DOWN:
-            row++;
-            break;
-        case DIR_LEFT:
-            col = (u32)((h->position.x - 0.5f*h->width) / tile->width);
-            col--;
-            break;
-        case DIR_RIGHT:
-            col = (u32)((h->position.x + 0.5f*h->width) / tile->width);
-            col++;
-            break;
-        default:
-            break;
+            case DIR_UP:
+                row = (u32)((h->position.y - h->height) / tile->height);
+                row--;
+                break;
+            case DIR_DOWN:
+                row++;
+                break;
+            case DIR_LEFT:
+                col = (u32)((h->position.x - 0.5f*h->width) / tile->width);
+                col--;
+                break;
+            case DIR_RIGHT:
+                col = (u32)((h->position.x + 0.5f*h->width) / tile->width);
+                col++;
+                break;
+            default:
+                break;
         }
 
         clampU32(row, 0, g->currentMap->rows - 1);
@@ -513,56 +513,56 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
                 updateHeroInteractionRegion(h);
                 switch (testEntity->type)
                 {
-                case ET_TILE:
-                {
-                    // Tile position is at center of tile
-                    Rect tileBoundingBox = {(i32)testEntity->position.x - (i32)(0.5f*testEntity->width),
-                                            (i32)testEntity->position.y - (i32)(0.5f*testEntity->height),
-                                            testEntity->width, testEntity->height};
-
-                    if (rectsOverlap(&h->heroInteractionRect, &tileBoundingBox))
+                    case ET_TILE:
                     {
-                        if (isTileFlagSet(testEntity, TP_HARVEST))
+                        // Tile position is at center of tile
+                        Rect tileBoundingBox = {(i32)testEntity->position.x - (i32)(0.5f*testEntity->width),
+                                                (i32)testEntity->position.y - (i32)(0.5f*testEntity->height),
+                                                testEntity->width, testEntity->height};
+
+                        if (rectsOverlap(&h->heroInteractionRect, &tileBoundingBox))
                         {
-                            interactableThisFrame = testEntity;
-                            pushInteractionHint(renderGroup, g, "SPC to harvest");
-                        }
-                        // TODO(cjh): Do we need TP_INTERACTIVE?
-                        if (isTileFlagSet(testEntity, TP_INTERACTIVE))
-                        {
-                            // NOTE(cjh): Light campfire
-                            if (isTileFlagSet(testEntity, TP_CAMPFIRE))
+                            if (isTileFlagSet(testEntity, TP_HARVEST))
                             {
-                                if (!testEntity->active)
+                                interactableThisFrame = testEntity;
+                                pushInteractionHint(renderGroup, g, "SPC to harvest");
+                            }
+                            // TODO(cjh): Do we need TP_INTERACTIVE?
+                            if (isTileFlagSet(testEntity, TP_INTERACTIVE))
+                            {
+                                // NOTE(cjh): Light campfire
+                                if (isTileFlagSet(testEntity, TP_CAMPFIRE))
                                 {
-                                    interactableThisFrame = testEntity;
-                                    pushInteractionHint(renderGroup, g, "SPC to light campfire");
-                                }
-                                else
-                                {
-                                    interactableThisFrame = testEntity;
-                                    pushInteractionHint(renderGroup, g, "SPC to extinguish campfire");
+                                    if (!testEntity->active)
+                                    {
+                                        interactableThisFrame = testEntity;
+                                        pushInteractionHint(renderGroup, g, "SPC to light campfire");
+                                    }
+                                    else
+                                    {
+                                        interactableThisFrame = testEntity;
+                                        pushInteractionHint(renderGroup, g, "SPC to extinguish campfire");
+                                    }
                                 }
                             }
                         }
+                        break;
                     }
-                    break;
-                }
-                case ET_HARLOD:
-                {
-                    Rect harlodCollisionRegion = {(i32)(testEntity->position.x - 0.5f*testEntity->width),
-                                                  (i32)(testEntity->position.y - testEntity->height),
-                                                  testEntity->width, testEntity->height};
-
-                    if (rectsOverlap(&h->heroInteractionRect, &harlodCollisionRegion))
+                    case ET_HARLOD:
                     {
-                        interactableThisFrame = testEntity;
-                        pushInteractionHint(renderGroup, g, "SPC to talk");
+                        Rect harlodCollisionRegion = {(i32)(testEntity->position.x - 0.5f*testEntity->width),
+                                                      (i32)(testEntity->position.y - testEntity->height),
+                                                      testEntity->width, testEntity->height};
+
+                        if (rectsOverlap(&h->heroInteractionRect, &harlodCollisionRegion))
+                        {
+                            interactableThisFrame = testEntity;
+                            pushInteractionHint(renderGroup, g, "SPC to talk");
+                        }
+                        break;
                     }
-                    break;
-                }
-                default:
-                    break;
+                    default:
+                        break;
                 }
             }
 
@@ -656,11 +656,11 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
 
     // Actions
     h->harvesting = input->keyPressed[KEY_SPACE] || input->buttonPressed[BUTTON_A];
-    h->craftTree = input->keyPressed[KEY_C];
-    h->craftGlowJuice = input->keyPressed[KEY_V];
+    h->craftTree = input->keyPressed[KEY_C] || input->buttonPressed[BUTTON_Y];
+    h->craftGlowJuice = input->keyPressed[KEY_V] || input->buttonPressed[BUTTON_B];
 
     CraftableItemType itemTypeToPlace = Craftable_None;
-    if (input->keyPressed[KEY_P])
+    if (input->keyPressed[KEY_P] || input->buttonPressed[BUTTON_X])
     {
         if (h->activeBeltItemIndex < (i32)h->beltItemCount)
         {
@@ -758,13 +758,13 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
 
             switch (itemTypeToPlace)
             {
-            case Craftable_Tree:
-                // TODO(cjh): This is called again in placeItem
-                initEntitySpriteSheet(tile, g->harvestableTreeTexture, 3, 1);
-                break;
-            case Craftable_Glow_Juice:
-                initEntitySpriteSheet(tile, g->glowTreeTexture, 2, 1);
-                break;
+                case Craftable_Tree:
+                    // TODO(cjh): This is called again in placeItem
+                    initEntitySpriteSheet(tile, g->harvestableTreeTexture, 3, 1);
+                    break;
+                case Craftable_Glow_Juice:
+                    initEntitySpriteSheet(tile, g->glowTreeTexture, 2, 1);
+                    break;
             }
         }
 
@@ -779,12 +779,12 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
         h->harvesting = false;
     }
 
-    if (input->keyPressed[KEY_X])
+    if (input->keyPressed[KEY_X] || input->buttonPressed[BUTTON_RTRIGGER])
     {
         h->activeBeltItemIndex++;
         h->activeBeltItemIndex %= ArrayCount(h->beltItems);
     }
-    if (input->keyPressed[KEY_Z])
+    if (input->keyPressed[KEY_Z] || input->buttonPressed[BUTTON_LTRIGGER])
     {
         --h->activeBeltItemIndex;
         h->activeBeltItemIndex %= ArrayCount(h->beltItems);

@@ -36,19 +36,19 @@ EntireFile SDLReadEntireFile(char *filename)
             }
             else
             {
-                // TODO(cjh):
+                // TODO(cjh): @error
                 // printf(stderr, "%s\n", SDL_GetError());
             }
         }
         else
         {
-            // TODO(cjh):
+            // TODO(cjh): @error
             // printf("%s\n", SDL_GetError());
         }
     }
     else
     {
-        // TODO(cjh):
+        // TODO(cjh): @error
         // fprintf(stderr, "%s\n", SDL_GetError());
     }
     return result;
@@ -94,7 +94,7 @@ internal b32 SDLIsZeroRect(Rect rect)
     return !(rect.x || rect.y || rect.w || rect.h);
 }
 
-internal f32 SDLNormalizeStickInput(short unnormalizedStick)
+internal f32 SDLNormalizeStickInput(i16 unnormalizedStick)
 {
     f32 result = 0.0f;
     if (unnormalizedStick < 0)
@@ -324,7 +324,7 @@ internal void SDLDestroyControllers(SDL_GameController **handles)
     }
 }
 
-internal void SDLUpdateInput(Input* input, SDL_Scancode key, b32 isDown)
+internal void SDLUpdateKeyboardInput(Input* input, SDL_Scancode key, b32 isDown)
 {
     SDL_Keymod keyMod = SDL_GetModState();
     if (keyMod & KMOD_LSHIFT)
@@ -338,127 +338,177 @@ internal void SDLUpdateInput(Input* input, SDL_Scancode key, b32 isDown)
 
     switch (key)
     {
-    case SDL_SCANCODE_RIGHT:
-    case SDL_SCANCODE_L:
-    case SDL_SCANCODE_D:
-        SDLSetKeyState(input, KEY_RIGHT, isDown);
-        break;
-    case SDL_SCANCODE_UP:
-    case SDL_SCANCODE_K:
-    case SDL_SCANCODE_W:
-        SDLSetKeyState(input, KEY_UP, isDown);
-        break;
-    case SDL_SCANCODE_DOWN:
-    case SDL_SCANCODE_J:
-    case SDL_SCANCODE_S:
-        SDLSetKeyState(input, KEY_DOWN, isDown);
-        break;
-    case SDL_SCANCODE_LEFT:
-    case SDL_SCANCODE_H:
-    case SDL_SCANCODE_A:
-        SDLSetKeyState(input, KEY_LEFT, isDown);
-        break;
-    case SDL_SCANCODE_ESCAPE:
-        SDLSetKeyState(input, KEY_ESCAPE, isDown);
-        break;
-    case SDL_SCANCODE_F:
-        SDLSetKeyState(input, KEY_F, isDown);
-        break;
-    case SDL_SCANCODE_C:
-        SDLSetKeyState(input, KEY_C, isDown);
-        break;
-    case SDL_SCANCODE_P:
-        SDLSetKeyState(input, KEY_P, isDown);
-        break;
-    case SDL_SCANCODE_SPACE:
-        SDLSetKeyState(input, KEY_SPACE, isDown);
-        break;
-    case SDL_SCANCODE_I:
-        SDLSetKeyState(input, KEY_I, isDown);
-        break;
-    case SDL_SCANCODE_V:
-        SDLSetKeyState(input, KEY_V, isDown);
-        break;
-    case SDL_SCANCODE_X:
-        SDLSetKeyState(input, KEY_X, isDown);
-        break;
-    case SDL_SCANCODE_Z:
-        SDLSetKeyState(input, KEY_Z, isDown);
-        break;
-    default:
-        // char* action = pressed ? "pressed" : "released";
-        // printf("Key %s: %s\n", action, SDL_GetKeyName(SDL_GetKeyFromScancode(key)));
-        break;
+        case SDL_SCANCODE_RIGHT:
+        case SDL_SCANCODE_L:
+        case SDL_SCANCODE_D:
+            SDLSetKeyState(input, KEY_RIGHT, isDown);
+            break;
+        case SDL_SCANCODE_UP:
+        case SDL_SCANCODE_K:
+        case SDL_SCANCODE_W:
+            SDLSetKeyState(input, KEY_UP, isDown);
+            break;
+        case SDL_SCANCODE_DOWN:
+        case SDL_SCANCODE_J:
+        case SDL_SCANCODE_S:
+            SDLSetKeyState(input, KEY_DOWN, isDown);
+            break;
+        case SDL_SCANCODE_LEFT:
+        case SDL_SCANCODE_H:
+        case SDL_SCANCODE_A:
+            SDLSetKeyState(input, KEY_LEFT, isDown);
+            break;
+        case SDL_SCANCODE_ESCAPE:
+            SDLSetKeyState(input, KEY_ESCAPE, isDown);
+            break;
+        case SDL_SCANCODE_F:
+            SDLSetKeyState(input, KEY_F, isDown);
+            break;
+        case SDL_SCANCODE_C:
+            SDLSetKeyState(input, KEY_C, isDown);
+            break;
+        case SDL_SCANCODE_P:
+            SDLSetKeyState(input, KEY_P, isDown);
+            break;
+        case SDL_SCANCODE_SPACE:
+            SDLSetKeyState(input, KEY_SPACE, isDown);
+            break;
+        case SDL_SCANCODE_I:
+            SDLSetKeyState(input, KEY_I, isDown);
+            break;
+        case SDL_SCANCODE_V:
+            SDLSetKeyState(input, KEY_V, isDown);
+            break;
+        case SDL_SCANCODE_X:
+            SDLSetKeyState(input, KEY_X, isDown);
+            break;
+        case SDL_SCANCODE_Z:
+            SDLSetKeyState(input, KEY_Z, isDown);
+            break;
+        default:
+            // char* action = pressed ? "pressed" : "released";
+            // printf("Key %s: %s\n", action, SDL_GetKeyName(SDL_GetKeyFromScancode(key)));
+            break;
     }
 }
- 
+
+internal void SDLSetButtonState(Input* input, Button button, b32 isDown)
+{
+    if (input->buttonDown[button] && !isDown)
+    {
+        input->buttonPressed[button] = true;
+    }
+    input->buttonDown[button] = isDown;
+}
+
+internal void SDLUpdateControllerInput(Input* input, u8 button, b32 isDown)
+{
+    switch (button)
+    {
+        case SDL_CONTROLLER_BUTTON_DPAD_UP:
+            SDLSetButtonState(input, BUTTON_UP, isDown);
+            break;
+        case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+            SDLSetButtonState(input, BUTTON_DOWN, isDown);
+            break;
+        case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+            SDLSetButtonState(input, BUTTON_LEFT, isDown);
+            break;
+        case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+            SDLSetButtonState(input, BUTTON_RIGHT, isDown);
+            break;
+        case SDL_CONTROLLER_BUTTON_START:
+            SDLSetButtonState(input, BUTTON_START, isDown);
+            break;
+        case SDL_CONTROLLER_BUTTON_BACK:
+            SDLSetButtonState(input, BUTTON_BACK, isDown);
+            break;
+        case SDL_CONTROLLER_BUTTON_A:
+            SDLSetButtonState(input, BUTTON_A, isDown);
+            break;
+        case SDL_CONTROLLER_BUTTON_B:
+            SDLSetButtonState(input, BUTTON_B, isDown);
+            break;
+        case SDL_CONTROLLER_BUTTON_X:
+            SDLSetButtonState(input, BUTTON_X, isDown);
+            break;
+        case SDL_CONTROLLER_BUTTON_Y:
+            SDLSetButtonState(input, BUTTON_Y, isDown);
+            break;
+        case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+            SDLSetButtonState(input, BUTTON_LSHOULDER, isDown);
+            break;
+        case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+            SDLSetButtonState(input, BUTTON_RSHOULDER, isDown);
+            break;
+        default:
+            break;
+    }
+}
+
 internal void SDLPollInput(Input *input, SDL_GameController **handles)
 {
     // Reset all button presses
-    // TODO(cjh): This seems wasteful
-    for (u32 key = 0; key < KEY_COUNT; ++key)
-    {
-        input->keyPressed[key] = 0;
-    }
-    for (u32 button = 0; button < BUTTON_COUNT; ++button)
-    {
-        input->buttonPressed[button] = 0;
-    }
+    memset(input->keyPressed, 0, sizeof(b32) * KEY_COUNT);
+    memset(input->buttonPressed, 0, sizeof(b32) * BUTTON_COUNT);
 
     SDL_Event event;
     while(SDL_PollEvent(&event))
     {
         switch (event.type)
         {
-        case SDL_KEYUP:
-            SDLUpdateInput(input, event.key.keysym.scancode, 0);
-            break;
-        case SDL_QUIT:
-            globalRunning = false;
-            break;
-        case SDL_KEYDOWN:
-            SDLUpdateInput(input, event.key.keysym.scancode, true);
-            break;
+            case SDL_KEYUP:
+                SDLUpdateKeyboardInput(input, event.key.keysym.scancode, false);
+                break;
+            case SDL_QUIT:
+                globalRunning = false;
+                break;
+            case SDL_KEYDOWN:
+                SDLUpdateKeyboardInput(input, event.key.keysym.scancode, true);
+                break;
+            case SDL_CONTROLLERBUTTONDOWN:
+                // TODO(cjh): Only handles 1 controller. Get the SDL_JoystickID with
+                // event.cbutton.which
+                SDLUpdateControllerInput(input, event.cbutton.button, true);
+                break;
+            case SDL_CONTROLLERBUTTONUP:
+                SDLUpdateControllerInput(input, event.cbutton.button, false);
+                break;
             // case SDL_MOUSEMOTION:
             //     input_handle_mouse(&input);
             //     break;
         }
     }
-    // Check controller input
-    // TODO(cjh): Should we use events for this? What's the difference?
+
+    if (input->keyPressed[KEY_ESCAPE])
+    {
+        globalRunning = false;
+    }
+
+    // Check controller axis input
     for (int controllerIndex = 0; controllerIndex < MAX_CONTROLLERS; ++controllerIndex)
     {
         SDL_GameController *controller = handles[controllerIndex];
         if(controller && SDL_GameControllerGetAttached(controller))
         {
-            // TODO(cjh): Handle remaining buttons
-            // TODO(cjh): Handle keyPressed as distinct from keyDown
-            b32 *pressed = input->buttonPressed;
-            pressed[BUTTON_UP] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_UP);
-            pressed[BUTTON_DOWN] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_DOWN);
-            pressed[BUTTON_LEFT] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_LEFT);
-            pressed[BUTTON_RIGHT] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
-            // bool start = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_START);
-            // bool back = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_BACK);
-            // bool leftShoulder = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
-            // bool rightShoulder = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
-            pressed[BUTTON_A] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_A);
-            pressed[BUTTON_B] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_B);
-            pressed[BUTTON_X] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_X);
-            pressed[BUTTON_Y] = SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_Y);
-
-            short sdlStickX = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTX);
-            short sdlStickY = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTY);
+            i16 sdlStickX = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTX);
+            i16 sdlStickY = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_LEFTY);
             f32 stickX = SDLNormalizeStickInput(sdlStickX);
             f32 stickY = SDLNormalizeStickInput(sdlStickY);
 
             // Account for dead zone
-            input->stickX = (stickX > -0.1f && stickX < 0.1f) ? 0.0f : stickX;
-            input->stickY = (stickY > -0.1f && stickY < 0.1f) ? 0.0f : stickY;
+            f32 deadZone = 0.1f;
+            input->stickX = (stickX > -deadZone && stickX < deadZone) ? 0.0f : stickX;
+            input->stickY = (stickY > -deadZone && stickY < deadZone) ? 0.0f : stickY;
+
+            i16 rightTrigger = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
+            i16 leftTrigger = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
+            SDLSetButtonState(input, BUTTON_RTRIGGER, SDLNormalizeStickInput(rightTrigger) > 0.5f);
+            SDLSetButtonState(input, BUTTON_LTRIGGER, SDLNormalizeStickInput(leftTrigger) > 0.5f);
         }
         else
         {
-            // TODO: This controller is not plugged in.
+            // TODO: @error This controller is not plugged in.
         }
     }
 }
@@ -621,13 +671,13 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) < 0)
     {
-        printf("SDL failed to initialize: %s\n", SDL_GetError());
+        fprintf(stderr, "SDL failed to initialize: %s\n", SDL_GetError());
         exit(1);
     }
 
     if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
     {
-        printf( "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
+        fprintf(stderr, "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
         exit(1);
     }
 

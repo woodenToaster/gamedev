@@ -417,7 +417,9 @@ you should place your code here."
   (add-hook 'c-mode-common-hook 'my-c-mode-common-hook)
 
   ;; Don't indent when inside a namespace
-  (add-hook 'c++-mode-hook #'(lambda () (c-set-offset 'innamespace [0])))
+  (add-hook 'c++-mode-hook #'(lambda ()
+                               (c-set-offset 'innamespace [0])
+                               (c-set-offset 'case-label '+)))
 
   ;; Allow compilation buffer to open to right
   ;; (spaceline-toggle-puropose-off)

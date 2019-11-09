@@ -323,32 +323,27 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHan
     Entity *hero = game->hero;
     switch (game->mode)
     {
-    case GameMode_Playing:
-    {
-        // TODO(cjh): FIXME
-        if (input->keyPressed[KEY_ESCAPE])
+        case GameMode_Playing:
         {
-            globalRunning = false;
+            updateHero(group, hero, input, game);
+            updateCamera(&game->camera, hero->position);
+            viewport->x = game->camera.viewport.x;
+            viewport->y = game->camera.viewport.y;
+            updateAnimation(&hero->animation, game->dt, hero->isMoving);
+            playQueuedSounds(&game->sounds, now);
+            updateTiles(game);
+            break;
         }
-        updateHero(group, hero, input, game);
-        updateCamera(&game->camera, hero->position);
-        viewport->x = game->camera.viewport.x;
-        viewport->y = game->camera.viewport.y;
-        updateAnimation(&hero->animation, game->dt, hero->isMoving);
-        playQueuedSounds(&game->sounds, now);
-        updateTiles(game);
-        break;
-    }
-    case GameMode_Dialogue:
-    {
-        updateDialogMode(game, input);
-        break;
-    }
-    case GameMode_Inventory:
-    {
-        updateInventoryMode(game, input);
-        break;
-    }
+        case GameMode_Dialogue:
+        {
+            updateDialogMode(game, input);
+            break;
+        }
+        case GameMode_Inventory:
+        {
+            updateInventoryMode(game, input);
+            break;
+        }
     }
 
     drawBackground(group, game);

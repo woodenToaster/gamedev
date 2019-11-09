@@ -68,14 +68,14 @@ void drawInventoryScreen(RenderGroup *group, Game *g, Entity *h, FontMetadata *f
         char itemString[30] = {};
         switch ((InventoryItemType)inventoryIndex)
         {
-        case INV_LEAVES:
-            snprintf(itemString, 30, "Leaves: %d", h->inventory[INV_LEAVES]);
-            break;
-        case INV_GLOW:
-            snprintf(itemString, 30, "Glow: %d", h->inventory[INV_GLOW]);
-            break;
-        default:
-            assert(!"Wrong inventory type");
+            case INV_LEAVES:
+                snprintf(itemString, 30, "Leaves: %d", h->inventory[INV_LEAVES]);
+                break;
+            case INV_GLOW:
+                snprintf(itemString, 30, "Glow: %d", h->inventory[INV_GLOW]);
+                break;
+            default:
+                assert(!"Wrong inventory type");
         }
         drawText(group, fontMetadata, itemString, dialogueBoxX, dialogueBoxY);
         // TODO(cjh): Figure out correct y offset for next line
@@ -106,20 +106,20 @@ void drawHUD(RenderGroup *group, Game *g, Entity *h, FontMetadata *font)
 
             switch (item->type)
             {
-            case Craftable_Tree:
-                textureToDraw = g->harvestableTreeTexture;
-                // TODO(cjh): Get sprite width height
-                tileRect.w = 64;
-                tileRect.h = 64;
-                break;
-            case Craftable_Glow_Juice:
-                textureToDraw= g->glowTreeTexture;
-                // TODO(cjh): Get sprite width height
-                tileRect.w = 80;
-                tileRect.h = 80;
-                break;
-            default:
-                break;
+                case Craftable_Tree:
+                    textureToDraw = g->harvestableTreeTexture;
+                    // TODO(cjh): Get sprite width height
+                    tileRect.w = 64;
+                    tileRect.h = 64;
+                    break;
+                case Craftable_Glow_Juice:
+                    textureToDraw= g->glowTreeTexture;
+                    // TODO(cjh): Get sprite width height
+                    tileRect.w = 80;
+                    tileRect.h = 80;
+                    break;
+                default:
+                    break;
             }
 
             if (textureToDraw.texture)
@@ -228,37 +228,37 @@ internal void drawRenderGroup(RendererHandle renderer, RenderGroup *group)
             void *data = (u8*)header + sizeof(*header);
             switch (header->type)
             {
-            case RenderEntryType_RenderEntryRect:
-            {
-                RenderEntryRect *entry = (RenderEntryRect*)data;
-                if (entry->layer == layerIndex)
+                case RenderEntryType_RenderEntryRect:
                 {
-                    rendererAPI.renderRect(renderer, entry->dest, entry->color, entry->alpha);
-                }
-                baseAddress += sizeof(*entry);
-            } break;
-            case RenderEntryType_RenderEntryFilledRect:
-            {
-                RenderEntryFilledRect *entry = (RenderEntryFilledRect*)data;
-                if (entry->layer == layerIndex)
+                    RenderEntryRect *entry = (RenderEntryRect*)data;
+                    if (entry->layer == layerIndex)
+                    {
+                        rendererAPI.renderRect(renderer, entry->dest, entry->color, entry->alpha);
+                    }
+                    baseAddress += sizeof(*entry);
+                } break;
+                case RenderEntryType_RenderEntryFilledRect:
                 {
-                    rendererAPI.renderFilledRect(renderer, entry->dest, entry->color, entry->alpha);
-                }
-                baseAddress += sizeof(*entry);
-            } break;
+                    RenderEntryFilledRect *entry = (RenderEntryFilledRect*)data;
+                    if (entry->layer == layerIndex)
+                    {
+                        rendererAPI.renderFilledRect(renderer, entry->dest, entry->color, entry->alpha);
+                    }
+                    baseAddress += sizeof(*entry);
+                } break;
 
-            case RenderEntryType_RenderEntrySprite:
-            {
-                RenderEntrySprite *entry = (RenderEntrySprite*)data;
-                if (entry->layer == layerIndex)
+                case RenderEntryType_RenderEntrySprite:
                 {
-                    rendererAPI.renderSprite(renderer, entry->sheet, entry->source, entry->dest);
-                }
-                baseAddress += sizeof(*entry);
-            } break;
+                    RenderEntrySprite *entry = (RenderEntrySprite*)data;
+                    if (entry->layer == layerIndex)
+                    {
+                        rendererAPI.renderSprite(renderer, entry->sheet, entry->source, entry->dest);
+                    }
+                    baseAddress += sizeof(*entry);
+                } break;
 
-            default:
-                InvalidCodePath;
+                default:
+                    InvalidCodePath;
             }
         }
     }
