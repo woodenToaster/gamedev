@@ -169,11 +169,13 @@ struct Sound
 
 typedef SoundChunkHandle (LoadWav)(const char *fname);
 typedef void (PlaySound)(Sound *s, u64 now);
+typedef void (DestroySound)(Sound *s);
 
 struct AudioAPI
 {
     LoadWav *loadWav;
     PlaySound *playSound;
+    DestroySound *destroySound;
 };
 
 struct GameMemory

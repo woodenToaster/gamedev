@@ -1,0 +1,264 @@
+* Game Design Document
+** Game Overview
+   - Can Dark Souls style combat work in 2D?
+     - I think yes. The emphasis has to be on the time each action
+       takes. Quick attacks will do less damage, and slow attacks will
+       do more. There can be detail in where attacks hit and what
+       armor those parts of the body have.
+   - What can crafting bring to a 2D action RPG?
+     - Manipulate the world to change the combat terrain.
+     - Craft new weapons, potions, items, spell components.
+       - Shouldn't be boring to craft things (like RDR2)
+         - Don't craft ammo, or commonly used items (or do it in batches)
+   - Can you have specific quests and stories when tiles are harvestable?
+     - I think so if you restrain the possiblities. We can't do full
+       on minecraft anyway since it's 2D. I think the constraints of
+       2D will help constrain the crafting possibilities.
+*** Game Concept
+Dark Souls style, 2D action RPG with crafting. Bosses should be
+difficult, but maybe not as punishing as DS bosses. Bonfire like
+checkpoints.
+*** Genre
+Action RPG, Crafting, Survival? What would survival look like in DS?
+*** Target Audience
+Dark Souls fans, dark medieval fantasy fans, NES Zelda fans
+*** Game Flow Summary
+A combination of crafting and combat. Crafting prepares for
+combat. Maybe the player has a certain amount of time to build a base
+before being attacked, like Rampart. Although, this may distract from
+the focus on combat that I want.
+*** Look and Feel
+Dark Souls style atmosphere. Dark medieval fantasy art.
+** Gameplay Mechanics
+*** Gameplay
+Players will enjoy challenging, 2D medieval combat. The goal is to get
+a Dark Souls level of combat depth in a 2D game. There will also be
+some elements of magic. The world can be harvested and crafted so that
+players can solve challenges in multiple interesting ways.
+*** Mechanics
+Sekiro style timed blocking. Attacking will cause a 1-2 second
+animation to occur, so if the player attacks too early, he will be
+left wide open.
+**** Harvesting
+Many aspects of the map will be interactable. One is example is the
+ability to harvest resources from map tiles. Resources can be used to
+craft items, powerups, and obstacles to thwart enemies. Some fights
+may even require the harvesting and crafting of local resources in
+order to overcome a challenge or make a fight winnable. Preliminary
+list of harvestable resources:
+     - Tree branches, leaves, sticks or twigs
+     - Stone or rocks
+     - Fire kindling
+     - Iron
+     - Manganese
+     - Lead
+     - Glow juice
+     - Other weird shit
+     - Leather from animals
+     - TODO: Research medieval excavation and mining
+*** Items
+**** Armor
+Different pieces of armor can be collected and worn, but you don't
+collect entire sets at once. Instead you find a piece here, a piece
+there, and each can be worn individually for protection on that
+limb. Enemy attacks will target different areas of the body: arms,
+legs, torso, head. The corresponding armor is bracers, leggings,
+breastplate, helmet. TODO(chogan): research armor.
+***** Armor Materials
+      - Leather
+      - Steel
+      - Diamond
+***** Armor Items
+****** Chest
+       - Breast Plate
+       - Mail shirt
+       - Cuirass :: breastpate, backplate, tassets, skirts
+       - Leggings
+****** Arms
+       - Vambrace :: forearm and upper arm
+       - Gauntlets :: hands
+       - Pauldron :: shoulders
+****** Legs
+       - Cuisse :: upper thigh
+       - Greave :: lower leg
+       - Sabaton :: foot
+****** Head
+       - Flat topped helm
+       - Conical helm
+       - Close helmet
+       - Comb morion
+       - Bascinet
+**** Weapons
+Each weapon has four properties: reach, damage, speed, and type. The
+damage type controls how effective the weapon is against certain
+armors and animal hides. The goal should be that no one weapon is
+overall the best, but that each one is good for certain situations.
+     - Sword :: medium reach, medium damage, medium speed, slashing
+     - Spear :: long reach, light damage, medium speed, piercing
+     - Hammer :: medium reach, heavy damage, slow speed, crushing
+     - Bow :: ranged weapon, medium speed, light damage, piercing
+**** Enemy drops
+     - crafting materials
+     - power ups
+     - Whetstone :: increases slashing damage weapon
+**** Currency
+     - Botzen
+     - Notzen
+     - Guilder
+**** Helardry
+     - Weird heraldry as powerups
+     - Can support different nobles, but that makes enemies of other knights
+     - Coat of arms
+     - Standards
+*** Game Options
+*** Replaying and Saving
+Bonfire style checkpoints.
+** Story, Settings and Characters
+*** Story and Narrative
+The journey of learning medieval battle skills and magic. The initial
+enemies that are encountered have some kind of sickness. Eventually a
+boss is discovered who has been infecting the village people. How can
+I add a twist to this storyline? Maybe the sickness is something
+modern that people believe as supersticious?
+*** Game World
+**** General look and feel of the world
+Dark atmosphere. Unique art, possibly procedurally generated. Pixel
+based. Extreme poverty. Strange customs, food, and speech.
+**** Areas, and how they relate to rest of world.
+     - Poor village
+     - Enemy camp
+     - Swamp
+     - Forest
+     - Weird forest
+     - Castle
+     - Castle Ruins
+     - Focus on different types of castles (TODO: research)
+*** Characters
+**** Main Character
+***** Backstory
+***** Personality
+Doesn't need much of a personality. This will be dialogue light.
+***** Appearance
+Hard to get a full clear view.
+***** Animations
+***** Abilities
+****** Initial
+        - Lunge
+        - Sweep
+	- Dash/Dodge
+	- Parry
+	- Block
+****** Acquired Later
+       - 360 attack
+       - Flying kick (Liu Kang)
+       - Turtle (invincible for a second)
+***** Relevance to Story
+      - Duh
+***** Relation to other Characters
+**** Name
+***** Backstory
+***** Personality
+***** Appearance
+***** Animations
+***** Abilities
+***** Relevance to Story
+***** Relation to other Characters
+*** Enemies
+Why is the player fighting these kinds of enemies?
+**** Knights
+     - Crusaders
+     - Templars
+     - Teutonic
+     - Hospitaller
+**** Priests
+**** Monks
+**** Warriors
+     - Man-at-arms (Yeoman)
+     - Foot soldiers
+     - Sergeant
+     - Dragoons
+     - Longbowman
+**** Crusaders
+**** Templars
+**** Doctors
+***** The four Humours or fluids
+      - Black bile
+      - Yellow bile
+      - Phlegm
+      - Blood
+***** Medicine
+      - Wormwood
+      - Mint
+      - Liquorice
+      - Comfrey
+      - Vinegar
+** Levels
+Small, contained levels with an overmap?
+*** Poor Village
+**** Synopsis
+The village is dark and dank. The people are mostly sickly peasants
+and live in squalor. They accost the hero almost desparately,
+discussing "the sickness." Everyone is afraid, desparate, and on the
+verge of madness. Eventually villagers here and there start to turn on
+the hero. They wield pitchforks and torches.
+**** Objectives
+The hero must escape the village and gather a list of items for ... something.
+**** Details
+**** Challenges
+Build some light fortifications before an angry mob attacks
+**** Enemies
+Mad villagers
+**** Craftables
+Maybe bring the required materials to an appropriate NPC instead of
+crafting them yourself.
+     - Pavise :: wooden shields that can cover the whole body, like walls
+     - rubble piles
+     - Heraldry
+     - Armor
+     - Weapons
+     - Medicines
+**** Secrets
+** Interface
+*** Visual System
+**** HUD
+**** Menus
+*** Control System
+    - L1 :: low parry
+    - L2 :: high parry
+    - L3 :: stealth mode
+    - R1 :: low attack
+    - R2 :: high attack
+    - R3 :: lock on
+    - Circle :: dash/dodge/run
+    - Square :: use item
+    - X :: interact with surroundings
+    - Triangle :: use shield/block
+    - Thumb Sticks :: movement
+    - Up :: special move (chosen at bonfire)
+    - Down :: special move (chosen at bonfire)
+    - Left :: cycle active item
+    - Right :: cycle active item
+*** Audio, Music, Sound effects
+**** Metal
+**** Classical
+**** Rennaissance
+** Artificial Intelligence
+*** Enemy AI
+*** Non-combat and Friendly Characters
+** Technical
+*** Target Systems
+    - Windows
+    - Linux
+    - 2 GB RAM
+*** Software
+    - OpenGL
+    - SDL
+    - stb_image
+    - stb_truetype
+    - Physics?
+** Game Art
+*** Key Assets
+**** Castle terrain
+**** Knight sprites
+*** Style
+Procedurally generated, pixels. 2D skeletons procedurally filled with pixels.

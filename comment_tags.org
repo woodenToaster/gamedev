@@ -1,0 +1,9 @@
+* Comment Tags
+
+These are groups or categories that I will scatter throughout comments. When I
+want to find all comments of a certain category quickly, I can just search for
+the tag. Each tag will be preceeded by '@' to make for easy searching. Here is a
+list of comment tag categories.
+
+  - @win32 :: This tag marks code that uses the Win32 API, and that needs to be 
+              split out into a separate Windows platform layer.

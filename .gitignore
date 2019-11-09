@@ -1,4 +1,9 @@
+Debug/
 build/
 .vs/
 .dir-locals.el
+GPATH
+GRTAGS
+GTAGS
+
 

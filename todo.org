@@ -6,6 +6,7 @@
 *** TODO Allow entities to be placed anywhere, not just in an 80x80 grid. Snap to smaller grid?
 *** TODO Nail down tile placing rules. 2 layers? tile and entity
 *** TODO What happens when multiple entities exist in one tile space? How do we select the right one?
+    - probably the bug with flames in tile placing slot
 ** TODO Inventory system
 *** TODO Make items selectable
 ** TODO Dialog system
@@ -18,6 +19,10 @@
 *** TODO Parry/backstab
 *** TODO Dodge
 *** TODO Each move takes time, and the longer it takes, the more damage it does.
+** TODO PS4 Controller
+*** TODO Enable same functionality as keyboard
+*** TODO Change tooltips based on input method
+**** TODO Mapping from device-specific button/key to generic game button
 * Architecture
 ** TODO RenderGroup sorting based on layers, and then based on position.y
 ** TODO Looped live editing
@@ -28,6 +33,8 @@
 ** TODO Dark Souls style combat
 ** TODO Dark Souls atmosphere
 *** TODO See far away parts of the level that you eventually reach
+**** TODO How would this work in 2d?
 * Ideas
 * Bugs
 ** TODO Can sometimes end up with a flame tile in placing slot
+** TODO Can sometimes drop tile unexpectedly in tile placement mode

@@ -17,16 +17,15 @@ set LINK_LIBS=SDL2.lib SDL2main.lib SDL2_mixer.lib
 
 del gamedev_*.pdb > NUL 2> NUL
 
-
 REM Not sure why cl doesn't have permission to overwrite this file.
 REM We have to rename it manually for hot reloading to work.
-move gamedev.dll gamedev.ddl.old
+move gamedev.dll gamedev.dll.old
 
 echo waiting for pdb > lock.tmp
-cl "%COMPILERFLAGS%" ..\gamedev.cpp /LD ^
+cl "%COMPILERFLAGS%" ..\src\gamedev.cpp /LD ^
   /link /incremental:no /opt:ref /pdb:gamedev_%random%.pdb /export:gameUpdateAndRender
 del lock.tmp
-cl "%COMPILERFLAGS%" ..\sdl2_gamedev.cpp /Fmsdl2_gamedev.map ^
+cl "%COMPILERFLAGS%" ..\src\sdl2_gamedev.cpp /Fmsdl2_gamedev.map ^
   /link /incremental:no /opt:ref %LINK_LIBS% /SUBSYSTEM:WINDOWS
 
 popd

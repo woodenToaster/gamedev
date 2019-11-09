@@ -295,7 +295,6 @@ void SDLInitColors(u32 *colors, SDL_PixelFormat *pixelFormat)
     colors[Color_LimeGreen] = SDL_MapRGB(pixelFormat, 106, 190, 48);
 }
 
-
 internal void SDLInitControllers(SDL_GameController **handles)
 {
     // TODO(cjh): Handle SDL_CONTROLLERDEVICEADDED, SDL_CONTROLLERDEVICEREMOVED, and SDL_CONTROLLERDEVICEREMAPPED
@@ -392,7 +391,7 @@ internal void SDLUpdateInput(Input* input, SDL_Scancode key, b32 isDown)
         break;
     }
 }
-
+ 
 internal void SDLPollInput(Input *input, SDL_GameController **handles)
 {
     // Reset all button presses
@@ -586,7 +585,7 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
 }
 #endif
 
-int main(int argc, char *argv[])
+ int main(int argc, char *argv[])
 {
     (void)argc;
     (void)argv;
@@ -615,6 +614,7 @@ int main(int argc, char *argv[])
 
     memory.audioAPI.playSound = SDLPlaySound;
     memory.audioAPI.loadWav = SDLLoadWav;
+    memory.audioAPI.destroySound = SDLDestroySound;
 
     u32 targetFps = 60;
     memory.dt = (i32)((1.0f / (f32)targetFps) * 1000);
@@ -684,7 +684,7 @@ int main(int argc, char *argv[])
     backBuffer.texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
                                            cols * tileWidth, rows * tileHeight);
 
-    // TODO(cjh): win32 specific code
+    // TODO(cjh): @win32 specific code
     HMODULE gamedevDLL = LoadLibraryA("gamedev.dll");
     if (!gamedevDLL)
     {
@@ -698,7 +698,7 @@ int main(int argc, char *argv[])
         fprintf(stdout, "Failed to load gameUpdateAndRender\n");
         exit(1);
     }
-    // TODO(cjh): win32 specific code
+    // TODO(cjh): @win32 specific code
     WIN32_FILE_ATTRIBUTE_DATA attributeData;
     GetFileAttributesExA("w:\\gamedev\\build\\gamedev.dll", GetFileExInfoStandard, &attributeData);
     FILETIME lastWriteTime = attributeData.ftLastWriteTime;
@@ -706,13 +706,13 @@ int main(int argc, char *argv[])
     globalRunning = true;
     while(globalRunning)
     {
-        // TODO(cjh): win32 specific code
+        // TODO(cjh): @win32 specific code
         WIN32_FILE_ATTRIBUTE_DATA w32FileAttributData;
         GetFileAttributesExA("w:\\gamedev\\build\\gamedev.dll", GetFileExInfoStandard, &w32FileAttributData);
         FILETIME newWriteTime = w32FileAttributData.ftLastWriteTime;
         if (CompareFileTime(&newWriteTime, &lastWriteTime) != 0)
         {
-            // TODO(cjh): win32 specific code
+            // TODO(cjh): @win32 specific code
             WIN32_FILE_ATTRIBUTE_DATA ignored;
             if (!GetFileAttributesExA("lock.tmp", GetFileExInfoStandard, &ignored))
             {
@@ -758,8 +758,9 @@ int main(int argc, char *argv[])
 
     // TODO(cjh): This needs work
     // Game* game = (Game*)memory.permanentStorage;
-    // destroyGame(game);
     // destroyFontMetadata(game->fontMetadata);
+    // audioAPI.destroySound(game->mudSound);
+    // destroyGame(game);
 
     Mix_Quit();
     SDL_DestroyTexture((SDL_Texture*)backBuffer.texture);
