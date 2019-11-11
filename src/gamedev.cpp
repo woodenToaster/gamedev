@@ -1,5 +1,6 @@
 #include "gamedev_platform.h"
 #include "gamedev_math.h"
+#include "gamedev_sprite_sheet.h"
 #include "gamedev.h"
 #include "gamedev_renderer.h"
 
@@ -11,8 +12,8 @@
 #include "gamedev_renderer.cpp"
 #include "gamedev_font.cpp"
 #include "gamedev_sound.cpp"
-#include "gamedev_asset_loading.cpp"
 #include "gamedev_sprite_sheet.cpp"
+#include "gamedev_asset_loading.cpp"
 #include "gamedev_entity.cpp"
 #include "gamedev_tilemap.cpp"
 
@@ -62,6 +63,7 @@ void destroyGame(Game* g)
 {
     // TODO(cjh): This should be stored in gameMemory instead of malloced
     free(g->dialogue);
+    // TODO(cjh): Don't require typing these in here (may forget)
     rendererAPI.destroyTexture(g->linkTexture);
     rendererAPI.destroyTexture(g->harvestableTreeTexture);
     rendererAPI.destroyTexture(g->harlodTexture);
@@ -69,6 +71,7 @@ void destroyGame(Game* g)
     rendererAPI.destroyTexture(g->flameTexture);
     rendererAPI.destroyTexture(g->firePitTexture);
     rendererAPI.destroyTexture(g->glowTreeTexture);
+    rendererAPI.destroyTexture(g->iconsTexture);
 }
 
 void initCamera(Game* g, i32 screenWidth, i32 screenHeight)
@@ -111,7 +114,7 @@ void endDialogMode(Game *g)
 
 void updateDialogMode(Game *g, Input *input)
 {
-    if (input->keyPressed[KEY_ESCAPE])
+    if (input->keyPressed[Key_B])
     {
         endDialogMode(g);
     }
@@ -129,7 +132,7 @@ void endInventoryMode(Game *g)
 
 void updateInventoryMode(Game *g, Input *input)
 {
-    if (input->keyPressed[KEY_ESCAPE])
+    if (input->keyPressed[Key_B])
     {
         endInventoryMode(g);
     }
@@ -214,7 +217,8 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHan
         game->flameTexture = rendererAPI.createTextureFromPng("sprites/flame.png", renderer);
         game->firePitTexture = rendererAPI.createTextureFromPng("sprites/fire_pit.png", renderer);
         game->glowTreeTexture = rendererAPI.createTextureFromPng("sprites/glow_tree.png", renderer);
-        // game->harlodTexture = rendererAPI.createTextureFromPng("sprites/Harlod_the_caveman.png", renderer);
+        game->harlodTexture = rendererAPI.createTextureFromPng("sprites/Harlod_the_caveman.png", renderer);
+        game->iconsTexture = rendererAPI.createTextureFromPng("sprites/fantasy_icons_transparent.png", renderer);
         // game->knightTexture = rendererAPI.createTextureFromPng("sprites/knight_alligned.png", renderer);
 
         game->mudSound.chunk = audioAPI.loadWav("sounds/mud_walk.wav");
@@ -239,21 +243,22 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHan
             for (u32 col = 0; col < map0->cols; ++col)
             {
                 Entity *tile = addEntity(map0);
-                tile->type = ET_TILE;
+                tile->type = EntityType_Tile;
+                tile->isVisible = true;
                 tile->color = game->colors[Color_None];
                 tile->width = map0->tileWidth;
                 tile->height = map0->tileHeight;
                 tile->position = {col*tile->width + 0.5f*tile->width, row*tile->height + 0.5f*tile->height};
                 if (row == 0 || col == 0 || row == map0->rows - 1 || col == map0->cols - 1)
                 {
-                    addTileFlags(tile, TP_SOLID);
+                    addTileFlags(tile, TileProperty_Solid);
                     tile->color = game->colors[Color_DarkGreen];
                     tile->collides = true;
                 }
                 if (row == 4 && (col == 1 || col == 2 || col == 3 || col ==4))
                 {
                     // Quicksand
-                    addTileFlags(tile, TP_QUICKSAND);
+                    addTileFlags(tile, TileProperty_Quicksand);
                     tile->color = game->colors[Color_Brown];
                     tile->collides = false;
                 }
@@ -272,9 +277,33 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHan
                 if (row == 1 && col == 7)
                 {
                     // Lightable fire
-                    addTileFlags(tile, TP_CAMPFIRE | TP_INTERACTIVE);
+                    addTileFlags(tile, TileProperty_Campfire | TileProperty_Interactive);
                     initEntitySpriteSheet(tile, game->firePitTexture, 1, 1);
                 }
+            }
+        }
+
+        // Icons sheet
+        int iconsInRow[] = {11, 5, 7, 16, 9, 16, 12, 16, 10, 16, 16, 16, 16, 16, 16, 15, 15, 11, 6, 0};
+        SpriteSheet iconsSheet = {};
+        initSpriteSheet(&iconsSheet, game->iconsTexture, 16, 20);
+        for (int row = 0, iconIndex = -1; row < iconsSheet.numX; ++row)
+        {
+            for (int col = 0; col < iconsSheet.numY; ++col)
+            {
+                if (col == iconsInRow[row])
+                {
+                    break;
+                }
+
+                iconIndex++;
+                assert(iconIndex < Icon_Count);
+                Sprite *sprite = game->icons + iconIndex;
+                sprite->x = col * iconsSheet.spriteWidth;
+                sprite->y = row * iconsSheet.spriteHeight;
+                sprite->width = iconsSheet.spriteWidth;
+                sprite->height = iconsSheet.spriteHeight;
+                sprite->sheet = iconsSheet;
             }
         }
 
@@ -289,22 +318,21 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHan
         initAnimation(&hero->animation, 8, 80);
         hero->position = {120, 120};
         hero->speed = 2000;
-        hero->active = true;
-        hero->type = ET_HERO;
+        hero->isVisible = true;
+        hero->type = EntityType_Hero;
 
         // Harlod
-        // Entity *harlod = addEntity(map0);
-        // *harlod = {};
-        // initEntitySpriteSheet(harlod, game->harlodTexture, 1, 1);
-        // harlod->collides = true;
-        // harlod->active = true;
-        // harlod->width = 20;
-        // harlod->height = 10;
-        // harlod->spriteDims = {60, 60};
-        // harlod->position = {300, 300};
-        // harlod->speed = 10;
-        // harlod->active = true;
-        // harlod->type = ET_HARLOD;
+        Entity *harlod = addEntity(map0);
+        *harlod = {};
+        initEntitySpriteSheet(harlod, game->harlodTexture, 1, 1);
+        harlod->collides = true;
+        harlod->width = 20;
+        harlod->height = 10;
+        harlod->spriteDims = {60, 60};
+        harlod->position = {300, 300};
+        harlod->speed = 10;
+        harlod->isVisible = true;
+        harlod->type = EntityType_Harlod;
 
         game->currentMap = map0;
         initCamera(game, viewport->w, viewport->h);
@@ -315,7 +343,7 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHan
     TemporaryMemory renderMemory = beginTemporaryMemory(&game->transientArena);
     RenderGroup *group = allocateRenderGroup(&game->transientArena, MEGABYTES(2));
 
-    if (input->keyPressed[KEY_I])
+    if (input->keyPressed[Key_I])
     {
         startInventoryMode(game);
     }
@@ -351,6 +379,9 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHan
     drawEntities(group, game);
     drawPlacingTile(group, game, hero);
     drawHUD(group, game, hero, &game->fontMetadata);
+
+
+    pushSprite(group, &game->icons[Icon_Apple], Rect{0, 0, 32, 32}, RenderLayer_Entities);
 
     if (game->mode == GameMode_Dialogue)
     {

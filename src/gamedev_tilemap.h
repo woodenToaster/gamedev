@@ -6,14 +6,14 @@ struct RenderGroup;
 
 enum TileProperty
 {
-    TP_NONE = (0x0),
-    TP_SOLID = (0x01 << 0),
-    TP_QUICKSAND = (0x01 << 2),
-    TP_CAMPFIRE = (0x01 << 6),
-    TP_HARVEST = (0x01 << 7),
-    TP_INTERACTIVE = (0x01 << 8),
-    TP_FLAME = (0x01 << 9),
-    TP_FLAMMABLE = (0x01 << 10)
+    TileProperty_None = (0x0),
+    TileProperty_Solid = (0x01 << 0),
+    TileProperty_Quicksand = (0x01 << 1),
+    TileProperty_Campfire = (0x01 << 2),
+    TileProperty_Harvest = (0x01 << 3),
+    TileProperty_Interactive = (0x01 << 4),
+    TileProperty_Flame = (0x01 << 5),
+    TileProperty_Flammable = (0x01 << 6)
 };
 
 struct Map
@@ -34,7 +34,7 @@ void drawTiles(RenderGroup *group, Game *g);
 void updateTiles(Game *g);
 void drawBackground(RenderGroup *group, Game *g);
 Rect getEntityRect(Entity *e);
-void addTileFlags(Entity *e, u32 prop);
-b32 isTileFlagSet(Entity *e, TileProperty prop);
-void removeTileFlags(Entity *e, u32 prop);
+inline internal void addTileFlags(Entity *e, u32 prop);
+inline internal b32 isTileFlagSet(Entity *e, TileProperty prop);
+inline internal void removeTileFlags(Entity *e, u32 prop);
 #endif

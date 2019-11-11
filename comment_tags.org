@@ -1,4 +1,4 @@
-#+STARTUP showall
+#+STARTUP: showall
 
 * Comment Tags
 
@@ -10,3 +10,4 @@ list of comment tag categories.
   - @win32 :: Marks code that uses the Win32 API, and that needs to be 
               split out into a separate Windows platform layer.
   - @error :: Marks code paths where error handling should be implemented
+  - @temp :: Temporary solution that needs more work

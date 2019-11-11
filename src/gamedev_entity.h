@@ -3,15 +3,18 @@
 
 #include "gamedev_sprite_sheet.h"
 
+#define MAX_BELT_ITEMS 8
+
 enum EntityType
 {
-    ET_TILE,
-    ET_BUFFALO,
-    ET_HERO,
-    ET_HARLOD,
-    ET_ENEMY,
-    ET_FLAME,
-    ET_NUM_TYPES
+    EntityType_Tile,
+    EntityType_Buffalo,
+    EntityType_Hero,
+    EntityType_Harlod,
+    EntityType_Enemy,
+    EntityType_Flame,
+
+    EntityType_Count
 };
 
 enum CraftableItemType
@@ -19,23 +22,27 @@ enum CraftableItemType
     Craftable_None,
     Craftable_Tree,
     Craftable_Glow_Juice,
+
     Craftable_Count
 };
 
 enum InventoryItemType
 {
-    INV_NONE,
-    INV_LEAVES,
-    INV_GLOW,
-    INV_COUNT
+    InventoryItemType_None,
+    InventoryItemType_Leaves,
+    InventoryItemType_Glow,
+
+    InventoryItemType_Count
 };
 
 enum FireState
 {
-    FIRE_NONE,
-    FIRE_STARTED,
-    FIRE_CAUGHT,
-    FIRE_BURNT
+    FireState_None,
+    FireState_Started,
+    FireState_Caught,
+    FireState_Burnt,
+
+    FireState_Count
 };
 struct BeltItem
 {
@@ -62,38 +69,61 @@ struct Entity
 
     b32 collides;
 
-    b32 active;
+    // Whether or not the renderer will draw this Entity
+    b32 isVisible;
+    // Whether or not animation frames should be advanced
+    b32 shouldAnimate;
+
+    // b32 active;
     b32 isMoving;
     b32 inQuicksand;
 
     EntityType type;
 
-    // Tile
-    u32 color;
-    u32 tileFlags;
-    b32 validPlacement;
-    FireState fireState;
-    i32 timeToCatchFire;
-    i32 timeSpentOnFire;
-    u32 burntTileIndex;
-    InventoryItemType harvestedItem;
-    CraftableItemType craftableItem;
-    Entity *deleteAfterPlacement;
+    // TODO(cjh): @win32
+// #pragma warning(disable:4201)
+    // union
+    // {
+    //     struct
+    //     {
+            // Tile
+            u32 color;
+            u32 tileFlags;
+            i32 timeToCatchFire;
+            i32 timeSpentOnFire;
+            u32 burntTileIndex;
+            b32 validPlacement;
+            FireState fireState;
+            InventoryItemType harvestedItem;
+            CraftableItemType craftableItem;
+            Entity *deleteAfterPlacement;
+        // };
 
-    // Hero
-    Rect heroInteractionRect;
-    b32 craftTree;
-    b32 craftGlowJuice;
-    b32 harvesting;
-    b32 placingItem;
-    Entity *tileToPlace;
-    // TODO(cjh): inventory[0] is always 0 because of INV_NONE
-    u32 inventory[INV_COUNT];
-    u32 beltItemCount;
-    i32 activeBeltItemIndex;
-    BeltItem beltItems[8];
+    // Campfire
+    b32 isLit;
 
-    // Harlod
-    EntireFile dialogueFile;
+        // struct
+        // {
+            // Hero
+            b32 craftTree;
+            b32 craftGlowJuice;
+            b32 harvesting;
+            b32 placingItem;
+            // TODO(cjh): inventory[0] is always 0 because of InventoryItemType_None
+            u32 beltItemCount;
+            i32 activeBeltItemIndex;
+            Rect heroInteractionRect;
+            BeltItem beltItems[MAX_BELT_ITEMS];
+            u32 inventory[InventoryItemType_Count];
+            Entity *tileToPlace;
+        // };
+
+        // struct
+        // {
+            // Harlod
+            EntireFile dialogueFile;
+        // };
+    // };
+// #pragma warning(default:4201)
 };
 #endif

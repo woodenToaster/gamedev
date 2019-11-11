@@ -63,16 +63,16 @@ void drawInventoryScreen(RenderGroup *group, Game *g, Entity *h, FontMetadata *f
     Rect dialogueBoxDest = {dialogueBoxX, dialogueBoxY, dialogueBoxWidth, dialogueBoxHeight};
     pushFilledRect(group, dialogueBoxDest, g->colors[Color_BabyBlue], RenderLayer_HUD);
 
-    for (int inventoryIndex = 1; inventoryIndex < INV_COUNT; ++inventoryIndex)
+    for (int inventoryIndex = 1; inventoryIndex < InventoryItemType_Count; ++inventoryIndex)
     {
         char itemString[30] = {};
         switch ((InventoryItemType)inventoryIndex)
         {
-            case INV_LEAVES:
-                snprintf(itemString, 30, "Leaves: %d", h->inventory[INV_LEAVES]);
+            case InventoryItemType_Leaves:
+                snprintf(itemString, 30, "Leaves: %d", h->inventory[InventoryItemType_Leaves]);
                 break;
-            case INV_GLOW:
-                snprintf(itemString, 30, "Glow: %d", h->inventory[INV_GLOW]);
+            case InventoryItemType_Glow:
+                snprintf(itemString, 30, "Glow: %d", h->inventory[InventoryItemType_Glow]);
                 break;
             default:
                 assert(!"Wrong inventory type");
@@ -203,6 +203,20 @@ internal void pushSprite(RenderGroup *group, TextureHandle sheet, Rect source, R
         sprite->source = sdlSource;
         sprite->sheet = sheet;
         sprite->layer = layer;
+    }
+}
+
+internal void pushSprite(RenderGroup *group, Sprite *sprite, Rect dest, RenderLayer layer)
+{
+    RenderEntrySprite *entry = PushRenderElement(group, RenderEntrySprite);
+    if (entry && sprite)
+    {
+        Rect sdlDest = {dest.x, dest.y, dest.w, dest.h};
+        Rect sdlSource = {sprite->x, sprite->y, sprite->width, sprite->height};
+        entry->dest = sdlDest;
+        entry->source = sdlSource;
+        entry->sheet = sprite->sheet.sheet;
+        entry->layer = layer;
     }
 }
 

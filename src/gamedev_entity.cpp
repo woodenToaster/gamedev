@@ -8,22 +8,22 @@ void initEntitySpriteSheet(Entity* e, TextureHandle texture, int num_x, int num_
 
 void initHarvestableTree(Entity *tile, Game *game)
 {
-    addTileFlags(tile, (u32)(TP_HARVEST | TP_SOLID | TP_FLAMMABLE));
+    addTileFlags(tile, (u32)(TileProperty_Harvest | TileProperty_Solid | TileProperty_Flammable));
     tile->color = game->colors[Color_None];
     tile->collides = true;
     tile->burntTileIndex = 2;
     initEntitySpriteSheet(tile, game->harvestableTreeTexture, 3, 1);
-    tile->active = true;
-    tile->harvestedItem = INV_LEAVES;
+    tile->isVisible = true;
+    tile->harvestedItem = InventoryItemType_Leaves;
 }
 
 void initGlowTree(Entity *tile, Game *game)
 {
-    addTileFlags(tile, (u32)(TP_HARVEST | TP_SOLID));
+    addTileFlags(tile, (u32)(TileProperty_Harvest | TileProperty_Solid));
     tile->collides = true;
     initEntitySpriteSheet(tile, game->glowTreeTexture, 2, 1);
-    tile->active = true;
-    tile->harvestedItem = INV_GLOW;
+    tile->isVisible = true;
+    tile->harvestedItem = InventoryItemType_Glow;
 }
 
 b32 isEntity(Entity *e)
@@ -31,14 +31,14 @@ b32 isEntity(Entity *e)
     b32 result = 0;
     if (e)
     {
-        result = e->type == ET_HERO;
+        result = e->type == EntityType_Hero;
     }
     return result;
 }
 
 void drawEntity(RenderGroup *group, Entity* e, Game* g)
 {
-    if (e->active && e->type != ET_TILE)
+    if (e->isVisible && e->type != EntityType_Tile)
     {
         // Draw collision box
         Rect collisionRect = {(int)(e->position.x - 0.5f * e->width), (int)(e->position.y - e->height),
@@ -72,17 +72,17 @@ void reverseDirection(Entity* e)
 {
     switch (e->direction)
     {
-        case DIR_UP:
-            e->direction = DIR_DOWN;
+        case Direction_Up:
+            e->direction = Direction_Down;
             break;
-        case DIR_DOWN:
-            e->direction = DIR_UP;
+        case Direction_Down:
+            e->direction = Direction_Up;
             break;
-        case DIR_RIGHT:
-            e->direction = DIR_LEFT;
+        case Direction_Right:
+            e->direction = Direction_Left;
             break;
-        case DIR_LEFT:
-            e->direction = DIR_RIGHT;
+        case Direction_Left:
+            e->direction = Direction_Right;
             break;
     }
 }
@@ -112,22 +112,22 @@ void updateHeroInteractionRegion(Entity *h)
 
     switch (h->direction)
     {
-        case DIR_UP:
+        case Direction_Up:
             interactionRectWidth = h->height;
             interactionRectHeight = h->width;
             pointToHarvest.x -= (i32)(0.5f*interactionRectWidth);
             pointToHarvest.y -= (interactionRectHeight + interactionRectWidth);
             break;
-        case DIR_DOWN:
+        case Direction_Down:
             interactionRectWidth = h->height;
             interactionRectHeight = h->width;
             pointToHarvest.x -= (i32)(0.5f*interactionRectWidth);
             break;
-        case DIR_LEFT:
+        case Direction_Left:
             pointToHarvest.x -= (i32)(1.5f*h->width);
             pointToHarvest.y -= h->height;
             break;
-        case DIR_RIGHT:
+        case Direction_Right:
             pointToHarvest.x += (i32)(0.5f*h->width);
             pointToHarvest.y -= h->height;
             break;
@@ -156,9 +156,10 @@ Entity *addFlame(Game *g, Vec2 pos)
     initEntitySpriteSheet(result, g->flameTexture, 10, 1);
     initAnimation(&result->animation, 10, 100);
     result->color = g->colors[Color_None];
-    result->active = true;
+    result->isVisible = true;
+    result->shouldAnimate = true;
     result->position = pos;
-    addTileFlags(result, TP_FLAME);
+    addTileFlags(result, TileProperty_Flame);
 
     return result;
 }
@@ -192,23 +193,23 @@ internal BeltItem *findItemInBelt(Entity *h, CraftableItemType item)
 internal void craftItem(Entity *h, CraftableItemType item)
 {
     u32 numRequiredItems = 0;
-    InventoryItemType requiredItem = INV_NONE;
+    InventoryItemType requiredItem = InventoryItemType_None;
 
     switch (item)
     {
         case Craftable_Tree:
             numRequiredItems = 2;
-            requiredItem = INV_LEAVES;
+            requiredItem = InventoryItemType_Leaves;
             break;
         case Craftable_Glow_Juice:
             numRequiredItems = 1;
-            requiredItem = INV_GLOW;
+            requiredItem = InventoryItemType_Glow;
             break;
         default:
             break;
     }
 
-    if (requiredItem != INV_NONE)
+    if (requiredItem != InventoryItemType_None)
     {
         if (h->inventory[requiredItem] >= numRequiredItems)
         {
@@ -313,7 +314,7 @@ internal Entity *getTileAtPosition(Map *m, Vec2 pos)
     for (size_t entityIndex = 0; entityIndex < m->entityCount; ++entityIndex)
     {
         Entity *e = &m->entities[entityIndex];
-        if (e->type == ET_TILE)
+        if (e->type == EntityType_Tile)
         {
             Rect tileRect = getEntityRect(e);
             if (positionIsInRect(pos, &tileRect))
@@ -340,18 +341,18 @@ internal Vec2 getTilePlacementPosition(Game *g, Entity *h)
 
         switch (h->direction)
         {
-            case DIR_UP:
+            case Direction_Up:
                 row = (u32)((h->position.y - h->height) / tile->height);
                 row--;
                 break;
-            case DIR_DOWN:
+            case Direction_Down:
                 row++;
                 break;
-            case DIR_LEFT:
+            case Direction_Left:
                 col = (u32)((h->position.x - 0.5f*h->width) / tile->width);
                 col--;
                 break;
-            case DIR_RIGHT:
+            case Direction_Right:
                 col = (u32)((h->position.x + 0.5f*h->width) / tile->width);
                 col++;
                 break;
@@ -386,7 +387,6 @@ internal b32 isValidTilePlacment(Map *m, Entity *tileToPlace)
                 if (testEntity->collides)
                 {
                     result = false;
-                    break;
                 }
                 else
                 {
@@ -395,6 +395,7 @@ internal b32 isValidTilePlacment(Map *m, Entity *tileToPlace)
                     // we can delete it after we place the new tile here.
                     tileToPlace->deleteAfterPlacement = testEntity;
                 }
+                break;
             }
         }
     }
@@ -409,6 +410,7 @@ void pushInteractionHint(RenderGroup *group, Game *g, char *text)
     // TODO(cjh): Get total pixel size of all the sprites creating the text (for centering)
     i32 fontWidth = 10;
     i32 destX = screenCenterX - ((textLength / 2) * fontWidth);
+    // TODO(cjh): @temp This should be a percentage of the screen height
     i32 beltHeight = 80;
     i32 destY = g->camera.viewport.h + g->camera.viewport.y - beltHeight;
     drawText(group, &g->fontMetadata, text, destX, destY);
@@ -422,19 +424,19 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
     acceleration.x = input->stickX;
     acceleration.y = input->stickY;
 
-    if (input->keyDown[KEY_RIGHT])
+    if (input->keyDown[Key_Right])
     {
         acceleration.x = 1.0f;
     }
-    if (input->keyDown[KEY_LEFT])
+    if (input->keyDown[Key_Left])
     {
         acceleration.x = -1.0f;
     }
-    if (input->keyDown[KEY_UP])
+    if (input->keyDown[Key_Up])
     {
         acceleration.y = -1.0f;
     }
-    if (input->keyDown[KEY_DOWN])
+    if (input->keyDown[Key_Down])
     {
         acceleration.y = 1.0f;
     }
@@ -450,22 +452,22 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
         if (acceleration.x > 0)
         {
             h->spriteRect.y = 0 * spriteHeight;
-            h->direction = DIR_RIGHT;
+            h->direction = Direction_Right;
         }
         if (acceleration.x < 0)
         {
             h->spriteRect.y = 3 * spriteHeight;
-            h->direction = DIR_LEFT;
+            h->direction = Direction_Left;
         }
         if (acceleration.y < 0)
         {
             h->spriteRect.y = 1 * spriteHeight;
-            h->direction = DIR_UP;
+            h->direction = Direction_Up;
         }
         if (acceleration.y > 0)
         {
             h->spriteRect.y = 4 * spriteHeight;
-            h->direction = DIR_DOWN;
+            h->direction = Direction_Down;
         }
 
         h->isMoving = true;
@@ -513,7 +515,7 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
                 updateHeroInteractionRegion(h);
                 switch (testEntity->type)
                 {
-                    case ET_TILE:
+                    case EntityType_Tile:
                     {
                         // Tile position is at center of tile
                         Rect tileBoundingBox = {(i32)testEntity->position.x - (i32)(0.5f*testEntity->width),
@@ -522,18 +524,18 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
 
                         if (rectsOverlap(&h->heroInteractionRect, &tileBoundingBox))
                         {
-                            if (isTileFlagSet(testEntity, TP_HARVEST))
+                            if (isTileFlagSet(testEntity, TileProperty_Harvest))
                             {
                                 interactableThisFrame = testEntity;
                                 pushInteractionHint(renderGroup, g, "SPC to harvest");
                             }
-                            // TODO(cjh): Do we need TP_INTERACTIVE?
-                            if (isTileFlagSet(testEntity, TP_INTERACTIVE))
+                            // TODO(cjh): Do we need TileProperty_Interactive?
+                            if (isTileFlagSet(testEntity, TileProperty_Interactive))
                             {
                                 // NOTE(cjh): Light campfire
-                                if (isTileFlagSet(testEntity, TP_CAMPFIRE))
+                                if (isTileFlagSet(testEntity, TileProperty_Campfire))
                                 {
-                                    if (!testEntity->active)
+                                    if (!testEntity->isLit)
                                     {
                                         interactableThisFrame = testEntity;
                                         pushInteractionHint(renderGroup, g, "SPC to light campfire");
@@ -548,7 +550,7 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
                         }
                         break;
                     }
-                    case ET_HARLOD:
+                    case EntityType_Harlod:
                     {
                         Rect harlodCollisionRegion = {(i32)(testEntity->position.x - 0.5f*testEntity->width),
                                                       (i32)(testEntity->position.y - testEntity->height),
@@ -568,7 +570,7 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
 
             // NOTE(cjh): Collision checks
             f32 heightOffset = 0.5f*h->height;
-            if (testEntity->type == ET_TILE)
+            if (testEntity->type == EntityType_Tile)
             {
                 heightOffset = 0.0f;
             }
@@ -582,7 +584,7 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
             Vec2 maxCorner = {maxX, maxY};
 
 
-            if (isTileFlagSet(testEntity, TP_QUICKSAND))
+            if (isTileFlagSet(testEntity, TileProperty_Quicksand))
             {
                 b32 inQuicksand = false;
                 if (testWall(minCorner.x, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
@@ -616,7 +618,7 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
                     h->velocity -= 0.98f*h->velocity;
                 }
             }
-            // TODO(cjh): Use tileFlags TP_SOLID instead of collides for tiles
+            // TODO(cjh): Use tileFlags TileProperty_Solid instead of collides for tiles
             if (testEntity->collides)
             {
                 if (testWall(minCorner.x, oldPosition.x, oldPosition.y, playerDelta.x, playerDelta.y,
@@ -655,12 +657,12 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
     clampEntityToMap(h, map);
 
     // Actions
-    h->harvesting = input->keyPressed[KEY_SPACE] || input->buttonPressed[BUTTON_A];
-    h->craftTree = input->keyPressed[KEY_C] || input->buttonPressed[BUTTON_Y];
-    h->craftGlowJuice = input->keyPressed[KEY_V] || input->buttonPressed[BUTTON_B];
+    h->harvesting = input->keyPressed[Key_Space] || input->buttonPressed[Button_A];
+    h->craftTree = input->keyPressed[Key_C] || input->buttonPressed[Button_Y];
+    h->craftGlowJuice = input->keyPressed[Key_V] || input->buttonPressed[Button_B];
 
     CraftableItemType itemTypeToPlace = Craftable_None;
-    if (input->keyPressed[KEY_P] || input->buttonPressed[BUTTON_X])
+    if (input->keyPressed[Key_P] || input->buttonPressed[Button_X])
     {
         if (h->activeBeltItemIndex < (i32)h->beltItemCount)
         {
@@ -686,36 +688,36 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
             Entity *testEntity = interactableThisFrame;
             switch (testEntity->type)
             {
-                case ET_TILE:
+                case EntityType_Tile:
                 {
-                    if (isTileFlagSet(testEntity, TP_HARVEST))
+                    if (isTileFlagSet(testEntity, TileProperty_Harvest))
                     {
-                        removeTileFlags(testEntity, TP_HARVEST);
+                        removeTileFlags(testEntity, TileProperty_Harvest);
                         testEntity->collides = false;
                         testEntity->spriteRect.x += testEntity->spriteRect.w;
                         h->inventory[testEntity->harvestedItem]++;
                     }
-                    // TODO(cjh): Do we need TP_INTERACTIVE?
-                    if (isTileFlagSet(testEntity, TP_INTERACTIVE))
+                    // TODO(cjh): Do we need TileProperty_Interactive?
+                    if (isTileFlagSet(testEntity, TileProperty_Interactive))
                     {
                         // NOTE(cjh): Light campfire
-                        if (isTileFlagSet(testEntity, TP_CAMPFIRE))
+                        if (isTileFlagSet(testEntity, TileProperty_Campfire))
                         {
-                            if (!testEntity->active)
+                            if (!testEntity->isLit)
                             {
                                 addFlame(g, testEntity->position);
-                                testEntity->active = true;
+                                testEntity->isLit = true;
                             }
                             else
                             {
-                                removeEntity(map, testEntity->position, TP_FLAME);
-                                testEntity->active = false;
+                                removeEntity(map, testEntity->position, TileProperty_Flame);
+                                testEntity->isLit = false;
                             }
                         }
                     }
                     break;
                 }
-                case ET_HARLOD:
+                case EntityType_Harlod:
                 {
                     if (!testEntity->dialogueFile.contents)
                     {
@@ -749,11 +751,11 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
         {
             Map *m = g->currentMap;
             h->tileToPlace = addEntity(m);
-            *h->tileToPlace = {};
             Entity *tile = h->tileToPlace;
-            // TODO(cjh): No hard coded values
+            // TODO(cjh): @temp No hard coded values
             tile->width = 80;
             tile->height = 80;
+            tile->isVisible = true;
             tile->craftableItem = itemTypeToPlace;
 
             switch (itemTypeToPlace)
@@ -779,12 +781,12 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
         h->harvesting = false;
     }
 
-    if (input->keyPressed[KEY_X] || input->buttonPressed[BUTTON_RTRIGGER])
+    if (input->keyPressed[Key_X] || input->buttonPressed[Button_RTrigger])
     {
         h->activeBeltItemIndex++;
         h->activeBeltItemIndex %= ArrayCount(h->beltItems);
     }
-    if (input->keyPressed[KEY_Z] || input->buttonPressed[BUTTON_LTRIGGER])
+    if (input->keyPressed[Key_Z] || input->buttonPressed[Button_LTrigger])
     {
         --h->activeBeltItemIndex;
         h->activeBeltItemIndex %= ArrayCount(h->beltItems);

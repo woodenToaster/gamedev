@@ -49,6 +49,7 @@ enum Colors
     Color_BabyBlue,
     Color_DarkOrange,
     Color_LimeGreen,
+
     Color_Count
 };
 
@@ -197,70 +198,70 @@ struct GameMemory
 
 enum Key
 {
-    KEY_UP,
-    KEY_DOWN,
-    KEY_LEFT,
-    KEY_RIGHT,
-    KEY_ESCAPE,
-    KEY_LSHIFT,
-    KEY_RSHIFT,
-    KEY_A,
-    KEY_B,
-    KEY_C,
-    KEY_D,
-    KEY_E,
-    KEY_F,
-    KEY_G,
-    KEY_H,
-    KEY_I,
-    KEY_J,
-    KEY_K,
-    KEY_L,
-    KEY_M,
-    KEY_N,
-    KEY_O,
-    KEY_P,
-    KEY_Q,
-    KEY_R,
-    KEY_S,
-    KEY_T,
-    KEY_U,
-    KEY_V,
-    KEY_W,
-    KEY_X,
-    KEY_Y,
-    KEY_Z,
-    KEY_SPACE,
+    Key_Up,
+    Key_Down,
+    Key_Left,
+    Key_Right,
+    Key_Escape,
+    Key_LShift,
+    Key_RShift,
+    Key_A,
+    Key_B,
+    Key_C,
+    Key_D,
+    Key_E,
+    Key_F,
+    Key_G,
+    Key_H,
+    Key_I,
+    Key_J,
+    Key_K,
+    Key_L,
+    Key_M,
+    Key_N,
+    Key_O,
+    Key_P,
+    Key_Q,
+    Key_R,
+    Key_S,
+    Key_T,
+    Key_U,
+    Key_V,
+    Key_W,
+    Key_X,
+    Key_Y,
+    Key_Z,
+    Key_Space,
 
-    KEY_COUNT
+    Key_Count,
 };
 
 enum Button
 {
-    BUTTON_A,         // 'x' on PS4 dualshock
-    BUTTON_B,         // 'o' on PS4 dualshock
-    BUTTON_X,         // 'square' on PS4 dualshock
-    BUTTON_Y,         // 'triangle' on PS4 dualshock
-    BUTTON_UP,        // dpad up
-    BUTTON_DOWN,      // dpad down
-    BUTTON_LEFT,      // dpad left
-    BUTTON_RIGHT,     // dpad right
-    BUTTON_START,     // 'options' on PS4 dualshock
-    BUTTON_BACK,      // 'share' on PS4 dualshock
-    BUTTON_RSHOULDER, // 'R1' on PS4 dualshock
-    BUTTON_LSHOULDER, // 'L1' on PS4 dualshock
-    BUTTON_RTRIGGER,  // 'R2' on PS4 dualshock
-    BUTTON_LTRIGGER,  // 'L2' on PS4 dualshock
+    Button_A,         // 'x' on PS4 dualshock
+    Button_B,         // 'o' on PS4 dualshock
+    Button_X,         // 'square' on PS4 dualshock
+    Button_Y,         // 'triangle' on PS4 dualshock
+    Button_Up,        // dpad up
+    Button_Down,      // dpad down
+    Button_Left,      // dpad left
+    Button_Right,     // dpad right
+    Button_Start,     // 'options' on PS4 dualshock
+    Button_Back,      // 'share' on PS4 dualshock
+    Button_RShoulder, // 'R1' on PS4 dualshock
+    Button_LShoulder, // 'L1' on PS4 dualshock
+    Button_RTrigger,  // 'R2' on PS4 dualshock
+    Button_LTrigger,  // 'L2' on PS4 dualshock
 
-    BUTTON_COUNT,
+    Button_Count,
 };
 
 struct Input
 {
-    b32 keyPressed[KEY_COUNT];
-    b32 keyDown[KEY_COUNT];
-    b32 buttonPressed[BUTTON_COUNT];
-    b32 buttonDown[BUTTON_COUNT];
+    b32 keyPressed[Key_Count];
+    b32 keyDown[Key_Count];
+    b32 buttonPressed[Button_Count];
+    b32 buttonDown[Button_Count];
     f32 stickX;
     f32 stickY;
 };

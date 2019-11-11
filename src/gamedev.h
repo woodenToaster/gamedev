@@ -5,15 +5,16 @@
 
 enum Direction
 {
-    DIR_UP,
-    DIR_UP_RIGHT,
-    DIR_RIGHT,
-    DIR_DOWN_RIGHT,
-    DIR_DOWN,
-    DIR_DOWN_LEFT,
-    DIR_LEFT,
-    DIR_UP_LEFT,
-    DIR_COUNT
+    Direction_Up,
+    Direction_Up_Right,
+    Direction_Right,
+    Direction_Down_Right,
+    Direction_Down,
+    Direction_Down_Left,
+    Direction_Left,
+    Direction_Up_Left,
+
+    Direction_COUNT
 };
 
 struct Camera
@@ -50,6 +51,7 @@ enum GameMode
     GameMode_Playing,
     GameMode_Dialogue,
     GameMode_Inventory,
+
     GameMode_Count
 };
 
@@ -69,6 +71,9 @@ struct TemporaryMemory
 
 struct Map;
 struct Entity;
+struct Sprite;
+
+#define Icon_Count 245
 
 struct Game
 {
@@ -94,6 +99,7 @@ struct Game
     TextureHandle knightTexture;
     TextureHandle flameTexture;
     TextureHandle firePitTexture;
+    TextureHandle iconsTexture;
 
     Sound mudSound;
     // TODO(cjh): Replace SoundList
@@ -102,6 +108,7 @@ struct Game
 
     Arena worldArena;
     Arena transientArena;
+    Sprite icons[Icon_Count];
 };
 
 #define PushStruct(arena, type) ((type*)pushSize((arena), sizeof(type)))

@@ -4,12 +4,16 @@
 * Gameplay
 ** TODO Tile placement
 *** TODO Allow entities to be placed anywhere, not just in an 80x80 grid. Snap to smaller grid?
-*** TODO Nail down tile placing rules. 2 layers? tile and entity
+*** TODO Nail down tile placing rules.
+    - Only 1 entity allowed on ground layer
 *** TODO What happens when multiple entities exist in one tile space? How do we select the right one?
     - probably the bug with flames in tile placing slot
+    - Need to decide if we're interested in ground or entity layer
 ** TODO Inventory system
-*** TODO Make items selectable
-** TODO Dialog system
+*** TODO Crafting menu
+** TODO Dialogue system
+   - Dialogue assets
+   - How to efficiently store dialogues
 ** TODO Particle system
 ** TODO Base building system
 ** TODO Combat system
@@ -19,14 +23,13 @@
 *** TODO Parry/backstab
 *** TODO Dodge
 *** TODO Each move takes time, and the longer it takes, the more damage it does.
-** TODO PS4 Controller
-*** TODO Change tooltips based on input method
 * Architecture
 ** TODO Different entities should be implemented as union in Entity struct
 ** TODO RenderGroup sorting based on layers, and then based on position.y
 ** TODO Looped live editing
 ** TODO Packed asset file
 ** TODO Offline font rendering
+** TODO Dialogue assets
 * Bugs
 ** TODO Can sometimes end up with a flame tile in placing slot
 ** TODO Can sometimes drop tile unexpectedly in tile placement mode

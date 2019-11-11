@@ -6,6 +6,7 @@ enum RenderLayer
     RenderLayer_Ground,
     RenderLayer_Entities,
     RenderLayer_HUD,
+
     RenderLayer_Count
 };
 
@@ -14,6 +15,7 @@ enum RenderEntryType
     RenderEntryType_RenderEntryRect,
     RenderEntryType_RenderEntryFilledRect,
     RenderEntryType_RenderEntrySprite,
+
     RenderEntryType_Count
 };
 

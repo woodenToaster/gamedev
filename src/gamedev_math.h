@@ -240,46 +240,46 @@ Direction get_direction_from_angle(f32 angle)
     if (angle >= (3.0f * PI) / 2.0f - half_increment &&
         angle < (3.0f * PI) / 2.0f + half_increment)
     {
-        result = DIR_UP;
+        result = Direction_Up;
     }
     else if (angle >= (3.0f * PI) / 2.0f + half_increment &&
              angle < 2.0f * PI - half_increment)
     {
-        result = DIR_UP_RIGHT;
+        result = Direction_Up_Right;
     }
     else if (angle >= 2.0f * PI - half_increment ||
              angle < half_increment)
     {
-        result = DIR_RIGHT;
+        result = Direction_Right;
     }
     else if (angle >= half_increment &&
              angle < PI / 2.0f - half_increment)
     {
-        result = DIR_DOWN_RIGHT;
+        result = Direction_Down_Right;
     }
     else if (angle >= PI / 2.0f - half_increment &&
              angle < PI / 2.0f + half_increment)
     {
-        result = DIR_DOWN;
+        result = Direction_Down;
     }
     else if (angle >= PI / 2.0f + half_increment &&
              angle < PI - half_increment)
     {
-        result = DIR_DOWN_LEFT;
+        result = Direction_Down_Left;
     }
     else if (angle >= PI - half_increment &&
              angle < PI + half_increment)
     {
-        result = DIR_LEFT;
+        result = Direction_Left;
     }
     else if (angle >= PI + half_increment &&
              angle < (3.0f * PI) / half_increment)
     {
-        result = DIR_UP_LEFT;
+        result = Direction_Up_Left;
     }
     else
     {
-        result = DIR_DOWN;
+        result = Direction_Down;
     }
     return result;
 }

@@ -421,6 +421,9 @@ you should place your code here."
                                (c-set-offset 'innamespace [0])
                                (c-set-offset 'case-label '+)))
 
+  ;; Treat .h files as c++
+  (add-to-list 'auto-mode-alist '("\\.h\\'" . c++-mode))
+
   ;; Allow compilation buffer to open to right
   ;; (spaceline-toggle-puropose-off)
   ;; (popwin-mode)

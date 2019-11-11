@@ -329,61 +329,60 @@ internal void SDLUpdateKeyboardInput(Input* input, SDL_Scancode key, b32 isDown)
     SDL_Keymod keyMod = SDL_GetModState();
     if (keyMod & KMOD_LSHIFT)
     {
-        SDLSetKeyState(input, KEY_LSHIFT, isDown);
+        SDLSetKeyState(input, Key_LShift, isDown);
     }
     if (keyMod & KMOD_RSHIFT)
     {
-        SDLSetKeyState(input, KEY_RSHIFT, isDown);
+        SDLSetKeyState(input, Key_RShift, isDown);
     }
 
     switch (key)
     {
         case SDL_SCANCODE_RIGHT:
-        case SDL_SCANCODE_L:
         case SDL_SCANCODE_D:
-            SDLSetKeyState(input, KEY_RIGHT, isDown);
+            SDLSetKeyState(input, Key_Right, isDown);
             break;
         case SDL_SCANCODE_UP:
-        case SDL_SCANCODE_K:
         case SDL_SCANCODE_W:
-            SDLSetKeyState(input, KEY_UP, isDown);
+            SDLSetKeyState(input, Key_Up, isDown);
             break;
         case SDL_SCANCODE_DOWN:
-        case SDL_SCANCODE_J:
         case SDL_SCANCODE_S:
-            SDLSetKeyState(input, KEY_DOWN, isDown);
+            SDLSetKeyState(input, Key_Down, isDown);
             break;
         case SDL_SCANCODE_LEFT:
-        case SDL_SCANCODE_H:
         case SDL_SCANCODE_A:
-            SDLSetKeyState(input, KEY_LEFT, isDown);
+            SDLSetKeyState(input, Key_Left, isDown);
+            break;
+        case SDL_SCANCODE_B:
+            SDLSetKeyState(input, Key_B, isDown);
             break;
         case SDL_SCANCODE_ESCAPE:
-            SDLSetKeyState(input, KEY_ESCAPE, isDown);
+            SDLSetKeyState(input, Key_Escape, isDown);
             break;
         case SDL_SCANCODE_F:
-            SDLSetKeyState(input, KEY_F, isDown);
+            SDLSetKeyState(input, Key_F, isDown);
             break;
         case SDL_SCANCODE_C:
-            SDLSetKeyState(input, KEY_C, isDown);
+            SDLSetKeyState(input, Key_C, isDown);
             break;
         case SDL_SCANCODE_P:
-            SDLSetKeyState(input, KEY_P, isDown);
+            SDLSetKeyState(input, Key_P, isDown);
             break;
         case SDL_SCANCODE_SPACE:
-            SDLSetKeyState(input, KEY_SPACE, isDown);
+            SDLSetKeyState(input, Key_Space, isDown);
             break;
         case SDL_SCANCODE_I:
-            SDLSetKeyState(input, KEY_I, isDown);
+            SDLSetKeyState(input, Key_I, isDown);
             break;
         case SDL_SCANCODE_V:
-            SDLSetKeyState(input, KEY_V, isDown);
+            SDLSetKeyState(input, Key_V, isDown);
             break;
         case SDL_SCANCODE_X:
-            SDLSetKeyState(input, KEY_X, isDown);
+            SDLSetKeyState(input, Key_X, isDown);
             break;
         case SDL_SCANCODE_Z:
-            SDLSetKeyState(input, KEY_Z, isDown);
+            SDLSetKeyState(input, Key_Z, isDown);
             break;
         default:
             // char* action = pressed ? "pressed" : "released";
@@ -406,40 +405,40 @@ internal void SDLUpdateControllerInput(Input* input, u8 button, b32 isDown)
     switch (button)
     {
         case SDL_CONTROLLER_BUTTON_DPAD_UP:
-            SDLSetButtonState(input, BUTTON_UP, isDown);
+            SDLSetButtonState(input, Button_Up, isDown);
             break;
         case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-            SDLSetButtonState(input, BUTTON_DOWN, isDown);
+            SDLSetButtonState(input, Button_Down, isDown);
             break;
         case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
-            SDLSetButtonState(input, BUTTON_LEFT, isDown);
+            SDLSetButtonState(input, Button_Left, isDown);
             break;
         case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
-            SDLSetButtonState(input, BUTTON_RIGHT, isDown);
+            SDLSetButtonState(input, Button_Right, isDown);
             break;
         case SDL_CONTROLLER_BUTTON_START:
-            SDLSetButtonState(input, BUTTON_START, isDown);
+            SDLSetButtonState(input, Button_Start, isDown);
             break;
         case SDL_CONTROLLER_BUTTON_BACK:
-            SDLSetButtonState(input, BUTTON_BACK, isDown);
+            SDLSetButtonState(input, Button_Back, isDown);
             break;
         case SDL_CONTROLLER_BUTTON_A:
-            SDLSetButtonState(input, BUTTON_A, isDown);
+            SDLSetButtonState(input, Button_A, isDown);
             break;
         case SDL_CONTROLLER_BUTTON_B:
-            SDLSetButtonState(input, BUTTON_B, isDown);
+            SDLSetButtonState(input, Button_B, isDown);
             break;
         case SDL_CONTROLLER_BUTTON_X:
-            SDLSetButtonState(input, BUTTON_X, isDown);
+            SDLSetButtonState(input, Button_X, isDown);
             break;
         case SDL_CONTROLLER_BUTTON_Y:
-            SDLSetButtonState(input, BUTTON_Y, isDown);
+            SDLSetButtonState(input, Button_Y, isDown);
             break;
         case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
-            SDLSetButtonState(input, BUTTON_LSHOULDER, isDown);
+            SDLSetButtonState(input, Button_LShoulder, isDown);
             break;
         case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
-            SDLSetButtonState(input, BUTTON_RSHOULDER, isDown);
+            SDLSetButtonState(input, Button_RShoulder, isDown);
             break;
         default:
             break;
@@ -449,8 +448,8 @@ internal void SDLUpdateControllerInput(Input* input, u8 button, b32 isDown)
 internal void SDLPollInput(Input *input, SDL_GameController **handles)
 {
     // Reset all button presses
-    memset(input->keyPressed, 0, sizeof(b32) * KEY_COUNT);
-    memset(input->buttonPressed, 0, sizeof(b32) * BUTTON_COUNT);
+    memset(input->keyPressed, 0, sizeof(b32) * Key_Count);
+    memset(input->buttonPressed, 0, sizeof(b32) * Button_Count);
 
     SDL_Event event;
     while(SDL_PollEvent(&event))
@@ -480,7 +479,7 @@ internal void SDLPollInput(Input *input, SDL_GameController **handles)
         }
     }
 
-    if (input->keyPressed[KEY_ESCAPE])
+    if (input->keyPressed[Key_Escape])
     {
         globalRunning = false;
     }
@@ -503,8 +502,8 @@ internal void SDLPollInput(Input *input, SDL_GameController **handles)
 
             i16 rightTrigger = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
             i16 leftTrigger = SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_TRIGGERLEFT);
-            SDLSetButtonState(input, BUTTON_RTRIGGER, SDLNormalizeStickInput(rightTrigger) > 0.5f);
-            SDLSetButtonState(input, BUTTON_LTRIGGER, SDLNormalizeStickInput(leftTrigger) > 0.5f);
+            SDLSetButtonState(input, Button_RTrigger, SDLNormalizeStickInput(rightTrigger) > 0.5f);
+            SDLSetButtonState(input, Button_LTrigger, SDLNormalizeStickInput(leftTrigger) > 0.5f);
         }
         else
         {
@@ -753,6 +752,8 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
     GetFileAttributesExA("w:\\gamedev\\build\\gamedev.dll", GetFileExInfoStandard, &attributeData);
     FILETIME lastWriteTime = attributeData.ftLastWriteTime;
 
+    Rect viewport = {0, 0, screenWidth, screenHeight};
+
     globalRunning = true;
     while(globalRunning)
     {
@@ -776,7 +777,6 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
         memory.currentTickCount = SDL_GetTicks();
         SDLPollInput(&input, &controllerHandles[0]);
         SDL_SetRenderTarget(renderer, (SDL_Texture*)backBuffer.texture);
-        Rect viewport = {0, 0, screenWidth, screenHeight};
         updateAndRender(&memory, &input, backBuffer, &viewport, rendererHandle);
 
         // Hero interaction region
