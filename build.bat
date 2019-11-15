@@ -3,7 +3,7 @@
 if not exist "build" mkdir build
 pushd build
 
-set DEV_PREFIX=C:\Users\Chris\dev
+set DEV_PREFIX=D:\dev
 set SDL_PATH=SDL2-2.0.8
 set SDL_MIXER_PATH=SDL2_mixer-2.0.2
 set INCLUDE=%DEV_PREFIX%\%SDL_PATH%\include;%INCLUDE%;

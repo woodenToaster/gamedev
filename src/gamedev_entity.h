@@ -54,6 +54,7 @@ struct Entity
 {
     i32 width;
     i32 height;
+    i32 refCount;
 
     // The current rectangle in the sprite sheet to be drawn
     Rect spriteRect;
@@ -74,11 +75,14 @@ struct Entity
     // Whether or not animation frames should be advanced
     b32 shouldAnimate;
 
-    // b32 active;
+    // Inactive entites are on the free list. Treat them as if they don't exist
+    b32 active;
     b32 isMoving;
     b32 inQuicksand;
 
     EntityType type;
+
+    Entity *nextFree;
 
     // TODO(cjh): @win32
 // #pragma warning(disable:4201)
@@ -125,5 +129,11 @@ struct Entity
         // };
     // };
 // #pragma warning(default:4201)
+};
+
+struct EntityFreeList
+{
+    EntityFreeList *next;
+    Entity *entity;
 };
 #endif

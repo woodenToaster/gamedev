@@ -26,7 +26,11 @@ void updateTiles(Game *g)
     for (size_t entityIndex = 0; entityIndex < m->entityCount; ++entityIndex)
     {
         Entity *e = &m->entities[entityIndex];
-        if (e->type == EntityType_Tile)
+        if (!e->active)
+        {
+            continue;
+        }
+        if (e->type == EntityType_Tile || e->type == EntityType_Flame)
         {
             if (e->animation.totalFrames > 0) {
                 updateAnimation(&e->animation, g->dt, e->shouldAnimate);
@@ -84,7 +88,7 @@ void updateTiles(Game *g)
                     e->fireState = FireState_Burnt;
                     e->timeSpentOnFire = 0;
                     removeTileFlags(e, TileProperty_Flame | TileProperty_Harvest | TileProperty_Solid);
-                    removeEntity(m, e->position, TileProperty_Flame);
+                    removeEntityByPositionAndProperty(m, e->position, TileProperty_Flame);
                     e->spriteRect.x = e->burntTileIndex*e->spriteSheet.spriteWidth;
                     e->collides = false;
                 }
@@ -109,7 +113,7 @@ Rect getEntityRect(Entity *e)
 
 void drawTile(RenderGroup *group, Game *g, Entity *e, b32 isBeingPlaced)
 {
-    if (e->isVisible)
+    if (e->isVisible && e->active)
     {
         Rect tileRect = getEntityRect(e);
         if (e->spriteSheet.sheet.texture)
@@ -118,7 +122,7 @@ void drawTile(RenderGroup *group, Game *g, Entity *e, b32 isBeingPlaced)
             {
                 e->spriteRect.x = e->spriteRect.w * e->animation.currentFrame;
             }
-            pushSprite(group, e->spriteSheet.sheet, e->spriteRect, tileRect, RenderLayer_Entities);
+            pushSprite(group, e->spriteSheet.sheet, e->spriteRect, tileRect, RenderLayer_Ground);
         }
         else
         {
@@ -148,6 +152,10 @@ void drawTiles(RenderGroup *group, Game *g)
     for (u32 entityIndex = 0; entityIndex < map->entityCount; ++entityIndex)
     {
         Entity *e = &map->entities[entityIndex];
+        if (!e->active)
+        {
+            continue;
+        }
         if (e->type == EntityType_Tile)
         {
             drawTile(group, g, e);

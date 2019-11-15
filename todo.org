@@ -31,6 +31,6 @@
 ** TODO Offline font rendering
 ** TODO Dialogue assets
 * Bugs
-** TODO Can sometimes end up with a flame tile in placing slot
-** TODO Can sometimes drop tile unexpectedly in tile placement mode
 ** TODO Can never see error messages because console closes
+** TODO Placed flammable tiles burn away but flame image can't be seen
+** TODO Is a flame and entity or a tile?

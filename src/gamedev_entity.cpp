@@ -26,6 +26,7 @@ void initGlowTree(Entity *tile, Game *game)
     tile->harvestedItem = InventoryItemType_Glow;
 }
 
+#if 0
 b32 isEntity(Entity *e)
 {
     b32 result = 0;
@@ -35,16 +36,20 @@ b32 isEntity(Entity *e)
     }
     return result;
 }
+#endif
 
 void drawEntity(RenderGroup *group, Entity* e, Game* g)
 {
-    if (e->isVisible && e->type != EntityType_Tile)
+    if (e->isVisible && e->type != EntityType_Tile && e->active)
     {
-        // Draw collision box
-        Rect collisionRect = {(int)(e->position.x - 0.5f * e->width), (int)(e->position.y - e->height),
-                              e->width, e->height};
-        pushFilledRect(group, collisionRect, g->colors[Color_Yellow], RenderLayer_Entities);
-
+        // TODO(cjh): Decide if flames are tile properties or entities
+        if (e->type != EntityType_Flame)
+        {
+            // Draw collision box
+            Rect collisionRect = {(int)(e->position.x - 0.5f * e->width), (int)(e->position.y - e->height),
+                                  e->width, e->height};
+            pushFilledRect(group, collisionRect, g->colors[Color_Yellow], RenderLayer_Entities);
+        }
         // Draw sprite
         i32 width = e->spriteDims.x;
         i32 height = e->spriteDims.y;
@@ -140,9 +145,22 @@ void updateHeroInteractionRegion(Entity *h)
 
 Entity *addEntity(Map *m)
 {
+    // TODO(cjh): Should we maintain the number of active entities alongside the
+    // number of actual entities + entity slots on free list (m->entityCount) ?
     assert(m->entityCount < ArrayCount(m->entities));
-    Entity *result = &m->entities[m->entityCount++];
+    Entity *result = NULL;
+
+    if (m->entityFreeList)
+    {
+        result = m->entityFreeList;
+        m->entityFreeList = result->nextFree;
+    }
+    else
+    {
+        result = &m->entities[m->entityCount++];
+    }
     *result = {};
+    result->active = true;
 
     return result;
 }
@@ -159,19 +177,27 @@ Entity *addFlame(Game *g, Vec2 pos)
     result->isVisible = true;
     result->shouldAnimate = true;
     result->position = pos;
+    result->type = EntityType_Flame;
     addTileFlags(result, TileProperty_Flame);
 
     return result;
 }
 
-void removeEntity(Map *m, Vec2 pos, TileProperty prop)
+void removeEntity(Map *m, Entity *e)
+{
+    e->active = false;
+    e->nextFree = m->entityFreeList;
+    m->entityFreeList = e;
+}
+
+void removeEntityByPositionAndProperty(Map *m, Vec2 pos, TileProperty prop)
 {
     for (u32 i = 0; i < m->entityCount; ++i) {
         Entity *e = m->entities + i;
         Rect entityRect = getEntityRect(e);
         if (isTileFlagSet(e, prop) && positionIsInRect(pos, &entityRect))
         {
-            *e = m->entities[--m->entityCount];
+            removeEntity(m, e);
             break;
         }
     }
@@ -261,8 +287,7 @@ internal void placeItem(Game *g, Entity *h)
 
         if (tile->deleteAfterPlacement)
         {
-            u64 indexToRemove = tile->deleteAfterPlacement - m->entities;
-            m->entities[indexToRemove] = m->entities[--m->entityCount];
+            removeEntity(m, tile->deleteAfterPlacement);
             tile->deleteAfterPlacement = NULL;
         }
 
@@ -314,6 +339,10 @@ internal Entity *getTileAtPosition(Map *m, Vec2 pos)
     for (size_t entityIndex = 0; entityIndex < m->entityCount; ++entityIndex)
     {
         Entity *e = &m->entities[entityIndex];
+        if (!e->active)
+        {
+            continue;
+        }
         if (e->type == EntityType_Tile)
         {
             Rect tileRect = getEntityRect(e);
@@ -376,6 +405,10 @@ internal b32 isValidTilePlacment(Map *m, Entity *tileToPlace)
     for (u32 entityIndex = 0; entityIndex < m->entityCount; ++entityIndex)
     {
         Entity *testEntity = &m->entities[entityIndex];
+        if (!testEntity->active)
+        {
+            continue;
+        }
 
         if (testEntity != tileToPlace)
         {
@@ -508,6 +541,10 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
         for (u32 entityIndex = 0; entityIndex < map->entityCount; ++entityIndex)
         {
             Entity *testEntity = &map->entities[entityIndex];
+            if (!testEntity->active)
+            {
+                continue;
+            }
 
             // NOTE(cjh): Check for interactable entities, but only on last iteration
             if (iter == lastIter && !h->placingItem)
@@ -678,7 +715,7 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
     if (h->harvesting && !h->placingItem)
     {
         // NOTE(cjh): It's possible that the movement applied this frame could
-        // invalidate the interation region since the movement is applied after
+        // invalidate the interaction region since the movement is applied after
         // interactables are checked. This could result in bugs if we have large
         // movements like teleportation
 
@@ -710,7 +747,7 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
                             }
                             else
                             {
-                                removeEntity(map, testEntity->position, TileProperty_Flame);
+                                removeEntityByPositionAndProperty(map, testEntity->position, TileProperty_Flame);
                                 testEntity->isLit = false;
                             }
                         }
@@ -722,7 +759,7 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
                     if (!testEntity->dialogueFile.contents)
                     {
                         testEntity->dialogueFile = platform.readEntireFile("dialogues/harlod_dialogues.txt");
-                        // TODO(cjh): Need to null terminate everything. This will change. We
+                        // TODO(cjh): @temp Need to null terminate everything. This will change. We
                         // want to parse files for strings and tokenize, etc. For now it's hard coded
                         testEntity->dialogueFile.contents[9] = '\0';
                     }

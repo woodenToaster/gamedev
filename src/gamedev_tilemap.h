@@ -2,6 +2,7 @@
 #define GD_TILE_MAP_H
 
 #include "gamedev_entity.h"
+
 struct RenderGroup;
 
 enum TileProperty
@@ -27,6 +28,7 @@ struct Map
     TextureHandle texture;
     u32 entityCount;
     Entity entities[256];
+    Entity *entityFreeList;
 };
 
 void drawTile(RenderGroup *group, Game *g, Entity *e, b32 isBeingPlace=false);
