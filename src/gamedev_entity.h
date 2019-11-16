@@ -11,7 +11,6 @@ enum EntityType
     EntityType_Buffalo,
     EntityType_Hero,
     EntityType_Harlod,
-    EntityType_Enemy,
     EntityType_Flame,
 
     EntityType_Count
@@ -44,6 +43,7 @@ enum FireState
 
     FireState_Count
 };
+
 struct BeltItem
 {
     CraftableItemType type;
@@ -54,16 +54,16 @@ struct Entity
 {
     i32 width;
     i32 height;
-    i32 refCount;
 
     // The current rectangle in the sprite sheet to be drawn
     Rect spriteRect;
     SpriteSheet spriteSheet;
-    Point spriteDims;
     Animation animation;
 
     f32 speed;
     Direction direction;
+    // For tiles, this is the center of the tile. For other entites, it is the
+    // bottome center of the collision rect
     Vec2 position;
     Vec2 velocity;
     Vec2 acceleration;
@@ -129,11 +129,5 @@ struct Entity
         // };
     // };
 // #pragma warning(default:4201)
-};
-
-struct EntityFreeList
-{
-    EntityFreeList *next;
-    Entity *entity;
 };
 #endif

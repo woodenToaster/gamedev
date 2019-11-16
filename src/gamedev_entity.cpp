@@ -1,9 +1,9 @@
-void initEntitySpriteSheet(Entity* e, TextureHandle texture, int num_x, int num_y)
+void initEntitySpriteSheet(Entity* e, TextureHandle texture, int num_x, int num_y, Vec2 scale = {1.0f, 1.0f})
 {
     initSpriteSheet(&e->spriteSheet, texture, num_x, num_y);
     e->spriteRect.w = e->spriteSheet.spriteWidth;
     e->spriteRect.h = e->spriteSheet.spriteHeight;
-    e->spriteSheet.scale = 1;
+    e->spriteSheet.scale = scale;
 }
 
 void initHarvestableTree(Entity *tile, Game *game)
@@ -40,28 +40,29 @@ b32 isEntity(Entity *e)
 
 void drawEntity(RenderGroup *group, Entity* e, Game* g)
 {
-    if (e->isVisible && e->type != EntityType_Tile && e->active)
+    if (e->type != EntityType_Flame)
     {
-        // TODO(cjh): Decide if flames are tile properties or entities
-        if (e->type != EntityType_Flame)
-        {
-            // Draw collision box
-            Rect collisionRect = {(int)(e->position.x - 0.5f * e->width), (int)(e->position.y - e->height),
-                                  e->width, e->height};
-            pushFilledRect(group, collisionRect, g->colors[Color_Yellow], RenderLayer_Entities);
-        }
-        // Draw sprite
-        i32 width = e->spriteDims.x;
-        i32 height = e->spriteDims.y;
-        e->spriteRect.x = e->spriteRect.w * e->animation.currentFrame;
-        Rect dest = {(int)(e->position.x - 0.5f*width), (int)(e->position.y - height), width, height};
-        pushSprite(group, e->spriteSheet.sheet, e->spriteRect, dest, RenderLayer_Entities);
+        // Draw collision box
+        Rect collisionRect = {(int)(e->position.x - 0.5f * e->width), (int)(e->position.y - e->height),
+                                e->width, e->height};
+        pushFilledRect(group, collisionRect, g->colors[Color_Yellow], RenderLayer_Entities);
+    }
 
-        // Draw entity interactionRect
-        if (e->harvesting)
-        {
-            pushFilledRect(group, e->heroInteractionRect, g->colors[Color_DarkOrange], RenderLayer_Entities);
-        }
+    // Draw sprite
+    i32 widthScale = (i32)(e->spriteSheet.spriteWidth * e->spriteSheet.scale.x);
+    i32 heightScale =(i32)(e->spriteSheet.spriteHeight * e->spriteSheet.scale.y);
+    // TODO(cjh): Duplicated in drawTile. Do this in updateEntity/updateTile
+    e->spriteRect.x = e->spriteRect.w * e->animation.currentFrame;
+    Rect dest = {(int)(e->position.x - 0.5f*widthScale), (int)(e->position.y - heightScale), widthScale, heightScale};
+    pushSprite(group, e->spriteSheet.sheet, e->spriteRect, dest, RenderLayer_Entities);
+    // Draw position
+    // pushFilledRect(group, {(int)e->position.x, (int)e->position.y, 2, 2}, g->colors[Color_Yellow],
+    //                RenderLayer_Entities);
+
+    // Draw entity interactionRect
+    if (e->harvesting)
+    {
+        pushFilledRect(group, e->heroInteractionRect, g->colors[Color_DarkOrange], RenderLayer_Entities);
     }
 }
 
@@ -98,7 +99,10 @@ void drawEntities(RenderGroup *group, Game* g)
     for (u32 entityIndex = 0; entityIndex < m->entityCount; ++entityIndex)
     {
         Entity *e = &m->entities[entityIndex];
-        drawEntity(group, e, g);
+        if (e->isVisible && e->type != EntityType_Tile && e->active)
+        {
+            drawEntity(group, e, g);
+        }
     }
 }
 
@@ -169,16 +173,19 @@ Entity *addFlame(Game *g, Vec2 pos)
 {
     Map *m = g->currentMap;
     Entity *result = addEntity(m);
-    result->width = 80;
-    result->height = 80;
-    initEntitySpriteSheet(result, g->flameTexture, 10, 1);
+    result->width = 20;
+    result->height = 10;
+    // TODO(cjh): Should pass this to renderer rather than storing it in spriteSheet?
+    Vec2 flameScale = {1.25f, 1.25f};
+    initEntitySpriteSheet(result, g->flameTexture, 10, 1, flameScale);
     initAnimation(&result->animation, 10, 100);
     result->color = g->colors[Color_None];
     result->isVisible = true;
     result->shouldAnimate = true;
     result->position = pos;
+    // TODO(cjh): @temp Shift down so the flame sits on the campfire nicely
+    result->position.y += 15.0f;
     result->type = EntityType_Flame;
-    addTileFlags(result, TileProperty_Flame);
 
     return result;
 }
@@ -188,19 +195,6 @@ void removeEntity(Map *m, Entity *e)
     e->active = false;
     e->nextFree = m->entityFreeList;
     m->entityFreeList = e;
-}
-
-void removeEntityByPositionAndProperty(Map *m, Vec2 pos, TileProperty prop)
-{
-    for (u32 i = 0; i < m->entityCount; ++i) {
-        Entity *e = m->entities + i;
-        Rect entityRect = getEntityRect(e);
-        if (isTileFlagSet(e, prop) && positionIsInRect(pos, &entityRect))
-        {
-            removeEntity(m, e);
-            break;
-        }
-    }
 }
 
 internal BeltItem *findItemInBelt(Entity *h, CraftableItemType item)
@@ -339,11 +333,7 @@ internal Entity *getTileAtPosition(Map *m, Vec2 pos)
     for (size_t entityIndex = 0; entityIndex < m->entityCount; ++entityIndex)
     {
         Entity *e = &m->entities[entityIndex];
-        if (!e->active)
-        {
-            continue;
-        }
-        if (e->type == EntityType_Tile)
+        if (e->active && e->type == EntityType_Tile)
         {
             Rect tileRect = getEntityRect(e);
             if (positionIsInRect(pos, &tileRect))
@@ -355,6 +345,25 @@ internal Entity *getTileAtPosition(Map *m, Vec2 pos)
     }
 
     return result;
+}
+
+void removeFlameFromTileAtPosition(Map *m, Vec2 pos)
+{
+    Entity *tileAtPosition = getTileAtPosition(m, pos);
+    Rect tileRect = getEntityRect(tileAtPosition);
+
+    for (u32 entityIndex = 0; entityIndex < m->entityCount; ++entityIndex) {
+        Entity *e = m->entities + entityIndex;
+        if (e->active)
+        {
+            Rect entityRect = getEntityRect(e);
+            if (e->type == EntityType_Flame && rectsOverlap(&tileRect, &entityRect))
+            {
+                removeEntity(m, e);
+                break;
+            }
+        }
+    }
 }
 
 internal Vec2 getTilePlacementPosition(Game *g, Entity *h)
@@ -478,6 +487,7 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
     {
         // TODO(cjh): should this really be false when skidding to a stop?
         h->isMoving = false;
+        h->shouldAnimate = false;
     }
     else
     {
@@ -504,6 +514,7 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
         }
 
         h->isMoving = true;
+        h->shouldAnimate = true;
     }
 
     // Diagonal movement
@@ -747,7 +758,7 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
                             }
                             else
                             {
-                                removeEntityByPositionAndProperty(map, testEntity->position, TileProperty_Flame);
+                                removeFlameFromTileAtPosition(map, testEntity->position);
                                 testEntity->isLit = false;
                             }
                         }
@@ -830,3 +841,42 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
     }
 }
 
+void updateEntities(Game *g)
+{
+    Map *m = g->currentMap;
+    for (size_t entityIndex = 0; entityIndex < m->entityCount; ++entityIndex)
+    {
+        Entity *e = m->entities + entityIndex;
+        if (e->active)
+        {
+            if (e->animation.totalFrames > 0)
+            {
+                updateAnimation(&e->animation, g->dt, e->shouldAnimate);
+            }
+
+            if (e->type == EntityType_Flame)
+            {
+                // Check all adjacent tiles for the TileProperty_Flammable property.
+                // If something is flammable, catch it on fire.
+                for (int rowIndex = -1; rowIndex <= 1; ++rowIndex) {
+                    for (int colIndex = -1; colIndex <= 1; ++colIndex) {
+                        if (rowIndex == 0 && colIndex == 0) {
+                            continue;
+                        }
+                        Vec2 testPos = {e->position.x + colIndex*(int)m->tileWidth,
+                                        e->position.y + rowIndex*(int)m->tileHeight - 2};
+
+                        Entity *testTile = getTileAtPosition(m, testPos);
+                        if (testTile && isTileFlagSet(testTile, TileProperty_Flammable) &&
+                            testTile->fireState == FireState_None)
+                        {
+                            i32 millisecondsToCatchFire = 3000;
+                            testTile->fireState = FireState_Started;
+                            testTile->timeToCatchFire = millisecondsToCatchFire;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

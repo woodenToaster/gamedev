@@ -13,7 +13,6 @@ enum TileProperty
     TileProperty_Campfire = (0x01 << 2),
     TileProperty_Harvest = (0x01 << 3),
     TileProperty_Interactive = (0x01 << 4),
-    TileProperty_Flame = (0x01 << 5),
     TileProperty_Flammable = (0x01 << 6)
 };
 

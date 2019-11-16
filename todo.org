@@ -9,6 +9,7 @@
 *** TODO What happens when multiple entities exist in one tile space? How do we select the right one?
     - probably the bug with flames in tile placing slot
     - Need to decide if we're interested in ground or entity layer
+*** TODO Cancel tile placement
 ** TODO Inventory system
 *** TODO Crafting menu
 ** TODO Dialogue system

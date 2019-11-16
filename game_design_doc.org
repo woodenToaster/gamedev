@@ -57,6 +57,8 @@ list of harvestable resources:
      - Leather from animals
      - TODO: Research medieval excavation and mining
 *** Items
+How can I avoid the "overloaded inventory" problem? I don't want the player to
+just collect a bunch of bullshit that they will never need/use/care about.
 **** Armor
 Different pieces of armor can be collected and worn, but you don't
 collect entire sets at once. Instead you find a piece here, a piece

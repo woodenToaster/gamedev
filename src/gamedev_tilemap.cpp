@@ -19,46 +19,19 @@ inline internal b32 isTileFlagSet(Entity *e, TileProperty prop)
 
 void updateTiles(Game *g)
 {
-    i32 millisecondsToCatchFire = 3000;
     i32 millisecondsToBurn = 3000;
 
     Map *m = g->currentMap;
     for (size_t entityIndex = 0; entityIndex < m->entityCount; ++entityIndex)
     {
         Entity *e = &m->entities[entityIndex];
-        if (!e->active)
+        if (!e->active || e->type != EntityType_Tile)
         {
             continue;
         }
-        if (e->type == EntityType_Tile || e->type == EntityType_Flame)
-        {
-            if (e->animation.totalFrames > 0) {
-                updateAnimation(&e->animation, g->dt, e->shouldAnimate);
-            }
-        }
 
-        // TODO(cjh): A flame should be treated as en entity, not a tile
-        if (isTileFlagSet(e, TileProperty_Flame))
-        {
-            // Check all adjacent tiles for the TileProperty_Flammable property.
-            // If something is flammable, catch it on fire.
-            for (int rowIndex = -1; rowIndex <= 1; ++rowIndex) {
-                for (int colIndex = -1; colIndex <= 1; ++colIndex) {
-                    if (rowIndex == 0 && colIndex == 0) {
-                        continue;
-                    }
-                    Vec2 testPos = {e->position.x + colIndex*(int)m->tileWidth,
-                                    e->position.y + rowIndex*(int)m->tileHeight};
-
-                    Entity *testTile = getTileAtPosition(m, testPos);
-                    if (testTile && isTileFlagSet(testTile, TileProperty_Flammable) &&
-                        testTile->fireState == FireState_None)
-                    {
-                        testTile->fireState = FireState_Started;
-                        testTile->timeToCatchFire = millisecondsToCatchFire;
-                    }
-                }
-            }
+        if (e->animation.totalFrames > 0) {
+            updateAnimation(&e->animation, g->dt, e->shouldAnimate);
         }
 
         // Update Flammable tiles
@@ -71,7 +44,6 @@ void updateTiles(Game *g)
                 {
                     addFlame(g, e->position);
                     e->fireState = FireState_Caught;
-                    addTileFlags(e, TileProperty_Flame);
                     e->timeToCatchFire = 0;
                     e->timeSpentOnFire = 0;
                 }
@@ -87,8 +59,8 @@ void updateTiles(Game *g)
                 {
                     e->fireState = FireState_Burnt;
                     e->timeSpentOnFire = 0;
-                    removeTileFlags(e, TileProperty_Flame | TileProperty_Harvest | TileProperty_Solid);
-                    removeEntityByPositionAndProperty(m, e->position, TileProperty_Flame);
+                    removeTileFlags(e, TileProperty_Harvest | TileProperty_Solid);
+                    removeFlameFromTileAtPosition(m, e->position);
                     e->spriteRect.x = e->burntTileIndex*e->spriteSheet.spriteWidth;
                     e->collides = false;
                 }
@@ -129,6 +101,10 @@ void drawTile(RenderGroup *group, Game *g, Entity *e, b32 isBeingPlaced)
             u32 tileColor = e->color;
             pushFilledRect(group, tileRect, tileColor, RenderLayer_Ground);
         }
+
+        // Draw position
+        // pushFilledRect(group, {(int)e->position.x, (int)e->position.y, 2, 2}, g->colors[Color_Red],
+        //                RenderLayer_Entities);
 
         if (isBeingPlaced)
         {

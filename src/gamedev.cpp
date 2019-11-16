@@ -310,12 +310,12 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHan
         // Hero
         game->hero = addEntity(map0);
         Entity *hero = game->hero;
-        initEntitySpriteSheet(hero, game->linkTexture, 11, 5);
-        hero->spriteSheet.scale = 2;
+        Vec2 heroScale = {1.875f, 1.875f};
+        initEntitySpriteSheet(hero, game->linkTexture, 11, 5, heroScale);
         hero->width = 20;
         hero->height = 10;
-        hero->spriteDims = {45, 60};
         initAnimation(&hero->animation, 8, 80);
+        hero->shouldAnimate = true;
         hero->position = {120, 120};
         hero->speed = 2000;
         hero->isVisible = true;
@@ -328,7 +328,6 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHan
         harlod->collides = true;
         harlod->width = 20;
         harlod->height = 10;
-        harlod->spriteDims = {60, 60};
         harlod->position = {300, 300};
         harlod->speed = 10;
         harlod->isVisible = true;
@@ -357,7 +356,7 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHan
             updateCamera(&game->camera, hero->position);
             viewport->x = game->camera.viewport.x;
             viewport->y = game->camera.viewport.y;
-            updateAnimation(&hero->animation, game->dt, hero->isMoving);
+            updateEntities(game);
             playQueuedSounds(&game->sounds, now);
             updateTiles(game);
             break;

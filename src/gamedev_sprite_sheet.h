@@ -260,7 +260,9 @@ struct SpriteSheet
     int numY;
     int spriteWidth;
     int spriteHeight;
-    int scale;
+    // The renderer will scale the sprite size by this value when drawing. This
+    // probably doesn't belong here.
+    Vec2 scale;
     TextureHandle sheet;
 };
 
