@@ -287,9 +287,9 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHan
         int iconsInRow[] = {11, 5, 7, 16, 9, 16, 12, 16, 10, 16, 16, 16, 16, 16, 16, 15, 15, 11, 6, 0};
         SpriteSheet iconsSheet = {};
         initSpriteSheet(&iconsSheet, game->iconsTexture, 16, 20);
-        for (int row = 0, iconIndex = -1; row < iconsSheet.numX; ++row)
+        for (int row = 0, iconIndex = -1; row < iconsSheet.numY; ++row)
         {
-            for (int col = 0; col < iconsSheet.numY; ++col)
+            for (int col = 0; col < iconsSheet.numX; ++col)
             {
                 if (col == iconsInRow[row])
                 {
@@ -378,9 +378,6 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHan
     drawEntities(group, game);
     drawPlacingTile(group, game, hero);
     drawHUD(group, game, hero, &game->fontMetadata);
-
-
-    pushSprite(group, &game->icons[Icon_Apple], Rect{0, 0, 32, 32}, RenderLayer_Entities);
 
     if (game->mode == GameMode_Dialogue)
     {

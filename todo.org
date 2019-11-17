@@ -12,9 +12,9 @@
 *** TODO Cancel tile placement
 ** TODO Inventory system
 *** TODO Crafting menu
-** TODO Dialogue system
-   - Dialogue assets
+** TODO Dialogue system (minimal)
    - How to efficiently store dialogues
+   - Research string interning
 ** TODO Particle system
 ** TODO Base building system
 ** TODO Combat system
@@ -33,5 +33,3 @@
 ** TODO Dialogue assets
 * Bugs
 ** TODO Can never see error messages because console closes
-** TODO Placed flammable tiles burn away but flame image can't be seen
-** TODO Is a flame and entity or a tile?

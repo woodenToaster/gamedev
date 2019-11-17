@@ -4,11 +4,12 @@
 enum Icon
 {
     Icon_Skull_And_Bones,
-    Icon_poison,
+    Icon_Poison,
     Icon_Sleeping_Eye,
     Icon_Silenced,
     Icon_Cursed,
     Icon_Dizzy,
+    Icon_Charmed,
     Icon_Sleeping,
     Icon_Paralysis,
     Icon_Burned,
@@ -239,8 +240,7 @@ enum Icon
     Icon_Yarn,
     Icon_Cloth,
     Icon_Pelts,
-    Icon_Monster,
-    Icon_Claw,
+    Icon_Monster_Claw,
     Icon_Feathers,
     Icon_Orb1,
     Icon_Orb2,
