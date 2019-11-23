@@ -113,7 +113,7 @@ void drawHUD(RenderGroup *group, Game *g, Entity *h, FontMetadata *font)
                     tileRect.h = 64;
                     break;
                 case Craftable_Glow_Juice:
-                    textureToDraw= g->glowTreeTexture;
+                    textureToDraw = g->glowTreeTexture;
                     // TODO(cjh): Get sprite width height
                     tileRect.w = 80;
                     tileRect.h = 80;
@@ -206,6 +206,7 @@ internal void pushSprite(RenderGroup *group, TextureHandle sheet, Rect source, R
     }
 }
 
+#if 0
 internal void pushSprite(RenderGroup *group, Sprite *sprite, Rect dest, RenderLayer layer)
 {
     RenderEntrySprite *entry = PushRenderElement(group, RenderEntrySprite);
@@ -219,6 +220,7 @@ internal void pushSprite(RenderGroup *group, Sprite *sprite, Rect dest, RenderLa
         entry->layer = layer;
     }
 }
+#endif
 
 internal RenderGroup *allocateRenderGroup(Arena *arena, u32 maxSize)
 {

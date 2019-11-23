@@ -227,7 +227,6 @@ internal TextureHandle SDLCreateTextureFromPng(const char* fname, RendererHandle
     if (!img_data)
     {
         printf("Loading image failed: %s\n", stbi_failure_reason());
-        exit(1);
     }
     u32 rmask;
     u32 gmask;
@@ -324,6 +323,19 @@ internal void SDLDestroyControllers(SDL_GameController **handles)
     }
 }
 
+inline internal void SDLToggleFullscreen(SDLState *state)
+{
+    if (state->isFullscreen)
+    {
+        SDL_SetWindowFullscreen(state->window, 0);
+    }
+    else
+    {
+        SDL_SetWindowFullscreen(state->window, SDL_WINDOW_FULLSCREEN);
+    }
+    state->isFullscreen = !state->isFullscreen;
+}
+
 internal void SDLUpdateKeyboardInput(Input* input, SDL_Scancode key, b32 isDown)
 {
     SDL_Keymod keyMod = SDL_GetModState();
@@ -334,6 +346,22 @@ internal void SDLUpdateKeyboardInput(Input* input, SDL_Scancode key, b32 isDown)
     if (keyMod & KMOD_RSHIFT)
     {
         SDLSetKeyState(input, Key_RShift, isDown);
+    }
+    if (keyMod & KMOD_LALT)
+    {
+        SDLSetKeyState(input, Key_LAlt, isDown);
+    }
+    if (keyMod & KMOD_RALT)
+    {
+        SDLSetKeyState(input, Key_RAlt, isDown);
+    }
+    if (keyMod & KMOD_LCTRL)
+    {
+        SDLSetKeyState(input, Key_LCtrl, isDown);
+    }
+    if (keyMod & KMOD_RCTRL)
+    {
+        SDLSetKeyState(input, Key_RCtrl, isDown);
     }
 
     switch (key)
@@ -353,6 +381,9 @@ internal void SDLUpdateKeyboardInput(Input* input, SDL_Scancode key, b32 isDown)
         case SDL_SCANCODE_LEFT:
         case SDL_SCANCODE_A:
             SDLSetKeyState(input, Key_Left, isDown);
+            break;
+        case SDL_SCANCODE_F5:
+            SDLSetKeyState(input, Key_F5, isDown);
             break;
         case SDL_SCANCODE_B:
             SDLSetKeyState(input, Key_B, isDown);
@@ -445,7 +476,7 @@ internal void SDLUpdateControllerInput(Input* input, u8 button, b32 isDown)
     }
 }
 
-internal void SDLPollInput(Input *input, SDL_GameController **handles)
+internal void SDLPollInput(SDLState *state, Input *input, SDL_GameController **handles)
 {
     // Reset all button presses
     memset(input->keyPressed, 0, sizeof(b32) * Key_Count);
@@ -460,7 +491,7 @@ internal void SDLPollInput(Input *input, SDL_GameController **handles)
                 SDLUpdateKeyboardInput(input, event.key.keysym.scancode, false);
                 break;
             case SDL_QUIT:
-                globalRunning = false;
+                state->isRunning = false;
                 break;
             case SDL_KEYDOWN:
                 SDLUpdateKeyboardInput(input, event.key.keysym.scancode, true);
@@ -479,9 +510,14 @@ internal void SDLPollInput(Input *input, SDL_GameController **handles)
         }
     }
 
+    if (input->keyPressed[Key_F5])
+    {
+        SDLToggleFullscreen(state);
+    }
+
     if (input->keyPressed[Key_Escape])
     {
-        globalRunning = false;
+        state->isRunning = false;
     }
 
     // Check controller axis input
@@ -680,22 +716,21 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
         exit(1);
     }
 
+    // TODO(cjh): Change these in fullscreen mode
     i32 screenWidth = 960;
     i32 screenHeight = 540;
-    SDL_Window *window = SDL_CreateWindow("gamedev",
-                                          30,
-                                          50,
-                                          screenWidth,
-                                          screenHeight,
-                                          SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
 
-    if (window == NULL)
+    SDLState state = {};
+    state.window = SDL_CreateWindow("gamedev", 30, 50, screenWidth, screenHeight,
+                                    SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+
+    if (state.window == NULL)
     {
         fprintf(stderr, "Could not create window: %s\n", SDL_GetError());
         exit(1);
     }
 
-    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    SDL_Renderer *renderer = SDL_CreateRenderer(state.window, -1, SDL_RENDERER_ACCELERATED);
     RendererHandle rendererHandle = {renderer};
 
     if (renderer == NULL)
@@ -704,7 +739,7 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
         exit(1);
     }
 
-    SDL_PixelFormat *pixelFormat = SDL_GetWindowSurface(window)->format;
+    SDL_PixelFormat *pixelFormat = SDL_GetWindowSurface(state.window)->format;
     SDLInitColors(memory.colors, pixelFormat);
 
     // OpenGL
@@ -712,7 +747,7 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-    SDL_GLContext ogl_context = SDL_GL_CreateContext(window);
+    SDL_GLContext ogl_context = SDL_GL_CreateContext(state.window);
 
     if (ogl_context == NULL)
     {
@@ -732,7 +767,6 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
     TextureHandle backBuffer = {};
     backBuffer.texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
                                            cols * tileWidth, rows * tileHeight);
-
     // TODO(cjh): @win32 specific code
     HMODULE gamedevDLL = LoadLibraryA("gamedev.dll");
     if (!gamedevDLL)
@@ -754,8 +788,8 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
 
     Rect viewport = {0, 0, screenWidth, screenHeight};
 
-    globalRunning = true;
-    while(globalRunning)
+    state.isRunning = true;
+    while(state.isRunning)
     {
         // TODO(cjh): @win32 specific code
         WIN32_FILE_ATTRIBUTE_DATA w32FileAttributData;
@@ -775,7 +809,7 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
             }
         }
         memory.currentTickCount = SDL_GetTicks();
-        SDLPollInput(&input, &controllerHandles[0]);
+        SDLPollInput(&state, &input, &controllerHandles[0]);
         SDL_SetRenderTarget(renderer, (SDL_Texture*)backBuffer.texture);
         updateAndRender(&memory, &input, backBuffer, &viewport, rendererHandle);
 
@@ -816,7 +850,7 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
     SDL_DestroyTexture((SDL_Texture*)backBuffer.texture);
     SDL_DestroyRenderer(renderer);
     free(memory.permanentStorage);
-    SDL_DestroyWindow(window);
+    SDL_DestroyWindow(state.window);
     SDL_Quit();
 
     return 0;

@@ -1,5 +1,10 @@
 #ifndef SDL2_GAMEDEV_H
 #define SDL2_GAMEDEV_H
 
-global_variable b32 globalRunning;
+struct SDLState
+{
+    SDL_Window *window;
+    b32 isFullscreen;
+    b32 isRunning;
+};
 #endif

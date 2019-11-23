@@ -5,10 +5,9 @@
 ** TODO Tile placement
 *** TODO Allow entities to be placed anywhere, not just in an 80x80 grid. Snap to smaller grid?
 *** TODO Nail down tile placing rules.
-    - Only 1 entity allowed on ground layer
+    - Only 1 entity (tile) allowed on ground layer
 *** TODO What happens when multiple entities exist in one tile space? How do we select the right one?
-    - probably the bug with flames in tile placing slot
-    - Need to decide if we're interested in ground or entity layer
+    - Need to filter by type. What if there are 2 of the same type?
 *** TODO Cancel tile placement
 ** TODO Inventory system
 *** TODO Crafting menu
@@ -25,6 +24,10 @@
 *** TODO Dodge
 *** TODO Each move takes time, and the longer it takes, the more damage it does.
 * Architecture
+** TODO Debug camera
+** TODO Only render tiles in renderRegion
+** TODO Full screen 1080 by 1920
+** TODO Variable tile size
 ** TODO Different entities should be implemented as union in Entity struct
 ** TODO RenderGroup sorting based on layers, and then based on position.y
 ** TODO Looped live editing
