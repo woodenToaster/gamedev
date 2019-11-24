@@ -13,9 +13,12 @@
 #include "SDL_mixer.h"
 
 #include "gamedev_platform.h"
+#include "gamedev_memory.h"
 #include "sdl2_gamedev.h"
 
 #define RENDERER_HANDLE_TO_SDL(r) ((SDL_Renderer*)((r).renderer))
+
+static Arena sdlArena = {};
 
 EntireFile SDLReadEntireFile(char *filename)
 {
@@ -631,6 +634,46 @@ void SDLRenderSprite(RendererHandle renderer, TextureHandle texture, Rect source
 }
 
 #if 0
+void *SDLMalloc(size_t size)
+{
+    if (size == 0)
+    {
+        size = 1;
+    }
+    u8 *result = pushSize(&sdlArena, size);
+    return (void*)result;
+}
+
+void *SDLCalloc(size_t nmemb, size_t size)
+{
+    if (size == 0)
+    {
+        size = 1;
+    }
+    u8 *result = pushSize(&sdlArena, size * nmemb);
+    memset(result, 0, size * nmemb);
+    return (void*)result;
+}
+
+void *SDLRealloc(void *mem, size_t size)
+{
+    // TODO(cjh): Leak
+    void *result = SDLMalloc(size);
+    if (mem)
+    {
+        memcpy(result, mem, size);
+    }
+    return result;
+}
+
+void SDLFree(void *mem)
+{
+    // TODO(cjh): Leak
+    (void)mem;
+}
+#endif
+
+#if 0
 void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
 {
     i32 x = radius - 1;
@@ -676,10 +719,30 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
     (void)argv;
 
     GameMemory memory = {};
+#if 0
+    // Managed SDL memory
+    memory.sdlStorageSize = (size_t)MEGABYTES(1);
+    memory.permanentStorageSize = (size_t)MEGABYTES(1);
+    memory.transientStorageSize = (size_t)MEGABYTES(4);
+    memory.sdlStorage = calloc(memory.sdlStorageSize + memory.permanentStorageSize +
+                               memory.transientStorageSize, sizeof(u8));
+    memory.permanentStorage = (u8*)memory.sdlStorage + memory.sdlStorageSize;
+    memory.transientStorage = (u8*)memory.permanentStorage + memory.permanentStorageSize;
+
+    initArena(&sdlArena, memory.sdlStorageSize, (u8*)memory.sdlStorage);
+
+    // Set SDL allocation functions
+    SDL_malloc_func my_malloc = &SDLMalloc;
+    SDL_calloc_func my_calloc = &SDLCalloc;
+    SDL_realloc_func my_realloc = &SDLRealloc;
+    SDL_free_func my_free = &SDLFree;
+    SDL_SetMemoryFunctions(my_malloc, my_calloc, my_realloc, my_free);
+#else
     memory.permanentStorageSize = (size_t)MEGABYTES(1);
     memory.transientStorageSize = (size_t)MEGABYTES(4);
     memory.permanentStorage = calloc(memory.permanentStorageSize + memory.transientStorageSize, sizeof(u8));
     memory.transientStorage = (u8*)memory.permanentStorage + memory.permanentStorageSize;
+#endif
 
     memory.platformAPI.readEntireFile = SDLReadEntireFile;
     memory.platformAPI.freeFileMemory = SDLFreeFileMemory;
@@ -706,13 +769,17 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) < 0)
     {
-        fprintf(stderr, "SDL failed to initialize: %s\n", SDL_GetError());
+        // fprintf(stderr, "SDL failed to initialize: %s\n", SDL_GetError());
+        // TODO(cjh): @win32
+        OutputDebugString(SDL_GetError());
         exit(1);
     }
 
     if(Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048 ) < 0 )
     {
-        fprintf(stderr, "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
+        // fprintf(stderr, "SDL_mixer could not initialize! SDL_mixer Error: %s\n", Mix_GetError() );
+        // TODO(cjh): @win32
+        OutputDebugString(SDL_GetError());
         exit(1);
     }
 
@@ -726,7 +793,9 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
 
     if (state.window == NULL)
     {
-        fprintf(stderr, "Could not create window: %s\n", SDL_GetError());
+        // fprintf(stderr, "Could not create window: %s\n", SDL_GetError());
+        // TODO(cjh): @win32
+        OutputDebugString(SDL_GetError());
         exit(1);
     }
 
@@ -735,7 +804,9 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
 
     if (renderer == NULL)
     {
-        fprintf(stderr, "Could not create renderer: %s\n", SDL_GetError());
+        // fprintf(stderr, "Could not create renderer: %s\n", SDL_GetError());
+        // TODO(cjh): @win32
+        OutputDebugString(SDL_GetError());
         exit(1);
     }
 
@@ -751,7 +822,9 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
 
     if (ogl_context == NULL)
     {
-        fprintf(stderr, "Failed to create opengl context: %s\n", SDL_GetError());
+        // fprintf(stderr, "Failed to create opengl context: %s\n", SDL_GetError());
+        // TODO(cjh): @win32
+        OutputDebugString(SDL_GetError());
         exit(1);
     }
 
@@ -773,14 +846,18 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
     void *gamedevDLL = SDL_LoadObject("gamedev.dll");
     if (!gamedevDLL)
     {
-        fprintf(stdout, "Failed to load gamedev.dll\n");
+        // fprintf(stdout, "Failed to load gamedev.dll\n");
+        // TODO(cjh): @win32
+        OutputDebugString(SDL_GetError());
         exit(1);
     }
     GameUpdateAndRender *updateAndRender = (GameUpdateAndRender*)SDL_LoadFunction(gamedevDLL, "gameUpdateAndRender");
 
     if (!updateAndRender)
     {
-        fprintf(stdout, "Failed to load gameUpdateAndRender\n");
+        // fprintf(stdout, "Failed to load gameUpdateAndRender\n");
+        // TODO(cjh): @win32
+        OutputDebugString(SDL_GetError());
         exit(1);
     }
 

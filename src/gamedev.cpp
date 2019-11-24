@@ -18,14 +18,6 @@
 #include "gamedev_tilemap.cpp"
 
 
-void initArena(Arena *arena, size_t bytes, u8 *start)
-{
-    arena->start = start;
-    arena->maxCap = bytes;
-    arena->used = 0;
-    arena->tmpCount = 0;
-}
-
 internal TemporaryMemory beginTemporaryMemory(Arena *arena)
 {
     TemporaryMemory result = {};
@@ -48,15 +40,6 @@ internal void endTemporaryMemory(TemporaryMemory tempMem)
 internal void checkArena(Arena *arena)
 {
     assert(arena->tmpCount == 0);
-}
-
-u8* pushSize(Arena *arena, size_t size)
-{
-    assert(size + arena->used < arena->maxCap);
-    u8* result = arena->start + arena->used;
-    arena->used += size;
-    memset(result, 0, size);
-    return result;
 }
 
 void destroyGame(Game* g)
@@ -229,7 +212,7 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHan
         // Map
         u32 tileWidth = 80;
         u32 tileHeight = 80;
-        Map *map0 = PushStruct(&game->worldArena, Map);
+        Map *map0 = PUSH_STRUCT(&game->worldArena, Map);
         map0->tileWidth = tileWidth;
         map0->tileHeight = tileHeight;
         map0->rows = 10;

@@ -2,6 +2,7 @@
 #define GAMEDEV_H
 
 #include "gamedev_platform.h"
+#include "gamedev_memory.h"
 
 enum Direction
 {
@@ -55,20 +56,6 @@ enum GameMode
     GameMode_Count
 };
 
-struct Arena
-{
-    size_t used;
-    size_t maxCap;
-    i32 tmpCount;
-    u8 *start;
-};
-
-struct TemporaryMemory
-{
-    Arena *arena;
-    size_t used;
-};
-
 struct Map;
 struct Entity;
 struct Sprite;
@@ -111,10 +98,6 @@ struct Game
     Sprite icons[Icon_Count];
 };
 
-#define PushStruct(arena, type) ((type*)pushSize((arena), sizeof(type)))
-#define PushSize(arena, size) (pushSize(arena, size))
-
-u8* pushSize(Arena *arena, size_t size);
 internal void startDialogueMode(Game *g, char *dialogue);
 internal void endDialogueMode(Game *g);
 internal void startInventoryMode(Game *g);

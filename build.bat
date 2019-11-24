@@ -3,14 +3,22 @@
 if not exist "build" mkdir build
 pushd build
 
+rem SDL Debug Build
+rem set DEBUG_SDL_PATH=C:\Users\Chris\Downloads\SDL2-2.0.10-source\VisualC\x64\Debug
+rem set DEBUG_SDL_INCLUDE_PATH=C:\Users\Chris\Downloads\SDL2-2.0.10-source\include
+rem set INCLUDE=%DEBUG_SDL_INCLUDE_PATH%;%INCLUDE%;
+rem set LIBPATH=%DEBUG_SDL_PATH%;%LIBPATH%;
+
 set DEV_PREFIX=D:\dev
 set SDL_PATH=SDL2-2.0.10
-set SDL_MIXER_PATH=SDL2_mixer-2.0.2
 set INCLUDE=%DEV_PREFIX%\%SDL_PATH%\include;%INCLUDE%;
-set INCLUDE=%DEV_PREFIX%\%SDL_MIXER_PATH%\include;%INCLUDE%;
-set INCLUDE=%DEV_PREFIX%\gamedev\stb;%INCLUDE%;
 set LIBPATH=%DEV_PREFIX%\%SDL_PATH%\lib\x64;%LIBPATH%;
+
+set SDL_MIXER_PATH=SDL2_mixer-2.0.2
+set INCLUDE=%DEV_PREFIX%\%SDL_MIXER_PATH%\include;%INCLUDE%;
 set LIBPATH=%DEV_PREFIX%\%SDL_MIXER_PATH%\lib\x64;%LIBPATH%;
+
+set INCLUDE=%DEV_PREFIX%\gamedev\stb;%INCLUDE%;
 set LIB=%LIBPATH%;%LIB%;
 set PREPROCESSOR_DEFINES="/DDEVELOPER"
 set COMPILERFLAGS="/DDEBUG /W4 /Gm- /Zi /GR- /nologo /EHa- /MTd /Oi /Od"

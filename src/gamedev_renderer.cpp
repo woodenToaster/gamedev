@@ -224,8 +224,8 @@ internal void pushSprite(RenderGroup *group, Sprite *sprite, Rect dest, RenderLa
 
 internal RenderGroup *allocateRenderGroup(Arena *arena, u32 maxSize)
 {
-    RenderGroup *result = PushStruct(arena, RenderGroup);
-    result->bufferBase = PushSize(arena, maxSize);
+    RenderGroup *result = PUSH_STRUCT(arena, RenderGroup);
+    result->bufferBase = pushSize(arena, maxSize);
     result->maxBufferSize = maxSize;
     result->bufferSize = 0;
 

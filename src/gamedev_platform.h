@@ -184,14 +184,19 @@ struct AudioAPI
 
 struct GameMemory
 {
+#if 0
+    u64 sdlStorageSize;
+    void *sdlStorage;
+#endif
     u64 permanentStorageSize;
+    void *permanentStorage;
     u64 transientStorageSize;
+    void *transientStorage;
+
     u32 currentTickCount;
     u32 dt;
     u32 targetMsPerFrame;
     b32 isInitialized;
-    void *permanentStorage;
-    void *transientStorage;
     PlatformAPI platformAPI;
     RendererAPI rendererAPI;
     FontAPI fontAPI;
