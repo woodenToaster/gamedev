@@ -29,8 +29,11 @@ typedef float f32;
 typedef double f64;
 typedef int32_t b32;
 
+#define GIGABYTES(n) ((n) * 1024 * 1024 * 1024)
 #define MEGABYTES(n) ((n) * 1024 * 1024)
-#define ArrayCount(arr) (sizeof(arr) / sizeof((arr)[0]))
+#define KILOBYTES(n) ((n) * 1024)
+
+#define ARRAY_COUNT(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 enum Colors
 {

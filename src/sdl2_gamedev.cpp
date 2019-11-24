@@ -331,7 +331,7 @@ inline internal void SDLToggleFullscreen(SDLState *state)
     }
     else
     {
-        SDL_SetWindowFullscreen(state->window, SDL_WINDOW_FULLSCREEN);
+        SDL_SetWindowFullscreen(state->window, SDL_WINDOW_FULLSCREEN_DESKTOP);
     }
     state->isFullscreen = !state->isFullscreen;
 }
@@ -767,26 +767,27 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
     TextureHandle backBuffer = {};
     backBuffer.texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
                                            cols * tileWidth, rows * tileHeight);
-    // TODO(cjh): @win32 specific code
-    HMODULE gamedevDLL = LoadLibraryA("gamedev.dll");
+
+    Rect viewport = {0, 0, screenWidth, screenHeight};
+
+    void *gamedevDLL = SDL_LoadObject("gamedev.dll");
     if (!gamedevDLL)
     {
         fprintf(stdout, "Failed to load gamedev.dll\n");
         exit(1);
     }
-    GameUpdateAndRender *updateAndRender = (GameUpdateAndRender*)GetProcAddress(gamedevDLL, "gameUpdateAndRender");
+    GameUpdateAndRender *updateAndRender = (GameUpdateAndRender*)SDL_LoadFunction(gamedevDLL, "gameUpdateAndRender");
 
     if (!updateAndRender)
     {
         fprintf(stdout, "Failed to load gameUpdateAndRender\n");
         exit(1);
     }
+
     // TODO(cjh): @win32 specific code
     WIN32_FILE_ATTRIBUTE_DATA attributeData;
     GetFileAttributesExA("w:\\gamedev\\build\\gamedev.dll", GetFileExInfoStandard, &attributeData);
     FILETIME lastWriteTime = attributeData.ftLastWriteTime;
-
-    Rect viewport = {0, 0, screenWidth, screenHeight};
 
     state.isRunning = true;
     while(state.isRunning)
@@ -801,13 +802,15 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
             WIN32_FILE_ATTRIBUTE_DATA ignored;
             if (!GetFileAttributesExA("lock.tmp", GetFileExInfoStandard, &ignored))
             {
-                FreeLibrary(gamedevDLL);
+                SDL_UnloadObject(gamedevDLL);
                 lastWriteTime = newWriteTime;
+                // TODO(cjh): @win32 specific code
                 CopyFile("w:\\gamedev\\build\\gamedev.dll", "w:\\gamedev\\build\\gamedev_temp.dll", FALSE);
-                gamedevDLL = LoadLibraryA("w:\\gamedev\\build\\gamedev_temp.dll");
-                updateAndRender = (GameUpdateAndRender*)GetProcAddress(gamedevDLL, "gameUpdateAndRender");
+                gamedevDLL = SDL_LoadObject("w:\\gamedev\\build\\gamedev_temp.dll");
+                updateAndRender = (GameUpdateAndRender*)SDL_LoadFunction(gamedevDLL, "gameUpdateAndRender");
             }
         }
+
         memory.currentTickCount = SDL_GetTicks();
         SDLPollInput(&state, &input, &controllerHandles[0]);
         SDL_SetRenderTarget(renderer, (SDL_Texture*)backBuffer.texture);

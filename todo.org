@@ -24,6 +24,7 @@
 *** TODO Dodge
 *** TODO Each move takes time, and the longer it takes, the more damage it does.
 * Architecture
+** TODO 60 x 60 tiles and 540 x 960 resolution (9 x 16)
 ** TODO Debug camera
 ** TODO Only render tiles in renderRegion
 ** TODO Full screen 1080 by 1920

@@ -151,7 +151,7 @@ Entity *addEntity(Map *m)
 {
     // TODO(cjh): Should we maintain the number of active entities alongside the
     // number of actual entities + entity slots on free list (m->entityCount) ?
-    assert(m->entityCount < ArrayCount(m->entities));
+    assert(m->entityCount < ARRAY_COUNT(m->entities));
     Entity *result = NULL;
 
     if (m->entityFreeList)
@@ -233,7 +233,7 @@ internal void craftItem(Entity *h, CraftableItemType item)
     {
         if (h->inventory[requiredItem] >= numRequiredItems)
         {
-            if (h->beltItemCount < ArrayCount(h->beltItems))
+            if (h->beltItemCount < ARRAY_COUNT(h->beltItems))
             {
                 h->inventory[requiredItem] -= numRequiredItems;
                 BeltItem *beltItem = findItemInBelt(h, item);
@@ -831,12 +831,12 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
     if (input->keyPressed[Key_X] || input->buttonPressed[Button_RTrigger])
     {
         h->activeBeltItemIndex++;
-        h->activeBeltItemIndex %= ArrayCount(h->beltItems);
+        h->activeBeltItemIndex %= ARRAY_COUNT(h->beltItems);
     }
     if (input->keyPressed[Key_Z] || input->buttonPressed[Button_LTrigger])
     {
         --h->activeBeltItemIndex;
-        h->activeBeltItemIndex %= ArrayCount(h->beltItems);
+        h->activeBeltItemIndex %= ARRAY_COUNT(h->beltItems);
     }
 }
 
