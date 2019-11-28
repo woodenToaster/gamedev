@@ -3,12 +3,13 @@
 if not exist "build" mkdir build
 pushd build
 
-rem SDL Debug Build
+rem Debug SDL Build
 rem set DEBUG_SDL_PATH=C:\Users\Chris\Downloads\SDL2-2.0.10-source\VisualC\x64\Debug
 rem set DEBUG_SDL_INCLUDE_PATH=C:\Users\Chris\Downloads\SDL2-2.0.10-source\include
 rem set INCLUDE=%DEBUG_SDL_INCLUDE_PATH%;%INCLUDE%;
 rem set LIBPATH=%DEBUG_SDL_PATH%;%LIBPATH%;
 
+rem Optimized SDL build
 set DEV_PREFIX=D:\dev
 set SDL_PATH=SDL2-2.0.10
 set INCLUDE=%DEV_PREFIX%\%SDL_PATH%\include;%INCLUDE%;
@@ -20,8 +21,8 @@ set LIBPATH=%DEV_PREFIX%\%SDL_MIXER_PATH%\lib\x64;%LIBPATH%;
 
 set INCLUDE=%DEV_PREFIX%\gamedev\stb;%INCLUDE%;
 set LIB=%LIBPATH%;%LIB%;
-set PREPROCESSOR_DEFINES="/DDEVELOPER"
-set COMPILERFLAGS="/DDEBUG /W4 /Gm- /Zi /GR- /nologo /EHa- /MTd /Oi /Od"
+set PREPROCESSOR_DEFINES=/DDEVELOPER
+set COMPILERFLAGS=/DDEBUG /W4 /Gm- /Zi /GR- /nologo /EHa- /MTd /Oi /Od
 set LINK_LIBS=SDL2.lib SDL2main.lib SDL2_mixer.lib
 
 del gamedev_*.pdb > NUL 2> NUL
@@ -31,10 +32,10 @@ REM We have to rename it manually for hot reloading to work.
 move gamedev.dll gamedev.dll.old
 
 echo waiting for pdb > lock.tmp
-cl "%PREPROCESSOR_DEFINES%" "%COMPILERFLAGS%" ..\src\gamedev.cpp /LD ^
+cl %PREPROCESSOR_DEFINES% %COMPILERFLAGS% ..\src\gamedev.cpp /LD ^
   /link /incremental:no /opt:ref /pdb:gamedev_%random%.pdb /export:gameUpdateAndRender
 del lock.tmp
-cl "%PREPROCESSOR_DEFINES%" "%COMPILERFLAGS%" ..\src\sdl2_gamedev.cpp /Fmsdl2_gamedev.map ^
+cl %PREPROCESSOR_DEFINES% %COMPILERFLAGS% ..\src\sdl2_gamedev.cpp /Fmsdl2_gamedev.map ^
   /link /incremental:no /opt:ref %LINK_LIBS% /SUBSYSTEM:WINDOWS
 
 popd

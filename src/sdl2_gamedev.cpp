@@ -18,7 +18,9 @@
 
 #define RENDERER_HANDLE_TO_SDL(r) ((SDL_Renderer*)((r).renderer))
 
-static Arena sdlArena = {};
+#if 0
+static Arena sdlArena;
+#endif
 
 EntireFile SDLReadEntireFile(char *filename)
 {
@@ -650,8 +652,9 @@ void *SDLCalloc(size_t nmemb, size_t size)
     {
         size = 1;
     }
-    u8 *result = pushSize(&sdlArena, size * nmemb);
-    memset(result, 0, size * nmemb);
+    size_t bytes = size * nmemb;
+    u8 *result = pushSize(&sdlArena, bytes);
+    memset(result, 0, bytes);
     return (void*)result;
 }
 
@@ -782,7 +785,6 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
         OutputDebugString(SDL_GetError());
         exit(1);
     }
-
     // TODO(cjh): Change these in fullscreen mode
     i32 screenWidth = 960;
     i32 screenHeight = 540;
@@ -843,21 +845,19 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
 
     Rect viewport = {0, 0, screenWidth, screenHeight};
 
-    void *gamedevDLL = SDL_LoadObject("gamedev.dll");
+    HMODULE gamedevDLL = LoadLibraryA("gamedev.dll");
     if (!gamedevDLL)
     {
-        // fprintf(stdout, "Failed to load gamedev.dll\n");
         // TODO(cjh): @win32
-        OutputDebugString(SDL_GetError());
+        OutputDebugString("Failed to load gamedev.dll\n");
         exit(1);
     }
-    GameUpdateAndRender *updateAndRender = (GameUpdateAndRender*)SDL_LoadFunction(gamedevDLL, "gameUpdateAndRender");
+    GameUpdateAndRender *updateAndRender = (GameUpdateAndRender*)GetProcAddress(gamedevDLL, "gameUpdateAndRender");
 
     if (!updateAndRender)
     {
-        // fprintf(stdout, "Failed to load gameUpdateAndRender\n");
         // TODO(cjh): @win32
-        OutputDebugString(SDL_GetError());
+        OutputDebugString("Failed to load gameUpdateAndRender\n");
         exit(1);
     }
 
@@ -879,12 +879,13 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
             WIN32_FILE_ATTRIBUTE_DATA ignored;
             if (!GetFileAttributesExA("lock.tmp", GetFileExInfoStandard, &ignored))
             {
-                SDL_UnloadObject(gamedevDLL);
+                FreeLibrary(gamedevDLL);
                 lastWriteTime = newWriteTime;
                 // TODO(cjh): @win32 specific code
                 CopyFile("w:\\gamedev\\build\\gamedev.dll", "w:\\gamedev\\build\\gamedev_temp.dll", FALSE);
-                gamedevDLL = SDL_LoadObject("w:\\gamedev\\build\\gamedev_temp.dll");
-                updateAndRender = (GameUpdateAndRender*)SDL_LoadFunction(gamedevDLL, "gameUpdateAndRender");
+                gamedevDLL = LoadLibraryA("gamedev.dll");
+                updateAndRender = (GameUpdateAndRender*)GetProcAddress(gamedevDLL, "gameUpdateAndRender");
+                memory.isInitialized = false;
             }
         }
 
@@ -899,7 +900,8 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
         //                 (i32)heroInteractionRegion.center.y, (i32)heroInteractionRegion.radius);
 
         SDL_SetRenderTarget(renderer, NULL);
-        SDL_Rect sdlViewport = {viewport.x, viewport.y, viewport.w, viewport.h};
+        // SDL_Rect sdlViewport = {viewport.x, viewport.y, viewport.w, viewport.h};
+        SDL_Rect sdlViewport = {0, 0, screenWidth * 2, screenHeight * 2}; // viewport.x, viewport.y, viewport.w, viewport.h};
         SDL_RenderCopy(renderer, (SDL_Texture*)backBuffer.texture, &sdlViewport, NULL);
         u32 dt = SDL_GetTicks() - memory.currentTickCount;
 
