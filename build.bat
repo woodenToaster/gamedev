@@ -3,14 +3,15 @@
 if not exist "build" mkdir build
 pushd build
 
+set DEV_PREFIX=D:\dev
+
 rem Debug SDL Build
-rem set DEBUG_SDL_PATH=C:\Users\Chris\Downloads\SDL2-2.0.10-source\VisualC\x64\Debug
-rem set DEBUG_SDL_INCLUDE_PATH=C:\Users\Chris\Downloads\SDL2-2.0.10-source\include
+rem set DEBUG_SDL_PATH=%DEV_PREFIX%\SDL2-2.0.10-source\VisualC\x64\Debug
+rem set DEBUG_SDL_INCLUDE_PATH=%DEV_PREFIX%\SDL2-2.0.10-source\include
 rem set INCLUDE=%DEBUG_SDL_INCLUDE_PATH%;%INCLUDE%;
 rem set LIBPATH=%DEBUG_SDL_PATH%;%LIBPATH%;
 
 rem Optimized SDL build
-set DEV_PREFIX=D:\dev
 set SDL_PATH=SDL2-2.0.10
 set INCLUDE=%DEV_PREFIX%\%SDL_PATH%\include;%INCLUDE%;
 set LIBPATH=%DEV_PREFIX%\%SDL_PATH%\lib\x64;%LIBPATH%;

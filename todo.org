@@ -25,6 +25,12 @@
 *** TODO Each move takes time, and the longer it takes, the more damage it does.
 * Architecture
 ** TODO 60 x 60 tiles and 540 x 960 resolution (9 x 16)
+** TODO Real renderer
+*** TODO world space
+*** TODO camera space
+*** TODO perspective projection to screen space
+*** TODO normalized device coordinates
+*** TODO raster coordinates
 ** TODO Debug camera
 *** TODO Map should be based on world coordinates instead of screen coordinates
 ** TODO Only render tiles in renderRegion
@@ -36,4 +42,3 @@
 ** TODO Offline font rendering
 ** TODO Dialogue assets
 * Bugs
-** TODO Can never see error messages because console closes

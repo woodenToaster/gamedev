@@ -366,9 +366,22 @@ you should place your code here."
     (insert ";")
     (evil-normal-state))
 
+  (defvar cjh-insert-if0 t)
+
+  (defun cjh-insert-if0-comment ()
+    (interactive)
+    (if cjh-insert-if0
+        (progn
+          (insert "#if 0")
+          (setq cjh-insert-if0 nil))
+      (progn
+        (insert "#endif")
+        (setq cjh-insert-if0 t))))
+
   ; Key bindings
-  (define-key evil-normal-state-map (kbd ",w") 'save-buffer)
   (define-key evil-normal-state-map (kbd ",b") 'projectile-compile-project)
+  (define-key evil-normal-state-map (kbd ",c") 'cjh-insert-if0-comment)
+  (define-key evil-normal-state-map (kbd ",w") 'save-buffer)
   (define-key evil-normal-state-map (kbd ",t") 'cjh-insert-todo)
   (define-key evil-normal-state-map (kbd ",n") 'cjh-insert-note)
   (define-key evil-normal-state-map (kbd ",h") 'ff-find-other-file)
@@ -461,6 +474,9 @@ you should place your code here."
     (zenburn-theme zen-and-art-theme white-sand-theme underwater-theme ujelly-theme twilight-theme twilight-bright-theme twilight-anti-bright-theme toxi-theme tao-theme tangotango-theme tango-plus-theme tango-2-theme sunny-day-theme sublime-themes subatomic256-theme subatomic-theme spacegray-theme soothe-theme solarized-theme soft-stone-theme soft-morning-theme soft-charcoal-theme smyx-theme seti-theme reverse-theme rebecca-theme railscasts-theme purple-haze-theme professional-theme planet-theme phoenix-dark-pink-theme phoenix-dark-mono-theme organic-green-theme omtose-phellack-theme oldlace-theme occidental-theme obsidian-theme noctilux-theme naquadah-theme mustang-theme monokai-theme monochrome-theme molokai-theme moe-theme minimal-theme material-theme majapahit-theme madhat2r-theme lush-theme light-soap-theme jbeans-theme jazz-theme ir-black-theme inkpot-theme heroku-theme hemisu-theme hc-zenburn-theme gruvbox-theme gruber-darker-theme grandshell-theme gotham-theme gandalf-theme flatui-theme flatland-theme farmhouse-theme exotica-theme espresso-theme dracula-theme django-theme darktooth-theme autothemer darkokai-theme darkmine-theme darkburn-theme dakrone-theme cyberpunk-theme color-theme-sanityinc-tomorrow color-theme-sanityinc-solarized clues-theme cherry-blossom-theme busybee-theme bubbleberry-theme birds-of-paradise-plus-theme badwolf-theme apropospriate-theme anti-zenburn-theme ample-zen-theme ample-theme alect-themes afternoon-theme doom-themes powerline alert log4e gntp hydra parent-mode projectile pos-tip flx highlight smartparens iedit anzu evil goto-chg company bind-map bind-key yasnippet packed helm avy helm-core async f s auto-complete popup flycheck pkg-info dash epl omnisharp csharp-mode mmm-mode markdown-toc markdown-mode gh-md lua-mode yaml-mode powershell yapfify pyvenv pytest pyenv-mode py-isort pip-requirements live-py-mode hy-mode dash-functional helm-pydoc disaster cython-mode company-c-headers company-anaconda cmake-mode clang-format anaconda-mode pythonic helm-themes helm-swoop helm-projectile helm-mode-manager helm-flx helm-descbinds helm-company helm-c-yasnippet helm-ag ace-jump-helm-line org-projectile org-category-capture org-present org-plus-contrib ws-butler winum which-key wgrep volatile-highlights vi-tilde-fringe uuidgen use-package toc-org spaceline smex restart-emacs request rainbow-delimiters popwin persp-mode pcre2el paradox org-pomodoro org-mime org-download org-bullets open-junk-file neotree move-text macrostep lorem-ipsum linum-relative link-hint ivy-hydra indent-guide hungry-delete htmlize hl-todo highlight-parentheses highlight-numbers highlight-indentation helm-make google-translate golden-ratio gnuplot fuzzy flycheck-pos-tip flx-ido fill-column-indicator fancy-battery eyebrowse expand-region exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-search-highlight-persist evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-lisp-state evil-indent-plus evil-iedit-state evil-exchange evil-escape evil-ediff evil-args evil-anzu eval-sexp-fu elisp-slime-nav dumb-jump diminish define-word counsel-projectile company-statistics column-enforce-mode clean-aindent-mode bracketed-paste auto-yasnippet auto-highlight-symbol auto-compile aggressive-indent adaptive-wrap ace-window ace-link ac-ispell)))
  '(paradox-github-token t)
  '(same-window-buffer-names nil)
+ '(spacemacs-large-file-modes-list
+   (quote
+    (archive-mode tar-mode jka-compr git-commit-mode image-mode doc-view-mode doc-view-mode-maybe ebrowse-tree-mode pdf-view-mode tags-table-mode)))
  '(spacemacs-theme-comment-bg nil)
  '(tags-table-list (quote ("GTAGS"))))
 (custom-set-faces
