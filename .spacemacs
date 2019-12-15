@@ -381,13 +381,16 @@ you should place your code here."
   ; Key bindings
   (define-key evil-normal-state-map (kbd ",b") 'projectile-compile-project)
   (define-key evil-normal-state-map (kbd ",c") 'cjh-insert-if0-comment)
-  (define-key evil-normal-state-map (kbd ",w") 'save-buffer)
+  (define-key evil-normal-state-map (kbd ",fb") 'c-beginning-of-defun)
+  (define-key evil-normal-state-map (kbd ",fe") 'c-end-of-defun)
+  (define-key evil-normal-state-map (kbd ",r") 'recompile)
   (define-key evil-normal-state-map (kbd ",t") 'cjh-insert-todo)
   (define-key evil-normal-state-map (kbd ",n") 'cjh-insert-note)
   (define-key evil-normal-state-map (kbd ",h") 'ff-find-other-file)
-  (define-key evil-normal-state-map (kbd ",fb") 'c-beginning-of-defun)
-  (define-key evil-normal-state-map (kbd ",fe") 'c-end-of-defun)
+  (define-key evil-normal-state-map (kbd ",w") 'save-buffer)
+
   (define-key evil-visual-state-map (kbd ",i") 'cjh-wrap-region-in-if)
+
   (define-key evil-insert-state-map (kbd "C-;") 'cjh-insert-semicolon-at-eol)
   (define-key evil-insert-state-map (kbd "C-l") 'forward-char)
   (define-key evil-insert-state-map (kbd "C-h") 'backward-char)
