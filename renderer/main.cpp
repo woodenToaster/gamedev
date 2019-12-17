@@ -102,27 +102,23 @@ Screen computeScreenCoordinates(f32 filmApertureWidth, f32 filmApertureHeight,
 // of the vertex in camera space.
 //[/comment]
 void convertToRaster(
-	const Vec3f &vertexWorld,
+	Vec3 &vertexWorld,
 	const Matrix44f &worldToCamera,
 	const float &l,
 	const float &r,
 	const float &t,
 	const float &b,
-	const float &near,
+	float nearClippingPlane,
 	const uint32_t &imageWidth,
 	const uint32_t &imageHeight,
-	Vec3f &vertexRaster)
+	Vec3 &vertexRaster)
 {
-	Vec3f vertexCamera;
-
-	worldToCamera.multVecMatrix(vertexWorld, vertexCamera);
+	Vec3 vertexCamera = multVecMatrix(worldToCamera, vertexWorld);
 
 	// convert to screen space
 	Vec2 vertexScreen;
-	// vertexScreen.x = near * vertexCamera.x / -vertexCamera.z;
-	// vertexScreen.y = near * vertexCamera.y / -vertexCamera.z;
-	vertexScreen.x = vertexCamera.x / -vertexCamera.z;
-	vertexScreen.y = vertexCamera.y / -vertexCamera.z;
+	vertexScreen.x = nearClippingPlane * vertexCamera.x / -vertexCamera.z;
+	vertexScreen.y = nearClippingPlane * vertexCamera.y / -vertexCamera.z;
 
 	// now convert point from screen space to NDC space (in range [-1,1])
 	Vec2 vertexNDC;
@@ -165,7 +161,7 @@ int blah(int bytesPerPixel)
 	Vec3u *frameBuffer = new Vec3u[imageWidth * imageHeight];
 
 	for (uint32_t i = 0; i < imageWidth * imageHeight; ++i) {
-		frameBuffer[i] = kDefaultBackgroundColorU;
+		frameBuffer[i] = {(u32)floorf(255 * 0.235294f), (u32)floorf(255 * 0.67451f), (u32)floorf(255 * 0.843137f)};
 	}
 
 	float *depthBuffer = new float[imageWidth * imageHeight];
@@ -180,14 +176,14 @@ int blah(int bytesPerPixel)
 	// Outer loop
 	// [/comment]
 	for (uint32_t i = 0; i < ntris; ++i) {
-		const Vec3f &v0 = vertices[nvertices[i * 3]];
-		const Vec3f &v1 = vertices[nvertices[i * 3 + 1]];
-		const Vec3f &v2 = vertices[nvertices[i * 3 + 2]];
+		Vec3 v0 = vertices[nvertices[i * 3]];
+		Vec3 v1 = vertices[nvertices[i * 3 + 1]];
+		Vec3 v2 = vertices[nvertices[i * 3 + 2]];
 
 		// [comment]
 		// Convert the vertices of the triangle to raster space
 		// [/comment]
-		Vec3f v0Raster, v1Raster, v2Raster;
+		Vec3 v0Raster, v1Raster, v2Raster;
 		convertToRaster(v0, worldToCamera, l, r, t, b, nearClippingPLane, imageWidth, imageHeight, v0Raster);
 		convertToRaster(v1, worldToCamera, l, r, t, b, nearClippingPLane, imageWidth, imageHeight, v1Raster);
 		convertToRaster(v2, worldToCamera, l, r, t, b, nearClippingPLane, imageWidth, imageHeight, v2Raster);
@@ -234,7 +230,7 @@ int blah(int bytesPerPixel)
 		// [/comment]
 		for (uint32_t y = y0; y <= y1; ++y) {
 			for (uint32_t x = x0; x <= x1; ++x) {
-				Vec3f pixelSample(x + 0.5f, y + 0.5f, 0.0f);
+				Vec3 pixelSample = {x + 0.5f, y + 0.5f, 0.0f};
 				float w0 = edgeFunction(v1Raster, v2Raster, pixelSample);
 				float w1 = edgeFunction(v2Raster, v0Raster, pixelSample);
 				float w2 = edgeFunction(v0Raster, v1Raster, pixelSample);
@@ -260,29 +256,28 @@ int blah(int bytesPerPixel)
 						// interpolate using barycentric coordinates and finally multiply
 						// by sample depth.
 						// [/comment]
-						Vec3f v0Cam, v1Cam, v2Cam;
-						worldToCamera.multVecMatrix(v0, v0Cam);
-						worldToCamera.multVecMatrix(v1, v1Cam);
-						worldToCamera.multVecMatrix(v2, v2Cam);
+						Vec3 v0Cam = multVecMatrix(worldToCamera, v0);
+						Vec3 v1Cam = multVecMatrix(worldToCamera, v1);
+						Vec3 v2Cam = multVecMatrix(worldToCamera, v2);
 
 						float px = (v0Cam.x/-v0Cam.z) * w0 + (v1Cam.x/-v1Cam.z) * w1 + (v2Cam.x/-v2Cam.z) * w2;
 						float py = (v0Cam.y/-v0Cam.z) * w0 + (v1Cam.y/-v1Cam.z) * w1 + (v2Cam.y/-v2Cam.z) * w2;
 
-						Vec3f pt(px * z, py * z, -z); // pt is in camera space
+						Vec3 pt = {px * z, py * z, -z}; // pt is in camera space
 
 						// [comment]
 						// Compute the face normal which is used for a simple facing ratio.
 						// Keep in mind that we are doing all calculation in camera space.
 						// Thus the view direction can be computed as the point on the object
-						// in camera space minus Vec3f(0), the position of the camera in camera
+						// in camera space minus Vec3(0), the position of the camera in camera
 						// space.
 						// [/comment]
-						Vec3f n = (v1Cam - v0Cam).crossProduct(v2Cam - v0Cam);
-						n.normalize();
-						Vec3f viewDirection = -pt;
-						viewDirection.normalize();
+						Vec3 n = crossProduct(v1Cam - v0Cam, v2Cam - v0Cam);
+						n = normalize(n);
+						Vec3 viewDirection = -pt;
+						viewDirection = normalize(viewDirection);
 
-						float nDotView =  std::max(0.f, n.dotProduct(viewDirection));
+						float nDotView = std::max(0.f, dotProduct(n, viewDirection));
 
 						// [comment]
 						// The final color is the result of the facing ratio multiplied by the
@@ -326,13 +321,13 @@ int blah(int bytesPerPixel)
             // xx BB GG RR
             // xx RR GG BB
 
-            Vec3<u8> v = frameBuffer[y * imageWidth + x];
+            Vec3u v = frameBuffer[y * imageWidth + x];
 
-            *pixel = v.z;
+            *pixel = (u8)v.z;
             ++pixel;
-            *pixel = v.y;
+            *pixel = (u8)v.y;
             ++pixel;
-            *pixel = v.x;
+            *pixel = (u8)v.x;
             ++pixel;
             *pixel = 0;
             ++pixel;

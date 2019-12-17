@@ -21,11 +21,9 @@
 #include "utils.h"
 
 constexpr float inchToMm = 25.4f;
-static const Vec3f kDefaultBackgroundColor = Vec3f(0.235294f, 0.67451f, 0.843137f);
-static const Vec3u kDefaultBackgroundColorU = Vec3u((unsigned char)(255 * 0.235294),
-													(unsigned char)(255 * 0.67451),
-													(unsigned char)(255 * 0.843137));
+static const Vec3 kDefaultBackgroundColor = {0.235294f, 0.67451f, 0.843137f};
 
+#if 0
 template <typename T>
 inline Vec3<T> mix(const Vec3<T> &a, const Vec3<T> &b, const float &mixValue)
 {
@@ -37,13 +35,17 @@ inline Vec3<T> reflect(const Vec3<T> &I, const Vec3<T> &N)
 {
 	return I - 2 * I.dotProduct(N) * N;
 }
-
 template <typename T>
 inline float edgeFunction(const Vec3<T> &a, const Vec3<T> &b, const Vec3<T> &c)
 {
 	return (c[0] - a[0]) * (b[1] - a[1]) - (c[1] - a[1]) * (b[0] - a[0]);
 }
-
+#else
+inline f32 edgeFunction(Vec3 &a, Vec3 &b, Vec3 &c)
+{
+	return (c.x - a.x) * (b.y - a.y) - (c.y - a.y) * (b.x - a.x);
+}
+#endif
 // [comment]
 // Compute refraction direction using Snell's law
 //
@@ -57,6 +59,7 @@ inline float edgeFunction(const Vec3<T> &a, const Vec3<T> &b, const Vec3<T> &c)
 //
 // If the ray is inside, you need to invert the refractive indices and negate the normal N
 // [/comment]
+#if 0
 template <typename T>
 Vec3<T> refract(const Vec3<T> &I, const Vec3<T> &N, const float &ior)
 {
@@ -68,7 +71,7 @@ Vec3<T> refract(const Vec3<T> &I, const Vec3<T> &N, const float &ior)
 	float k = 1 - eta * eta * (1 - cosi * cosi);
 	return k < 0 ? 0 : eta * I + (eta * cosi - sqrtf(k)) * n;
 }
-
+#endif
 // [comment]
 // Compute Fresnel equation
 //
@@ -80,6 +83,7 @@ Vec3<T> refract(const Vec3<T> &I, const Vec3<T> &N, const float &ior)
 //
 // \param[out] kr is the amount of light reflected
 // [/comment]
+#if 0
 template <typename T>
 void fresnel(const Vec3<T> &I, const Vec3<T> &N, const float &ior, float &kr)
 {
@@ -102,35 +106,35 @@ void fresnel(const Vec3<T> &I, const Vec3<T> &N, const float &ior, float &kr)
 	// As a consequence of the conservation of energy, transmittance is given by:
 	// kt = 1 - kr;
 }
-
+#endif
 namespace scratch
 {
 namespace geometry_utils
 {
 bool rayTriangleIntersect(
-	const Vec3f &orig, const Vec3f &dir,
-	const Vec3f &v0, const Vec3f &v1, const Vec3f &v2,
+	const Vec3 &orig, const Vec3 &dir,
+	const Vec3 &v0, const Vec3 &v1, const Vec3 &v2,
 	float &t, float &u, float &v)
 {
-	Vec3f v0v1 = v1 - v0;
-	Vec3f v0v2 = v2 - v0;
-	Vec3f pvec = dir.crossProduct(v0v2);
-	float det = v0v1.dotProduct(pvec);
+	Vec3 v0v1 = v1 - v0;
+	Vec3 v0v2 = v2 - v0;
+	Vec3 pvec = crossProduct(dir, v0v2);
+	float det = dotProduct(v0v1, pvec);
 
 	// ray and triangle are parallel if det is close to 0
 	if (fabs(det) < kEpsilon) return false;
 
 	float invDet = 1 / det;
 
-	Vec3f tvec = orig - v0;
-	u = tvec.dotProduct(pvec) * invDet;
+	Vec3 tvec = orig - v0;
+	u = dotProduct(tvec, pvec) * invDet;
 	if (u < 0 || u > 1) return false;
 
-	Vec3f qvec = tvec.crossProduct(v0v1);
-	v = dir.dotProduct(qvec) * invDet;
+	Vec3 qvec = crossProduct(tvec, v0v1);
+	v = dotProduct(dir, qvec) * invDet;
 	if (v < 0 || u + v > 1) return false;
 
-	t = v0v2.dotProduct(qvec) * invDet;
+	t = dotProduct(v0v2, qvec) * invDet;
 
 	return (t > 0) ? true : false;
 }

@@ -1,33 +1,5 @@
-/*
- * Copyright (C) 2012  www.scratchapixel.com
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
-//[header]
-// This program illustrates how the concept of vector and matrix can be implemented
-// in C++. This is a light version of the implementation. It contains the most
-// essential methods to manipulate vectors and matrices. It should be enough
-// for most projects. Vectors and matrices are really the alphabet as we said
-// in the lesson of any graphics application. It's really important you feel
-// confortable with these techniques especially with the concepts of
-// normalizing vectors, computing their length, computing the dot and cross products
-// of two vectors, and the point- and vector-matrix multiplication (and knowing
-// the difference between the two).
-//[/header]
-
-#pragma once
+#ifndef GEOMETRY_H
+#define GEOMETRY_H
 
 #include <cstdlib>
 #include <cstdint>
@@ -64,8 +36,8 @@ public:
 	{ return Vec2(v.x * r, v.y * r); }
 	T x, y;
 };
+#endif
 
-#else
 struct Vec2
 {
     f32 x;
@@ -98,17 +70,8 @@ inline Vec2 operator+(Vec2 v1, Vec2 v2)
 
     return result;
 }
-#endif
-//[comment]
-// Implementation of a generic vector class - it will be used to deal with 3D points, vectors and normals.
-// The class is implemented as a template. While it may complicate the code a bit, it gives us
-// the flexibility later, to specialize the type of the coordinates into anything we want.
-// For example: Vec3f if we want the coordinates to be floats or Vec3i if we want the coordinates to be integers.
-//
-// Vec3 is a standard/common way of naming vectors, points, etc. The OpenEXR and Autodesk libraries
-// use this convention for instance.
-//[/comment]
 
+#if 0
 template<typename T>
 class Vec3
 {
@@ -179,6 +142,104 @@ public:
 
 	T x, y, z;
 };
+#else
+struct Vec3
+{
+    f32 x;
+    f32 y;
+    f32 z;
+};
+
+inline Vec3 operator-(Vec3 v1, Vec3 v2)
+{
+    Vec3 result = {};
+    result.x = v1.x - v2.x;
+    result.y = v1.y - v2.y;
+    result.z = v1.z - v2.z;
+
+    return result;
+}
+
+inline Vec3 operator-(Vec3 v)
+{
+    Vec3 result = {-v.x, -v.y, -v.z};
+
+    return result;
+}
+
+inline Vec3 crossProduct(Vec3 v1, Vec3 v2)
+{
+    Vec3 result = {};
+    result.x = v1.y * v2.z - v1.z * v2.y;
+    result.y = v1.z * v2.x - v1.x * v2.z;
+    result.z = v1.x * v2.y - v1.y * v2.x;
+
+    return result;
+}
+
+inline f32 dotProduct(Vec3 v1, Vec3 v2)
+{
+    f32 result = v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+
+    return result;
+}
+
+inline f32 norm(Vec3 v)
+{
+    f32 result = v.x * v.x + v.y * v.y + v.z * v.z;
+
+    return result;
+}
+
+Vec3 normalize(Vec3 v)
+{
+    Vec3 result = {v.x, v.y, v.z};
+    f32 n = norm(v);
+    if (n > 0) {
+        f32 factor = 1 / sqrt(n);
+        result.x *= factor;
+        result.y *= factor;
+        result.z *= factor;
+    }
+
+    return result;
+}
+
+struct Vec3u
+{
+    u32 x;
+    u32 y;
+    u32 z;
+};
+
+inline Vec3u operator-(Vec3u v1, Vec3u v2)
+{
+    Vec3u result = {};
+    result.x = v1.x - v2.x;
+    result.y = v1.y - v2.y;
+    result.z = v1.z - v2.z;
+
+    return result;
+}
+
+inline Vec3u crossProduct(Vec3u v1, Vec3u v2)
+{
+    Vec3u result = {};
+    result.x = v1.y * v2.z - v1.z * v2.y;
+    result.y = v1.z * v2.x - v1.x * v2.z;
+    result.z = v1.x * v2.y - v1.y * v2.x;
+
+    return result;
+}
+
+inline u32 dotProduct(Vec3u v1, Vec3u v2)
+{
+    u32 result = v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+
+    return result;
+}
+
+#endif
 
 //[comment]
 // Implementation of a generic 4x4 Matrix class - Same thing here than with the Vec3 class. It uses
@@ -374,6 +435,7 @@ public:
 	// The coordinate w is more often than not equals to 1, but it can be different than
 	// 1 especially when the matrix is projective matrix (perspective projection matrix).
 	//[/comment]
+#if 0
 	template<typename S>
 	void multVecMatrix(const Vec3<S> &src, Vec3<S> &dst) const
 	{
@@ -388,11 +450,26 @@ public:
 		dst.y = b / w;
 		dst.z = c / w;
 	}
+#else
+	void multVecMatrix(const Vec3 &src, Vec3 &dst)
+        {
+            f32 a, b, c, w;
 
+            a = src[0] * x[0][0] + src[1] * x[1][0] + src[2] * x[2][0] + x[3][0];
+            b = src[0] * x[0][1] + src[1] * x[1][1] + src[2] * x[2][1] + x[3][1];
+            c = src[0] * x[0][2] + src[1] * x[1][2] + src[2] * x[2][2] + x[3][2];
+            w = src[0] * x[0][3] + src[1] * x[1][3] + src[2] * x[2][3] + x[3][3];
+
+            dst.x = a / w;
+            dst.y = b / w;
+            dst.z = c / w;
+        }
+#endif
 	// This method needs to be used for vector-matrix multiplication. Look at the differences
 	// with the previous method (to compute a point-matrix multiplication). We don't use
 	// the coefficients in the matrix that account for translation (x[3][0], x[3][1], x[3][2])
 	// and we don't compute w.
+#if 0
 	template<typename S>
 	void multDirMatrix(const Vec3<S> &src, Vec3<S> &dst) const
 	{
@@ -406,7 +483,20 @@ public:
 		dst.y = b;
 		dst.z = c;
 	}
+#else
+	void multDirMatrix(Vec3 &src, Vec3 &dst)
+        {
+            f32 a, b, c;
 
+            a = src[0] * x[0][0] + src[1] * x[1][0] + src[2] * x[2][0];
+            b = src[0] * x[0][1] + src[1] * x[1][1] + src[2] * x[2][1];
+            c = src[0] * x[0][2] + src[1] * x[1][2] + src[2] * x[2][2];
+
+            dst.x = a;
+            dst.y = b;
+            dst.z = c;
+        }
+#endif
 	// Compute the inverse of the matrix using the Gauss-Jordan (or reduced row) elimination method.
 	// We didn't explain in the lesson on Geometry how the inverse of matrix can be found. Don't
 	// worry at this point if you don't understand how this works. But we will need to be able to
@@ -538,15 +628,28 @@ public:
 	}
 };
 
-//[comment]
-// Now you can specialize the classes. We are just showing some examples here. In your code
-// you can declare a vector either that way: Vec3<float> a, or that way: Vec3f a
-//[/comment]
 #if 0
-typedef Vec2<float> Vec2f;
-typedef Vec2<int> Vec2i;
-#endif
 typedef Vec3<float> Vec3f;
 typedef Vec3<unsigned char> Vec3u;
+#endif
 typedef Matrix44<float> Matrix44f;
 template <> const Matrix44f Matrix44f::kIdentity = Matrix44f();
+
+Vec3 multVecMatrix(Matrix44f mat, Vec3 &v)
+{
+    Vec3 result = {};
+
+    f32 a, b, c, w;
+
+    a = v.x * mat.x[0][0] + v.y * mat.x[1][0] + v.z * mat.x[2][0] + mat.x[3][0];
+    b = v.x * mat.x[0][1] + v.y * mat.x[1][1] + v.z * mat.x[2][1] + mat.x[3][1];
+    c = v.x * mat.x[0][2] + v.y * mat.x[1][2] + v.z * mat.x[2][2] + mat.x[3][2];
+    w = v.x * mat.x[0][3] + v.y * mat.x[1][3] + v.z * mat.x[2][3] + mat.x[3][3];
+
+    result.x = a / w;
+    result.y = b / w;
+    result.z = c / w;
+
+    return result;
+}
+#endif // GEOMETRY_H
