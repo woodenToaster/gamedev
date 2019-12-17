@@ -118,14 +118,14 @@ void convertToRaster(
 	worldToCamera.multVecMatrix(vertexWorld, vertexCamera);
 
 	// convert to screen space
-	Vec2f vertexScreen;
+	Vec2 vertexScreen;
 	// vertexScreen.x = near * vertexCamera.x / -vertexCamera.z;
 	// vertexScreen.y = near * vertexCamera.y / -vertexCamera.z;
 	vertexScreen.x = vertexCamera.x / -vertexCamera.z;
 	vertexScreen.y = vertexCamera.y / -vertexCamera.z;
 
 	// now convert point from screen space to NDC space (in range [-1,1])
-	Vec2f vertexNDC;
+	Vec2 vertexNDC;
 	vertexNDC.x = 2 * vertexScreen.x / (r - l) - (r + l) / (r - l);
 	vertexNDC.y = 2 * vertexScreen.y / (t - b) - (t + b) / (t - b);
 
@@ -203,11 +203,13 @@ int blah(int bytesPerPixel)
 		// Prepare vertex attributes. Divide them by their vertex z-coordinate
 		// (though we use a multiplication here because v.z = 1 / v.z)
 		// [/comment]
-		Vec2f st0 = cow_st[stindices[i * 3]];
-		Vec2f st1 = cow_st[stindices[i * 3 + 1]];
-		Vec2f st2 = cow_st[stindices[i * 3 + 2]];
+		Vec2 st0 = cow_st[stindices[i * 3]];
+		Vec2 st1 = cow_st[stindices[i * 3 + 1]];
+		Vec2 st2 = cow_st[stindices[i * 3 + 2]];
 
-		st0 *= v0Raster.z, st1 *= v1Raster.z, st2 *= v2Raster.z;
+		st0 *= v0Raster.z;
+        st1 *= v1Raster.z;
+        st2 *= v2Raster.z;
 
 		float xmin = scratch::utils::min3(v0Raster.x, v1Raster.x, v2Raster.x);
 		float ymin = scratch::utils::min3(v0Raster.y, v1Raster.y, v2Raster.y);
@@ -248,8 +250,7 @@ int blah(int bytesPerPixel)
 					if (z < depthBuffer[y * imageWidth + x]) {
 						depthBuffer[y * imageWidth + x] = z;
 
-						Vec2f st = st0 * w0 + st1 * w1 + st2 * w2;
-
+						Vec2 st = st0 * w0 + st1 * w1 + st2 * w2;
 						st *= z;
 
 						// [comment]
@@ -316,10 +317,10 @@ int blah(int bytesPerPixel)
 
     u8 *row = (u8 *)globalBitmapMemory;
     int pitch = imageWidth * bytesPerPixel;
-    for (int y = 0; y < imageHeight; ++y)
+    for (u32 y = 0; y < imageHeight; ++y)
     {
         u8 *pixel = row;
-        for (int x = 0; x < imageWidth; ++x)
+        for (u32 x = 0; x < imageWidth; ++x)
         {
             // RR GG BB xx
             // xx BB GG RR

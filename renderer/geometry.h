@@ -38,6 +38,7 @@
 
 #include "utils.h"
 
+#if 0
 template<typename T>
 class Vec2
 {
@@ -64,6 +65,40 @@ public:
 	T x, y;
 };
 
+#else
+struct Vec2
+{
+    f32 x;
+    f32 y;
+    f32 z;
+};
+
+inline Vec2& operator*=(Vec2 &v, f32 scalar)
+{
+    v.x *= scalar;
+    v.y *= scalar;
+
+    return v;
+}
+
+inline Vec2 operator*(Vec2 v, f32 scalar)
+{
+    Vec2 result = {};
+    result.x = v.x * scalar;
+    result.y = v.y * scalar;
+
+    return result;
+}
+
+inline Vec2 operator+(Vec2 v1, Vec2 v2)
+{
+    Vec2 result = {};
+    result.x = v1.x + v2.x;
+    result.y = v1.y + v2.y;
+
+    return result;
+}
+#endif
 //[comment]
 // Implementation of a generic vector class - it will be used to deal with 3D points, vectors and normals.
 // The class is implemented as a template. While it may complicate the code a bit, it gives us
@@ -507,8 +542,10 @@ public:
 // Now you can specialize the classes. We are just showing some examples here. In your code
 // you can declare a vector either that way: Vec3<float> a, or that way: Vec3f a
 //[/comment]
+#if 0
 typedef Vec2<float> Vec2f;
 typedef Vec2<int> Vec2i;
+#endif
 typedef Vec3<float> Vec3f;
 typedef Vec3<unsigned char> Vec3u;
 typedef Matrix44<float> Matrix44f;
