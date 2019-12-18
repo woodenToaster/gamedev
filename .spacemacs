@@ -435,7 +435,8 @@ you should place your code here."
   ;; Don't indent when inside a namespace
   (add-hook 'c++-mode-hook #'(lambda ()
                                (c-set-offset 'innamespace [0])
-                               (c-set-offset 'case-label '+)))
+                               (c-set-offset 'case-label '+)
+                               (c-set-offset 'inline-open '0)))
 
   ;; Treat .h files as c++
   (add-to-list 'auto-mode-alist '("\\.h\\'" . c++-mode))

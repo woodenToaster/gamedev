@@ -103,7 +103,7 @@ Screen computeScreenCoordinates(f32 filmApertureWidth, f32 filmApertureHeight,
 //[/comment]
 void convertToRaster(
 	Vec3 &vertexWorld,
-	const Matrix44f &worldToCamera,
+	const Matrix44 &worldToCamera,
 	const float &l,
 	const float &r,
 	const float &t,
@@ -132,10 +132,10 @@ void convertToRaster(
 	vertexRaster.z = -vertexCamera.z;
 }
 
-int blah(int bytesPerPixel)
+int blah(int bytesPerPixel, u32 width, u32 height)
 {
-    const uint32_t imageWidth = globalBitmapWidth;
-    const uint32_t imageHeight = globalBitmapHeight;
+    u32 imageWidth = width;
+    u32 imageHeight = height;
     const uint32_t ntris = 3156;
     const float nearClippingPLane = 1;
     const float farClippingPLane = 1000;
@@ -145,8 +145,8 @@ int blah(int bytesPerPixel)
     float filmApertureWidth = 0.980f;
     float filmApertureHeight = 0.735f;
 
-    const Matrix44f worldToCamera = {0.707107f, -0.331295f, 0.624695f, 0.0f, 0.0f, 0.883452f, 0.468521f, 0.0f, -0.707107f, -0.331295f, 0.624695f, 0.0f, -1.63871f, -5.747777f, -40.400412f, 1.0f};
-	Matrix44f cameraToWorld = worldToCamera.inverse();
+    const Matrix44 worldToCamera = {0.707107f, -0.331295f, 0.624695f, 0.0f, 0.0f, 0.883452f, 0.468521f, 0.0f, -0.707107f, -0.331295f, 0.624695f, 0.0f, -1.63871f, -5.747777f, -40.400412f, 1.0f};
+	Matrix44 cameraToWorld = worldToCamera.inverse();
 
 	Screen screen = computeScreenCoordinates(filmApertureWidth, filmApertureHeight,
                                              imageWidth, imageHeight, kOverscan,
@@ -363,21 +363,6 @@ internal void win32ResizeDIBSection(int width, int height)
     int bytesPerPixel = 4;
     int bitmapMemorySize = globalBitmapWidth * globalBitmapHeight * bytesPerPixel;
     globalBitmapMemory = VirtualAlloc(0, bitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
-
-    blah(bytesPerPixel);
-#if 0
-    u8 *row = (u8 *)globalBitmapMemory;
-    int pitch = globalBitmapWidth * bytesPerPixel;
-    for (int y = 0; y < globalBitmapHeight; ++y)
-    {
-        u32 *pixel = (u32 *)row;
-        for (int x = 0; x < globalBitmapWidth; ++x)
-        {
-            *pixel++ = 0x00FF0000;
-        }
-        row += pitch;
-    }
-#endif
 }
 
 internal void win32UpdateWindow(HDC deviceContext, RECT *windowRect, int x, int y, int width, int height)
@@ -451,11 +436,11 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, PSTR cmdLine, int
     WNDCLASS windowClass = {0};
     windowClass.lpfnWndProc = win32WindowProc;
     windowClass.hInstance = instance;
-    windowClass.lpszClassName = "OpenGL";
+    windowClass.lpszClassName = "RendererClass";
 
     RegisterClass(&windowClass);
 
-    HWND windowHandle = CreateWindowEx(0, windowClass.lpszClassName, "OpenGL", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+    HWND windowHandle = CreateWindowEx(0, windowClass.lpszClassName, "Renderer", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
                                        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
                                        0, 0, instance, 0);
     if (windowHandle)
@@ -478,6 +463,20 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, PSTR cmdLine, int
             {
                 break;
             }
+
+            blah(4, globalBitmapWidth, globalBitmapHeight);
+
+            PAINTSTRUCT paint;
+            HDC deviceContext = BeginPaint(windowHandle, &paint);
+            int x = paint.rcPaint.left;
+            int y = paint.rcPaint.top;
+            int width = paint.rcPaint.right - paint.rcPaint.left;
+            int height = paint.rcPaint.bottom - paint.rcPaint.top;
+
+            RECT clientRect;
+            GetClientRect(windowHandle, &clientRect);
+            win32UpdateWindow(deviceContext, &clientRect, x, y, width, height);
+            EndPaint(windowHandle, &paint);
 
             LARGE_INTEGER endTime;
             QueryPerformanceCounter(&endTime);
