@@ -27,10 +27,8 @@ typedef int32_t b32;
 #define PI64 3.14159265358979323846
 
 /* SCRATCH A PIXEL */
-#include <chrono>
-
-#include "geometry_utils.h"
-#include "utils.h"
+#include <algorithm>
+#include "geometry.h"
 #include "cow.h"
 #define internal static
 
@@ -132,7 +130,7 @@ void convertToRaster(
 	vertexRaster.z = -vertexCamera.z;
 }
 
-int blah(int bytesPerPixel, u32 width, u32 height)
+int renderCow(int bytesPerPixel, u32 width, u32 height)
 {
     u32 imageWidth = width;
     u32 imageHeight = height;
@@ -145,7 +143,13 @@ int blah(int bytesPerPixel, u32 width, u32 height)
     float filmApertureWidth = 0.980f;
     float filmApertureHeight = 0.735f;
 
-    const Matrix44 worldToCamera = {0.707107f, -0.331295f, 0.624695f, 0.0f, 0.0f, 0.883452f, 0.468521f, 0.0f, -0.707107f, -0.331295f, 0.624695f, 0.0f, -1.63871f, -5.747777f, -40.400412f, 1.0f};
+    const Matrix44 worldToCamera = {
+        0.707107f, -0.331295f, 0.624695f, 0.0f,
+        0.0f, 0.883452f, 0.468521f, 0.0f,
+        -0.707107f, -0.331295f, 0.624695f, 0.0f,
+        -1.63871f, -5.747777f, -40.400412f, 1.0f
+    };
+
 	Matrix44 cameraToWorld = worldToCamera.inverse();
 
 	Screen screen = computeScreenCoordinates(filmApertureWidth, filmApertureHeight,
@@ -169,8 +173,6 @@ int blah(int bytesPerPixel, u32 width, u32 height)
 	for (uint32_t i = 0; i < imageWidth * imageHeight; ++i) {
 		depthBuffer[i] = farClippingPLane;
 	}
-
-	auto t_start = std::chrono::high_resolution_clock::now();
 
 	// [comment]
 	// Outer loop
@@ -207,10 +209,10 @@ int blah(int bytesPerPixel, u32 width, u32 height)
         st1 *= v1Raster.z;
         st2 *= v2Raster.z;
 
-		float xmin = scratch::utils::min3(v0Raster.x, v1Raster.x, v2Raster.x);
-		float ymin = scratch::utils::min3(v0Raster.y, v1Raster.y, v2Raster.y);
-		float xmax = scratch::utils::max3(v0Raster.x, v1Raster.x, v2Raster.x);
-		float ymax = scratch::utils::max3(v0Raster.y, v1Raster.y, v2Raster.y);
+		float xmin = std::min(std::min(v0Raster.x, v1Raster.x), v2Raster.x);
+		float ymin = std::min(std::min(v0Raster.y, v1Raster.y), v2Raster.y);
+		float xmax = std::max(std::max(v0Raster.x, v1Raster.x), v2Raster.x);
+		float ymax = std::max(std::max(v0Raster.y, v1Raster.y), v2Raster.y);
 
 		// the triangle is out of screen
 		if (xmin > imageWidth - 1 || xmax < 0 || ymin > imageHeight - 1 || ymax < 0) {
@@ -296,20 +298,6 @@ int blah(int bytesPerPixel, u32 width, u32 height)
 		}
 	}
 
-	// auto t_end = std::chrono::high_resolution_clock::now();
-	// auto passedTime = std::chrono::duration<double, std::milli>(t_end - t_start).count();
-	// std::cerr << "Wall passed time:  " << passedTime << " ms" << std::endl;
-
-	// [comment]
-	// Store the result of the framebuffer to a PPM file (Photoshop reads PPM files).
-	// [/comment]
-	FILE *file;
-    fopen_s(&file, "./cow.ppm", "wb");
-	fprintf(file, "P6\n");
-    fprintf(file, "%d %d\n255\n", imageWidth, imageHeight);
-	fwrite(frameBuffer, sizeof(*frameBuffer), imageWidth * imageHeight, file);
-	fclose(file);
-
     u8 *row = (u8 *)globalBitmapMemory;
     int pitch = imageWidth * bytesPerPixel;
     for (u32 y = 0; y < imageHeight; ++y)
@@ -317,10 +305,6 @@ int blah(int bytesPerPixel, u32 width, u32 height)
         u8 *pixel = row;
         for (u32 x = 0; x < imageWidth; ++x)
         {
-            // RR GG BB xx
-            // xx BB GG RR
-            // xx RR GG BB
-
             Vec3u v = frameBuffer[y * imageWidth + x];
 
             *pixel = (u8)v.z;
@@ -464,19 +448,15 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE prevInstance, PSTR cmdLine, int
                 break;
             }
 
-            blah(4, globalBitmapWidth, globalBitmapHeight);
+            renderCow(4, globalBitmapWidth, globalBitmapHeight);
 
-            PAINTSTRUCT paint;
-            HDC deviceContext = BeginPaint(windowHandle, &paint);
-            int x = paint.rcPaint.left;
-            int y = paint.rcPaint.top;
-            int width = paint.rcPaint.right - paint.rcPaint.left;
-            int height = paint.rcPaint.bottom - paint.rcPaint.top;
-
+            HDC deviceContext = GetDC(windowHandle);
             RECT clientRect;
             GetClientRect(windowHandle, &clientRect);
-            win32UpdateWindow(deviceContext, &clientRect, x, y, width, height);
-            EndPaint(windowHandle, &paint);
+            int width = clientRect.right - clientRect.left;
+            int height = clientRect.bottom - clientRect.top;
+            win32UpdateWindow(deviceContext, &clientRect, 0, 0, width, height);
+            ReleaseDC(windowHandle, deviceContext);
 
             LARGE_INTEGER endTime;
             QueryPerformanceCounter(&endTime);
