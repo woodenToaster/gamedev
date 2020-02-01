@@ -8,6 +8,7 @@ static BITMAPINFO globalBitmapInfo;
 static VOID *globalBitmapMemory;
 static int globalBitmapWidth;
 static int globalBitmapHeight;
+static int globalBytesPerPixel;
 
 struct Win32State
 {
@@ -21,6 +22,29 @@ enum PlatformErrorType
     PlatformError_Fatal,
     PlatformError_Warning
 };
+
+void renderTest(u8 modx, u8 mody, u8 modr)
+{
+    u8 *row = (u8 *)globalBitmapMemory;
+    int pitch = globalBitmapWidth * globalBytesPerPixel;
+    for (int y = 0; y < globalBitmapHeight; ++y)
+    {
+        u32 *pixel = (u32 *)row;
+        for (int x = 0; x < globalBitmapWidth; ++x)
+        {
+            u8 r = (x + y) % modr;
+            u8 g = y % mody;
+            u8 b = x % modx;
+            u8 a = 0xFF;
+
+            // RR GG BB xx
+            // xx BB GG RR
+            // xx RR GG BB
+            *pixel++ = ((a << 24) | (r << 16) | (g << 8) | (b << 0));
+        }
+        row += pitch;
+    }
+}
 
 void win32ErrorMessage(PlatformErrorType type, char *message)
 {
@@ -65,8 +89,8 @@ internal void win32ResizeDIBSection(int width, int height)
     globalBitmapInfo.bmiHeader.biBitCount = 32;
     globalBitmapInfo.bmiHeader.biCompression = BI_RGB;
 
-    int bytesPerPixel = 4;
-    int bitmapMemorySize = globalBitmapWidth * globalBitmapHeight * bytesPerPixel;
+    globalBytesPerPixel = 4;
+    int bitmapMemorySize = globalBitmapWidth * globalBitmapHeight * globalBytesPerPixel;
     globalBitmapMemory = VirtualAlloc(0, bitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
 }
 
@@ -160,7 +184,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
 
     memory.audioAPI.playSound = SDLPlaySound;
     memory.audioAPI.loadWav = SDLLoadWav;
-    memory.audioAPI.destroySound = SDLDestroySound;
 #endif
 
     // NOTE(chogan): Set the Windows scheduler granularity to 1ms so that our
@@ -228,20 +251,31 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     GetFileAttributesExA("w:\\gamedev\\build\\gamedev.dll", GetFileExInfoStandard, &attributeData);
     FILETIME lastWriteTime = attributeData.ftLastWriteTime;
 
+    u8 modx = 1;
+    u8 mody = 1;
+    u8 modr = 1;
     globalRunning = true;
     while (globalRunning)
     {
-        MSG message = {};
-        BOOL messageResult = GetMessageA(&message, 0, 0, 0);
-        if (messageResult > 0)
+        MSG message;
+        while (PeekMessage(&message, 0, 0, 0, PM_REMOVE))
         {
+            if (message.message == WM_QUIT)
+            {
+                globalRunning = false;
+            }
+
             TranslateMessage(&message);
-            DispatchMessage(&message);
+            DispatchMessageA(&message);
         }
-        else
-        {
-            break;
-        }
+
+        modx++;
+        mody++;
+        modr++;
+        if (modx == 0) modx = 1;
+        if (mody == 0) mody = 1;
+        if (modr == 0) modr = 1;
+        renderTest(modx, mody, modr);
 
         HDC deviceContext = GetDC(state.window);
         RECT clientRect;
