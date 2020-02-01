@@ -13,7 +13,7 @@
 
 #define internal static
 #define local_persist static
-#define global_variable static
+#define global static
 
 #define InvalidCodePath assert(!"InvalidCodePath")
 
@@ -172,14 +172,14 @@ struct Sound
 };
 
 typedef SoundChunkHandle (LoadWav)(const char *fname);
-typedef void (PlaySound)(Sound *s, u64 now);
-typedef void (DestroySound)(Sound *s);
+typedef void (PlatformPlaySound)(Sound *s, u64 now);
+typedef void (PlatformDestroySound)(Sound *s);
 
 struct AudioAPI
 {
     LoadWav *loadWav;
-    PlaySound *playSound;
-    DestroySound *destroySound;
+    PlatformPlaySound *playSound;
+    PlatformDestroySound *destroySound;
 };
 
 struct GameMemory

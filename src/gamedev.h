@@ -105,9 +105,9 @@ internal void endInventoryMode(Game *g);
 internal void initAnimation(Animation* a, int frames, int ms_delay);
 internal void updateAnimation(Animation* a, u32 elapsed_last_frame, b32 active);
 
-global_variable PlatformAPI platform = {};
-global_variable RendererAPI rendererAPI = {};
-global_variable FontAPI fontAPI = {};
-global_variable AudioAPI audioAPI = {};
-global_variable b32 globalRunning = 0;
+global PlatformAPI platform = {};
+global RendererAPI rendererAPI = {};
+global FontAPI fontAPI = {};
+global AudioAPI audioAPI = {};
+global b32 globalRunning = 0;
 #endif

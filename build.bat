@@ -36,8 +36,14 @@ echo waiting for pdb > lock.tmp
 cl %PREPROCESSOR_DEFINES% %COMPILERFLAGS% ..\src\gamedev.cpp /LD ^
   /link /incremental:no /opt:ref /pdb:gamedev_%random%.pdb /export:gameUpdateAndRender
 del lock.tmp
-cl %PREPROCESSOR_DEFINES% %COMPILERFLAGS% ..\src\sdl2_gamedev.cpp /Fmsdl2_gamedev.map ^
-  /link /incremental:no /opt:ref %LINK_LIBS% /SUBSYSTEM:WINDOWS
+
+REM SDL Platform Layer
+rem cl %PREPROCESSOR_DEFINES% %COMPILERFLAGS% ..\src\sdl2_gamedev.cpp /Fmsdl2_gamedev.map ^
+rem   /link /incremental:no /opt:ref %LINK_LIBS% /SUBSYSTEM:WINDOWS
+
+REM Win32 Platform Layer
+cl %PREPROCESSOR_DEFINES% %COMPILERFLAGS% ..\src\win32_gamedev.cpp /Fmwin32_gamedev.map ^
+  /link /incremental:no /opt:ref user32.lib gdi32.lib winmm.lib
 
 popd
 if %errorlevel% neq 0 exit /b %errorlevel%
