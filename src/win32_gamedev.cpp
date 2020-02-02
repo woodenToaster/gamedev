@@ -3,12 +3,12 @@
 #include "gamedev_platform.h"
 #include "gamedev_memory.h"
 
-static b32 globalRunning;
-static BITMAPINFO globalBitmapInfo;
-static VOID *globalBitmapMemory;
-static int globalBitmapWidth;
-static int globalBitmapHeight;
-static int globalBytesPerPixel;
+global b32 globalRunning;
+global BITMAPINFO globalBitmapInfo;
+global VOID *globalBitmapMemory;
+global int globalBitmapWidth;
+global int globalBitmapHeight;
+global int globalBytesPerPixel;
 
 struct Win32State
 {
@@ -23,7 +23,104 @@ enum PlatformErrorType
     PlatformError_Warning
 };
 
-void renderTest(u8 modx, u8 mody, u8 modr)
+internal void win32ErrorMessage(PlatformErrorType type, char *message)
+{
+    char *caption = "Gamedev Warning";
+
+    UINT msgBoxType = MB_OK;
+    if(type == PlatformError_Fatal)
+    {
+        caption = "Gamedev Fatal Error";
+        msgBoxType |= MB_ICONSTOP;
+    }
+    else
+    {
+        msgBoxType |= MB_ICONWARNING;
+    }
+
+    // TODO(chogan): Use our window for this when it's created, but NULL if
+    // creation fails
+    // TODO(chogan): Include GetLastError in the message
+    MessageBoxExA(NULL, message, caption, msgBoxType, 0);
+
+    if(type == PlatformError_Fatal)
+    {
+        ExitProcess(1);
+    }
+}
+
+u32 safeU64ToU32(u64 val)
+{
+    assert(val <= 0xFFFFFFFF);
+    u32 result = (u32)val;
+
+    return result;
+}
+
+EntireFile win32ReadEntireFile(char *filename)
+{
+    EntireFile result = {};
+    HANDLE fileHandle = CreateFileA(filename, GENERIC_READ, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
+                                    0);
+    if (fileHandle != INVALID_HANDLE_VALUE)
+    {
+        LARGE_INTEGER fileSize;
+        if (GetFileSizeEx(fileHandle, &fileSize))
+        {
+            u32 fileSize32 = safeU64ToU32(fileSize.QuadPart);
+            result.contents = (u8 *)VirtualAlloc(0, fileSize32, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+            if (result.contents)
+            {
+                DWORD bytesRead;
+                // TODO(chogan): Support files larger than 4GB?
+                BOOL success = ReadFile(fileHandle, result.contents, fileSize32, &bytesRead, 0);
+                if (success && bytesRead == fileSize32)
+                {
+                    result.size = fileSize32;
+                }
+                else
+                {
+                    win32ErrorMessage(PlatformError_Fatal, "Failed to read file");
+                }
+
+            }
+            else
+            {
+                // TODO(chogan): @error
+            }
+        }
+        else
+        {
+            // TODO(chogan): @error
+        }
+
+        CloseHandle(fileHandle);
+    }
+    else
+    {
+        win32ErrorMessage(PlatformError_Fatal, "Failed to open file");
+    }
+
+    return result;
+}
+
+internal void win32FreeFileMemory(EntireFile *file)
+{
+    if (file->contents)
+    {
+        VirtualFree(file->contents, 0, MEM_RELEASE);
+    }
+}
+
+internal LARGE_INTEGER win32GetTicks()
+{
+    LARGE_INTEGER result;
+    QueryPerformanceCounter(&Result);
+
+    return result;
+}
+
+internal void renderTest(u8 modx, u8 mody, u8 modr)
 {
     u8 *row = (u8 *)globalBitmapMemory;
     int pitch = globalBitmapWidth * globalBytesPerPixel;
@@ -43,31 +140,6 @@ void renderTest(u8 modx, u8 mody, u8 modr)
             *pixel++ = ((a << 24) | (r << 16) | (g << 8) | (b << 0));
         }
         row += pitch;
-    }
-}
-
-void win32ErrorMessage(PlatformErrorType type, char *message)
-{
-    char *caption = "Gamedev Warning";
-
-    UINT msgBoxType = MB_OK;
-    if(type == PlatformError_Fatal)
-    {
-        caption = "Gamedev Fatal Error";
-        msgBoxType |= MB_ICONSTOP;
-    }
-    else
-    {
-        msgBoxType |= MB_ICONWARNING;
-    }
-
-    // TODO(cjh): Use our window for this when it's created, but NULL if
-    // creation fails
-    MessageBoxExA(NULL, message, caption, msgBoxType, 0);
-
-    if(type == PlatformError_Fatal)
-    {
-        ExitProcess(1);
     }
 }
 
@@ -162,13 +234,14 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     GameMemory memory = {};
     memory.permanentStorageSize = (size_t)MEGABYTES(1);
     memory.transientStorageSize = (size_t)MEGABYTES(4);
-    memory.permanentStorage = calloc(memory.permanentStorageSize + memory.transientStorageSize, sizeof(u8));
+    memory.permanentStorage = VirtualAlloc(0, memory.permanentStorageSize + memory.transientStorageSize,
+                                           MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
     memory.transientStorage = (u8*)memory.permanentStorage + memory.permanentStorageSize;
 
+    memory.platformAPI.readEntireFile = win32ReadEntireFile;
+    memory.platformAPI.freeFileMemory = win32FreeFileMemory;
+    // memory.platformAPI.getTicks = win32GetTicks;
 #if 0
-    memory.platformAPI.readEntireFile = SDLReadEntireFile;
-    memory.platformAPI.freeFileMemory = SDLFreeFileMemory;
-    memory.platformAPI.getTicks = SDL_GetTicks;
 
     memory.rendererAPI.getTextureDims = SDLGetTextureDims;
     memory.rendererAPI.destroyTexture = SDLDestroyTexture;

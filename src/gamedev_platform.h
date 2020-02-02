@@ -65,13 +65,13 @@ struct EntireFile
 struct Game;
 typedef  EntireFile PlatformReadEntireFile(char *);
 typedef void PlatformFreeFileMemory(EntireFile *);
-typedef u32 PlatformGetTicks();
+// typedef u32 PlatformGetTicks();
 
 struct PlatformAPI
 {
     PlatformReadEntireFile *readEntireFile;
     PlatformFreeFileMemory *freeFileMemory;
-    PlatformGetTicks *getTicks;
+    // PlatformGetTicks *getTicks;
 };
 
 struct RendererHandle
