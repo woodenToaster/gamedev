@@ -9,6 +9,7 @@ global VOID *globalBitmapMemory;
 global int globalBitmapWidth;
 global int globalBitmapHeight;
 global int globalBytesPerPixel;
+global LARGE_INTEGER globalPerfFrequency;
 
 struct Win32State
 {
@@ -112,13 +113,15 @@ internal void win32FreeFileMemory(EntireFile *file)
     }
 }
 
+#if 0
 internal LARGE_INTEGER win32GetTicks()
 {
     LARGE_INTEGER result;
-    QueryPerformanceCounter(&Result);
+    QueryPerformanceCounter(&result);
 
     return result;
 }
+#endif
 
 internal void renderTest(u8 modx, u8 mody, u8 modr)
 {
@@ -230,6 +233,13 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     (void)prevInstance;
     (void)commandLine;
     (void)showCode;
+
+    // NOTE(chogan): Counts per second
+    if (!QueryPerformanceFrequency(&globalPerfFrequency))
+    {
+        // TODO(chogan): No high resolution performance counter available.
+        // Fall back to something else?
+    }
 
     GameMemory memory = {};
     memory.permanentStorageSize = (size_t)MEGABYTES(1);
