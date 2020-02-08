@@ -93,8 +93,8 @@ struct Entity
             // Tile
             u32 color;
             u32 tileFlags;
-            i32 timeToCatchFire;
-            i32 timeSpentOnFire;
+            u64 timeToCatchFire;
+            u64 timeSpentOnFire;
             u32 burntTileIndex;
             b32 validPlacement;
             FireState fireState;

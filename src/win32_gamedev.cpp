@@ -3,13 +3,12 @@
 #include "gamedev_platform.h"
 #include "gamedev_memory.h"
 
-global b32 globalRunning;
 global BITMAPINFO globalBitmapInfo;
 global VOID *globalBitmapMemory;
 global int globalBitmapWidth;
 global int globalBitmapHeight;
 global int globalBytesPerPixel;
-global LARGE_INTEGER globalPerfFrequency;
+global i64 globalPerfFrequency;
 
 struct Win32State
 {
@@ -17,6 +16,8 @@ struct Win32State
     b32 isFullscreen;
     b32 isRunning;
 };
+
+global Win32State win32State;
 
 enum PlatformErrorType
 {
@@ -200,11 +201,11 @@ LRESULT CALLBACK win32MainWindowCallback(HWND windowHandle, UINT message, WPARAM
             int width = clientRect.right - clientRect.left;
             int height = clientRect.bottom - clientRect.top;
             win32ResizeDIBSection(width, height);
-            break;
-        }
+        } break;
         case WM_DESTROY:
-            globalRunning = false;
-            break;
+        {
+            win32State.isRunning = false;
+        } break;
         case WM_PAINT:
         {
             PAINTSTRUCT paint;
@@ -218,12 +219,34 @@ LRESULT CALLBACK win32MainWindowCallback(HWND windowHandle, UINT message, WPARAM
             GetClientRect(windowHandle, &clientRect);
             win32UpdateWindow(deviceContext, &clientRect, x, y, width, height);
             EndPaint(windowHandle, &paint);
-            break;
-        }
+        } break;
         default:
+        {
             result = DefWindowProc(windowHandle, message, wParam, lParam);
-            break;
+        } break;
     }
+
+    return result;
+}
+
+inline LARGE_INTEGER win32GetTicks()
+{
+    LARGE_INTEGER result;
+    QueryPerformanceCounter(&result);
+
+    return result;
+}
+
+inline f32 win32GetSecondsElapsed(LARGE_INTEGER start, LARGE_INTEGER end)
+{
+    f32 result = ((f32)(end.QuadPart - start.QuadPart)) / (f32)globalPerfFrequency;
+
+    return result;
+}
+inline u32 win32GetMillisecondsElapsed(LARGE_INTEGER start, LARGE_INTEGER end)
+{
+    f32 seconds = win32GetSecondsElapsed(start, end);
+    u32 result = (u32)(seconds * 1000.0f);
 
     return result;
 }
@@ -233,13 +256,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     (void)prevInstance;
     (void)commandLine;
     (void)showCode;
-
-    // NOTE(chogan): Counts per second
-    if (!QueryPerformanceFrequency(&globalPerfFrequency))
-    {
-        // TODO(chogan): No high resolution performance counter available.
-        // Fall back to something else?
-    }
 
     GameMemory memory = {};
     memory.permanentStorageSize = (size_t)MEGABYTES(1);
@@ -269,10 +285,33 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     memory.audioAPI.loadWav = SDLLoadWav;
 #endif
 
-    // NOTE(chogan): Set the Windows scheduler granularity to 1ms so that our
-    // Sleep() can be more granular.
-    // UINT desiredSchedulerMS = 1;
-    // b32 sleepIsGranular = timeBeginPeriod(desiredSchedulerMS) == TIMERR_NOERROR;
+    // NOTE(chogan): Counts per second
+    LARGE_INTEGER perfCountFreqResult;
+    if (!QueryPerformanceFrequency(&perfCountFreqResult))
+    {
+        // TODO(chogan): No high resolution performance counter available.
+        // Fall back to something else?
+    }
+    globalPerfFrequency = perfCountFreqResult.QuadPart;
+
+    // NOTE(chogan): Set the Windows scheduler granularity to the minimum that
+    // the device allows.
+    TIMECAPS timeCaps = {};
+    UINT minimumResolution = 0;
+    if(timeGetDevCaps(&timeCaps, sizeof(TIMECAPS)) != MMSYSERR_NOERROR)
+    {
+        win32ErrorMessage(PlatformError_Warning, "Could not determine device TIMECAPS. Using default.");
+        minimumResolution = 5;
+    }
+    else
+    {
+        minimumResolution = timeCaps.wPeriodMin;
+    }
+
+    // TODO(chogan): This should technically be matched with a call to
+    // timeEndPeriod(minimumResolution).
+    b32 sleepIsGranular = (minimumResolution == 1 &&
+                           (timeBeginPeriod(minimumResolution) == TIMERR_NOERROR));
 
     i32 screenWidth = 960;
     i32 screenHeight = 540;
@@ -293,43 +332,52 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
         win32ErrorMessage(PlatformError_Fatal, "Cannot register window class");
     }
 
-    Win32State state = {};
-    state.window = CreateWindowExA(0, windowClass.lpszClassName, "Gamedev",
-                                   WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT,
-                                   CW_USEDEFAULT, CW_USEDEFAULT, 0, 0, instance, 0);
+    win32State.window = CreateWindowExA(0, windowClass.lpszClassName, "Gamedev",
+                                        WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT,
+                                        CW_USEDEFAULT, CW_USEDEFAULT, 0, 0, instance, 0);
 
-    if (!state.window)
+    if (!win32State.window)
     {
         win32ErrorMessage(PlatformError_Fatal, "Cannot create window");
     }
 
+    // TODO(chogan): This shows up here and in the Game struct
     u32 targetFps = 60;
     memory.dt = (i32)((1.0f / (f32)targetFps) * 1000);
+    // TODO(chogan): This gets set when memory is initialized in gameUpdateAndRender.
+    // Remove this once we're calling that function.
+    memory.targetMsPerFrame = (u32)(1000.0f / (f32)targetFps);
 
     // Input
     Input input = {};
+
+
     // TODO(cjh):
     // SDL_GameController *controllerHandles[MAX_CONTROLLERS] = {};
     // SDLInitControllers(&controllerHandles[0]);
 
+    // u32 tileWidth = 80;
+    // u32 tileHeight = 80;
+    // u32 rows = 10;
+    // u32 cols = 12;
+    // TextureHandle backBuffer = {};
+    // backBuffer.texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
+                                           // cols * tileWidth, rows * tileHeight);
     Rect viewport = {0, 0, screenWidth, screenHeight};
 
     HMODULE gamedevDLL = LoadLibraryA("gamedev.dll");
     if (!gamedevDLL)
     {
-        win32ErrorMessage(PlatformError_Warning, "Cannot create window");
-        exit(1);
+        win32ErrorMessage(PlatformError_Fatal, "Cannot load gamedev.dll");
     }
-    GameUpdateAndRender *updateAndRender = (GameUpdateAndRender*)GetProcAddress(gamedevDLL, "gameUpdateAndRender");
+    GameUpdateAndRender *updateAndRender = (GameUpdateAndRender*)GetProcAddress(gamedevDLL,
+                                                                                "gameUpdateAndRender");
 
     if (!updateAndRender)
     {
-        // TODO(cjh): @win32
-        OutputDebugString("Failed to load gameUpdateAndRender\n");
-        exit(1);
+        win32ErrorMessage(PlatformError_Fatal, "Failed to find gameUpdateAndRender\n");
     }
 
-    // TODO(cjh): @win32 specific code
     WIN32_FILE_ATTRIBUTE_DATA attributeData;
     GetFileAttributesExA("w:\\gamedev\\build\\gamedev.dll", GetFileExInfoStandard, &attributeData);
     FILETIME lastWriteTime = attributeData.ftLastWriteTime;
@@ -337,20 +385,43 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     u8 modx = 1;
     u8 mody = 1;
     u8 modr = 1;
-    globalRunning = true;
-    while (globalRunning)
+    win32State.isRunning = true;
+    while (win32State.isRunning)
     {
+        WIN32_FILE_ATTRIBUTE_DATA w32FileAttributData;
+        GetFileAttributesExA("w:\\gamedev\\build\\gamedev.dll", GetFileExInfoStandard,
+                             &w32FileAttributData);
+        FILETIME newWriteTime = w32FileAttributData.ftLastWriteTime;
+        if (CompareFileTime(&newWriteTime, &lastWriteTime) != 0)
+        {
+            WIN32_FILE_ATTRIBUTE_DATA ignored;
+            if (!GetFileAttributesExA("lock.tmp", GetFileExInfoStandard, &ignored))
+            {
+                FreeLibrary(gamedevDLL);
+                lastWriteTime = newWriteTime;
+                CopyFile("w:\\gamedev\\build\\gamedev.dll", "w:\\gamedev\\build\\gamedev_temp.dll",
+                         FALSE);
+                gamedevDLL = LoadLibraryA("gamedev.dll");
+                updateAndRender = (GameUpdateAndRender*)GetProcAddress(gamedevDLL, "gameUpdateAndRender");
+                memory.isInitialized = false;
+            }
+        }
+
+        memory.currentTickCount = win32GetTicks().QuadPart;
+
         MSG message;
         while (PeekMessage(&message, 0, 0, 0, PM_REMOVE))
         {
             if (message.message == WM_QUIT)
             {
-                globalRunning = false;
+                win32State.isRunning = false;
             }
 
             TranslateMessage(&message);
             DispatchMessageA(&message);
         }
+
+        // updateAndRender(&memory, &input, backBuffer, &viewport, rendererHandle);
 
         modx++;
         mody++;
@@ -360,13 +431,33 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
         if (modr == 0) modr = 1;
         renderTest(modx, mody, modr);
 
-        HDC deviceContext = GetDC(state.window);
+        HDC deviceContext = GetDC(win32State.window);
         RECT clientRect;
-        GetClientRect(state.window, &clientRect);
+        GetClientRect(win32State.window, &clientRect);
         int width = clientRect.right - clientRect.left;
         int height = clientRect.bottom - clientRect.top;
         win32UpdateWindow(deviceContext, &clientRect, 0, 0, width, height);
-        ReleaseDC(state.window, deviceContext);
+        ReleaseDC(win32State.window, deviceContext);
+
+        LARGE_INTEGER currentTick = {};
+        currentTick.QuadPart = memory.currentTickCount;
+        u32 dt = win32GetMillisecondsElapsed(currentTick, win32GetTicks());
+        if (dt < memory.targetMsPerFrame)
+        {
+            while (dt < memory.targetMsPerFrame)
+            {
+                u32 sleep_ms = memory.targetMsPerFrame - dt;
+                dt += sleep_ms;
+                Sleep(sleep_ms);
+            }
+        }
+
+        char fpsBuffer[256];
+        u32 msPerFrame = dt;
+        _snprintf_s(fpsBuffer, sizeof(fpsBuffer), "%d ms/f\n", msPerFrame);
+        OutputDebugStringA(fpsBuffer);
+        // TODO(cjh): Don't copy back and forth between game and platform
+        memory.dt = dt;
     }
 
     return 0;

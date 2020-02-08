@@ -33,7 +33,7 @@ struct Animation
     int totalFrames;
     int currentFrame;
     u32 delay;
-    u32 elapsed;
+    u64 elapsed;
 };
 
 #define MAX_SOUNDS_PER_FRAME 20
@@ -64,11 +64,10 @@ struct Sprite;
 
 struct Game
 {
-    u32 dt;
+    u64 dt;
     i32 targetFps;
     u32 totalFramesElapsed;
     bool running;
-    RendererHandle renderer;
     u32 *colors;
     Camera camera;
     Map *currentMap;
@@ -79,6 +78,7 @@ struct Game
 
     Entity *hero;
 
+    RendererHandle renderer;
     TextureHandle linkTexture;
     TextureHandle harvestableTreeTexture;
     TextureHandle glowTreeTexture;
@@ -103,7 +103,7 @@ internal void endDialogueMode(Game *g);
 internal void startInventoryMode(Game *g);
 internal void endInventoryMode(Game *g);
 internal void initAnimation(Animation* a, int frames, int ms_delay);
-internal void updateAnimation(Animation* a, u32 elapsed_last_frame, b32 active);
+internal void updateAnimation(Animation* a, u64 elapsed_last_frame, b32 active);
 
 global PlatformAPI platform = {};
 global RendererAPI rendererAPI = {};

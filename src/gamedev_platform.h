@@ -193,8 +193,8 @@ struct GameMemory
     u64 transientStorageSize;
     void *transientStorage;
 
-    u32 currentTickCount;
-    u32 dt;
+    u64 currentTickCount;
+    u64 dt;
     u32 targetMsPerFrame;
     b32 isInitialized;
     PlatformAPI platformAPI;
