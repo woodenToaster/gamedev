@@ -194,8 +194,6 @@ struct GameMemory
     void *transientStorage;
 
     u64 currentTickCount;
-    u64 dt;
-    u32 targetMsPerFrame;
     b32 isInitialized;
     PlatformAPI platformAPI;
     RendererAPI rendererAPI;
@@ -271,6 +269,7 @@ enum Button
 
 struct Input
 {
+    u64 dt;
     b32 keyPressed[Key_Count];
     b32 keyDown[Key_Count];
     b32 buttonPressed[Button_Count];

@@ -64,8 +64,6 @@ struct Sprite;
 
 struct Game
 {
-    u64 dt;
-    i32 targetFps;
     u32 totalFramesElapsed;
     bool running;
     u32 *colors;

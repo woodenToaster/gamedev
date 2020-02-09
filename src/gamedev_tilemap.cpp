@@ -17,7 +17,7 @@ inline internal b32 isTileFlagSet(Entity *e, TileProperty prop)
     return result;
 }
 
-void updateTiles(Game *g)
+void updateTiles(Game *g, Input *input)
 {
     i32 millisecondsToBurn = 3000;
 
@@ -31,7 +31,7 @@ void updateTiles(Game *g)
         }
 
         if (e->animation.totalFrames > 0) {
-            updateAnimation(&e->animation, g->dt, e->shouldAnimate);
+            updateAnimation(&e->animation, input->dt, e->shouldAnimate);
         }
 
         // Update Flammable tiles
@@ -49,12 +49,12 @@ void updateTiles(Game *g)
                 }
                 else
                 {
-                    e->timeToCatchFire -= g->dt;
+                    e->timeToCatchFire -= input->dt;
                 }
             } break;
             case FireState_Caught:
             {
-                e->timeSpentOnFire += g->dt;
+                e->timeSpentOnFire += input->dt;
                 if (e->timeSpentOnFire > millisecondsToBurn)
                 {
                     e->fireState = FireState_Burnt;

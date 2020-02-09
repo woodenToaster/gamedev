@@ -178,16 +178,12 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHan
     assert(sizeof(Game) < memory->permanentStorageSize);
     Game* game = (Game*)memory->permanentStorage;
     u64 now = memory->currentTickCount;
-    game->dt = memory->dt;
 
     if (!memory->isInitialized)
     {
         initArena(&game->worldArena, memory->permanentStorageSize - sizeof(Game),
                   (u8*)memory->permanentStorage + sizeof(Game));
         initArena(&game->transientArena, memory->transientStorageSize, (u8*)memory->transientStorage);
-
-        game->targetFps = 60;
-        memory->targetMsPerFrame = (u32)(1000.0f / (f32)game->targetFps);
 
         game->renderer = renderer;
         game->colors = memory->colors;
@@ -339,9 +335,9 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHan
             updateCamera(&game->camera, hero->position);
             viewport->x = game->camera.viewport.x;
             viewport->y = game->camera.viewport.y;
-            updateEntities(game);
+            updateEntities(game, input);
             playQueuedSounds(&game->sounds, now);
-            updateTiles(game);
+            updateTiles(game, input);
             break;
         }
         case GameMode_Dialogue:
@@ -378,6 +374,7 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHan
     /* Debug text                                                             */
     /**************************************************************************/
 #if 0
+    // TODO(chogan): Move this to the platform layer
     f32 fps = 1000.0f / game->dt;
     char fpsText[9] = {0};
     snprintf(fpsText, 9, "FPS: %03d", (u32)fps);

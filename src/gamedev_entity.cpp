@@ -527,7 +527,7 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
     // Friction
     acceleration -= 8 * h->velocity;
 
-    f32 dt = (f32)g->dt / 1000.0f;
+    f32 dt = (f32)input->dt / 1000.0f;
     Vec2 oldPosition = h->position;
     Vec2 playerDelta = (0.5 * acceleration * square(dt)) + (h->velocity * dt);
     Vec2 newPosition =  playerDelta + h->position;
@@ -840,7 +840,7 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
     }
 }
 
-void updateEntities(Game *g)
+void updateEntities(Game *g, Input *input)
 {
     Map *m = g->currentMap;
     for (size_t entityIndex = 0; entityIndex < m->entityCount; ++entityIndex)
@@ -850,7 +850,7 @@ void updateEntities(Game *g)
         {
             if (e->animation.totalFrames > 0)
             {
-                updateAnimation(&e->animation, g->dt, e->shouldAnimate);
+                updateAnimation(&e->animation, input->dt, e->shouldAnimate);
             }
 
             if (e->type == EntityType_Flame)

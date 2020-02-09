@@ -341,15 +341,10 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
         win32ErrorMessage(PlatformError_Fatal, "Cannot create window");
     }
 
-    // TODO(chogan): This shows up here and in the Game struct
     u32 targetFps = 60;
-    memory.dt = (i32)((1.0f / (f32)targetFps) * 1000);
     // TODO(chogan): This gets set when memory is initialized in gameUpdateAndRender.
     // Remove this once we're calling that function.
-    memory.targetMsPerFrame = (u32)(1000.0f / (f32)targetFps);
-
-    // Input
-    Input input = {};
+    u32 targetMsPerFrame = (u32)(1000.0f / (f32)targetFps);
 
 
     // TODO(cjh):
@@ -382,6 +377,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     GetFileAttributesExA("w:\\gamedev\\build\\gamedev.dll", GetFileExInfoStandard, &attributeData);
     FILETIME lastWriteTime = attributeData.ftLastWriteTime;
 
+    LARGE_INTEGER lastTickCount = win32GetTicks();
+
     u8 modx = 1;
     u8 mody = 1;
     u8 modr = 1;
@@ -406,8 +403,13 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
                 memory.isInitialized = false;
             }
         }
+        LARGE_INTEGER currentTick = win32GetTicks();
+        memory.currentTickCount = currentTick.QuadPart;
 
-        memory.currentTickCount = win32GetTicks().QuadPart;
+        Input input = {};
+        // TODO(chogan): Should this be based on the actual elapsed instead of
+        // the target?
+        input.dt = targetMsPerFrame;
 
         MSG message;
         while (PeekMessage(&message, 0, 0, 0, PM_REMOVE))
@@ -439,25 +441,28 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
         win32UpdateWindow(deviceContext, &clientRect, 0, 0, width, height);
         ReleaseDC(win32State.window, deviceContext);
 
-        LARGE_INTEGER currentTick = {};
-        currentTick.QuadPart = memory.currentTickCount;
         u32 dt = win32GetMillisecondsElapsed(currentTick, win32GetTicks());
-        if (dt < memory.targetMsPerFrame)
+        if (dt < targetMsPerFrame)
         {
-            while (dt < memory.targetMsPerFrame)
+            if (sleepIsGranular)
             {
-                u32 sleep_ms = memory.targetMsPerFrame - dt;
-                dt += sleep_ms;
-                Sleep(sleep_ms);
+                while (dt < targetMsPerFrame)
+                {
+                    u32 sleep_ms = targetMsPerFrame - dt;
+                    dt += sleep_ms;
+                    Sleep(sleep_ms);
+                }
             }
         }
+        else if (dt > targetMsPerFrame)
+        {
+            OutputDebugStringA("Missed frame");
+        }
 
-        char fpsBuffer[256];
+        char fpsBuffer[128];
         u32 msPerFrame = dt;
         _snprintf_s(fpsBuffer, sizeof(fpsBuffer), "%d ms/f\n", msPerFrame);
         OutputDebugStringA(fpsBuffer);
-        // TODO(cjh): Don't copy back and forth between game and platform
-        memory.dt = dt;
     }
 
     return 0;
