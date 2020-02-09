@@ -251,6 +251,80 @@ inline u32 win32GetMillisecondsElapsed(LARGE_INTEGER start, LARGE_INTEGER end)
     return result;
 }
 
+internal void win32SetKeyState(Input *input, Key key, b32 isDown)
+{
+    if (input->keyDown[key] && !isDown)
+    {
+        input->keyPressed[key] = true;
+        char b[32];
+        _snprintf_s(b, sizeof(b), "%d\n", key);
+        OutputDebugStringA(b);
+    }
+    input->keyDown[key] = isDown;
+}
+
+internal void win32UpdateKeyboardInput(Input* input, u64 vkCode, b32 isDown)
+{
+    // TODO(chogan): Modifier keys
+
+    switch(vkCode)
+    {
+        case 'W':
+        {
+            win32SetKeyState(input, Key_Up, isDown);
+        } break;
+        case 'A':
+        {
+            win32SetKeyState(input, Key_Left, isDown);
+        } break;
+        case 'S':
+        {
+            win32SetKeyState(input, Key_Down, isDown);
+        } break;
+        case 'D':
+        {
+            win32SetKeyState(input, Key_Right, isDown);
+        } break;
+        default:
+        {
+        } break;
+    }
+}
+
+internal void win32GetInput(Input *input)
+{
+    memset(input->keyPressed, 0, sizeof(b32) * Key_Count);
+    memset(input->buttonPressed, 0, sizeof(b32) * Button_Count);
+
+    MSG message;
+    while (PeekMessage(&message, 0, 0, 0, PM_REMOVE))
+    {
+        switch (message.message)
+        {
+            case WM_QUIT:
+            {
+                win32State.isRunning = false;
+            } break;
+            case WM_SYSKEYUP:
+            case WM_KEYUP:
+            {
+                win32UpdateKeyboardInput(input, (u64)message.wParam, false);
+
+            } break;
+            case WM_SYSKEYDOWN:
+            case WM_KEYDOWN:
+            {
+                win32UpdateKeyboardInput(input, (u64)message.wParam, true);
+            } break;
+            default:
+            {
+                TranslateMessage(&message);
+                DispatchMessageA(&message);
+            } break;
+        }
+    }
+}
+
 int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLine, int showCode)
 {
     (void)prevInstance;
@@ -346,7 +420,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     // Remove this once we're calling that function.
     u32 targetMsPerFrame = (u32)(1000.0f / (f32)targetFps);
 
-
     // TODO(cjh):
     // SDL_GameController *controllerHandles[MAX_CONTROLLERS] = {};
     // SDLInitControllers(&controllerHandles[0]);
@@ -360,21 +433,29 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
                                            // cols * tileWidth, rows * tileHeight);
     Rect viewport = {0, 0, screenWidth, screenHeight};
 
-    HMODULE gamedevDLL = LoadLibraryA("gamedev.dll");
+    char *dllName = "gamedev.dll";
+    HMODULE gamedevDLL = LoadLibraryA(dllName);
     if (!gamedevDLL)
     {
-        win32ErrorMessage(PlatformError_Fatal, "Cannot load gamedev.dll");
+        char errBuffer[64];
+        _snprintf_s(errBuffer, sizeof(errBuffer), "Cannot load %s\n", dllName);
+        win32ErrorMessage(PlatformError_Fatal, errBuffer);
     }
-    GameUpdateAndRender *updateAndRender = (GameUpdateAndRender*)GetProcAddress(gamedevDLL,
-                                                                                "gameUpdateAndRender");
+    char *procName = "gameUpdateAndRender";
+    GameUpdateAndRender *updateAndRender = (GameUpdateAndRender*)GetProcAddress(gamedevDLL, procName);
 
     if (!updateAndRender)
     {
-        win32ErrorMessage(PlatformError_Fatal, "Failed to find gameUpdateAndRender\n");
+        char errBuffer[64];
+        _snprintf_s(errBuffer, sizeof(errBuffer), "Failed to find %s\n", procName);
+        win32ErrorMessage(PlatformError_Fatal, errBuffer);
     }
 
+    char *dllPath = "w:\\gamedev\\build\\gamedev.dll";
+    char *tempPath = "w:\\gamedev\\build\\gamedev_temp.dll";
+
     WIN32_FILE_ATTRIBUTE_DATA attributeData;
-    GetFileAttributesExA("w:\\gamedev\\build\\gamedev.dll", GetFileExInfoStandard, &attributeData);
+    GetFileAttributesExA(dllPath, GetFileExInfoStandard, &attributeData);
     FILETIME lastWriteTime = attributeData.ftLastWriteTime;
 
     LARGE_INTEGER lastTickCount = win32GetTicks();
@@ -386,20 +467,19 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     while (win32State.isRunning)
     {
         WIN32_FILE_ATTRIBUTE_DATA w32FileAttributData;
-        GetFileAttributesExA("w:\\gamedev\\build\\gamedev.dll", GetFileExInfoStandard,
-                             &w32FileAttributData);
+        GetFileAttributesExA(dllPath, GetFileExInfoStandard, &w32FileAttributData);
         FILETIME newWriteTime = w32FileAttributData.ftLastWriteTime;
         if (CompareFileTime(&newWriteTime, &lastWriteTime) != 0)
         {
             WIN32_FILE_ATTRIBUTE_DATA ignored;
-            if (!GetFileAttributesExA("lock.tmp", GetFileExInfoStandard, &ignored))
+            char *lockFileName = "lock.tmp";
+            if (!GetFileAttributesExA(lockFileName, GetFileExInfoStandard, &ignored))
             {
                 FreeLibrary(gamedevDLL);
                 lastWriteTime = newWriteTime;
-                CopyFile("w:\\gamedev\\build\\gamedev.dll", "w:\\gamedev\\build\\gamedev_temp.dll",
-                         FALSE);
-                gamedevDLL = LoadLibraryA("gamedev.dll");
-                updateAndRender = (GameUpdateAndRender*)GetProcAddress(gamedevDLL, "gameUpdateAndRender");
+                CopyFile(dllPath, tempPath, FALSE);
+                gamedevDLL = LoadLibraryA(dllName);
+                updateAndRender = (GameUpdateAndRender*)GetProcAddress(gamedevDLL, procName);
                 memory.isInitialized = false;
             }
         }
@@ -411,17 +491,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
         // the target?
         input.dt = targetMsPerFrame;
 
-        MSG message;
-        while (PeekMessage(&message, 0, 0, 0, PM_REMOVE))
-        {
-            if (message.message == WM_QUIT)
-            {
-                win32State.isRunning = false;
-            }
+        win32GetInput(&input);
 
-            TranslateMessage(&message);
-            DispatchMessageA(&message);
-        }
 
         // updateAndRender(&memory, &input, backBuffer, &viewport, rendererHandle);
 
@@ -462,7 +533,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
         char fpsBuffer[128];
         u32 msPerFrame = dt;
         _snprintf_s(fpsBuffer, sizeof(fpsBuffer), "%d ms/f\n", msPerFrame);
-        OutputDebugStringA(fpsBuffer);
+        // OutputDebugStringA(fpsBuffer);
     }
 
     return 0;
