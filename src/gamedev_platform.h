@@ -277,6 +277,12 @@ struct Input
     f32 stickX;
     f32 stickY;
 };
-typedef void (GameUpdateAndRender)(GameMemory *memory, Input *input, TextureHandle outputTarget, Rect *viewport,
-                                   RendererHandle renderer);
+#if 0
+typedef void (GameUpdateAndRender)(GameMemory *memory, Input *input, TextureHandle outputTarget,
+                                   Rect *viewport, RendererHandle renderer);
+#endif
+
+typedef void (GameUpdateAndRender)(void *globalBitmapMemory, int globalBitmapWidth,
+                                   int globalBitmapHeight, int globalBytesPerPixel,
+                                   u8 modx, u8 mody, u8 modr);
 #endif

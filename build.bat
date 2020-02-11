@@ -30,7 +30,7 @@ del gamedev_*.pdb > NUL 2> NUL
 
 REM Not sure why cl doesn't have permission to overwrite this file.
 REM We have to rename it manually for hot reloading to work.
-move gamedev.dll gamedev.dll.old
+rem move gamedev.dll gamedev.dll.old
 
 echo waiting for pdb > lock.tmp
 cl %PREPROCESSOR_DEFINES% %COMPILERFLAGS% ..\src\gamedev.cpp /LD ^

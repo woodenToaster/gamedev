@@ -124,28 +124,6 @@ internal LARGE_INTEGER win32GetTicks()
 }
 #endif
 
-internal void renderTest(u8 modx, u8 mody, u8 modr)
-{
-    u8 *row = (u8 *)globalBitmapMemory;
-    int pitch = globalBitmapWidth * globalBytesPerPixel;
-    for (int y = 0; y < globalBitmapHeight; ++y)
-    {
-        u32 *pixel = (u32 *)row;
-        for (int x = 0; x < globalBitmapWidth; ++x)
-        {
-            u8 r = (x + y) % modr;
-            u8 g = y % mody;
-            u8 b = x % modx;
-            u8 a = 0xFF;
-
-            // RR GG BB xx
-            // xx BB GG RR
-            // xx RR GG BB
-            *pixel++ = ((a << 24) | (r << 16) | (g << 8) | (b << 0));
-        }
-        row += pitch;
-    }
-}
 
 internal void win32ResizeDIBSection(int width, int height)
 {
@@ -253,12 +231,9 @@ inline u32 win32GetMillisecondsElapsed(LARGE_INTEGER start, LARGE_INTEGER end)
 
 internal void win32SetKeyState(Input *input, Key key, b32 isDown)
 {
-    if (input->keyDown[key] && !isDown)
+    if (!isDown)
     {
         input->keyPressed[key] = true;
-        char b[32];
-        _snprintf_s(b, sizeof(b), "%d\n", key);
-        OutputDebugStringA(b);
     }
     input->keyDown[key] = isDown;
 }
@@ -266,7 +241,6 @@ internal void win32SetKeyState(Input *input, Key key, b32 isDown)
 internal void win32UpdateKeyboardInput(Input* input, u64 vkCode, b32 isDown)
 {
     // TODO(chogan): Modifier keys
-
     switch(vkCode)
     {
         case 'W':
@@ -284,6 +258,10 @@ internal void win32UpdateKeyboardInput(Input* input, u64 vkCode, b32 isDown)
         case 'D':
         {
             win32SetKeyState(input, Key_Right, isDown);
+        } break;
+        case VK_ESCAPE:
+        {
+            win32SetKeyState(input, Key_Escape, isDown);
         } break;
         default:
         {
@@ -307,14 +285,16 @@ internal void win32GetInput(Input *input)
             } break;
             case WM_SYSKEYUP:
             case WM_KEYUP:
-            {
-                win32UpdateKeyboardInput(input, (u64)message.wParam, false);
-
-            } break;
             case WM_SYSKEYDOWN:
             case WM_KEYDOWN:
             {
-                win32UpdateKeyboardInput(input, (u64)message.wParam, true);
+                b32 wasDown = message.lParam >> 30 != 0;
+                b32 isDown = message.lParam >> 31 == 0;
+
+                if (wasDown != isDown)
+                {
+                    win32UpdateKeyboardInput(input, (u64)message.wParam, isDown);
+                }
             } break;
             default:
             {
@@ -322,6 +302,11 @@ internal void win32GetInput(Input *input)
                 DispatchMessageA(&message);
             } break;
         }
+    }
+
+    if (input->keyPressed[Key_Escape])
+    {
+        win32State.isRunning = false;
     }
 }
 
@@ -434,7 +419,12 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     Rect viewport = {0, 0, screenWidth, screenHeight};
 
     char *dllName = "gamedev.dll";
-    HMODULE gamedevDLL = LoadLibraryA(dllName);
+    char *tempDllName = "gamedev_temp.dll";
+    char *dllPath = "w:\\gamedev\\build\\gamedev.dll";
+    char *tempPath = "w:\\gamedev\\build\\gamedev_temp.dll";
+
+    CopyFile(dllPath, tempPath, FALSE);
+    HMODULE gamedevDLL = LoadLibraryA(tempDllName);
     if (!gamedevDLL)
     {
         char errBuffer[64];
@@ -451,8 +441,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
         win32ErrorMessage(PlatformError_Fatal, errBuffer);
     }
 
-    char *dllPath = "w:\\gamedev\\build\\gamedev.dll";
-    char *tempPath = "w:\\gamedev\\build\\gamedev_temp.dll";
 
     WIN32_FILE_ATTRIBUTE_DATA attributeData;
     GetFileAttributesExA(dllPath, GetFileExInfoStandard, &attributeData);
@@ -478,7 +466,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
                 FreeLibrary(gamedevDLL);
                 lastWriteTime = newWriteTime;
                 CopyFile(dllPath, tempPath, FALSE);
-                gamedevDLL = LoadLibraryA(dllName);
+                gamedevDLL = LoadLibraryA(tempDllName);
                 updateAndRender = (GameUpdateAndRender*)GetProcAddress(gamedevDLL, procName);
                 memory.isInitialized = false;
             }
@@ -490,11 +478,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
         // TODO(chogan): Should this be based on the actual elapsed instead of
         // the target?
         input.dt = targetMsPerFrame;
-
         win32GetInput(&input);
-
-
-        // updateAndRender(&memory, &input, backBuffer, &viewport, rendererHandle);
 
         modx++;
         mody++;
@@ -502,7 +486,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
         if (modx == 0) modx = 1;
         if (mody == 0) mody = 1;
         if (modr == 0) modr = 1;
-        renderTest(modx, mody, modr);
+        updateAndRender((u8 *)globalBitmapMemory, globalBitmapWidth, globalBitmapHeight,
+                        globalBytesPerPixel, modx, mody, modr);
 
         HDC deviceContext = GetDC(win32State.window);
         RECT clientRect;
@@ -527,7 +512,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
         }
         else if (dt > targetMsPerFrame)
         {
-            OutputDebugStringA("Missed frame");
+            OutputDebugStringA("Missed frame\n");
         }
 
         char fpsBuffer[128];

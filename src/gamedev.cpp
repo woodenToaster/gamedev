@@ -167,9 +167,33 @@ internal void queueSound(SoundList *sl, Sound *s)
     sl->items[sl->count++] = s;
 }
 
-extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHandle outputTarget, Rect *viewport,
-                                    RendererHandle renderer)
+// extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHandle outputTarget,
+// Rect *viewport, RendererHandle renderer)
+extern "C" void gameUpdateAndRender(void *globalBitmapMemory, int globalBitmapWidth,
+                                    int globalBitmapHeight, int globalBytesPerPixel, u8 modx, u8 mody,
+                                    u8 modr)
 {
+    u8 *row = (u8 *)globalBitmapMemory;
+    int pitch = globalBitmapWidth * globalBytesPerPixel;
+    for (int y = 0; y < globalBitmapHeight; ++y)
+    {
+        u32 *pixel = (u32 *)row;
+        for (int x = 0; x < globalBitmapWidth; ++x)
+        {
+            u8 r = (x + y) % modr;
+            u8 g = y % mody;
+            u8 b = x % modx;
+            u8 a = 0xFF;
+
+            // RR GG BB xx
+            // xx BB GG RR
+            // xx RR GG BB
+            *pixel++ = ((a << 24) | (r << 16) | (g << 8) | (b << 0));
+        }
+        row += pitch;
+    }
+
+#if 0
     platform = memory->platformAPI;
     rendererAPI = memory->rendererAPI;
     fontAPI = memory->fontAPI;
@@ -396,4 +420,5 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHan
 
     checkArena(&game->transientArena);
     checkArena(&game->worldArena);
+#endif
 }
