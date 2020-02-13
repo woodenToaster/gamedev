@@ -124,7 +124,6 @@ internal LARGE_INTEGER win32GetTicks()
 }
 #endif
 
-
 internal void win32ResizeDIBSection(int width, int height)
 {
     if (globalBitmapMemory)
@@ -475,7 +474,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
         memory.currentTickCount = currentTick.QuadPart;
 
         Input input = {};
-        // TODO(chogan): Should this be based on the actual elapsed instead of
+        // TODO(chogan): Should this be based on the actual elapsed ms instead of
         // the target?
         input.dt = targetMsPerFrame;
         win32GetInput(&input);
@@ -486,8 +485,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
         if (modx == 0) modx = 1;
         if (mody == 0) mody = 1;
         if (modr == 0) modr = 1;
-        updateAndRender((u8 *)globalBitmapMemory, globalBitmapWidth, globalBitmapHeight,
-                        globalBytesPerPixel, modx, mody, modr);
+        updateAndRender(&memory, &input, (u8 *)globalBitmapMemory, globalBitmapWidth, globalBitmapHeight,
+                        globalBytesPerPixel);
 
         HDC deviceContext = GetDC(win32State.window);
         RECT clientRect;
@@ -515,7 +514,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
             OutputDebugStringA("Missed frame\n");
         }
 
-        char fpsBuffer[128];
+        char fpsBuffer[64];
         u32 msPerFrame = dt;
         _snprintf_s(fpsBuffer, sizeof(fpsBuffer), "%d ms/f\n", msPerFrame);
         // OutputDebugStringA(fpsBuffer);

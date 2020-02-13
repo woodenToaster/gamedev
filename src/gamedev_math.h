@@ -15,6 +15,44 @@ struct Vec2
     f32 y;
 };
 
+#pragma warning(disable:4201)
+union Vec3
+{
+    struct
+    {
+        f32 x;
+        f32 y;
+        f32 z;
+    };
+
+    struct
+    {
+        f32 r;
+        f32 g;
+        f32 b;
+    };
+};
+
+union Vec4
+{
+    struct
+    {
+        f32 x;
+        f32 y;
+        f32 z;
+        f32 w;
+    };
+
+    struct
+    {
+        f32 r;
+        f32 g;
+        f32 b;
+        f32 a;
+    };
+};
+#pragma warning(default:4201)
+
 struct Circle
 {
     Vec2 center;
@@ -109,6 +147,12 @@ Vec2& operator*=(Vec2& v1, f32 s)
     v1 = s * v1;
 
     return v1;
+}
+
+Vec3 vec3(f32 x, f32 y, f32 z)
+{
+    Vec3 v = {x, y, z};
+    return v;
 }
 
 i32 maxInt32(i32 a, i32 b)

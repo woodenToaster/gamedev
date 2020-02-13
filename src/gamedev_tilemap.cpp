@@ -143,5 +143,6 @@ void drawBackground(RenderGroup *group, Game *g)
 {
     Camera *c = &g->camera;
     Rect backgroundDest = {c->viewport.x, c->viewport.y, c->viewport.w, c->viewport.h};
-    pushFilledRect(group, backgroundDest, g->colors[Color_Grey], RenderLayer_Ground);
+    pushFilledRect(group, backgroundDest, vec3(128, 128, 128), RenderLayer_Ground);
+    // pushFilledRect(group, backgroundDest, g->colors[Color_Grey], RenderLayer_Ground);
 }

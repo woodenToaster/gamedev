@@ -179,13 +179,24 @@ internal void pushRect(RenderGroup *group, Rect dest, u32 color, RenderLayer lay
     }
 }
 
+internal void pushFilledRect(RenderGroup *group, Rect dest, Vec3 color, RenderLayer layer, u8 alpha)
+{
+    RenderEntryFilledRect *filledRect = PushRenderElement(group, RenderEntryFilledRect);
+    if (filledRect)
+    {
+        filledRect->dest = dest;
+        filledRect->color = color;
+        filledRect->alpha = alpha;
+        filledRect->layer = layer;
+    }
+}
+
 internal void pushFilledRect(RenderGroup *group, Rect dest, u32 color, RenderLayer layer, u8 alpha)
 {
     RenderEntryFilledRect *filledRect = PushRenderElement(group, RenderEntryFilledRect);
     if (filledRect)
     {
-        Rect sdlDest = {dest.x, dest.y, dest.w, dest.h};
-        filledRect->dest = sdlDest;
+        filledRect->dest = dest;
         filledRect->color = color;
         filledRect->alpha = alpha;
         filledRect->layer = layer;

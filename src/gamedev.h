@@ -107,5 +107,4 @@ global PlatformAPI platform = {};
 global RendererAPI rendererAPI = {};
 global FontAPI fontAPI = {};
 global AudioAPI audioAPI = {};
-global b32 globalRunning = 0;
 #endif

@@ -169,10 +169,11 @@ internal void queueSound(SoundList *sl, Sound *s)
 
 // extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHandle outputTarget,
 // Rect *viewport, RendererHandle renderer)
-extern "C" void gameUpdateAndRender(void *globalBitmapMemory, int globalBitmapWidth,
-                                    int globalBitmapHeight, int globalBytesPerPixel, u8 modx, u8 mody,
-                                    u8 modr)
+extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, void *globalBitmapMemory,
+                                    int globalBitmapWidth, int globalBitmapHeight,
+                                    int globalBytesPerPixel)
 {
+#if 0
     u8 *row = (u8 *)globalBitmapMemory;
     int pitch = globalBitmapWidth * globalBytesPerPixel;
     for (int y = 0; y < globalBitmapHeight; ++y)
@@ -192,12 +193,14 @@ extern "C" void gameUpdateAndRender(void *globalBitmapMemory, int globalBitmapWi
         }
         row += pitch;
     }
+#endif
+    platform = memory->platformAPI;
 
 #if 0
-    platform = memory->platformAPI;
     rendererAPI = memory->rendererAPI;
     fontAPI = memory->fontAPI;
     audioAPI = memory->audioAPI;
+#endif
 
     assert(sizeof(Game) < memory->permanentStorageSize);
     Game* game = (Game*)memory->permanentStorage;
@@ -209,25 +212,28 @@ extern "C" void gameUpdateAndRender(void *globalBitmapMemory, int globalBitmapWi
                   (u8*)memory->permanentStorage + sizeof(Game));
         initArena(&game->transientArena, memory->transientStorageSize, (u8*)memory->transientStorage);
 
-        game->renderer = renderer;
+        // game->renderer = renderer;
         game->colors = memory->colors;
 
         // Asset loading
         // TODO(cjh): Packed asset file
         // TODO(cjh): asset streaming
-        game->linkTexture = rendererAPI.createTextureFromPng("sprites/link_walking.png", renderer);
-        game->harvestableTreeTexture = rendererAPI.createTextureFromPng("sprites/harvestable_tree.png", renderer);
-        game->flameTexture = rendererAPI.createTextureFromPng("sprites/flame.png", renderer);
-        game->firePitTexture = rendererAPI.createTextureFromPng("sprites/fire_pit.png", renderer);
-        game->glowTreeTexture = rendererAPI.createTextureFromPng("sprites/glow_tree.png", renderer);
-        game->harlodTexture = rendererAPI.createTextureFromPng("sprites/Harlod_the_caveman.png", renderer);
-        game->iconsTexture = rendererAPI.createTextureFromPng("sprites/fantasy_icons_transparent.png", renderer);
+        // game->linkTexture = rendererAPI.createTextureFromPng("sprites/link_walking.png", renderer);
+        // game->harvestableTreeTexture = rendererAPI.createTextureFromPng("sprites/harvestable_tree.png",
+                                                                        // renderer);
+        // game->flameTexture = rendererAPI.createTextureFromPng("sprites/flame.png", renderer);
+        // game->firePitTexture = rendererAPI.createTextureFromPng("sprites/fire_pit.png", renderer);
+        // game->glowTreeTexture = rendererAPI.createTextureFromPng("sprites/glow_tree.png", renderer);
+        // game->harlodTexture = rendererAPI.createTextureFromPng("sprites/Harlod_the_caveman.png",
+                                                               // renderer);
+        // game->iconsTexture = rendererAPI.createTextureFromPng("sprites/fantasy_icons_transparent.png",
+                                                              // renderer);
         // game->knightTexture = rendererAPI.createTextureFromPng("sprites/knight_alligned.png", renderer);
 
-        game->mudSound.chunk = audioAPI.loadWav("sounds/mud_walk.wav");
-        game->mudSound.delay = 250;
+        // game->mudSound.chunk = audioAPI.loadWav("sounds/mud_walk.wav");
+        // game->mudSound.delay = 250;
 
-        fontAPI.generateFontData(&game->fontMetadata, renderer);
+        // fontAPI.generateFontData(&game->fontMetadata, renderer);
 
         // Map
         u32 tileWidth = 80;
@@ -239,7 +245,7 @@ extern "C" void gameUpdateAndRender(void *globalBitmapMemory, int globalBitmapWi
         map0->cols = 12;
         map0->widthPixels = map0->cols * tileWidth;
         map0->heightPixels = map0->rows * tileHeight;
-        map0->texture = outputTarget;
+        // map0->texture = outputTarget;
 
         for (u32 row = 0; row < map0->rows; ++row)
         {
@@ -251,7 +257,8 @@ extern "C" void gameUpdateAndRender(void *globalBitmapMemory, int globalBitmapWi
                 tile->color = game->colors[Color_None];
                 tile->width = map0->tileWidth;
                 tile->height = map0->tileHeight;
-                tile->position = {col*tile->width + 0.5f*tile->width, row*tile->height + 0.5f*tile->height};
+                tile->position = {col*tile->width + 0.5f*tile->width,
+                                  row*tile->height + 0.5f*tile->height};
                 if (row == 0 || col == 0 || row == map0->rows - 1 || col == map0->cols - 1)
                 {
                     addTileFlags(tile, TileProperty_Solid);
@@ -261,32 +268,33 @@ extern "C" void gameUpdateAndRender(void *globalBitmapMemory, int globalBitmapWi
                 if (row == 4 && (col == 1 || col == 2 || col == 3 || col ==4))
                 {
                     // Quicksand
-                    addTileFlags(tile, TileProperty_Quicksand);
-                    tile->color = game->colors[Color_Brown];
-                    tile->collides = false;
+                    // addTileFlags(tile, TileProperty_Quicksand)
+                    // tile->color = game->colors[Color_Brown];
+                    // tile->collides = false;
                 }
                 if ((row == 2 && (col == 4 || col == 5 || col == 6 || col == 7)) ||
                     ((row == 3 || row == 4 || row == 5 || row == 6) && col == 7))
                 {
-                    initHarvestableTree(tile, game);
+                    // initHarvestableTree(tile, game);
                 }
 
                 if (row == 2 && col == 2)
                 {
                     // Glow tree
-                    initGlowTree(tile, game);
+                    // initGlowTree(tile, game);
                 }
 
                 if (row == 1 && col == 7)
                 {
                     // Lightable fire
-                    addTileFlags(tile, TileProperty_Campfire | TileProperty_Interactive);
-                    initEntitySpriteSheet(tile, game->firePitTexture, 1, 1);
+                    // addTileFlags(tile, TileProperty_Campfire | TileProperty_Interactive);
+                    // initEntitySpriteSheet(tile, game->firePitTexture, 1, 1);
                 }
             }
         }
 
         // Icons sheet
+#if 0
         int iconsInRow[] = {11, 5, 7, 16, 9, 16, 12, 16, 10, 16, 16, 16, 16, 16, 16, 15, 15, 11, 6, 0};
         SpriteSheet iconsSheet = {};
         initSpriteSheet(&iconsSheet, game->iconsTexture, 16, 20);
@@ -335,9 +343,9 @@ extern "C" void gameUpdateAndRender(void *globalBitmapMemory, int globalBitmapWi
         harlod->speed = 10;
         harlod->isVisible = true;
         harlod->type = EntityType_Harlod;
-
+#endif
         game->currentMap = map0;
-        initCamera(game, viewport->w, viewport->h);
+        // initCamera(game, viewport->w, viewport->h);
 
         memory->isInitialized = true;
     }
@@ -355,13 +363,13 @@ extern "C" void gameUpdateAndRender(void *globalBitmapMemory, int globalBitmapWi
     {
         case GameMode_Playing:
         {
-            updateHero(group, hero, input, game);
-            updateCamera(&game->camera, hero->position);
-            viewport->x = game->camera.viewport.x;
-            viewport->y = game->camera.viewport.y;
-            updateEntities(game, input);
-            playQueuedSounds(&game->sounds, now);
-            updateTiles(game, input);
+            // updateHero(group, hero, input, game);
+            // updateCamera(&game->camera, hero->position);
+            // viewport->x = game->camera.viewport.x;
+            // viewport->y = game->camera.viewport.y;
+            // updateEntities(game, input);
+            // playQueuedSounds(&game->sounds, now);
+            // updateTiles(game, input);
             break;
         }
         case GameMode_Dialogue:
@@ -377,10 +385,10 @@ extern "C" void gameUpdateAndRender(void *globalBitmapMemory, int globalBitmapWi
     }
 
     drawBackground(group, game);
-    drawTiles(group, game);
-    drawEntities(group, game);
-    drawPlacingTile(group, game, hero);
-    drawHUD(group, game, hero, &game->fontMetadata);
+    // drawTiles(group, game);
+    // drawEntities(group, game);
+    // drawPlacingTile(group, game, hero);
+    // drawHUD(group, game, hero, &game->fontMetadata);
 
     if (game->mode == GameMode_Dialogue)
     {
@@ -414,11 +422,10 @@ extern "C" void gameUpdateAndRender(void *globalBitmapMemory, int globalBitmapWi
 #endif
 
     // TODO(cjh): sortRenderGroup(group);
-    drawRenderGroup(game->renderer, group);
+    // drawRenderGroup(game->renderer, group);
 
     endTemporaryMemory(renderMemory);
 
     checkArena(&game->transientArena);
     checkArena(&game->worldArena);
-#endif
 }

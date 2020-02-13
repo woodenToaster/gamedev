@@ -29,9 +29,9 @@ typedef float f32;
 typedef double f64;
 typedef int32_t b32;
 
-#define GIGABYTES(n) ((n) * 1024 * 1024 * 1024)
-#define MEGABYTES(n) ((n) * 1024 * 1024)
 #define KILOBYTES(n) ((n) * 1024)
+#define MEGABYTES(n) ((n) * 1024 * 1024)
+#define GIGABYTES(n) ((n) * 1024 * 1024 * 1024)
 
 #define ARRAY_COUNT(arr) (sizeof(arr) / sizeof((arr)[0]))
 
@@ -282,7 +282,7 @@ typedef void (GameUpdateAndRender)(GameMemory *memory, Input *input, TextureHand
                                    Rect *viewport, RendererHandle renderer);
 #endif
 
-typedef void (GameUpdateAndRender)(void *globalBitmapMemory, int globalBitmapWidth,
-                                   int globalBitmapHeight, int globalBytesPerPixel,
-                                   u8 modx, u8 mody, u8 modr);
+typedef void (GameUpdateAndRender)(GameMemory *memory, Input *input, void *globalBitmapMemory,
+                                   int globalBitmapWidth, int globalBitmapHeight,
+                                   int globalBytesPerPixel);
 #endif

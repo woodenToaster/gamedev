@@ -23,7 +23,7 @@ set LIBPATH=%DEV_PREFIX%\%SDL_MIXER_PATH%\lib\x64;%LIBPATH%;
 set INCLUDE=%DEV_PREFIX%\gamedev\stb;%INCLUDE%;
 set LIB=%LIBPATH%;%LIB%;
 set PREPROCESSOR_DEFINES=/DDEVELOPER
-set COMPILERFLAGS=/DDEBUG /W4 /Gm- /Zi /GR- /nologo /EHa- /MTd /Oi /Od
+set COMPILERFLAGS=/DDEBUG /W4 /Gm- /Zi /GR- /nologo /EHa- /MTd /Oi /Od /Ze
 set LINK_LIBS=SDL2.lib SDL2main.lib SDL2_mixer.lib
 
 del gamedev_*.pdb > NUL 2> NUL
