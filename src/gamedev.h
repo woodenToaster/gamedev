@@ -66,7 +66,6 @@ struct Game
 {
     u32 totalFramesElapsed;
     bool running;
-    u32 *colors;
     Camera camera;
     Map *currentMap;
     SoundList sounds;
@@ -76,7 +75,7 @@ struct Game
 
     Entity *hero;
 
-    RendererHandle renderer;
+    void *renderer;
     TextureHandle linkTexture;
     TextureHandle harvestableTreeTexture;
     TextureHandle glowTreeTexture;
@@ -94,6 +93,7 @@ struct Game
     Arena worldArena;
     Arena transientArena;
     Sprite icons[Icon_Count];
+    Vec4u8 colors[Color_Count];
 };
 
 internal void startDialogueMode(Game *g, char *dialogue);

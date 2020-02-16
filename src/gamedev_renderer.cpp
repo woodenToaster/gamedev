@@ -93,7 +93,9 @@ void drawHUD(RenderGroup *group, Game *g, Entity *h, FontMetadata *font)
 
     // Transparent black background
     Rect backgroundDest = {destX, destY, beltSlots * slotSize, slotSize};
-    pushFilledRect(group, backgroundDest, g->colors[Color_Black], RenderLayer_HUD, 128);
+    Vec4u8 transparentBlack = g->colors[Color_Black];
+    transparentBlack.a = 128;
+    pushFilledRect(group, backgroundDest, transparentBlack, RenderLayer_HUD);
 
     for (int i = 0; i < beltSlots; ++i)
     {
@@ -132,15 +134,18 @@ void drawHUD(RenderGroup *group, Game *g, Entity *h, FontMetadata *font)
             snprintf(numItems, 4, "%d", item->count);
             drawText(group, font, numItems, dest.x, dest.y);
         }
-        u8 alpha = i == h->activeBeltItemIndex ? 255 : 128;
-        pushRect(group, dest, g->colors[Color_White], RenderLayer_HUD, alpha);
+        Vec4u8 inventoryOutlineColor = g->colors[Color_White];
+        inventoryOutlineColor.a = i == h->activeBeltItemIndex ? 255 : 12;
+        pushRect(group, dest, g->colors[Color_White], RenderLayer_HUD);
     }
 }
 
 void darkenBackground(RenderGroup *group, Game *g)
 {
     Rect dest = {};
-    pushFilledRect(group, dest, g->colors[Color_Black], RenderLayer_HUD, 64);
+    Vec4u8 transparentBlack = g->colors[Color_Black];
+    transparentBlack.a = 64;
+    pushFilledRect(group, dest, transparentBlack, RenderLayer_HUD);
 }
 
 #define PushRenderElement(group, type) (type*)pushRenderElement_(group, sizeof(type), RenderEntryType_##type)
@@ -166,7 +171,7 @@ internal void *pushRenderElement_(RenderGroup *group, u32 size, RenderEntryType 
     return result;
 }
 
-internal void pushRect(RenderGroup *group, Rect dest, u32 color, RenderLayer layer, u8 alpha)
+internal void pushRect(RenderGroup *group, Rect dest, Vec4u8 color, RenderLayer layer)
 {
     RenderEntryRect *rect = PushRenderElement(group, RenderEntryRect);
     if (rect)
@@ -174,31 +179,17 @@ internal void pushRect(RenderGroup *group, Rect dest, u32 color, RenderLayer lay
         Rect sdlDest = {dest.x, dest.y, dest.w, dest.h};
         rect->dest = sdlDest;
         rect->color = color;
-        rect->alpha = alpha;
         rect->layer = layer;
     }
 }
 
-internal void pushFilledRect(RenderGroup *group, Rect dest, Vec3 color, RenderLayer layer, u8 alpha)
+internal void pushFilledRect(RenderGroup *group, Rect dest, Vec4u8 color, RenderLayer layer)
 {
     RenderEntryFilledRect *filledRect = PushRenderElement(group, RenderEntryFilledRect);
     if (filledRect)
     {
         filledRect->dest = dest;
         filledRect->color = color;
-        filledRect->alpha = alpha;
-        filledRect->layer = layer;
-    }
-}
-
-internal void pushFilledRect(RenderGroup *group, Rect dest, u32 color, RenderLayer layer, u8 alpha)
-{
-    RenderEntryFilledRect *filledRect = PushRenderElement(group, RenderEntryFilledRect);
-    if (filledRect)
-    {
-        filledRect->dest = dest;
-        filledRect->color = color;
-        filledRect->alpha = alpha;
         filledRect->layer = layer;
     }
 }
@@ -243,7 +234,7 @@ internal RenderGroup *allocateRenderGroup(Arena *arena, u32 maxSize)
     return result;
 }
 
-internal void drawRenderGroup(RendererHandle renderer, RenderGroup *group)
+internal void drawRenderGroup(void *renderer, RenderGroup *group)
 {
     for (int layerIndex = 0; layerIndex < RenderLayer_Count; ++layerIndex)
     {
@@ -260,7 +251,7 @@ internal void drawRenderGroup(RendererHandle renderer, RenderGroup *group)
                     RenderEntryRect *entry = (RenderEntryRect*)data;
                     if (entry->layer == layerIndex)
                     {
-                        rendererAPI.renderRect(renderer, entry->dest, entry->color, entry->alpha);
+                        rendererAPI.renderRect(renderer, entry->dest, entry->color);
                     }
                     baseAddress += sizeof(*entry);
                 } break;
@@ -269,7 +260,7 @@ internal void drawRenderGroup(RendererHandle renderer, RenderGroup *group)
                     RenderEntryFilledRect *entry = (RenderEntryFilledRect*)data;
                     if (entry->layer == layerIndex)
                     {
-                        rendererAPI.renderFilledRect(renderer, entry->dest, entry->color, entry->alpha);
+                        rendererAPI.renderFilledRect(renderer, entry->dest, entry->color);
                     }
                     baseAddress += sizeof(*entry);
                 } break;

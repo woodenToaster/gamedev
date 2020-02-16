@@ -83,6 +83,25 @@ void initCamera(Game* g, i32 screenWidth, i32 screenHeight)
     g->camera.xPixelMovementThreshold = screenWidth / 2;
 }
 
+void initColors(Vec4u8 *colors)
+{
+    colors[Color_None] = vec4u8(0, 0, 0, 0);
+    colors[Color_White] = vec4u8(255, 255, 255, 255);
+    colors[Color_DarkGreen] = vec4u8(37, 71, 0, 255);
+    colors[Color_Blue] = vec4u8(0, 0, 255, 255);
+    colors[Color_Yellow] = vec4u8(235, 245, 65, 255);
+    colors[Color_Brown] = vec4u8(153, 102, 0, 255);
+    colors[Color_Rust] = vec4u8(153, 70, 77, 255);
+    colors[Color_Magenta] = vec4u8(255, 0, 255, 255);
+    colors[Color_Black] = vec4u8(0, 0, 0, 255);
+    colors[Color_Red] = vec4u8(255, 0, 0, 255);
+    colors[Color_Grey] = vec4u8(135, 135, 135, 255);
+    colors[Color_DarkBlue] = vec4u8(0, 51, 102, 255);
+    colors[Color_DarkOrange] = vec4u8(255, 140, 0, 255);
+    colors[Color_BabyBlue] = vec4u8(137, 207, 240, 255);
+    colors[Color_LimeGreen] = vec4u8(106, 190, 48, 255);
+}
+
 void startDialogueMode(Game *g, char *dialogue)
 {
     g->mode = GameMode_Dialogue;
@@ -152,6 +171,7 @@ internal void updateCamera(Camera* c, Vec2 centerPos)
     c->viewport.y = clampInt32(c->viewport.y, 0, c->maxY);
 }
 
+#if 0
 internal void playQueuedSounds(SoundList *sl, u64 now)
 {
     for (u32 i = 0; i < sl->count; ++i)
@@ -161,6 +181,7 @@ internal void playQueuedSounds(SoundList *sl, u64 now)
     }
     sl->count = 0;
 }
+#endif
 
 internal void queueSound(SoundList *sl, Sound *s)
 {
@@ -169,42 +190,19 @@ internal void queueSound(SoundList *sl, Sound *s)
 
 // extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHandle outputTarget,
 // Rect *viewport, RendererHandle renderer)
-extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, void *globalBitmapMemory,
-                                    int globalBitmapWidth, int globalBitmapHeight,
-                                    int globalBytesPerPixel)
+extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, void *rendererState)
 {
-#if 0
-    u8 *row = (u8 *)globalBitmapMemory;
-    int pitch = globalBitmapWidth * globalBytesPerPixel;
-    for (int y = 0; y < globalBitmapHeight; ++y)
-    {
-        u32 *pixel = (u32 *)row;
-        for (int x = 0; x < globalBitmapWidth; ++x)
-        {
-            u8 r = (x + y) % modr;
-            u8 g = y % mody;
-            u8 b = x % modx;
-            u8 a = 0xFF;
-
-            // RR GG BB xx
-            // xx BB GG RR
-            // xx RR GG BB
-            *pixel++ = ((a << 24) | (r << 16) | (g << 8) | (b << 0));
-        }
-        row += pitch;
-    }
-#endif
     platform = memory->platformAPI;
+    rendererAPI = memory->rendererAPI;
 
 #if 0
-    rendererAPI = memory->rendererAPI;
     fontAPI = memory->fontAPI;
     audioAPI = memory->audioAPI;
 #endif
 
     assert(sizeof(Game) < memory->permanentStorageSize);
     Game* game = (Game*)memory->permanentStorage;
-    u64 now = memory->currentTickCount;
+    // u64 now = memory->currentTickCount;
 
     if (!memory->isInitialized)
     {
@@ -212,8 +210,8 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, void *glob
                   (u8*)memory->permanentStorage + sizeof(Game));
         initArena(&game->transientArena, memory->transientStorageSize, (u8*)memory->transientStorage);
 
-        // game->renderer = renderer;
-        game->colors = memory->colors;
+        game->renderer = rendererState;
+        initColors(game->colors);
 
         // Asset loading
         // TODO(cjh): Packed asset file
@@ -358,7 +356,7 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, void *glob
         startInventoryMode(game);
     }
 
-    Entity *hero = game->hero;
+    // Entity *hero = game->hero;
     switch (game->mode)
     {
         case GameMode_Playing:
@@ -385,7 +383,7 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, void *glob
     }
 
     drawBackground(group, game);
-    // drawTiles(group, game);
+    drawTiles(group, game);
     // drawEntities(group, game);
     // drawPlacingTile(group, game, hero);
     // drawHUD(group, game, hero, &game->fontMetadata);
@@ -398,8 +396,8 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, void *glob
 
     if (game->mode == GameMode_Inventory)
     {
-        darkenBackground(group, game);
-        drawInventoryScreen(group, game, hero, &game->fontMetadata);
+        // darkenBackground(group, game);
+        // drawInventoryScreen(group, game, hero, &game->fontMetadata);
     }
 
     /**************************************************************************/
@@ -422,7 +420,7 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, void *glob
 #endif
 
     // TODO(cjh): sortRenderGroup(group);
-    // drawRenderGroup(game->renderer, group);
+    drawRenderGroup(game->renderer, group);
 
     endTemporaryMemory(renderMemory);
 

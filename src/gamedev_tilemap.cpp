@@ -98,8 +98,10 @@ void drawTile(RenderGroup *group, Game *g, Entity *e, b32 isBeingPlaced)
         }
         else
         {
-            u32 tileColor = e->color;
-            pushFilledRect(group, tileRect, tileColor, RenderLayer_Ground);
+            if (e->color.a)
+            {
+                pushFilledRect(group, tileRect, e->color, RenderLayer_Ground);
+            }
         }
 
         // Draw position
@@ -116,7 +118,9 @@ void drawTile(RenderGroup *group, Game *g, Entity *e, b32 isBeingPlaced)
             else
             {
                 // Draw red filter on top
-                pushFilledRect(group, tileRect, g->colors[Color_Red], RenderLayer_Entities, 128);
+                Vec4u8 transparentRed = g->colors[Color_Red];
+                transparentRed.a = 128;
+                pushFilledRect(group, tileRect, transparentRed, RenderLayer_Entities);
             }
         }
     }
@@ -143,6 +147,5 @@ void drawBackground(RenderGroup *group, Game *g)
 {
     Camera *c = &g->camera;
     Rect backgroundDest = {c->viewport.x, c->viewport.y, c->viewport.w, c->viewport.h};
-    pushFilledRect(group, backgroundDest, vec3(128, 128, 128), RenderLayer_Ground);
-    // pushFilledRect(group, backgroundDest, g->colors[Color_Grey], RenderLayer_Ground);
+    pushFilledRect(group, backgroundDest, g->colors[Color_Grey], RenderLayer_Ground);
 }

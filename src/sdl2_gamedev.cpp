@@ -16,8 +16,6 @@
 #include "gamedev_memory.h"
 #include "sdl2_gamedev.h"
 
-#define RENDERER_HANDLE_TO_SDL(r) ((SDL_Renderer*)((r).renderer))
-
 #if 0
 static Arena sdlArena;
 #endif
@@ -94,11 +92,6 @@ internal u8 SDLGetBlueFromU32(u32 color)
     return b;
 }
 
-internal b32 SDLIsZeroRect(Rect rect)
-{
-    return !(rect.x || rect.y || rect.w || rect.h);
-}
-
 internal f32 SDLNormalizeStickInput(i16 unnormalizedStick)
 {
     f32 result = 0.0f;
@@ -151,8 +144,9 @@ internal void SDLDestroySound(Sound *s)
     Mix_FreeChunk((Mix_Chunk*)s->chunk.chunk);
 }
 
-TextureHandle SDLCreateTextureFromGreyscaleBitmap(RendererHandle renderer, u8 *bitmap, i32 width, i32 height)
+TextureHandle SDLCreateTextureFromGreyscaleBitmap(void *renderer, u8 *bitmap, i32 width, i32 height)
 {
+    SDL_Renderer *sdlRenderer = ((SDLRendererState *)renderer)->renderer;
     TextureHandle result = {};
 
     SDL_Surface* surface = SDL_CreateRGBSurface(0, width, height, 32,
@@ -173,7 +167,7 @@ TextureHandle SDLCreateTextureFromGreyscaleBitmap(RendererHandle renderer, u8 *b
         *destPixel++ = ((val << 24) | (val << 16) | (val << 8) | (val << 0));
     }
     SDL_UnlockSurface(surface);
-    SDL_Texture *texture = SDL_CreateTextureFromSurface(RENDERER_HANDLE_TO_SDL(renderer), surface);
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(sdlRenderer, surface);
     result.texture = texture;
     stbtt_FreeBitmap(bitmap, 0);
     SDL_FreeSurface(surface);
@@ -182,7 +176,7 @@ TextureHandle SDLCreateTextureFromGreyscaleBitmap(RendererHandle renderer, u8 *b
 }
 
 // TODO(cjh): This belongs n the asset preprocessor
-internal void SDLGenerateFontData(FontMetadata *fontMetadata, RendererHandle renderer)
+internal void SDLGenerateFontData(FontMetadata *fontMetadata, void *renderer)
 {
     EntireFile fontFile = SDLReadEntireFile("fonts/arialbd.ttf");
     static stbtt_fontinfo fontInfo;
@@ -220,9 +214,9 @@ internal int SDLGetKernAdvancement(FontInfoHandle info, char a, char b)
     return result;
 }
 
-internal TextureHandle SDLCreateTextureFromPng(const char* fname, RendererHandle renderer)
+internal TextureHandle SDLCreateTextureFromPng(const char* fname, void *renderer)
 {
-    SDL_Renderer *sdlRenderer = RENDERER_HANDLE_TO_SDL(renderer);
+    SDL_Renderer *sdlRenderer = ((SDLRendererState *)renderer)->renderer;
     unsigned char *img_data;
     int width;
     int height;
@@ -580,21 +574,23 @@ void SDLDestroyTexture(TextureHandle t)
     SDL_DestroyTexture((SDL_Texture*)t.texture);
 }
 
-void SDLSetRenderDrawColor(RendererHandle renderer, u32 color)
+void SDLSetRenderDrawColor(void *renderer, u32 color)
 {
-    SDL_SetRenderDrawColor(RENDERER_HANDLE_TO_SDL(renderer), SDLGetRedFromU32(color), SDLGetGreenFromU32(color),
+    SDL_Renderer *sdlRenderer = ((SDLRendererState *)renderer)->renderer;
+    
+    SDL_SetRenderDrawColor(sdlRenderer, SDLGetRedFromU32(color), SDLGetGreenFromU32(color),
                            SDLGetBlueFromU32(color), 255);
 }
 
-void SDLRenderRect(RendererHandle renderer, Rect dest, u32 color, u8 alpha=255)
+void SDLRenderRect(void *renderer, Rect dest, Vec3u8 color, u8 alpha=255)
 {
-    u8 r = (u8)((color & 0x00FF0000) >> 16);
-    u8 g = (u8)((color & 0x0000FF00) >> 8);
-    u8 b = (u8)((color & 0x000000FF) >> 0);
+    u8 r = color.r;
+    u8 g = color.g;
+    u8 b = color.b;
 
-    SDL_Renderer *sdlRenderer = RENDERER_HANDLE_TO_SDL(renderer);
+    SDL_Renderer *sdlRenderer = ((SDLRendererState *)renderer)->renderer;
     SDL_Rect sdl_dest = SDLRectFromRect(dest);
-    SDL_Rect *sdl_dest_ptr = SDLIsZeroRect(dest) ? NULL : &sdl_dest;
+    SDL_Rect *sdl_dest_ptr = isZeroRect(dest) ? NULL : &sdl_dest;
     SDL_BlendMode blendMode;
     SDL_GetRenderDrawBlendMode(sdlRenderer, &blendMode);
     SDL_SetRenderDrawColor(sdlRenderer, r, g, b, alpha);
@@ -603,19 +599,19 @@ void SDLRenderRect(RendererHandle renderer, Rect dest, u32 color, u8 alpha=255)
     SDL_SetRenderDrawBlendMode(sdlRenderer, blendMode);
 }
 
-void SDLRenderFilledRect(RendererHandle renderer, Rect dest, u32 color, u8 alpha=255)
+void SDLRenderFilledRect(void *renderer, Rect dest, Vec3u8 color, u8 alpha=255)
 {
-    // Color_None is 0xFFFFFFFF. Set a tile's background color to Color_None to avoid
-    // extra rendering.
-    if (color != 0xFFFFFFFF)
+    // TODO(chogan): Tiles need an alpha of 0 at the point when their color is
+    // set in order to signify Color_None, which is currently just (0, 0, 0)
+    if (alpha != 0)
     {
-        u8 r = (u8)((color & 0x00FF0000) >> 16);
-        u8 g = (u8)((color & 0x0000FF00) >> 8);
-        u8 b = (u8)((color & 0x000000FF) >> 0);
+        u8 r = color.r;
+        u8 g = color.g;
+        u8 b = color.b;
 
-        SDL_Renderer *sdlRenderer = RENDERER_HANDLE_TO_SDL(renderer);
+        SDL_Renderer *sdlRenderer = ((SDLRendererState *)renderer)->renderer;
         SDL_Rect sdl_dest = SDLRectFromRect(dest);
-        SDL_Rect *sdl_dest_ptr = SDLIsZeroRect(dest) ? NULL : &sdl_dest;
+        SDL_Rect *sdl_dest_ptr = isZeroRect(dest) ? NULL : &sdl_dest;
         SDL_BlendMode blendMode;
         SDL_GetRenderDrawBlendMode(sdlRenderer, &blendMode);
         SDL_SetRenderDrawColor(sdlRenderer, r, g, b, alpha);
@@ -625,13 +621,13 @@ void SDLRenderFilledRect(RendererHandle renderer, Rect dest, u32 color, u8 alpha
     }
 }
 
-void SDLRenderSprite(RendererHandle renderer, TextureHandle texture, Rect source, Rect dest)
+void SDLRenderSprite(void *renderer, TextureHandle texture, Rect source, Rect dest)
 {
-    SDL_Renderer *sdlRenderer = RENDERER_HANDLE_TO_SDL(renderer);
+    SDL_Renderer *sdlRenderer = ((SDLRendererState *)renderer)->renderer;
     SDL_Rect sdl_source = SDLRectFromRect(source);
     SDL_Rect sdl_dest = SDLRectFromRect(dest);
-    SDL_Rect *sdl_source_ptr = SDLIsZeroRect(source) ? NULL : &sdl_source;
-    SDL_Rect *sdl_dest_ptr = SDLIsZeroRect(dest) ? NULL : &sdl_dest;
+    SDL_Rect *sdl_source_ptr = isZeroRect(source) ? NULL : &sdl_source;
+    SDL_Rect *sdl_dest_ptr = isZeroRect(dest) ? NULL : &sdl_dest;
     SDL_RenderCopy(sdlRenderer, (SDL_Texture*)texture.texture, sdl_source_ptr, sdl_dest_ptr);
 }
 
@@ -802,7 +798,7 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
     }
 
     SDL_Renderer *renderer = SDL_CreateRenderer(state.window, -1, SDL_RENDERER_ACCELERATED);
-    RendererHandle rendererHandle = {renderer};
+    SDLRendererState rendererHandle = {renderer};
 
     if (renderer == NULL)
     {

@@ -91,7 +91,7 @@ struct Entity
     //     struct
     //     {
             // Tile
-            u32 color;
+            Vec4u8 color;
             u32 tileFlags;
             u64 timeToCatchFire;
             u64 timeSpentOnFire;

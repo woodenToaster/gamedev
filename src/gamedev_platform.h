@@ -9,14 +9,6 @@
 #include <string.h>
 #include <math.h>
 
-#define MAX_CONTROLLERS 2
-
-#define internal static
-#define local_persist static
-#define global static
-
-#define InvalidCodePath assert(!"InvalidCodePath")
-
 typedef uint8_t u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
@@ -28,6 +20,30 @@ typedef int64_t i64;
 typedef float f32;
 typedef double f64;
 typedef int32_t b32;
+
+struct Rect
+{
+    int x;
+    int y;
+    int w;
+    int h;
+};
+
+
+inline b32 isZeroRect(Rect rect)
+{
+    return !(rect.x || rect.y || rect.w || rect.h);
+}
+
+#include "gamedev_math.h"
+
+#define MAX_CONTROLLERS 2
+
+#define internal static
+#define local_persist static
+#define global static
+
+#define InvalidCodePath assert(!"InvalidCodePath")
 
 #define KILOBYTES(n) ((n) * 1024)
 #define MEGABYTES(n) ((n) * 1024 * 1024)
@@ -74,11 +90,6 @@ struct PlatformAPI
     // PlatformGetTicks *getTicks;
 };
 
-struct RendererHandle
-{
-    void *renderer;
-};
-
 struct TextureHandle
 {
     void *texture;
@@ -90,22 +101,15 @@ struct TextureDims
     i32 height;
 };
 
-struct Rect
-{
-    int x;
-    int y;
-    int w;
-    int h;
-};
 
 typedef TextureDims (GetTextureDims)(TextureHandle texture);
 typedef void (DestroyTexture)(TextureHandle t);
-typedef void (SetRenderDrawColor)(RendererHandle renderer, u32 color);
-typedef void (RenderRect)(RendererHandle renderer, Rect dest, u32 color, u8 alpha);
-typedef void (RenderFilledRect)(RendererHandle renderer, Rect dest, u32 color, u8 alpha);
-typedef void (RenderSprite)(RendererHandle renderer, TextureHandle texture, Rect source, Rect dest);
-typedef TextureHandle (CreateTextureFromPng)(const char *fname, RendererHandle renderer);
-typedef TextureHandle (CreateTextureFromGreyscaleBitmap)(RendererHandle renderer, u8 *bitmap, i32 width, i32 height);
+typedef void (SetRenderDrawColor)(void *renderer, Vec4u8 color);
+typedef void (RenderRect)(void *renderer, Rect dest, Vec4u8 color);
+typedef void (RenderFilledRect)(void *renderer, Rect dest, Vec4u8 color);
+typedef void (RenderSprite)(void *renderer, TextureHandle texture, Rect source, Rect dest);
+typedef TextureHandle (CreateTextureFromPng)(const char *fname, void *renderer);
+typedef TextureHandle (CreateTextureFromGreyscaleBitmap)(void *renderer, u8 *bitmap, i32 width, i32 height);
 
 struct RendererAPI
 {
@@ -149,7 +153,7 @@ struct FontMetadata
 
 };
 
-typedef void (GenerateFontData)(FontMetadata *fontMetadata, RendererHandle renderer);
+typedef void (GenerateFontData)(FontMetadata *fontMetadata, void *renderer);
 typedef int (GetKernAdvancement)(FontInfoHandle info, char a, char b);
 
 struct FontAPI
@@ -199,7 +203,6 @@ struct GameMemory
     RendererAPI rendererAPI;
     FontAPI fontAPI;
     AudioAPI audioAPI;
-    u32 colors[Color_Count];
 };
 
 enum Key
@@ -282,7 +285,5 @@ typedef void (GameUpdateAndRender)(GameMemory *memory, Input *input, TextureHand
                                    Rect *viewport, RendererHandle renderer);
 #endif
 
-typedef void (GameUpdateAndRender)(GameMemory *memory, Input *input, void *globalBitmapMemory,
-                                   int globalBitmapWidth, int globalBitmapHeight,
-                                   int globalBytesPerPixel);
+typedef void (GameUpdateAndRender)(GameMemory *memory, Input *input, void *rendererState);
 #endif

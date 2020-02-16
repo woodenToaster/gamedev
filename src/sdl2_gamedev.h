@@ -7,4 +7,10 @@ struct SDLState
     b32 isFullscreen;
     b32 isRunning;
 };
+
+struct SDLRendererState
+{
+    SDL_Renderer *renderer;
+};
+
 #endif

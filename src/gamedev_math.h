@@ -15,24 +15,21 @@ struct Vec2
     f32 y;
 };
 
-#pragma warning(disable:4201)
-union Vec3
+struct Vec3
 {
-    struct
-    {
-        f32 x;
-        f32 y;
-        f32 z;
-    };
-
-    struct
-    {
-        f32 r;
-        f32 g;
-        f32 b;
-    };
+    f32 x;
+    f32 y;
+    f32 z;
 };
 
+struct Vec3u8
+{
+    u8 r;
+    u8 g;
+    u8 b;
+};
+
+#pragma warning(disable:4201)
 union Vec4
 {
     struct
@@ -52,6 +49,14 @@ union Vec4
     };
 };
 #pragma warning(default:4201)
+
+struct Vec4u8
+{
+    u8 r;
+    u8 g;
+    u8 b;
+    u8 a;
+};
 
 struct Circle
 {
@@ -152,6 +157,30 @@ Vec2& operator*=(Vec2& v1, f32 s)
 Vec3 vec3(f32 x, f32 y, f32 z)
 {
     Vec3 v = {x, y, z};
+    return v;
+}
+
+Vec3u8 vec3u8(u8 r, u8 g, u8 b)
+{
+    Vec3u8 v = {r, g, b};
+    return v;
+}
+
+Vec4 vec4(f32 x, f32 y, f32 z, f32 w)
+{
+    Vec4 v = {x, y, z, w};
+    return v;
+}
+
+Vec4u8 vec4u8(u8 r, u8 g, u8 b, u8 a)
+{
+    Vec4u8 v = {r, g, b, a};
+    return v;
+}
+
+Vec4u8 vec4u8(Vec3u8 v3, u8 a)
+{
+    Vec4u8 v = {v3.r, v3.g, v3.b, a};
     return v;
 }
 
