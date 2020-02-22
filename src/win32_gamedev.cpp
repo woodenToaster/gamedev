@@ -4,11 +4,11 @@
 #include "gamedev_memory.h"
 #include "win32_gamedev.h"
 
-global BITMAPINFO globalBitmapInfo;
 global i64 globalPerfFrequency;
+global WINDOWPLACEMENT globalWindowPosition = {sizeof(globalWindowPosition)};
 
 global Win32State globalWin32State;
-global Win32RendererState globalRendererState;
+global Win32BackBuffer globalBackBuffer;
 
 enum PlatformErrorType
 {
@@ -115,33 +115,33 @@ internal LARGE_INTEGER win32GetTicks()
 }
 #endif
 
-internal void win32ResizeDIBSection(int width, int height)
+internal void win32ResizeDIBSection(Win32BackBuffer *buffer, int width, int height)
 {
-    if (globalRendererState.backbufferMemory)
+    if (buffer->memory)
     {
-        VirtualFree(globalRendererState.backbufferMemory, 0, MEM_RELEASE);
+        VirtualFree(buffer->memory, 0, MEM_RELEASE);
     }
 
-    globalRendererState.backbufferWidth = width;
-    globalRendererState.backbufferHeight = height;
+    buffer->width = width;
+    buffer->height = height;
 
-    globalBitmapInfo.bmiHeader.biSize = sizeof(globalBitmapInfo.bmiHeader);
-    globalBitmapInfo.bmiHeader.biWidth = width;
+    buffer->bitmapInfo.bmiHeader.biSize = sizeof(buffer->bitmapInfo.bmiHeader);
+    buffer->bitmapInfo.bmiHeader.biWidth = width;
     // NOTE(cjh): Negative height is a top-down bitmap
-    globalBitmapInfo.bmiHeader.biHeight = -height;
-    globalBitmapInfo.bmiHeader.biPlanes = 1;
-    globalBitmapInfo.bmiHeader.biBitCount = 32;
-    globalBitmapInfo.bmiHeader.biCompression = BI_RGB;
+    buffer->bitmapInfo.bmiHeader.biHeight = -height;
+    buffer->bitmapInfo.bmiHeader.biPlanes = 1;
+    buffer->bitmapInfo.bmiHeader.biBitCount = 32;
+    buffer->bitmapInfo.bmiHeader.biCompression = BI_RGB;
 
-    globalRendererState.backbufferBytesPerPixel = 4;
-    int bitmapMemorySize = width * height * globalRendererState.backbufferBytesPerPixel;
-    globalRendererState.backbufferMemory = VirtualAlloc(0, bitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
+    buffer->bytesPerPixel = 4;
+    int bitmapMemorySize = width * height * buffer->bytesPerPixel;
+    buffer->memory = VirtualAlloc(0, bitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
 }
 
 void win32RenderFilledRect(void *renderer, Rect dest, Vec4u8 color)
 {
     // TODO(chogan): Clipping
-    Win32RendererState *rendererState = (Win32RendererState *)renderer;
+    Win32BackBuffer *backBuffer = (Win32BackBuffer *)renderer;
 
     u8 r = color.r;
     u8 g = color.g;
@@ -151,16 +151,16 @@ void win32RenderFilledRect(void *renderer, Rect dest, Vec4u8 color)
     if (isZeroRect(dest))
     {
         // NOTE(chogan): Fill the whole back buffer
-        dest.w = rendererState->backbufferWidth;
-        dest.h = rendererState->backbufferHeight;
+        dest.w = backBuffer->width;
+        dest.h = backBuffer->height;
     }
 
-    int bytesPerPixel = rendererState->backbufferBytesPerPixel;
-    int pitch = rendererState->backbufferWidth * bytesPerPixel;
-    u8 *start = (u8 *)rendererState->backbufferMemory + (dest.y * pitch) + (dest.x * bytesPerPixel);
+    int bytesPerPixel = backBuffer->bytesPerPixel;
+    int pitch = backBuffer->width * bytesPerPixel;
+    u8 *start = (u8 *)backBuffer->memory + (dest.y * pitch) + (dest.x * bytesPerPixel);
 
-    int yMax = clampInt32(dest.y + dest.h, 0, rendererState->backbufferHeight);
-    int xMax = clampInt32(dest.x + dest.w, 0, rendererState->backbufferWidth);
+    int yMax = clampInt32(dest.y + dest.h, 0, backBuffer->height);
+    int xMax = clampInt32(dest.x + dest.w, 0, backBuffer->width);
     for (int y = dest.y; y < yMax; ++y)
     {
         u32 *pixel = (u32 *)start;
@@ -172,22 +172,22 @@ void win32RenderFilledRect(void *renderer, Rect dest, Vec4u8 color)
     }
 }
 
-internal void win32UpdateWindow(HDC deviceContext, RECT *windowRect, int x, int y, int width, int height)
+internal void win32UpdateWindow(Win32BackBuffer *buffer, HDC deviceContext, int windowWidth,
+                                int windowHeight)
 {
-    (void)x;
-    (void)y;
-    (void)width;
-    (void)height;
+    int destWidth = buffer->width;
+    int destHeight = buffer->height;
 
-    int windowWidth = windowRect->right - windowRect->left;
-    int windowHeight = windowRect->bottom - windowRect->top;
-
+    if (windowWidth >= 2 * buffer->width && windowHeight >= 2 * buffer->height)
+    {
+        destWidth = 2 * buffer->width;
+        destHeight = 2 * buffer->height;
+    }
     StretchDIBits(deviceContext,
-                  /* x, y, width, height, */
-                  /* x, y, width, height, */
-                  0, 0, globalRendererState.backbufferWidth, globalRendererState.backbufferHeight,
-                  0, 0, windowWidth, windowHeight, globalRendererState.backbufferMemory,
-                  &globalBitmapInfo, DIB_RGB_COLORS, SRCCOPY);
+                  0, 0, destWidth, destHeight,
+                  0, 0, buffer->width, buffer->height,
+                  buffer->memory,
+                  &buffer->bitmapInfo, DIB_RGB_COLORS, SRCCOPY);
 }
 
 LRESULT CALLBACK win32MainWindowCallback(HWND windowHandle, UINT message, WPARAM wParam, LPARAM lParam)
@@ -195,15 +195,6 @@ LRESULT CALLBACK win32MainWindowCallback(HWND windowHandle, UINT message, WPARAM
     LRESULT result = 0;
     switch (message)
     {
-        case WM_SIZE:
-        {
-            RECT clientRect;
-            GetClientRect(windowHandle, &clientRect);
-
-            int width = clientRect.right - clientRect.left;
-            int height = clientRect.bottom - clientRect.top;
-            win32ResizeDIBSection(width, height);
-        } break;
         case WM_DESTROY:
         {
             globalWin32State.isRunning = false;
@@ -212,14 +203,12 @@ LRESULT CALLBACK win32MainWindowCallback(HWND windowHandle, UINT message, WPARAM
         {
             PAINTSTRUCT paint;
             HDC deviceContext = BeginPaint(windowHandle, &paint);
-            int x = paint.rcPaint.left;
-            int y = paint.rcPaint.top;
             int width = paint.rcPaint.right - paint.rcPaint.left;
             int height = paint.rcPaint.bottom - paint.rcPaint.top;
 
             RECT clientRect;
             GetClientRect(windowHandle, &clientRect);
-            win32UpdateWindow(deviceContext, &clientRect, x, y, width, height);
+            win32UpdateWindow(&globalBackBuffer, deviceContext, width, height);
             EndPaint(windowHandle, &paint);
         } break;
         default:
@@ -251,6 +240,37 @@ inline u32 win32GetMillisecondsElapsed(LARGE_INTEGER start, LARGE_INTEGER end)
     u32 result = (u32)(seconds * 1000.0f);
 
     return result;
+}
+
+internal void toggleFullscreen(HWND window)
+{
+    // NOTE(chogan): This follows Raymond Chen's prescription
+    // for fullscreen toggling, see:
+    // http://blogs.msdn.com/b/oldnewthing/archive/2010/04/12/9994016.aspx
+
+    DWORD style = GetWindowLong(window, GWL_STYLE);
+    if(style & WS_OVERLAPPEDWINDOW)
+    {
+        MONITORINFO monitorInfo = {sizeof(monitorInfo)};
+        if(GetWindowPlacement(window, &globalWindowPosition) &&
+           GetMonitorInfo(MonitorFromWindow(window, MONITOR_DEFAULTTOPRIMARY), &monitorInfo))
+        {
+            SetWindowLong(window, GWL_STYLE, style & ~WS_OVERLAPPEDWINDOW);
+            SetWindowPos(window, HWND_TOP,
+                         monitorInfo.rcMonitor.left, monitorInfo.rcMonitor.top,
+                         monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left,
+                         monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top,
+                         SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+        }
+    }
+    else
+    {
+        SetWindowLong(window, GWL_STYLE, style | WS_OVERLAPPEDWINDOW);
+        SetWindowPlacement(window, &globalWindowPosition);
+        SetWindowPos(window, 0, 0, 0, 0, 0,
+                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
+                     SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+    }
 }
 
 internal void win32SetKeyState(Input *input, Key key, b32 isDown)
@@ -286,6 +306,10 @@ internal void win32UpdateKeyboardInput(Input* input, u64 vkCode, b32 isDown)
         case VK_ESCAPE:
         {
             win32SetKeyState(input, Key_Escape, isDown);
+        } break;
+        case VK_F5:
+        {
+            win32SetKeyState(input, Key_F5, isDown);
         } break;
         default:
         {
@@ -331,6 +355,11 @@ internal void win32GetInput(Input *input)
     if (input->keyPressed[Key_Escape])
     {
         globalWin32State.isRunning = false;
+    }
+
+    if (input->keyPressed[Key_F5])
+    {
+        toggleFullscreen(message.hwnd);
     }
 }
 
@@ -399,10 +428,12 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
 
     i32 screenWidth = 960;
     i32 screenHeight = 540;
+    // i32 screenWidth = 1920;
+    // i32 screenHeight = 1080;
 
     WNDCLASSA windowClass = {};
 
-    win32ResizeDIBSection(screenWidth, screenHeight);
+    win32ResizeDIBSection(&globalBackBuffer, screenWidth, screenHeight);
 
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
     windowClass.lpfnWndProc = win32MainWindowCallback;
@@ -417,8 +448,9 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     }
 
     globalWin32State.window = CreateWindowExA(0, windowClass.lpszClassName, "Gamedev",
-                                        WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT,
-                                        CW_USEDEFAULT, CW_USEDEFAULT, 0, 0, instance, 0);
+                                              WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT,
+                                              CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 0, 0,
+                                              instance, 0);
 
     if (!globalWin32State.window)
     {
@@ -502,14 +534,14 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
         input.dt = targetMsPerFrame;
         win32GetInput(&input);
 
-        updateAndRender(&memory, &input, &globalRendererState);
+        updateAndRender(&memory, &input, &globalBackBuffer);
 
         HDC deviceContext = GetDC(globalWin32State.window);
         RECT clientRect;
         GetClientRect(globalWin32State.window, &clientRect);
         int width = clientRect.right - clientRect.left;
         int height = clientRect.bottom - clientRect.top;
-        win32UpdateWindow(deviceContext, &clientRect, 0, 0, width, height);
+        win32UpdateWindow(&globalBackBuffer, deviceContext, width, height);
         ReleaseDC(globalWin32State.window, deviceContext);
 
         u32 dt = win32GetMillisecondsElapsed(currentTick, win32GetTicks());

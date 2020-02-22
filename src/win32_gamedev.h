@@ -8,12 +8,13 @@ struct Win32State
     b32 isRunning;
 };
 
-struct Win32RendererState
+struct Win32BackBuffer
 {
-    VOID *backbufferMemory;
-    int backbufferWidth;
-    int backbufferHeight;
-    int backbufferBytesPerPixel;
+    BITMAPINFO bitmapInfo;
+    VOID *memory;
+    int width;
+    int height;
+    int bytesPerPixel;
 };
 
 #endif  // WIN32_GAMEDEV_H
