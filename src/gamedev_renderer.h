@@ -15,6 +15,7 @@ enum RenderEntryType
     RenderEntryType_RenderEntryRect,
     RenderEntryType_RenderEntryFilledRect,
     RenderEntryType_RenderEntrySprite,
+    RenderEntryType_RenderEntryLoadedBitmap,
 
     RenderEntryType_Count
 };
@@ -39,6 +40,13 @@ struct RenderEntryFilledRect
     RenderLayer layer;
 };
 
+struct RenderEntryLoadedBitmap
+{
+    LoadedBitmap bitmap;
+    Rect dest;
+    RenderLayer layer;
+};
+
 struct RenderEntrySprite
 {
     Rect source;
@@ -58,4 +66,5 @@ internal void pushRect(RenderGroup *group, Rect dest, Vec4u8 color, RenderLayer 
 internal void pushFilledRect(RenderGroup *group, Rect dest, Vec4u8 color, RenderLayer layer);
 internal void pushSprite(RenderGroup *group, TextureHandle sheet, Rect source, Rect dest,
                          RenderLayer layer);
+internal void pushBitmap(RenderGroup *group, LoadedBitmap bitmap, Rect dest, RenderLayer layer);
 #endif

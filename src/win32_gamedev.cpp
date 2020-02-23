@@ -105,6 +105,53 @@ internal void win32FreeFileMemory(EntireFile *file)
     }
 }
 
+LoadedBitmap win32LoadBitmap(char *path)
+{
+    // TODO(chogan): Save bitmap in game memory and delete file data
+    EntireFile file_data = win32ReadEntireFile(path);
+    u8 *bitmapData = (u8 *)file_data.contents;
+
+    LoadedBitmap result = {};
+    if (bitmapData && (char)bitmapData[0] == 'B' && (char)bitmapData[1] == 'M')
+    {
+        BITMAPFILEHEADER *bitmapHeader = (BITMAPFILEHEADER *)bitmapData;
+        if (bitmapHeader->bfReserved1 == 0 && bitmapHeader->bfReserved2 == 0)
+        {
+            DWORD bitsOffset = bitmapHeader->bfOffBits;
+            bitmapData += sizeof(BITMAPFILEHEADER);
+
+            BITMAPINFOHEADER *bmpInfoHeader = (BITMAPINFOHEADER *)bitmapData;
+
+            if (bmpInfoHeader->biCompression != BI_BITFIELDS)
+            {
+                assert(!"Expected an uncompressed bitmap");
+            }
+
+            if (bmpInfoHeader->biBitCount != 32)
+            {
+                assert(!"Expected a bitmap with 32 bits per pixel");
+            }
+
+            result.width = bmpInfoHeader->biWidth;
+            // NOTE(chogan): Positive height means 0,0 is in lower left corner
+            b32 isBottomUp = bmpInfoHeader->biHeight > 0;
+            result.height = isBottomUp ? bmpInfoHeader->biHeight : -bmpInfoHeader->biHeight;
+            result.pixels = (u32 *)((u8 *)bitmapHeader + bitsOffset);
+        }
+        else
+        {
+            win32ErrorMessage(PlatformError_Warning, "Not a .bmp file");
+        }
+    }
+    else
+    {
+        win32ErrorMessage(PlatformError_Warning, "Not a .bmp file");
+    }
+
+    return result;
+}
+
+
 #if 0
 internal LARGE_INTEGER win32GetTicks()
 {
@@ -169,6 +216,33 @@ void win32RenderFilledRect(void *renderer, Rect dest, Vec4u8 color)
             *pixel++ = ((a << 24) | (r << 16) | (g << 8) | (b << 0));
         }
         start += pitch;
+    }
+}
+
+void win32RenderBitmap(void *renderer, LoadedBitmap bitmap, Rect dest_)
+{
+    Win32BackBuffer *backBuffer = (Win32BackBuffer *)renderer;
+    u8 *destRow = (u8 *)backBuffer->memory;
+    u8 *srcRow = (u8 *)bitmap.pixels + bitmap.width * (bitmap.height - 1) * backBuffer->bytesPerPixel;
+    for (u32 y = 0; y < bitmap.height; ++y)
+    {
+        u32 *dest = (u32 *)destRow;
+        u32 *src = (u32 *)srcRow;
+        for (u32 x = 0; x < bitmap.width; ++x)
+        {
+            f32 alpha = (*src >> 24) / 255.0f;
+            if (alpha)
+            {
+                *dest++ = *src++;
+            }
+            else
+            {
+                dest++;
+                src++;
+            }
+        }
+        destRow += backBuffer->bytesPerPixel * backBuffer->width;
+        srcRow -= backBuffer->bytesPerPixel * bitmap.width;
     }
 }
 
@@ -381,6 +455,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     // memory.platformAPI.getTicks = win32GetTicks;
 
     memory.rendererAPI.renderFilledRect = win32RenderFilledRect;
+    memory.rendererAPI.loadBitmap= win32LoadBitmap;
+    memory.rendererAPI.renderBitmap= win32RenderBitmap;
 #if 0
 
     memory.rendererAPI.getTextureDims = SDLGetTextureDims;

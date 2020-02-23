@@ -101,6 +101,12 @@ struct TextureDims
     i32 height;
 };
 
+struct LoadedBitmap
+{
+    u32 *pixels;
+    u32 width;
+    u32 height;
+};
 
 typedef TextureDims (GetTextureDims)(TextureHandle texture);
 typedef void (DestroyTexture)(TextureHandle t);
@@ -108,8 +114,11 @@ typedef void (SetRenderDrawColor)(void *renderer, Vec4u8 color);
 typedef void (RenderRect)(void *renderer, Rect dest, Vec4u8 color);
 typedef void (RenderFilledRect)(void *renderer, Rect dest, Vec4u8 color);
 typedef void (RenderSprite)(void *renderer, TextureHandle texture, Rect source, Rect dest);
+typedef void (RenderBitmap)(void *renderer, LoadedBitmap bitmap, Rect dest);
 typedef TextureHandle (CreateTextureFromPng)(const char *fname, void *renderer);
-typedef TextureHandle (CreateTextureFromGreyscaleBitmap)(void *renderer, u8 *bitmap, i32 width, i32 height);
+typedef TextureHandle (CreateTextureFromGreyscaleBitmap)(void *renderer, u8 *bitmap, i32 width,
+                                                         i32 height);
+typedef LoadedBitmap (LoadBitmapFunc)(char *path);
 
 struct RendererAPI
 {
@@ -119,8 +128,10 @@ struct RendererAPI
     RenderRect *renderRect;
     RenderFilledRect *renderFilledRect;
     RenderSprite *renderSprite;
+    RenderBitmap *renderBitmap;
     CreateTextureFromPng *createTextureFromPng;
     CreateTextureFromGreyscaleBitmap *createTextureFromGreyscaleBitmap;
+    LoadBitmapFunc *loadBitmap;
 };
 
 struct FontInfoHandle
