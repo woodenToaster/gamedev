@@ -230,16 +230,21 @@ void win32RenderBitmap(void *renderer, LoadedBitmap bitmap, Rect dest_)
         u32 *src = (u32 *)srcRow;
         for (u32 x = 0; x < bitmap.width; ++x)
         {
-            f32 alpha = (*src >> 24) / 255.0f;
-            if (alpha)
-            {
-                *dest++ = *src++;
-            }
-            else
-            {
-                dest++;
-                src++;
-            }
+            u8 a = (*src >> 24);
+            f32 alpha = a / 255.0f;
+            u8 bSrc = ((u8 *)src)[0];
+            u8 gSrc = ((u8 *)src)[1];
+            u8 rSrc = ((u8 *)src)[2];
+
+            u8 bDest = ((u8 *)dest)[0];
+            u8 gDest = ((u8 *)dest)[1];
+            u8 rDest = ((u8 *)dest)[2];
+
+            u8 rFinal = (u8)(alpha * rSrc + (1.0f - alpha) * rDest);
+            u8 gFinal = (u8)(alpha * gSrc + (1.0f - alpha) * gDest);
+            u8 bFinal = (u8)(alpha * bSrc + (1.0f - alpha) * bDest);
+            *dest++ = ((a << 24) | (rFinal << 16) | (gFinal << 8) | (bFinal << 0));
+            src++;
         }
         destRow += backBuffer->bytesPerPixel * backBuffer->width;
         srcRow -= backBuffer->bytesPerPixel * bitmap.width;
