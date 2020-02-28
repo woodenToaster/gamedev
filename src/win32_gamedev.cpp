@@ -219,16 +219,18 @@ void win32RenderFilledRect(void *renderer, Rect dest, Vec4u8 color)
     }
 }
 
-void win32RenderBitmap(void *renderer, LoadedBitmap bitmap, Rect dest_)
+void win32RenderBitmap(void *renderer, LoadedBitmap bitmap, Rect sourceRect, Rect destRect)
 {
+    // TODO(chogan): Clamp
+    (void)sourceRect;
     Win32BackBuffer *backBuffer = (Win32BackBuffer *)renderer;
-    u8 *destRow = (u8 *)backBuffer->memory;
+    u8 *destRow = (u8 *)backBuffer->memory + (destRect.y * backBuffer->width + destRect.x);
     u8 *srcRow = (u8 *)bitmap.pixels + bitmap.width * (bitmap.height - 1) * backBuffer->bytesPerPixel;
-    for (u32 y = 0; y < bitmap.height; ++y)
+    for (int y = 0; y < destRect.h; ++y)
     {
         u32 *dest = (u32 *)destRow;
         u32 *src = (u32 *)srcRow;
-        for (u32 x = 0; x < bitmap.width; ++x)
+        for (int x = 0; x < destRect.w; ++x)
         {
             u8 a = (*src >> 24);
             f32 alpha = a / 255.0f;

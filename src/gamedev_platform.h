@@ -114,7 +114,7 @@ typedef void (SetRenderDrawColor)(void *renderer, Vec4u8 color);
 typedef void (RenderRect)(void *renderer, Rect dest, Vec4u8 color);
 typedef void (RenderFilledRect)(void *renderer, Rect dest, Vec4u8 color);
 typedef void (RenderSprite)(void *renderer, TextureHandle texture, Rect source, Rect dest);
-typedef void (RenderBitmap)(void *renderer, LoadedBitmap bitmap, Rect dest);
+typedef void (RenderBitmap)(void *renderer, LoadedBitmap bitmap, Rect source, Rect dest);
 typedef TextureHandle (CreateTextureFromPng)(const char *fname, void *renderer);
 typedef TextureHandle (CreateTextureFromGreyscaleBitmap)(void *renderer, u8 *bitmap, i32 width,
                                                          i32 height);

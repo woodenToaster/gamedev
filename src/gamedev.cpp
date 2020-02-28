@@ -219,9 +219,7 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, void *rend
         // TODO(cjh): asset streaming
         // game->linkTexture = rendererAPI.createTextureFromPng("sprites/link_walking.png", renderer);
         // game->linkTexture = rendererAPI.loadBitmap("sprites/link_walking.bmp");
-        // hero_bitmap = rendererAPI.loadBitmap("sprites/link_walking.bmp");
-        hero_bitmap = rendererAPI.loadBitmap("sprites/alpha_test.bmp");
-        // hero_bitmap = rendererAPI.loadBitmap("sprites/structured_art.bmp");
+        hero_bitmap = rendererAPI.loadBitmap("sprites/link_walking.bmp");
         // game->harvestableTreeTexture = rendererAPI.createTextureFromPng("sprites/harvestable_tree.png",
                                                                         // renderer);
         // game->flameTexture = rendererAPI.createTextureFromPng("sprites/flame.png", renderer);
@@ -387,7 +385,7 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, void *rend
         }
     }
 
-    pushBitmap(group, hero_bitmap, Rect{0, 0, 0, 0}, RenderLayer_Entities);
+    pushBitmap(group, hero_bitmap, Rect{0, 0, 24, 32}, Rect{0, 0, 24, 32}, RenderLayer_Entities);
     drawBackground(group, game);
     drawTiles(group, game);
     // drawEntities(group, game);

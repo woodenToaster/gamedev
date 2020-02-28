@@ -208,12 +208,14 @@ internal void pushSprite(RenderGroup *group, TextureHandle sheet, Rect source, R
     }
 }
 
-internal void pushBitmap(RenderGroup *group, LoadedBitmap bitmap, Rect dest, RenderLayer layer)
+internal void pushBitmap(RenderGroup *group, LoadedBitmap bitmap, Rect source, Rect dest,
+                         RenderLayer layer)
 {
     RenderEntryLoadedBitmap *bitmap_entry = PushRenderElement(group, RenderEntryLoadedBitmap);
     if (bitmap_entry)
     {
         bitmap_entry->bitmap = bitmap;
+        bitmap_entry->source = source;
         bitmap_entry->dest = dest;
         bitmap_entry->layer = layer;
     }
@@ -290,7 +292,7 @@ internal void drawRenderGroup(void *renderer, RenderGroup *group)
                     RenderEntryLoadedBitmap *entry = (RenderEntryLoadedBitmap *)data;
                     if (entry->layer == layerIndex)
                     {
-                        rendererAPI.renderBitmap(renderer, entry->bitmap, entry->dest);
+                        rendererAPI.renderBitmap(renderer, entry->bitmap, entry->source, entry->dest);
                     }
                     baseAddress += sizeof(*entry);
                 } break;

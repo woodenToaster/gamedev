@@ -43,6 +43,7 @@ struct RenderEntryFilledRect
 struct RenderEntryLoadedBitmap
 {
     LoadedBitmap bitmap;
+    Rect source;
     Rect dest;
     RenderLayer layer;
 };
@@ -66,5 +67,6 @@ internal void pushRect(RenderGroup *group, Rect dest, Vec4u8 color, RenderLayer 
 internal void pushFilledRect(RenderGroup *group, Rect dest, Vec4u8 color, RenderLayer layer);
 internal void pushSprite(RenderGroup *group, TextureHandle sheet, Rect source, Rect dest,
                          RenderLayer layer);
-internal void pushBitmap(RenderGroup *group, LoadedBitmap bitmap, Rect dest, RenderLayer layer);
+internal void pushBitmap(RenderGroup *group, LoadedBitmap bitmap, Rect source, Rect dest,
+                         RenderLayer layer);
 #endif
