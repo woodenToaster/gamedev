@@ -171,7 +171,7 @@ internal void updateCamera(Camera* c, Vec2 centerPos)
     c->viewport.y = clampInt32(c->viewport.y, 0, c->maxY);
 }
 
-#if 0
+#if GAMEDEV_SDL
 internal void playQueuedSounds(SoundList *sl, u64 now)
 {
     for (u32 i = 0; i < sl->count; ++i)
@@ -188,23 +188,25 @@ internal void queueSound(SoundList *sl, Sound *s)
     sl->items[sl->count++] = s;
 }
 
-// extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHandle outputTarget,
-// Rect *viewport, RendererHandle renderer)
+#if GAMEDEV_SDL
+extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHandle outputTarget,
+                                    Rect *viewport, void *rendererState)
+#else
 extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, void *rendererState)
+#endif
 {
     platform = memory->platformAPI;
     rendererAPI = memory->rendererAPI;
 
-#if 0
     fontAPI = memory->fontAPI;
     audioAPI = memory->audioAPI;
-#endif
 
     assert(sizeof(Game) < memory->permanentStorageSize);
     Game* game = (Game*)memory->permanentStorage;
-    // u64 now = memory->currentTickCount;
+#if GAMEDEV_SDL
+    u64 now = memory->currentTickCount;
+#endif
 
-    static LoadedBitmap hero_bitmap = {};
     if (!memory->isInitialized)
     {
         initArena(&game->worldArena, memory->permanentStorageSize - sizeof(Game),
@@ -217,25 +219,28 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, void *rend
         // Asset loading
         // TODO(cjh): Packed asset file
         // TODO(cjh): asset streaming
-        // game->linkTexture = rendererAPI.createTextureFromPng("sprites/link_walking.png", renderer);
-        // game->linkTexture = rendererAPI.loadBitmap("sprites/link_walking.bmp");
-        hero_bitmap = rendererAPI.loadBitmap("sprites/link_walking.bmp");
-        // game->harvestableTreeTexture = rendererAPI.createTextureFromPng("sprites/harvestable_tree.png",
-                                                                        // renderer);
-        // game->flameTexture = rendererAPI.createTextureFromPng("sprites/flame.png", renderer);
-        // game->firePitTexture = rendererAPI.createTextureFromPng("sprites/fire_pit.png", renderer);
-        // game->glowTreeTexture = rendererAPI.createTextureFromPng("sprites/glow_tree.png", renderer);
-        // game->harlodTexture = rendererAPI.createTextureFromPng("sprites/Harlod_the_caveman.png",
-                                                               // renderer);
-        // game->iconsTexture = rendererAPI.createTextureFromPng("sprites/fantasy_icons_transparent.png",
-                                                              // renderer);
-        // game->knightTexture = rendererAPI.createTextureFromPng("sprites/knight_alligned.png", renderer);
-
-        // game->mudSound.chunk = audioAPI.loadWav("sounds/mud_walk.wav");
-        // game->mudSound.delay = 250;
-
-        // fontAPI.generateFontData(&game->fontMetadata, renderer);
-
+#if GAMEDEV_SDL
+        game->linkTexture = rendererAPI.createTextureFromPng("sprites/link_walking.png", rendererState);
+        game->harvestableTreeTexture = rendererAPI.createTextureFromPng("sprites/harvestable_tree.png",
+                                                                        rendererState);
+        game->flameTexture = rendererAPI.createTextureFromPng("sprites/flame.png", rendererState);
+        game->firePitTexture = rendererAPI.createTextureFromPng("sprites/fire_pit.png", rendererState);
+        game->glowTreeTexture = rendererAPI.createTextureFromPng("sprites/glow_tree.png", rendererState);
+        game->harlodTexture = rendererAPI.createTextureFromPng("sprites/Harlod_the_caveman.png",
+                                                               rendererState);
+        game->iconsTexture = rendererAPI.createTextureFromPng("sprites/fantasy_icons_transparent.png",
+                                                              rendererState);
+        game->knightTexture = rendererAPI.createTextureFromPng("sprites/knight_alligned.png",
+                                                               rendererState);
+        game->mudSound.chunk = audioAPI.loadWav("sounds/mud_walk.wav");
+        game->mudSound.delay = 250;
+        fontAPI.generateFontData(&game->fontMetadata, rendererState);
+#else
+        LoadedBitmap linkBitmap  = rendererAPI.loadBitmap("sprites/link_walking.bmp");
+        TextureHandle linkTexture = {};
+        linkTexture.bitmap = linkBitmap;
+        game->linkTexture = linkTexture;
+#endif
         // Map
         u32 tileWidth = 80;
         u32 tileHeight = 80;
@@ -246,7 +251,9 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, void *rend
         map0->cols = 12;
         map0->widthPixels = map0->cols * tileWidth;
         map0->heightPixels = map0->rows * tileHeight;
-        // map0->texture = outputTarget;
+#if GAMEDEV_SDL
+        map0->texture = outputTarget;
+#endif
 
         for (u32 row = 0; row < map0->rows; ++row)
         {
@@ -269,30 +276,44 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, void *rend
                 if (row == 4 && (col == 1 || col == 2 || col == 3 || col ==4))
                 {
                     // Quicksand
-                    // addTileFlags(tile, TileProperty_Quicksand)
-                    // tile->color = game->colors[Color_Brown];
-                    // tile->collides = false;
+                    addTileFlags(tile, TileProperty_Quicksand);
+                    tile->color = game->colors[Color_Brown];
+                    tile->collides = false;
                 }
                 if ((row == 2 && (col == 4 || col == 5 || col == 6 || col == 7)) ||
                     ((row == 3 || row == 4 || row == 5 || row == 6) && col == 7))
                 {
-                    // initHarvestableTree(tile, game);
+                    initHarvestableTree(tile, game);
                 }
 
                 if (row == 2 && col == 2)
                 {
                     // Glow tree
-                    // initGlowTree(tile, game);
+                    initGlowTree(tile, game);
                 }
 
                 if (row == 1 && col == 7)
                 {
                     // Lightable fire
-                    // addTileFlags(tile, TileProperty_Campfire | TileProperty_Interactive);
-                    // initEntitySpriteSheet(tile, game->firePitTexture, 1, 1);
+                    addTileFlags(tile, TileProperty_Campfire | TileProperty_Interactive);
+                    initEntitySpriteSheet(tile, game->firePitTexture, 1, 1);
                 }
             }
         }
+
+        // Hero
+        game->hero = addEntity(map0);
+        Entity *hero = game->hero;
+        Vec2 heroScale = {1.875f, 1.875f};
+        initEntitySpriteSheet(hero, game->linkTexture, 11, 5, heroScale);
+        hero->width = 20;
+        hero->height = 10;
+        initAnimation(&hero->animation, 8, 80);
+        hero->shouldAnimate = true;
+        hero->position = {120, 120};
+        hero->speed = 2000;
+        hero->isVisible = true;
+        hero->type = EntityType_Hero;
 
         // Icons sheet
 #if 0
@@ -319,20 +340,6 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, void *rend
             }
         }
 
-        // Hero
-        game->hero = addEntity(map0);
-        Entity *hero = game->hero;
-        Vec2 heroScale = {1.875f, 1.875f};
-        initEntitySpriteSheet(hero, game->linkTexture, 11, 5, heroScale);
-        hero->width = 20;
-        hero->height = 10;
-        initAnimation(&hero->animation, 8, 80);
-        hero->shouldAnimate = true;
-        hero->position = {120, 120};
-        hero->speed = 2000;
-        hero->isVisible = true;
-        hero->type = EntityType_Hero;
-
         // Harlod
         Entity *harlod = addEntity(map0);
         *harlod = {};
@@ -346,7 +353,9 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, void *rend
         harlod->type = EntityType_Harlod;
 #endif
         game->currentMap = map0;
-        // initCamera(game, viewport->w, viewport->h);
+#if GAMEDEV_SDL
+        initCamera(game, viewport->w, viewport->h);
+#endif
 
         memory->isInitialized = true;
     }
@@ -359,18 +368,20 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, void *rend
         startInventoryMode(game);
     }
 
-    // Entity *hero = game->hero;
+    Entity *hero = game->hero;
     switch (game->mode)
     {
         case GameMode_Playing:
         {
-            // updateHero(group, hero, input, game);
-            // updateCamera(&game->camera, hero->position);
-            // viewport->x = game->camera.viewport.x;
-            // viewport->y = game->camera.viewport.y;
-            // updateEntities(game, input);
-            // playQueuedSounds(&game->sounds, now);
-            // updateTiles(game, input);
+            updateHero(group, hero, input, game);
+#if GAMEDEV_SDL
+            updateCamera(&game->camera, hero->position);
+            viewport->x = game->camera.viewport.x;
+            viewport->y = game->camera.viewport.y;
+            updateEntities(game, input);
+            playQueuedSounds(&game->sounds, now);
+#endif
+            updateTiles(game, input);
             break;
         }
         case GameMode_Dialogue:
@@ -385,12 +396,11 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, void *rend
         }
     }
 
-    pushBitmap(group, hero_bitmap, Rect{0, 0, 24, 32}, Rect{0, 0, 24, 32}, RenderLayer_Entities);
     drawBackground(group, game);
     drawTiles(group, game);
-    // drawEntities(group, game);
-    // drawPlacingTile(group, game, hero);
-    // drawHUD(group, game, hero, &game->fontMetadata);
+    drawEntities(group, game);
+    drawPlacingTile(group, game, hero);
+    drawHUD(group, game, hero, &game->fontMetadata);
 
     if (game->mode == GameMode_Dialogue)
     {
@@ -400,8 +410,8 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, void *rend
 
     if (game->mode == GameMode_Inventory)
     {
-        // darkenBackground(group, game);
-        // drawInventoryScreen(group, game, hero, &game->fontMetadata);
+        darkenBackground(group, game);
+        drawInventoryScreen(group, game, hero, &game->fontMetadata);
     }
 
     /**************************************************************************/

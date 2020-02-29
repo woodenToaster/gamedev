@@ -151,6 +151,15 @@ LoadedBitmap win32LoadBitmap(char *path)
     return result;
 }
 
+TextureDims win32GetTextureDims(TextureHandle texture)
+{
+    TextureDims result = {};
+    result.width = texture.bitmap.width;
+    result.height = texture.bitmap.height;
+
+    return result;
+}
+
 
 #if 0
 internal LARGE_INTEGER win32GetTicks()
@@ -219,6 +228,55 @@ void win32RenderFilledRect(void *renderer, Rect dest, Vec4u8 color)
     }
 }
 
+void win32RenderRect(void *renderer, Rect dest, Vec4u8 color)
+{
+    // TODO(chogan): Clipping
+    Win32BackBuffer *backBuffer = (Win32BackBuffer *)renderer;
+
+    u8 r = color.r;
+    u8 g = color.g;
+    u8 b = color.b;
+    u8 a = color.a;
+
+    if (isZeroRect(dest))
+    {
+        // NOTE(chogan): Fill the whole back buffer
+        dest.w = backBuffer->width;
+        dest.h = backBuffer->height;
+    }
+
+    int bytesPerPixel = backBuffer->bytesPerPixel;
+    int pitch = backBuffer->width * bytesPerPixel;
+    u8 *start = (u8 *)backBuffer->memory + (dest.y * pitch) + (dest.x * bytesPerPixel);
+
+    int yMax = clampInt32(dest.y + dest.h, 0, backBuffer->height);
+    int xMax = clampInt32(dest.x + dest.w, 0, backBuffer->width);
+    for (int y = dest.y; y < yMax; ++y)
+    {
+        u32 *pixel = (u32 *)start;
+
+        if (y == dest.y || y == yMax - 1)
+        {
+            for (int x = dest.x; x < xMax; ++x)
+            {
+                *pixel++ = ((a << 24) | (r << 16) | (g << 8) | (b << 0));
+            }
+        }
+        else
+        {
+            for (int x = dest.x; x < xMax; ++x)
+            {
+                if (x != dest.x || x != xMax - 1)
+                {
+                    continue;
+                }
+                *pixel++ = ((a << 24) | (r << 16) | (g << 8) | (b << 0));
+            }
+        }
+        start += pitch;
+    }
+}
+
 void win32RenderBitmap(void *renderer, LoadedBitmap bitmap, Rect sourceRect, Rect destRect)
 {
     // TODO(chogan): Clamp
@@ -251,6 +309,11 @@ void win32RenderBitmap(void *renderer, LoadedBitmap bitmap, Rect sourceRect, Rec
         destRow += backBuffer->bytesPerPixel * backBuffer->width;
         srcRow -= backBuffer->bytesPerPixel * bitmap.width;
     }
+}
+
+void win32RenderSprite(void *renderer, TextureHandle sheet, Rect source, Rect dest)
+{
+    win32RenderBitmap(renderer, sheet.bitmap, source, dest);
 }
 
 internal void win32UpdateWindow(Win32BackBuffer *buffer, HDC deviceContext, int windowWidth,
@@ -462,15 +525,15 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     // memory.platformAPI.getTicks = win32GetTicks;
 
     memory.rendererAPI.renderFilledRect = win32RenderFilledRect;
-    memory.rendererAPI.loadBitmap= win32LoadBitmap;
-    memory.rendererAPI.renderBitmap= win32RenderBitmap;
-#if 0
+    memory.rendererAPI.renderRect = win32RenderRect;
+    memory.rendererAPI.loadBitmap = win32LoadBitmap;
+    memory.rendererAPI.renderBitmap = win32RenderBitmap;
+    memory.rendererAPI.renderSprite = win32RenderSprite;
+    memory.rendererAPI.getTextureDims = win32GetTextureDims;
 
-    memory.rendererAPI.getTextureDims = SDLGetTextureDims;
+#if 0
     memory.rendererAPI.destroyTexture = SDLDestroyTexture;
     memory.rendererAPI.setRenderDrawColor = SDLSetRenderDrawColor;
-    memory.rendererAPI.renderRect = SDLRenderRect;
-    memory.rendererAPI.renderSprite = SDLRenderSprite;
     memory.rendererAPI.createTextureFromPng = SDLCreateTextureFromPng;
     memory.rendererAPI.createTextureFromGreyscaleBitmap = SDLCreateTextureFromGreyscaleBitmap;
 

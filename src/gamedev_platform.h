@@ -81,24 +81,13 @@ struct EntireFile
 struct Game;
 typedef  EntireFile PlatformReadEntireFile(char *);
 typedef void PlatformFreeFileMemory(EntireFile *);
-// typedef u32 PlatformGetTicks();
+typedef u32 PlatformGetTicks();
 
 struct PlatformAPI
 {
     PlatformReadEntireFile *readEntireFile;
     PlatformFreeFileMemory *freeFileMemory;
-    // PlatformGetTicks *getTicks;
-};
-
-struct TextureHandle
-{
-    void *texture;
-};
-
-struct TextureDims
-{
-    i32 width;
-    i32 height;
+    PlatformGetTicks *getTicks;
 };
 
 struct LoadedBitmap
@@ -106,6 +95,21 @@ struct LoadedBitmap
     u32 *pixels;
     u32 width;
     u32 height;
+};
+
+struct TextureHandle
+{
+    union
+    {
+        void *texture;
+        LoadedBitmap bitmap;
+    };
+};
+
+struct TextureDims
+{
+    i32 width;
+    i32 height;
 };
 
 typedef TextureDims (GetTextureDims)(TextureHandle texture);
@@ -291,10 +295,11 @@ struct Input
     f32 stickX;
     f32 stickY;
 };
-#if 0
+#if GAMEDEV_SDL
 typedef void (GameUpdateAndRender)(GameMemory *memory, Input *input, TextureHandle outputTarget,
-                                   Rect *viewport, RendererHandle renderer);
-#endif
-
+                                   Rect *viewport, void *rendererState);
+#else
 typedef void (GameUpdateAndRender)(GameMemory *memory, Input *input, void *rendererState);
 #endif
+
+#endif  // GAMEDEV_PLATFORM_H

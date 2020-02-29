@@ -65,33 +65,6 @@ void SDLFreeFileMemory(EntireFile *file)
     }
 }
 
-// NOTE(cjh): SDL has already taken care of endianness for these color accessors
-#if 0
-internal u8 SDLGetAlphaFromU32(u32 color)
-{
-    u8 a = (u8)((color & 0xFF000000) >> 24);
-    return a;
-}
-#endif
-
-internal u8 SDLGetRedFromU32(u32 color)
-{
-    u8 r = (u8)((color & 0x00FF0000) >> 16);
-    return r;
-}
-
-internal u8 SDLGetGreenFromU32(u32 color)
-{
-    u8 g = (u8)((color & 0x0000FF00) >> 8);
-    return g;
-}
-
-internal u8 SDLGetBlueFromU32(u32 color)
-{
-    u8 b = (u8)((color & 0x000000FF) >> 0);
-    return b;
-}
-
 internal f32 SDLNormalizeStickInput(i16 unnormalizedStick)
 {
     f32 result = 0.0f;
@@ -327,10 +300,12 @@ inline internal void SDLToggleFullscreen(SDLState *state)
     if (state->isFullscreen)
     {
         SDL_SetWindowFullscreen(state->window, 0);
+        SDL_ShowCursor(SDL_ENABLE);
     }
     else
     {
         SDL_SetWindowFullscreen(state->window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+        SDL_ShowCursor(SDL_DISABLE);
     }
     state->isFullscreen = !state->isFullscreen;
 }
@@ -574,19 +549,19 @@ void SDLDestroyTexture(TextureHandle t)
     SDL_DestroyTexture((SDL_Texture*)t.texture);
 }
 
-void SDLSetRenderDrawColor(void *renderer, u32 color)
+void SDLSetRenderDrawColor(void *renderer, Vec4u8 color)
 {
     SDL_Renderer *sdlRenderer = ((SDLRendererState *)renderer)->renderer;
-    
-    SDL_SetRenderDrawColor(sdlRenderer, SDLGetRedFromU32(color), SDLGetGreenFromU32(color),
-                           SDLGetBlueFromU32(color), 255);
+
+    SDL_SetRenderDrawColor(sdlRenderer, color.r, color.g, color.b, 255);
 }
 
-void SDLRenderRect(void *renderer, Rect dest, Vec3u8 color, u8 alpha=255)
+void SDLRenderRect(void *renderer, Rect dest, Vec4u8 color)
 {
     u8 r = color.r;
     u8 g = color.g;
     u8 b = color.b;
+    u8 alpha = color.a;
 
     SDL_Renderer *sdlRenderer = ((SDLRendererState *)renderer)->renderer;
     SDL_Rect sdl_dest = SDLRectFromRect(dest);
@@ -599,10 +574,11 @@ void SDLRenderRect(void *renderer, Rect dest, Vec3u8 color, u8 alpha=255)
     SDL_SetRenderDrawBlendMode(sdlRenderer, blendMode);
 }
 
-void SDLRenderFilledRect(void *renderer, Rect dest, Vec3u8 color, u8 alpha=255)
+void SDLRenderFilledRect(void *renderer, Rect dest, Vec4u8 color)
 {
     // TODO(chogan): Tiles need an alpha of 0 at the point when their color is
     // set in order to signify Color_None, which is currently just (0, 0, 0)
+    u8 alpha = color.a;
     if (alpha != 0)
     {
         u8 r = color.r;
@@ -763,8 +739,6 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
     memory.audioAPI.loadWav = SDLLoadWav;
     memory.audioAPI.destroySound = SDLDestroySound;
 
-    u32 targetFps = 60;
-    memory.dt = (i32)((1.0f / (f32)targetFps) * 1000);
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) < 0)
     {
@@ -808,9 +782,6 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
         exit(1);
     }
 
-    SDL_PixelFormat *pixelFormat = SDL_GetWindowSurface(state.window)->format;
-    SDLInitColors(memory.colors, pixelFormat);
-
     // OpenGL
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
@@ -828,6 +799,9 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
 
     // Input
     Input input = {};
+    u32 targetFps = 60;
+    u32 targetMsPerFrame = (u32)(1000.0f / (f32)targetFps);
+    input.dt = (i32)((1.0f / (f32)targetFps) * 1000);
     SDL_GameController *controllerHandles[MAX_CONTROLLERS] = {};
     SDLInitControllers(&controllerHandles[0]);
 
@@ -888,7 +862,7 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
         memory.currentTickCount = SDL_GetTicks();
         SDLPollInput(&state, &input, &controllerHandles[0]);
         SDL_SetRenderTarget(renderer, (SDL_Texture*)backBuffer.texture);
-        updateAndRender(&memory, &input, backBuffer, &viewport, rendererHandle);
+        updateAndRender(&memory, &input, backBuffer, &viewport, &rendererHandle);
 
         // Hero interaction region
         // SDL_SetRenderDrawColor(game->renderer, 255, 255, 0, 255);
@@ -896,23 +870,22 @@ void SDLRenderCircle(SDL_Renderer *renderer, i32 _x, i32 _y, i32 radius)
         //                 (i32)heroInteractionRegion.center.y, (i32)heroInteractionRegion.radius);
 
         SDL_SetRenderTarget(renderer, NULL);
-        // SDL_Rect sdlViewport = {viewport.x, viewport.y, viewport.w, viewport.h};
-        SDL_Rect sdlViewport = {0, 0, screenWidth * 2, screenHeight * 2}; // viewport.x, viewport.y, viewport.w, viewport.h};
-        SDL_RenderCopy(renderer, (SDL_Texture*)backBuffer.texture, &sdlViewport, NULL);
-        u32 dt = SDL_GetTicks() - memory.currentTickCount;
+        SDL_Rect sdlViewport = {viewport.x, viewport.y, viewport.w, viewport.h};
+        // SDL_Rect sdlViewport = {0, 0, screenWidth * 2, screenHeight * 2};
 
-        if (dt < memory.targetMsPerFrame)
+        SDL_RenderCopy(renderer, (SDL_Texture*)backBuffer.texture, &sdlViewport, NULL);
+        u32 dt = SDL_GetTicks() - (u32)memory.currentTickCount;
+
+        if (dt < targetMsPerFrame)
         {
-            while (dt < memory.targetMsPerFrame)
+            while (dt < targetMsPerFrame)
             {
-                u32 sleep_ms = memory.targetMsPerFrame - dt;
+                u32 sleep_ms = targetMsPerFrame - dt;
                 dt += sleep_ms;
                 SDL_Delay(sleep_ms);
             }
         }
 
-        // TODO(cjh): Don't copy back and forth between game and platform
-        memory.dt = dt;
         SDL_RenderPresent(renderer);
     }
 
