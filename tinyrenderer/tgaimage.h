@@ -3,6 +3,18 @@
 
 #include <fstream>
 
+typedef uint8_t u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
+typedef int8_t i8;
+typedef int16_t i16;
+typedef int32_t i32;
+typedef int64_t i64;
+typedef float f32;
+typedef double f64;
+typedef int32_t b32;
+
 #pragma pack(push,1)
 struct TGA_Header {
     char idlength;
@@ -20,15 +32,16 @@ struct TGA_Header {
 };
 #pragma pack(pop)
 
-
-
 struct TGAColor {
     union {
         struct {
-            unsigned char b, g, r, a;
+            u8 b;
+            u8 g;
+            u8 r;
+            u8 a;
         };
-        unsigned char raw[4];
-        unsigned int val;
+        u8 raw[4];
+        u32 val;
     };
     int bytespp;
 
