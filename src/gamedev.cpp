@@ -17,7 +17,6 @@
 #include "gamedev_entity.cpp"
 #include "gamedev_tilemap.cpp"
 
-
 internal TemporaryMemory beginTemporaryMemory(Arena *arena)
 {
     TemporaryMemory result = {};
@@ -305,6 +304,7 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, void *rend
         game->hero = addEntity(map0);
         Entity *hero = game->hero;
         Vec2 heroScale = {1.875f, 1.875f};
+        // Vec2 heroScale = {1.0f, 1.0f};
         initEntitySpriteSheet(hero, game->linkTexture, 11, 5, heroScale);
         hero->width = 20;
         hero->height = 10;

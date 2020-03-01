@@ -444,7 +444,7 @@ internal b32 isValidTilePlacment(Map *m, Entity *tileToPlace)
 
     return result;
 }
-
+#if GAMEDEV_SDL
 void pushInteractionHint(RenderGroup *group, Game *g, char *text)
 {
     i32 textLength = (i32)strlen(text);
@@ -457,6 +457,14 @@ void pushInteractionHint(RenderGroup *group, Game *g, char *text)
     i32 destY = g->camera.viewport.h + g->camera.viewport.y - beltHeight;
     drawText(group, &g->fontMetadata, text, destX, destY);
 }
+#else
+void pushInteractionHint(RenderGroup *group, Game *g, char *text)
+{
+    (void)group;
+    (void)g;
+    (void)text;
+}
+#endif
 
 internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game* g)
 {

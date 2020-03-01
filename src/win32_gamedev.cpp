@@ -279,17 +279,47 @@ void win32RenderRect(void *renderer, Rect dest, Vec4u8 color)
 
 void win32RenderBitmap(void *renderer, LoadedBitmap bitmap, Rect sourceRect, Rect destRect)
 {
-    // TODO(chogan): Clamp
-    (void)sourceRect;
     Win32BackBuffer *backBuffer = (Win32BackBuffer *)renderer;
-    u8 *destRow = (u8 *)backBuffer->memory + (destRect.y * backBuffer->width + destRect.x);
+
+    sourceRect.x = clampInt32(sourceRect.x, 0, bitmap.width - 1);
+
+    if (sourceRect.y < 0)
+    {
+        sourceRect.y = 0;
+    }
+    if (sourceRect.y + sourceRect.h > (int)bitmap.height - 1)
+    {
+        sourceRect.y = bitmap.height - 1 - sourceRect.h;
+    }
+
+    int maxDestX = (backBuffer->width - 1) * backBuffer->bytesPerPixel;
+    destRect.x = clampInt32(destRect.x, 0, maxDestX);
+
+    if (destRect.y < 0)
+    {
+        destRect.y = 0;
+    }
+
+    size_t destOffset = (destRect.y * backBuffer->width + destRect.x) * backBuffer->bytesPerPixel;
+    u8 *destRow = (u8 *)backBuffer->memory + destOffset;
     u8 *srcRow = (u8 *)bitmap.pixels + bitmap.width * (bitmap.height - 1) * backBuffer->bytesPerPixel;
+
     for (int y = 0; y < destRect.h; ++y)
     {
         u32 *dest = (u32 *)destRow;
         u32 *src = (u32 *)srcRow;
+
+        if (destRect.y + y > backBuffer->height - 1)
+        {
+            break;
+        }
+
         for (int x = 0; x < destRect.w; ++x)
         {
+            if (destRect.x + x > backBuffer->width - 1)
+            {
+                break;
+            }
             u8 a = (*src >> 24);
             f32 alpha = a / 255.0f;
             u8 bSrc = ((u8 *)src)[0];
@@ -432,18 +462,22 @@ internal void win32UpdateKeyboardInput(Input* input, u64 vkCode, b32 isDown)
     switch(vkCode)
     {
         case 'W':
+        case VK_UP:
         {
             win32SetKeyState(input, Key_Up, isDown);
         } break;
         case 'A':
+        case VK_LEFT:
         {
             win32SetKeyState(input, Key_Left, isDown);
         } break;
         case 'S':
+        case VK_DOWN:
         {
             win32SetKeyState(input, Key_Down, isDown);
         } break;
         case 'D':
+        case VK_RIGHT:
         {
             win32SetKeyState(input, Key_Right, isDown);
         } break;
@@ -483,9 +517,13 @@ internal void win32GetInput(Input *input)
                 b32 wasDown = message.lParam >> 30 != 0;
                 b32 isDown = message.lParam >> 31 == 0;
 
-                if (wasDown != isDown)
+                if (isDown)
                 {
-                    win32UpdateKeyboardInput(input, (u64)message.wParam, isDown);
+                    win32UpdateKeyboardInput(input, (u64)message.wParam, true);
+                }
+                if (wasDown && !isDown)
+                {
+                    win32UpdateKeyboardInput(input, (u64)message.wParam, false);
                 }
             } break;
             default:
