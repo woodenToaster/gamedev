@@ -19,12 +19,15 @@ typedef int32_t b32;
 
 #define GL_VERTEX_SHADER 0x8B31
 #define GL_FRAGMENT_SHADER 0x8B30
+#define GL_COMPILE_STATUS 0x8B81
+
+typedef char GLchar;
 
 typedef void (*PFNGLCLEARBUFFERFVPROC)(GLenum buffer, GLint drawbuffer, const GLfloat *value);
 PFNGLCLEARBUFFERFVPROC glClearBufferfv;
 typedef GLuint (*PFNGLCREATESHADERPROC)(GLenum type);
 PFNGLCREATESHADERPROC glCreateShader;
-typedef void (*PFNGLSHADERSOURCEPROC)(GLuint shader, GLsizei count, const char *const*string,
+typedef void (*PFNGLSHADERSOURCEPROC)(GLuint shader, GLsizei count, const GLchar *const*string,
                                       const GLint *length);
 PFNGLSHADERSOURCEPROC glShaderSource;
 typedef void (*PFNGLCOMPILESHADERPROC) (GLuint shader);
@@ -47,6 +50,11 @@ typedef void (*PFNGLDELETEPROGRAMPROC)(GLuint program);
 PFNGLDELETEPROGRAMPROC glDeleteProgram;
 typedef void (*PFNGLUSEPROGRAMPROC)(GLuint program);
 PFNGLUSEPROGRAMPROC glUseProgram;
+typedef void (*PFNGLGETSHADERINFOLOGPROC)(GLuint shader, GLsizei bufSize, GLsizei *length,
+                                          GLchar *infoLog);
+PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog;
+typedef void (*PFNGLGETSHADERIVPROC) (GLuint shader, GLenum pname, GLint *params);
+PFNGLGETSHADERIVPROC glGetShaderiv;
 
 #define global static
 
@@ -183,14 +191,17 @@ static const char *vertexShaderSource[] =
     "#version 450 core \n",
     "void main(void) \n",
     "{ \n",
-    "    gl_Position = vec4(0.0, 0.0, 0.5, 1.0); \n",
+    "const vec4 vertices[3] = vec4[3](vec4(0.25, -0.25, 0.5, 1.0),",
+    "                                 vec4(-0.25, -0.25, 0.5, 1.0),",
+    "                                 vec4(0.25, 0.25, 0.5, 1.0));",
+    "gl_Position = vertices[gl_VertexID];",
     "}",
 };
 
 static const char *fragmentShaderSource[] =
 {
     "#version 450 core \n",
-    "out vec4 color \n",
+    "out vec4 color; \n",
     "void main(void) \n",
     "{ \n",
     "    color = vec4(0.0, 0.8, 1.0, 1.0); \n",
@@ -200,12 +211,32 @@ static const char *fragmentShaderSource[] =
 GLuint compileShaders()
 {
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, vertexShaderSource, NULL);
+    glShaderSource(vertexShader, 8, vertexShaderSource, NULL);
     glCompileShader(vertexShader);
+    GLint compile_result;
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &compile_result);
+    if (compile_result != GL_TRUE)
+    {
+        char info[256];
+        GLsizei length;
+        glGetShaderInfoLog(vertexShader, 256, &length, info);
+        OutputDebugString(info);
+        exit(1);
+    }
+
 
     GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, fragmentShaderSource, NULL);
+    glShaderSource(fragmentShader, 6, fragmentShaderSource, NULL);
     glCompileShader(fragmentShader);
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &compile_result);
+    if (compile_result != GL_TRUE)
+    {
+        char info[256];
+        GLsizei length;
+        glGetShaderInfoLog(fragmentShader, 256, &length, info);
+        OutputDebugString(info);
+        exit(1);
+    }
 
     GLuint program = glCreateProgram();
     glAttachShader(program, vertexShader);
@@ -235,6 +266,8 @@ void loadOpenGLFunctions()
     LOAD_GL_FUNC(glDeleteVertexArrays, DELETEVERTEXARRAYS);
     LOAD_GL_FUNC(glDeleteProgram, DELETEPROGRAM);
     LOAD_GL_FUNC(glUseProgram, USEPROGRAM);
+    LOAD_GL_FUNC(glGetShaderInfoLog, GETSHADERINFOLOG);
+    LOAD_GL_FUNC(glGetShaderiv, GETSHADERIV);
 }
 
 int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int CmdShow)
@@ -280,7 +313,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
     {
         ShowWindow(WindowHandle, CmdShow);
         UpdateWindow(WindowHandle);
-        glEnable(GL_BLEND);
+        // glEnable(GL_BLEND);
         LARGE_INTEGER ElapsedMicroseconds = {0};
         GlobalRunning = 1;
         while (GlobalRunning)
@@ -305,7 +338,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
 
             glUseProgram(program);
             glPointSize(40.0f);
-            glDrawArrays(GL_POINTS, 0, 1);
+            glDrawArrays(GL_TRIANGLES, 0, 3);
 
             SwapBuffers(GlobalDeviceContext);
 
