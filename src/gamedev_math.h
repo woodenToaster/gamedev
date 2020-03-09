@@ -1,7 +1,23 @@
 #ifndef GAMEDEV_MATH_H
 #define GAMEDEV_MATH_H
 
+#include <math.h>
+
+// TODO(chogan): More digits
 const f32 PI = 3.14159f;
+
+struct Rect
+{
+    int x;
+    int y;
+    int w;
+    int h;
+};
+
+inline b32 isZeroRect(Rect rect)
+{
+    return !(rect.x || rect.y || rect.w || rect.h);
+}
 
 struct Point
 {
@@ -9,17 +25,28 @@ struct Point
     i32 y;
 };
 
-struct Vec2
+#pragma warning(disable:4201)
+union Vec2
 {
-    f32 x;
-    f32 y;
+    struct
+    {
+        f32 x;
+        f32 y;
+    };
+
+    f32 data[2];
 };
 
-struct Vec3
+union Vec3
 {
-    f32 x;
-    f32 y;
-    f32 z;
+    struct
+    {
+        f32 x;
+        f32 y;
+        f32 z;
+    };
+
+    f32 data[3];
 };
 
 struct Vec3u8
@@ -29,7 +56,6 @@ struct Vec3u8
     u8 b;
 };
 
-#pragma warning(disable:4201)
 union Vec4
 {
     struct
@@ -47,8 +73,189 @@ union Vec4
         f32 b;
         f32 a;
     };
+
+    f32 data[4];
+};
+
+union Mat4
+{
+    struct
+    {
+        Vec4 col1;
+        Vec4 col2;
+        Vec4 col3;
+        Vec4 col4;
+    };
+
+    f32 data[16];
 };
 #pragma warning(default:4201)
+
+inline f32 radians(f32 angleInDegrees)
+{
+    return angleInDegrees * PI / 180.0f;
+}
+
+Mat4 identityMat4()
+{
+    Mat4 result = {};
+    result.col1.x = 1.0f;
+    result.col2.y = 1.0f;
+    result.col3.z = 1.0f;
+    result.col4.w = 1.0f;
+
+    return result;
+}
+
+Mat4 makeTranslationMat4(f32 x, f32 y, f32 z)
+{
+    Mat4 result = {};
+    result.col1 = {1.0f, 0.0f, 0.0f, 0.0f};
+    result.col2 = {0.0f, 1.0f, 0.0f, 0.0f};
+    result.col3 = {0.0f, 0.0f, 1.0f, 0.0f};
+    result.col4 = {x, y, z, 1.0f};
+
+    return result;
+}
+
+Mat4 makeTranslationMat4(Vec4 v)
+{
+    Mat4 result = makeTranslationMat4(v.x, v.y, v.z);
+
+    return result;
+}
+
+Mat4 makeRotationMat4(f32 angle, f32 x, f32 y, f32 z)
+{
+    Mat4 result = {};
+
+    f32 x2 = x * x;
+    f32 y2 = y * y;
+    f32 z2 = z * z;
+    f32 rads = f32(angle) * 0.0174532925f;
+    f32 c = cosf(rads);
+    f32 s = sinf(rads);
+    f32 omc = 1.0f - c;
+
+    result.col1 = {x2 * omc + c, y * x * omc + z * s, x * z * omc - y * s, 0.0f};
+    result.col2 = {x * y * omc - z * s, y2 * omc + c, y * z * omc + x * s, 0.0f};
+    result.col3 = {x * z * omc + y * s, y * z * omc - x * s, z2 * omc + c, 0.0f};
+    result.col4 = {0.0f, 0.0f, 0.0f, 1.0f};
+
+    return result;
+}
+
+Mat4 makePerspectiveMat4(f32 fovy, f32 aspect, f32 n, f32 f)
+{
+    Mat4 result = {};
+
+    f32 q = 1.0f / tanf(radians(0.5f * fovy));
+    f32 A = q / aspect;
+    f32 B = (n + f) / (n - f);
+    f32 C = (2.0f * n * f) / (n - f);
+
+    result.col1 = {A, 0.0f, 0.0f, 0.0f};
+    result.col2 = {0.0f, q, 0.0f, 0.0f};
+    result.col3 = {0.0f, 0.0f, B, -1.0f};
+    result.col4 = {0.0f, 0.0f, C, 0.0f};
+
+    return result;
+}
+
+Mat4 makeScaleMat4(f32 x, f32 y, f32 z)
+{
+    Mat4 result = {};
+    result.col1.x = x;
+    result.col2.y = y;
+    result.col3.z = z;
+    result.col4.w = 1.0f;
+
+    return result;
+}
+
+Mat4 multiplyMat4(Mat4 *m1, Mat4 *m2)
+{
+    Mat4 result = {};
+
+    result.col1 =
+    {
+        (m1->col1.x * m2->col1.x +
+         m1->col2.x * m2->col1.y +
+         m1->col3.x * m2->col1.z +
+         m1->col4.x * m2->col1.w),
+        (m1->col1.y * m2->col1.x +
+         m1->col2.y * m2->col1.y +
+         m1->col3.y * m2->col1.z +
+         m1->col4.y * m2->col1.w),
+        (m1->col1.z * m2->col1.x +
+         m1->col2.z * m2->col1.y +
+         m1->col3.z * m2->col1.z +
+         m1->col4.z * m2->col1.w),
+        (m1->col1.w * m2->col1.x +
+         m1->col2.w * m2->col1.y +
+         m1->col3.w * m2->col1.z +
+         m1->col4.w * m2->col1.w)
+    };
+    result.col2 =
+    {
+        (m1->col1.x * m2->col2.x +
+         m1->col2.x * m2->col2.y +
+         m1->col3.x * m2->col2.z +
+         m1->col4.x * m2->col2.w),
+        (m1->col1.y * m2->col2.x +
+         m1->col2.y * m2->col2.y +
+         m1->col3.y * m2->col2.z +
+         m1->col4.y * m2->col2.w),
+        (m1->col1.z * m2->col2.x +
+         m1->col2.z * m2->col2.y +
+         m1->col3.z * m2->col2.z +
+         m1->col4.z * m2->col2.w),
+        (m1->col1.w * m2->col2.x +
+         m1->col2.w * m2->col2.y +
+         m1->col3.w * m2->col2.z +
+         m1->col4.w * m2->col2.w)
+    };
+    result.col3 =
+    {
+        (m1->col1.x * m2->col3.x +
+         m1->col2.x * m2->col3.y +
+         m1->col3.x * m2->col3.z +
+         m1->col4.x * m2->col3.w),
+        (m1->col1.y * m2->col3.x +
+         m1->col2.y * m2->col3.y +
+         m1->col3.y * m2->col3.z +
+         m1->col4.y * m2->col3.w),
+        (m1->col1.z * m2->col3.x +
+         m1->col2.z * m2->col3.y +
+         m1->col3.z * m2->col3.z +
+         m1->col4.z * m2->col3.w),
+        (m1->col1.w * m2->col3.x +
+         m1->col2.w * m2->col3.y +
+         m1->col3.w * m2->col3.z +
+         m1->col4.w * m2->col3.w)
+    };
+    result.col4 =
+    {
+        (m1->col1.x * m2->col4.x +
+         m1->col2.x * m2->col4.y +
+         m1->col3.x * m2->col4.z +
+         m1->col4.x * m2->col4.w),
+        (m1->col1.y * m2->col4.x +
+         m1->col2.y * m2->col4.y +
+         m1->col3.y * m2->col4.z +
+         m1->col4.y * m2->col4.w),
+        (m1->col1.z * m2->col4.x +
+         m1->col2.z * m2->col4.y +
+         m1->col3.z * m2->col4.z +
+         m1->col4.z * m2->col4.w),
+        (m1->col1.w * m2->col4.x +
+         m1->col2.w * m2->col4.y +
+         m1->col3.w * m2->col4.z +
+         m1->col4.w * m2->col4.w)
+    };
+
+    return result;
+}
 
 struct Vec4u8
 {

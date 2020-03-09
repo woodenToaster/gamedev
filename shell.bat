@@ -15,5 +15,4 @@ set PATH=D:\dev\cloc;%PATH%
 set PATH=D:\dev\cmder\vendor\git-for-windows\usr\bin;%PATH%
 set PATH=D:\programs\4coder\cjh_4coder_stable;%PATH%
 cd /d d:
-cd d:\dev\gamedev
 

@@ -21,19 +21,6 @@ typedef float f32;
 typedef double f64;
 typedef int32_t b32;
 
-struct Rect
-{
-    int x;
-    int y;
-    int w;
-    int h;
-};
-
-
-inline b32 isZeroRect(Rect rect)
-{
-    return !(rect.x || rect.y || rect.w || rect.h);
-}
 
 #include "gamedev_math.h"
 

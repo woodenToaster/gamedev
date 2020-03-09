@@ -18,9 +18,12 @@ typedef float f32;
 typedef double f64;
 typedef int32_t b32;
 
+#include "gamedev_math.h"
+
 PFNGLATTACHSHADERPROC glAttachShader;
 PFNGLBINDBUFFERPROC glBindBuffer;
 PFNGLBINDVERTEXARRAYPROC glBindVertexArray;
+PFNGLBUFFERDATAPROC glBufferData;
 PFNGLBUFFERSUBDATAPROC glBufferSubData;
 PFNGLCLEARBUFFERFVPROC glClearBufferfv;
 PFNGLCOMPILESHADERPROC glCompileShader;
@@ -32,14 +35,18 @@ PFNGLDELETEPROGRAMPROC glDeleteProgram;
 PFNGLDELETESHADERPROC glDeleteShader;
 PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays;
 PFNGLENABLEVERTEXARRAYATTRIBPROC glEnableVertexArrayAttrib;
+PFNGLENABLEVERTEXATTRIBARRAYPROC glEnableVertexAttribArray;
 PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog;
 PFNGLGETSHADERIVPROC glGetShaderiv;
+PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation;
 PFNGLLINKPROGRAMPROC glLinkProgram;
 PFNGLNAMEDBUFFERSTORAGEPROC glNamedBufferStorage;
 PFNGLSHADERSOURCEPROC glShaderSource;
+PFNGLUNIFORMMATRIX4FVPROC glUniformMatrix4fv;
 PFNGLUSEPROGRAMPROC glUseProgram;
 PFNGLVERTEXARRAYATTRIBBINDINGPROC glVertexArrayAttribBinding;
 PFNGLVERTEXARRAYATTRIBFORMATPROC glVertexArrayAttribFormat;
+PFNGLVERTEXATTRIBPOINTERPROC glVertexAttribPointer;
 PFNGLVERTEXARRAYVERTEXBUFFERPROC glVertexArrayVertexBuffer;
 PFNGLVERTEXATTRIB4FVPROC glVertexAttrib4fv;
 
@@ -50,6 +57,57 @@ global HDC GlobalDeviceContext;
 global HGLRC GlobalRenderingContext;
 global int GlobalRunning;
 global i64 globalPerfFrequency;
+
+static const GLfloat cubeVertexPositions[] =
+{
+    -0.25f,  0.25f, -0.25f,
+    -0.25f, -0.25f, -0.25f,
+    0.25f, -0.25f, -0.25f,
+
+    0.25f, -0.25f, -0.25f,
+    0.25f,  0.25f, -0.25f,
+    -0.25f,  0.25f, -0.25f,
+
+    0.25f, -0.25f, -0.25f,
+    0.25f, -0.25f,  0.25f,
+    0.25f,  0.25f, -0.25f,
+
+    0.25f, -0.25f,  0.25f,
+    0.25f,  0.25f,  0.25f,
+    0.25f,  0.25f, -0.25f,
+
+    0.25f, -0.25f,  0.25f,
+    -0.25f, -0.25f,  0.25f,
+    0.25f,  0.25f,  0.25f,
+
+    -0.25f, -0.25f,  0.25f,
+    -0.25f,  0.25f,  0.25f,
+    0.25f,  0.25f,  0.25f,
+
+    -0.25f, -0.25f,  0.25f,
+    -0.25f, -0.25f, -0.25f,
+    -0.25f,  0.25f,  0.25f,
+
+    -0.25f, -0.25f, -0.25f,
+    -0.25f,  0.25f, -0.25f,
+    -0.25f,  0.25f,  0.25f,
+
+    -0.25f, -0.25f,  0.25f,
+    0.25f, -0.25f,  0.25f,
+    0.25f, -0.25f, -0.25f,
+
+    0.25f, -0.25f, -0.25f,
+    -0.25f, -0.25f, -0.25f,
+    -0.25f, -0.25f,  0.25f,
+
+    -0.25f,  0.25f, -0.25f,
+    0.25f,  0.25f, -0.25f,
+    0.25f,  0.25f,  0.25f,
+
+    0.25f,  0.25f,  0.25f,
+    -0.25f,  0.25f,  0.25f,
+    -0.25f,  0.25f, -0.25f
+};
 
 inline LARGE_INTEGER win32GetTicks()
 {
@@ -169,21 +227,20 @@ void *GetAnyGLFuncAddress(const char *name)
 
 static const char *vertexShaderSource[] =
 {
-    "#version 450 core                                                         \n",
-    // "layout (location = 1) in vec4 my_offset;           \n",
-    // "layout (location = 2) in vec4 color;                                      \n",
-    "layout (location = 1) in vec4 position;                                   \n",
-    // "out vec4 vs_color;                                                        \n",
-    "void main(void)                                                           \n",
-    "{                                                                         \n",
-    // "    const vec4 vertices[3] = vec4[3](vec4(0.25, -0.25, 0.5, 1.0),         \n",
-    // "                                     vec4(-0.25, -0.25, 0.5, 1.0),        \n",
-    // "                                     vec4(0.25, 0.25, 0.5, 1.0));         \n",
-    // "    gl_Position = vertices[gl_VertexID] + my_offset; \n",
-    // "    gl_Position = vertices[gl_VertexID];                                  \n",
-    "    gl_Position = position;                                               \n",
-    // "    vs_color = color;                                                     \n"
-    "}                                                                         \n",
+    "#version 450 core                                           \n",
+    "in vec4 position;                                           \n",
+    "out VS_OUT                                                  \n",
+    "{                                                           \n",
+    "    vec4 color;                                             \n",
+    "} vs_out;                                                   \n",
+    "                                                            \n",
+    "uniform mat4 modelView;                                     \n",
+    "uniform mat4 projection;                                    \n",
+    "void main(void)                                             \n",
+    "{                                                           \n",
+    "    gl_Position = projection * modelView * position;        \n",
+    "    vs_out.color = position * 2 + vec4(0.5, 0.5, 0.5, 0.0); \n",
+    "}                                                           \n",
 };
 
 static const char *tessControlShaderSource[] =
@@ -234,12 +291,14 @@ static const char *geometryShaderSource[] =
 static const char *fragmentShaderSource[] =
 {
     "#version 450 core                     \n",
-    // "in vec4 vs_color;                     \n",
+    "in VS_OUT                             \n",
+    "{                                     \n",
+    "    vec4 color;                       \n",
+    "} fs_in;                              \n",
     "out vec4 color;                       \n",
     "void main(void)                       \n",
     "{                                     \n",
-    // "    color = vs_color;                 \n",
-    "    color = vec4(0.0, 0.8, 0.2, 1.0); \n",
+    "    color = fs_in.color;              \n",
     "}                                     \n"
 };
 
@@ -277,8 +336,8 @@ GLuint compileShaders()
 
     GLuint program = glCreateProgram();
     glAttachShader(program, vertexShader);
-    glAttachShader(program, tessControlShader);
-    glAttachShader(program, tessEvaluationShader);
+    // glAttachShader(program, tessControlShader);
+    // glAttachShader(program, tessEvaluationShader);
     // glAttachShader(program, geometryShader);
     glAttachShader(program, fragmentShader);
     glLinkProgram(program);
@@ -320,23 +379,36 @@ void loadOpenGLFunctions()
     LOAD_GL_FUNC(glVertexArrayAttribFormat, VERTEXARRAYATTRIBFORMAT);
     LOAD_GL_FUNC(glEnableVertexArrayAttrib, ENABLEVERTEXARRAYATTRIB);
     LOAD_GL_FUNC(glBindBuffer, BINDBUFFER);
+    LOAD_GL_FUNC(glBufferData, BUFFERDATA);
+    LOAD_GL_FUNC(glVertexAttribPointer, VERTEXATTRIBPOINTER);
+    LOAD_GL_FUNC(glEnableVertexAttribArray, ENABLEVERTEXATTRIBARRAY);
+    LOAD_GL_FUNC(glUniformMatrix4fv, UNIFORMMATRIX4FV);
+    LOAD_GL_FUNC(glGetUniformLocation, GETUNIFORMLOCATION);
 }
 
-void render(f32 dt, GLuint program)
+void render(f32 dt, GLuint program, GLint projectionLocation, GLint modelViewLocation, f32 aspect)
 {
     (void)dt;
-    // const GLfloat color[] = {(f32)sinf(dt) * 0.5f + 0.5f, (f32)cosf(dt) * 0.5f + 0.5f, 0.0f, 1.0f};
-    const GLfloat red[] = {1.0f, 0.0f, 0.0f, 1.0f};
-    glClearBufferfv(GL_COLOR, 0, red);
+    const GLfloat darkGreen[] = {0.0f, 0.25f, 0.0f, 1.0f};
+    GLfloat one = 1.0f;
+    glClearBufferfv(GL_COLOR, 0, darkGreen);
+    glClearBufferfv(GL_DEPTH, 0, &one);
     glUseProgram(program);
-    // GLfloat offset_attrib[] = {(f32)sinf(dt) * 0.5f, (f32)cosf(dt) * 0.6f, 0.0f, 0.0f};
-    // glVertexAttrib4fv(1, offset_attrib);
-    // const GLfloat triangleColor[] = {0.0f, 0.8f, 0.2f, 1.0f};
-    // glVertexAttrib4fv(2, triangleColor);
-
-    // glPointSize(5.0f);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    glDrawArrays(GL_PATCHES, 0, 3);
+    
+    f32 f = (f32)dt * 0.3f;
+    Mat4 zTrans = makeTranslationMat4(0.0f, 0.0f, -4.0f);
+    Mat4 ovalTrans = makeTranslationMat4(sinf(2.1f * f) * 0.5f, cosf(1.7f * f) * 0.5f,
+                                         sinf(1.3f * f) * cosf(1.5f * f) * 2.0f);
+    Mat4 rotY = makeRotationMat4(dt * 45.0f, 0.0f, 1.0f, 0.0f);
+    Mat4 rotX = makeRotationMat4(dt * 81.0f, 1.0f, 0.0f, 0.0f);
+    
+    Mat4 temp1 = multiplyMat4(&rotY, &rotX);
+    Mat4 temp2 = multiplyMat4(&ovalTrans, &temp1);
+    Mat4 modelView = multiplyMat4(&zTrans, &temp2);
+    Mat4 projection = makePerspectiveMat4(50.0f, aspect, 0.1f, 1000.0f);
+    glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, projection.data);
+    glUniformMatrix4fv(modelViewLocation, 1, GL_FALSE, modelView.data);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
 }
 
 int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int CmdShow)
@@ -365,8 +437,8 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
 
     RegisterClass(&WindowClass);
 
-    int WindowWidth = 512;
-    int WindowHeight = 512;
+    int WindowWidth = 800;
+    int WindowHeight = 600;
     HWND WindowHandle = CreateWindowEx(0, WindowClass.lpszClassName, "OpenGL", WS_OVERLAPPEDWINDOW,
                                        CW_USEDEFAULT, CW_USEDEFAULT, WindowWidth, WindowHeight,
                                        0, 0, Instance, 0);
@@ -378,23 +450,20 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
     glCreateVertexArrays(1, &vertexArrayObject);
     glBindVertexArray(vertexArrayObject);
 
-    GLuint gpuBuffer;
-    glCreateBuffers(1, &gpuBuffer);
-    glNamedBufferStorage(gpuBuffer, 1024 * 1024, NULL, GL_MAP_WRITE_BIT);
-    glBindBuffer(GL_ARRAY_BUFFER, gpuBuffer);
+    GLuint cubeBuffer;
+    glCreateBuffers(1, &cubeBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, cubeBuffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertexPositions), cubeVertexPositions, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+    glEnableVertexAttribArray(0);
 
-    const f32 triangleVertices[] =
-    {
-        0.25f, -0.25f, 0.5f, 1.0f,
-        -0.25f, -0.25f, 0.5f, 1.0f,
-        0.25f, 0.25f, 0.5f, 1.0f
-    };
-
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(triangleVertices), triangleVertices);
-    glVertexArrayVertexBuffer(vertexArrayObject, 0, gpuBuffer, 0, 4 * sizeof(f32));
-    glVertexArrayAttribFormat(vertexArrayObject, 1, 4, GL_FLOAT, GL_FALSE, 0);
-    glEnableVertexArrayAttrib(vertexArrayObject, 1);
-
+    GLint projectionLocation = glGetUniformLocation(program, "projection");
+    GLint modelViewLocation = glGetUniformLocation(program, "modelView");
+    glViewport(0, 0, WindowWidth, WindowHeight);
+    glEnable(GL_CULL_FACE);
+    glFrontFace(GL_CW);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
     LARGE_INTEGER start = win32GetTicks();
     if (WindowHandle)
     {
@@ -419,7 +488,8 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
             }
 
             f32 seconds_elapsed = win32GetSecondsElapsed(start, currentTick);
-            render(seconds_elapsed, program);
+            f32 aspect = WindowWidth / (f32)WindowHeight;
+            render(seconds_elapsed, program, projectionLocation, modelViewLocation, aspect);
 
             SwapBuffers(GlobalDeviceContext);
 
