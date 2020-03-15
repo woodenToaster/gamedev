@@ -22,6 +22,7 @@ typedef int32_t b32;
 
 PFNGLATTACHSHADERPROC glAttachShader;
 PFNGLBINDBUFFERPROC glBindBuffer;
+PFNGLBINDTEXTUREUNITPROC glBindTextureUnit;
 PFNGLBINDVERTEXARRAYPROC glBindVertexArray;
 PFNGLBUFFERDATAPROC glBufferData;
 PFNGLBUFFERSUBDATAPROC glBufferSubData;
@@ -30,6 +31,7 @@ PFNGLCOMPILESHADERPROC glCompileShader;
 PFNGLCREATEBUFFERSPROC glCreateBuffers;
 PFNGLCREATEPROGRAMPROC glCreateProgram;
 PFNGLCREATESHADERPROC glCreateShader;
+PFNGLCREATETEXTURESPROC glCreateTextures;
 PFNGLCREATEVERTEXARRAYSPROC glCreateVertexArrays;
 PFNGLDELETEPROGRAMPROC glDeleteProgram;
 PFNGLDELETESHADERPROC glDeleteShader;
@@ -42,6 +44,10 @@ PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation;
 PFNGLLINKPROGRAMPROC glLinkProgram;
 PFNGLNAMEDBUFFERSTORAGEPROC glNamedBufferStorage;
 PFNGLSHADERSOURCEPROC glShaderSource;
+PFNGLTEXTUREPARAMETERIPROC glTextureParameteri;
+PFNGLTEXTUREPARAMETERIVPROC glTextureParameteriv;
+PFNGLTEXTURESTORAGE2DPROC glTextureStorage2D;
+PFNGLTEXTURESUBIMAGE2DPROC glTextureSubImage2D;
 PFNGLUNIFORMMATRIX4FVPROC glUniformMatrix4fv;
 PFNGLUSEPROGRAMPROC glUseProgram;
 PFNGLVERTEXARRAYATTRIBBINDINGPROC glVertexArrayAttribBinding;
@@ -49,6 +55,7 @@ PFNGLVERTEXARRAYATTRIBFORMATPROC glVertexArrayAttribFormat;
 PFNGLVERTEXATTRIBPOINTERPROC glVertexAttribPointer;
 PFNGLVERTEXARRAYVERTEXBUFFERPROC glVertexArrayVertexBuffer;
 PFNGLVERTEXATTRIB4FVPROC glVertexAttrib4fv;
+
 
 #define ARRAY_COUNT(arr) (sizeof(arr) / sizeof(arr[0]))
 #define global static
@@ -108,6 +115,161 @@ static const GLfloat cubeVertexPositions[] =
     -0.25f,  0.25f,  0.25f,
     -0.25f,  0.25f, -0.25f
 };
+
+static const GLfloat rectVertexPositions[] =
+{
+    -0.5f, -0.5f, 0.0f,
+    -0.5f, 0.5f, 0.0f,
+    0.5f, 0.5f, 0.0f,
+
+    -0.5f, -0.5f, 0.0f,
+    0.5f, 0.5f, 0.0f,
+    0.5f, -0.5f, 0.0f
+};
+
+struct EntireFile
+{
+    u8 *contents;
+    u64 size;
+};
+struct LoadedBitmap
+{
+    u32 *pixels;
+    u32 width;
+    u32 height;
+};
+
+enum PlatformErrorType
+{
+    PlatformError_Fatal,
+    PlatformError_Warning
+};
+
+static void win32ErrorMessage(PlatformErrorType type, char *message)
+{
+    char *caption = "Gamedev Warning";
+
+    UINT msgBoxType = MB_OK;
+    if(type == PlatformError_Fatal)
+    {
+        caption = "Gamedev Fatal Error";
+        msgBoxType |= MB_ICONSTOP;
+    }
+    else
+    {
+        msgBoxType |= MB_ICONWARNING;
+    }
+
+    // TODO(chogan): Use our window for this when it's created, but NULL if
+    // creation fails
+    // TODO(chogan): Include GetLastError in the message
+    MessageBoxExA(NULL, message, caption, msgBoxType, 0);
+
+    if(type == PlatformError_Fatal)
+    {
+        ExitProcess(1);
+    }
+}
+u32 safeU64ToU32(u64 val)
+{
+    assert(val <= 0xFFFFFFFF);
+    u32 result = (u32)val;
+
+    return result;
+}
+EntireFile win32ReadEntireFile(char *filename)
+{
+    EntireFile result = {};
+    HANDLE fileHandle = CreateFileA(filename, GENERIC_READ, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL,
+                                    0);
+    if (fileHandle != INVALID_HANDLE_VALUE)
+    {
+        LARGE_INTEGER fileSize;
+        if (GetFileSizeEx(fileHandle, &fileSize))
+        {
+            u32 fileSize32 = safeU64ToU32(fileSize.QuadPart);
+            result.contents = (u8 *)VirtualAlloc(0, fileSize32, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+            if (result.contents)
+            {
+                DWORD bytesRead;
+                // TODO(chogan): Support files larger than 4GB?
+                BOOL success = ReadFile(fileHandle, result.contents, fileSize32, &bytesRead, 0);
+                if (success && bytesRead == fileSize32)
+                {
+                    result.size = fileSize32;
+                }
+                else
+                {
+                    win32ErrorMessage(PlatformError_Fatal, "Failed to read file");
+                }
+
+            }
+            else
+            {
+                // TODO(chogan): @error
+            }
+        }
+        else
+        {
+            // TODO(chogan): @error
+        }
+
+        CloseHandle(fileHandle);
+    }
+    else
+    {
+        win32ErrorMessage(PlatformError_Fatal, "Failed to open file");
+    }
+
+    return result;
+}
+LoadedBitmap win32LoadBitmap(char *path)
+{
+    // TODO(chogan): Save bitmap in game memory and delete file data
+    EntireFile file_data = win32ReadEntireFile(path);
+    u8 *bitmapData = (u8 *)file_data.contents;
+
+    LoadedBitmap result = {};
+    if (bitmapData && (char)bitmapData[0] == 'B' && (char)bitmapData[1] == 'M')
+    {
+        BITMAPFILEHEADER *bitmapHeader = (BITMAPFILEHEADER *)bitmapData;
+        if (bitmapHeader->bfReserved1 == 0 && bitmapHeader->bfReserved2 == 0)
+        {
+            DWORD bitsOffset = bitmapHeader->bfOffBits;
+            bitmapData += sizeof(BITMAPFILEHEADER);
+
+            BITMAPINFOHEADER *bmpInfoHeader = (BITMAPINFOHEADER *)bitmapData;
+
+            if (bmpInfoHeader->biCompression != BI_BITFIELDS)
+            {
+                assert(!"Expected an uncompressed bitmap");
+            }
+
+            if (bmpInfoHeader->biBitCount != 32)
+            {
+                assert(!"Expected a bitmap with 32 bits per pixel");
+            }
+
+            result.width = bmpInfoHeader->biWidth;
+            // NOTE(chogan): Positive height means 0,0 is in lower left corner
+            b32 isBottomUp = bmpInfoHeader->biHeight > 0;
+            result.height = isBottomUp ? bmpInfoHeader->biHeight : -bmpInfoHeader->biHeight;
+            result.pixels = (u32 *)((u8 *)bitmapHeader + bitsOffset);
+        }
+        else
+        {
+            win32ErrorMessage(PlatformError_Warning, "Not a .bmp file");
+        }
+    }
+    else
+    {
+        win32ErrorMessage(PlatformError_Warning, "Not a .bmp file");
+    }
+
+    return result;
+}
+
+
 
 inline LARGE_INTEGER win32GetTicks()
 {
@@ -228,18 +390,20 @@ void *GetAnyGLFuncAddress(const char *name)
 static const char *vertexShaderSource[] =
 {
     "#version 450 core                                           \n",
-    "in vec4 position;                                           \n",
-    "out VS_OUT                                                  \n",
-    "{                                                           \n",
-    "    vec4 color;                                             \n",
-    "} vs_out;                                                   \n",
-    "                                                            \n",
+    // "#version 330 core                                           \n",
+    "layout (location = 1) in vec4 in_position;                  \n",
+    "layout (location = 2) in vec2 in_tex_coord;                 \n",
+    "out vec2 vs_tex_coord;                                      \n",
     "uniform mat4 modelView;                                     \n",
     "uniform mat4 projection;                                    \n",
     "void main(void)                                             \n",
     "{                                                           \n",
-    "    gl_Position = projection * modelView * position;        \n",
-    "    vs_out.color = position * 2 + vec4(0.5, 0.5, 0.5, 0.0); \n",
+    "    vec4 pos = projection * modelView * in_position;        \n",
+    // "    gl_PointSize = (1.0 - pos.z / pos.w) * 64.0;            \n",
+    "    gl_Position = in_position;                                      \n",
+    "    vs_tex_coord = in_tex_coord;                            \n",
+    // "    gl_Position = pos;                                      \n",
+    // "    vs_out.color = position * 2 + vec4(0.5, 0.5, 0.5, 0.0); \n",
     "}                                                           \n",
 };
 
@@ -290,16 +454,16 @@ static const char *geometryShaderSource[] =
 
 static const char *fragmentShaderSource[] =
 {
-    "#version 450 core                     \n",
-    "in VS_OUT                             \n",
-    "{                                     \n",
-    "    vec4 color;                       \n",
-    "} fs_in;                              \n",
-    "out vec4 color;                       \n",
-    "void main(void)                       \n",
-    "{                                     \n",
-    "    color = fs_in.color;              \n",
-    "}                                     \n"
+    "#version 450 core                            \n",
+    // "#version 330 core                            \n",
+    "uniform sampler2D tex;                       \n",
+    "out vec4 color;                              \n",
+    "in vec2 vs_tex_coord;                        \n",
+    "void main(void)                              \n",
+    "{                                            \n",
+    // "    color = fs_in.color;                  \n",
+    "    color = texture(tex, vs_tex_coord);      \n",
+    "}                                            \n"
 };
 
 GLuint compileShader(GLenum shaderType, const GLchar *shaderSource[], GLsizei numLines)
@@ -384,6 +548,12 @@ void loadOpenGLFunctions()
     LOAD_GL_FUNC(glEnableVertexAttribArray, ENABLEVERTEXATTRIBARRAY);
     LOAD_GL_FUNC(glUniformMatrix4fv, UNIFORMMATRIX4FV);
     LOAD_GL_FUNC(glGetUniformLocation, GETUNIFORMLOCATION);
+    LOAD_GL_FUNC(glCreateTextures, CREATETEXTURES);
+    LOAD_GL_FUNC(glTextureStorage2D, TEXTURESTORAGE2D);
+    LOAD_GL_FUNC(glTextureSubImage2D, TEXTURESUBIMAGE2D);
+    LOAD_GL_FUNC(glBindTextureUnit, BINDTEXTUREUNIT);
+    LOAD_GL_FUNC(glTextureParameteri, TEXTUREPARAMETERI);
+    LOAD_GL_FUNC(glTextureParameteriv, TEXTUREPARAMETERIV);
 }
 
 void render(f32 dt, GLuint program, GLint projectionLocation, GLint modelViewLocation, f32 aspect)
@@ -394,21 +564,23 @@ void render(f32 dt, GLuint program, GLint projectionLocation, GLint modelViewLoc
     glClearBufferfv(GL_COLOR, 0, darkGreen);
     glClearBufferfv(GL_DEPTH, 0, &one);
     glUseProgram(program);
-    
+
     f32 f = (f32)dt * 0.3f;
     Mat4 zTrans = makeTranslationMat4(0.0f, 0.0f, -4.0f);
     Mat4 ovalTrans = makeTranslationMat4(sinf(2.1f * f) * 0.5f, cosf(1.7f * f) * 0.5f,
                                          sinf(1.3f * f) * cosf(1.5f * f) * 2.0f);
     Mat4 rotY = makeRotationMat4(dt * 45.0f, 0.0f, 1.0f, 0.0f);
     Mat4 rotX = makeRotationMat4(dt * 81.0f, 1.0f, 0.0f, 0.0f);
-    
+
     Mat4 temp1 = multiplyMat4(&rotY, &rotX);
     Mat4 temp2 = multiplyMat4(&ovalTrans, &temp1);
-    Mat4 modelView = multiplyMat4(&zTrans, &temp2);
+    // Mat4 modelView = multiplyMat4(&zTrans, &temp2);
+    Mat4 identity = identityMat4();
+    Mat4 modelView = multiplyMat4(&identity, &zTrans);
     Mat4 projection = makePerspectiveMat4(50.0f, aspect, 0.1f, 1000.0f);
     glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, projection.data);
     glUniformMatrix4fv(modelViewLocation, 1, GL_FALSE, modelView.data);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 }
 
 int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int CmdShow)
@@ -450,20 +622,47 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
     glCreateVertexArrays(1, &vertexArrayObject);
     glBindVertexArray(vertexArrayObject);
 
+    static const GLfloat quadData[] =
+    {
+        // Vertex positions
+        -1.0f, -1.0f, 0.0f, 1.0f,
+        1.0f, -1.0f, 0.0f, 1.0f,
+        1.0f, 1.0f, 0.0f, 1.0f,
+        -1.0f, 1.0f, 0.0f, 1.0f,
+        // Texture coordinates
+        0.0f, 0.0f,
+        1.0f, 0.0f,
+        1.0f, 1.0f,
+        0.0f, 1.0f
+    };
+
     GLuint cubeBuffer;
     glCreateBuffers(1, &cubeBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, cubeBuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertexPositions), cubeVertexPositions, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
-    glEnableVertexAttribArray(0);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadData), quadData, GL_STATIC_DRAW);
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (GLvoid *)(16 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(2);
 
     GLint projectionLocation = glGetUniformLocation(program, "projection");
     GLint modelViewLocation = glGetUniformLocation(program, "modelView");
     glViewport(0, 0, WindowWidth, WindowHeight);
-    glEnable(GL_CULL_FACE);
-    glFrontFace(GL_CW);
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LEQUAL);
+    // glEnable(GL_CULL_FACE);
+    // glFrontFace(GL_CW);
+    // glEnable(GL_DEPTH_TEST);
+    // glDepthFunc(GL_LEQUAL);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    LoadedBitmap linkLoadedBitmap = win32LoadBitmap("../../data/sprites/link_walking.bmp");
+    GLuint linkTexture;
+    glCreateTextures(GL_TEXTURE_2D, 1, &linkTexture);
+    glBindTexture(GL_TEXTURE_2D, linkTexture);
+    glTextureStorage2D(linkTexture, 1, GL_RGBA8, linkLoadedBitmap.width, linkLoadedBitmap.height);
+    glTextureSubImage2D(linkTexture, 0, 0, 0, linkLoadedBitmap.width, linkLoadedBitmap.height, GL_BGRA,
+                        GL_UNSIGNED_INT_8_8_8_8_REV, linkLoadedBitmap.pixels);
+
     LARGE_INTEGER start = win32GetTicks();
     if (WindowHandle)
     {
@@ -523,6 +722,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
     }
 
     glDeleteVertexArrays(1, &vertexArrayObject);
+    glDeleteTextures(1, &linkTexture);
     glDeleteProgram(program);
 
     return 0;
