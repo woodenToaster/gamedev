@@ -60,8 +60,6 @@ PFNGLVERTEXATTRIB4FVPROC glVertexAttrib4fv;
 #define ARRAY_COUNT(arr) (sizeof(arr) / sizeof(arr[0]))
 #define global static
 
-global HDC GlobalDeviceContext;
-global HGLRC GlobalRenderingContext;
 global int GlobalRunning;
 global i64 globalPerfFrequency;
 
@@ -298,76 +296,78 @@ LRESULT CALLBACK WindowProc(HWND WindowHandle, UINT Message, WPARAM WParam, LPAR
 {
     switch (Message)
     {
-    case WM_CREATE:
-    {
-        PIXELFORMATDESCRIPTOR PixelFormatDescriptor = {0};
-        PixelFormatDescriptor.nSize = sizeof(PIXELFORMATDESCRIPTOR);
-        PixelFormatDescriptor.nVersion = 1;
-        PixelFormatDescriptor.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-        PixelFormatDescriptor.dwLayerMask = PFD_MAIN_PLANE;
-        PixelFormatDescriptor.iPixelType = PFD_TYPE_RGBA;
-        PixelFormatDescriptor.cColorBits = 24;
-        PixelFormatDescriptor.cRedBits = 8;
-        PixelFormatDescriptor.cRedShift = 16;
-        PixelFormatDescriptor.cGreenBits = 8;
-        PixelFormatDescriptor.cGreenShift = 8;
-        PixelFormatDescriptor.cBlueBits = 8;
-        PixelFormatDescriptor.cBlueShift = 0;
-        PixelFormatDescriptor.cDepthBits = 16;
-        PixelFormatDescriptor.cAccumBits = 0;
-        PixelFormatDescriptor.cStencilBits = 0;
-
-        GlobalDeviceContext = GetDC(WindowHandle);
-
-        int PixelFormat = ChoosePixelFormat(GlobalDeviceContext, &PixelFormatDescriptor);
-
-        if (!PixelFormat)
+        case WM_CREATE:
         {
-            MessageBox(NULL, "ChoosePixelFormat failed", "Error", MB_OK);
+            PIXELFORMATDESCRIPTOR desiredPixelFormat = {};
+            desiredPixelFormat.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+            desiredPixelFormat.nVersion = 1;
+            desiredPixelFormat.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+            desiredPixelFormat.iPixelType = PFD_TYPE_RGBA;
+            desiredPixelFormat.cColorBits = 32;
+            desiredPixelFormat.cAlphaBits = 8;
+
+            HDC deviceContext = GetDC(WindowHandle);
+
+            int suggestedPixelFormatIndex = ChoosePixelFormat(deviceContext, &desiredPixelFormat);
+            if (!suggestedPixelFormatIndex)
+            {
+                MessageBox(NULL, "ChoosePixelFormat failed", "Error", MB_OK);
+                PostQuitMessage(0);
+                return 0;
+            }
+
+            PIXELFORMATDESCRIPTOR suggestedPixelFormat = {};
+            if (!DescribePixelFormat(deviceContext, suggestedPixelFormatIndex,
+                                     sizeof(suggestedPixelFormat), &suggestedPixelFormat))
+            {
+                MessageBox(NULL, "DescribePixelFormat failed", "Error", MB_OK);
+                PostQuitMessage(0);
+                return 0;
+            }
+
+            if (SetPixelFormat(deviceContext, suggestedPixelFormatIndex, &suggestedPixelFormat) == FALSE)
+            {
+                MessageBox(NULL, "SetPixelFormat failed", "Error", MB_OK);
+                PostQuitMessage(0);
+            }
+
+            HGLRC renderingContext = wglCreateContext(deviceContext);
+            wglMakeCurrent(deviceContext, renderingContext);
+            
+            ReleaseDC(WindowHandle, deviceContext);
+
+            return 0;
+        }
+        case WM_SIZE:
+        {
+            // RECT ClientRect;
+            // GetClientRect(WindowHandle, &ClientRect);
+
+            // int Width = ClientRect.right;
+            // int Height = ClientRect.bottom;
+            // glViewport(0, 0, (GLsizei)Width, (GLsizei)Height);
+            // glMatrixMode(GL_PROJECTION);
+            // glLoadIdentity();
+            // glOrtho(0, (GLdouble)Width, 0, (GLdouble)Height, -1, 1);
+            return 0;
+        }
+        case WM_DESTROY:
+        {
             PostQuitMessage(0);
             return 0;
         }
-
-        if (SetPixelFormat(GlobalDeviceContext, PixelFormat, &PixelFormatDescriptor) == FALSE)
+        case WM_CLOSE:
         {
-            MessageBox(NULL, "SetPixelFormat failed", "Error", MB_OK);
-            PostQuitMessage(0);
+            GlobalRunning = 0;
+            return 0;
         }
-
-        GlobalRenderingContext = wglCreateContext(GlobalDeviceContext);
-        wglMakeCurrent(GlobalDeviceContext, GlobalRenderingContext);
-
-        RECT ClientRect = {0};
-        GetClientRect(WindowHandle, &ClientRect);
-
-        return 0;
-    }
-    case WM_SIZE:
-    {
-        // RECT ClientRect;
-        // GetClientRect(WindowHandle, &ClientRect);
-
-        // int Width = ClientRect.right;
-        // int Height = ClientRect.bottom;
-        // glViewport(0, 0, (GLsizei)Width, (GLsizei)Height);
-        // glMatrixMode(GL_PROJECTION);
-        // glLoadIdentity();
-        // glOrtho(0, (GLdouble)Width, 0, (GLdouble)Height, -1, 1);
-        return 0;
-    }
-    case WM_DESTROY:
-        PostQuitMessage(0);
-        return 0;
-    case WM_CLOSE:
-        GlobalRunning = 0;
-        return 0;
-    case WM_PAINT:
-    {
-        PAINTSTRUCT Paint;
-        BeginPaint(WindowHandle, &Paint);
-        EndPaint(WindowHandle, &Paint);
-        return 0;
-    }
+        case WM_PAINT:
+        {
+            PAINTSTRUCT Paint;
+            BeginPaint(WindowHandle, &Paint);
+            EndPaint(WindowHandle, &Paint);
+            return 0;
+        }
     }
 
     return DefWindowProc(WindowHandle, Message, WParam, LParam);
@@ -666,6 +666,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
     LARGE_INTEGER start = win32GetTicks();
     if (WindowHandle)
     {
+        HDC deviceContext = GetDC(WindowHandle);
         ShowWindow(WindowHandle, CmdShow);
         LARGE_INTEGER ElapsedMicroseconds = {0};
         GlobalRunning = 1;
@@ -690,7 +691,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
             f32 aspect = WindowWidth / (f32)WindowHeight;
             render(seconds_elapsed, program, projectionLocation, modelViewLocation, aspect);
 
-            SwapBuffers(GlobalDeviceContext);
+            SwapBuffers(deviceContext);
 
             LARGE_INTEGER EndTime;
             QueryPerformanceCounter(&EndTime);
