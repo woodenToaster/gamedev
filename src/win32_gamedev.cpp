@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <GL/gl.h>
 
 #include "gamedev_platform.h"
 #include "gamedev_memory.h"
@@ -40,6 +41,42 @@ internal void win32ErrorMessage(PlatformErrorType type, char *message)
     {
         ExitProcess(1);
     }
+}
+
+internal void win32InitOpenGL(HWND window)
+{
+    PIXELFORMATDESCRIPTOR desiredPixelFormat = {};
+    desiredPixelFormat.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+    desiredPixelFormat.nVersion = 1;
+    desiredPixelFormat.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+    desiredPixelFormat.iPixelType = PFD_TYPE_RGBA;
+    desiredPixelFormat.cColorBits = 32;
+    desiredPixelFormat.cAlphaBits = 8;
+
+    HDC deviceContext = GetDC(window);
+
+    int suggestedPixelFormatIndex = ChoosePixelFormat(deviceContext, &desiredPixelFormat);
+    if (!suggestedPixelFormatIndex)
+    {
+        win32ErrorMessage(PlatformError_Fatal, "ChoosePixelFormat failed");
+    }
+
+    PIXELFORMATDESCRIPTOR suggestedPixelFormat = {};
+    if (!DescribePixelFormat(deviceContext, suggestedPixelFormatIndex,
+                             sizeof(suggestedPixelFormat), &suggestedPixelFormat))
+    {
+        win32ErrorMessage(PlatformError_Fatal, "DescribePixelFormat failed");
+    }
+
+    if (SetPixelFormat(deviceContext, suggestedPixelFormatIndex, &suggestedPixelFormat) == FALSE)
+    {
+        win32ErrorMessage(PlatformError_Fatal, "SetPixelFormat failed");
+    }
+
+    HGLRC renderingContext = wglCreateContext(deviceContext);
+    wglMakeCurrent(deviceContext, renderingContext);
+
+    ReleaseDC(window, deviceContext);
 }
 
 u32 safeU64ToU32(u64 val)
@@ -357,11 +394,81 @@ internal void win32UpdateWindow(Win32BackBuffer *buffer, HDC deviceContext, int 
         destWidth = 2 * buffer->width;
         destHeight = 2 * buffer->height;
     }
-    StretchDIBits(deviceContext,
-                  0, 0, destWidth, destHeight,
-                  0, 0, buffer->width, buffer->height,
-                  buffer->memory,
-                  &buffer->bitmapInfo, DIB_RGB_COLORS, SRCCOPY);
+
+    bool hardwareRendering = true;
+    if (hardwareRendering)
+    {
+        glViewport(0, 0, destWidth, destHeight);
+        static bool initialized = false;
+        GLuint texture;
+        if (!initialized)
+        {
+            glGenTextures(1, &texture);
+            initialized = true;
+        }
+
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, destWidth, destHeight, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE,
+                     buffer->memory);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+        glEnable(GL_TEXTURE_2D);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+        glMatrixMode(GL_TEXTURE);
+        glLoadIdentity();
+
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+
+        glMatrixMode(GL_PROJECTION);
+        // f32 projMatrix[] = {
+            // 2.0f / buffer->width, 0, 0, 0,
+            // 0, 2.0f / buffer->height, 0, 0,
+            // 0, 0, 1, 0,
+            // -1, -1, 0, 1
+        // };
+        // glLoadMatrixf(projMatrix);
+        glLoadIdentity();
+
+        glBegin(GL_TRIANGLES);
+
+        glTexCoord2f(0.0f, 0.0f);
+        glVertex2f(-0.9f, -0.9f);
+
+        glTexCoord2f(1.0f, 0.0);
+        glVertex2f(0.9f, -0.9f);
+
+        glTexCoord2f(1.0f, 1.0f);
+        glVertex2f(0.9f, 0.9f);
+
+        glTexCoord2f(0.0f, 0.0f);
+        glVertex2f(-0.9f, -0.9f);
+
+        glTexCoord2f(1.0f, 1.0f);
+        glVertex2f(0.9f, 0.9f);
+
+        glTexCoord2f(0.0f, 1.0f);
+        glVertex2f(-0.9f, 0.9f);
+
+        glEnd();
+
+        SwapBuffers(deviceContext);
+    }
+    else
+    {
+
+        StretchDIBits(deviceContext,
+                      0, 0, destWidth, destHeight,
+                      0, 0, buffer->width, buffer->height,
+                      buffer->memory,
+                      &buffer->bitmapInfo, DIB_RGB_COLORS, SRCCOPY);
+    }
 }
 
 LRESULT CALLBACK win32MainWindowCallback(HWND windowHandle, UINT message, WPARAM wParam, LPARAM lParam)
@@ -610,10 +717,10 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     b32 sleepIsGranular = (minimumResolution == 1 &&
                            (timeBeginPeriod(minimumResolution) == TIMERR_NOERROR));
 
-    i32 screenWidth = 960;
-    i32 screenHeight = 540;
-    // i32 screenWidth = 1920;
-    // i32 screenHeight = 1080;
+    // i32 screenWidth = 960;
+    // i32 screenHeight = 540;
+    i32 screenWidth = 1920;
+    i32 screenHeight = 1080;
 
     WNDCLASSA windowClass = {};
 
@@ -640,6 +747,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     {
         win32ErrorMessage(PlatformError_Fatal, "Cannot create window");
     }
+
+    win32InitOpenGL(globalWin32State.window);
 
     u32 targetFps = 60;
     // TODO(chogan): This gets set when memory is initialized in gameUpdateAndRender.

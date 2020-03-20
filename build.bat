@@ -23,7 +23,7 @@ set PREPROCESSOR_DEFINES=/DDEVELOPER /DDEBUG /DGAMEDEV_SDL=1
 set SDL_MIXER_PATH=SDL2_mixer-2.0.2
 set LINK_LIBS=SDL2.lib SDL2main.lib SDL2_mixer.lib
 ) else (
-set LINK_LIBS=user32.lib gdi32.lib winmm.lib
+set LINK_LIBS=user32.lib gdi32.lib winmm.lib opengl32.lib
 set PREPROCESSOR_DEFINES=/DDEVELOPER /DDEBUG
 )
 
