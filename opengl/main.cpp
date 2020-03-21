@@ -6,19 +6,9 @@
 #include <GL/gl.h>
 #include "glext.h"
 
-typedef uint8_t u8;
-typedef uint16_t u16;
-typedef uint32_t u32;
-typedef uint64_t u64;
-typedef int8_t i8;
-typedef int16_t i16;
-typedef int32_t i32;
-typedef int64_t i64;
-typedef float f32;
-typedef double f64;
-typedef int32_t b32;
-
-#include "gamedev_math.h"
+#include "gamedev_platform.h"
+#include "win32_gamedev.h"
+#include "map_data.h"
 
 PFNGLATTACHSHADERPROC glAttachShader;
 PFNGLBINDBUFFERPROC glBindBuffer;
@@ -56,12 +46,20 @@ PFNGLVERTEXATTRIBPOINTERPROC glVertexAttribPointer;
 PFNGLVERTEXARRAYVERTEXBUFFERPROC glVertexArrayVertexBuffer;
 PFNGLVERTEXATTRIB4FVPROC glVertexAttrib4fv;
 
+typedef BOOL (*PFNWGLSWAPINTERVALEXTPROC)(int interval);
+PFNWGLSWAPINTERVALEXTPROC wglSwapInterval;
 
-#define ARRAY_COUNT(arr) (sizeof(arr) / sizeof(arr[0]))
-#define global static
+global Win32State globalWin32State;
+global Win32BackBuffer globalBackBuffer;
 
-global int GlobalRunning;
+global int globalRunning;
 global i64 globalPerfFrequency;
+
+struct Rect2
+{
+    Vec2 minP;
+    Vec2 maxP;
+};
 
 static const GLfloat cubeVertexPositions[] =
 {
@@ -123,18 +121,6 @@ static const GLfloat rectVertexPositions[] =
     -0.5f, -0.5f, 0.0f,
     0.5f, 0.5f, 0.0f,
     0.5f, -0.5f, 0.0f
-};
-
-struct EntireFile
-{
-    u8 *contents;
-    u64 size;
-};
-struct LoadedBitmap
-{
-    u32 *pixels;
-    u32 width;
-    u32 height;
 };
 
 enum PlatformErrorType
@@ -333,7 +319,7 @@ LRESULT CALLBACK WindowProc(HWND WindowHandle, UINT Message, WPARAM WParam, LPAR
 
             HGLRC renderingContext = wglCreateContext(deviceContext);
             wglMakeCurrent(deviceContext, renderingContext);
-            
+
             ReleaseDC(WindowHandle, deviceContext);
 
             return 0;
@@ -358,7 +344,7 @@ LRESULT CALLBACK WindowProc(HWND WindowHandle, UINT Message, WPARAM WParam, LPAR
         }
         case WM_CLOSE:
         {
-            GlobalRunning = 0;
+            globalRunning = 0;
             return 0;
         }
         case WM_PAINT:
@@ -556,6 +542,7 @@ void loadOpenGLFunctions()
     LOAD_GL_FUNC(glTextureParameteriv, TEXTUREPARAMETERIV);
 }
 
+#if 0
 void render(f32 dt, GLuint program, GLint projectionLocation, GLint modelViewLocation, f32 aspect)
 {
     (void)dt;
@@ -581,6 +568,142 @@ void render(f32 dt, GLuint program, GLint projectionLocation, GLint modelViewLoc
     glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, projection.data);
     glUniformMatrix4fv(modelViewLocation, 1, GL_FALSE, modelView.data);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+}
+#else
+
+
+#endif
+
+void drawOpenGLRect(Rect2 rect, Vec3 color)
+{
+    int width = 960;
+    int height = 540;
+
+    f32 metersToPixels = 60.0f;
+    Rect2 ndcRect = {};
+    ndcRect.minP = vec2(rect.minP.x * metersToPixels, rect.minP.y * metersToPixels);
+    ndcRect.maxP = vec2(rect.maxP.x * metersToPixels, rect.maxP.y * metersToPixels);
+
+    ndcRect.minP.x *= 2.0f / width;
+    ndcRect.minP.y *= 2.0f / height;
+    ndcRect.minP.x -= 1.0f;
+    ndcRect.minP.y -= 1.0f;
+
+    ndcRect.maxP.x *= 2.0f / width;
+    ndcRect.maxP.y *= 2.0f / height;
+    ndcRect.maxP.x -= 1.0f;
+    ndcRect.maxP.y -= 1.0f;
+
+    glBegin(GL_TRIANGLES);
+
+    glColor3f(color.r, color.g, color.b);
+
+    glVertex2f(ndcRect.minP.x, ndcRect.minP.y);
+    glVertex2f(ndcRect.maxP.x, ndcRect.minP.y);
+    glVertex2f(ndcRect.maxP.x, ndcRect.maxP.y);
+    glVertex2f(ndcRect.minP.x, ndcRect.minP.y);
+    glVertex2f(ndcRect.maxP.x, ndcRect.maxP.y);
+    glVertex2f(ndcRect.minP.x, ndcRect.maxP.y);
+
+    glEnd();
+}
+
+internal void win32SetKeyState(Input *input, Key key, b32 isDown)
+{
+    if (!isDown)
+    {
+        input->keyPressed[key] = true;
+    }
+    input->keyDown[key] = isDown;
+}
+
+internal void win32UpdateKeyboardInput(Input* input, u64 vkCode, b32 isDown)
+{
+    // TODO(chogan): Modifier keys
+    switch(vkCode)
+    {
+        case 'W':
+        case VK_UP:
+        {
+            win32SetKeyState(input, Key_Up, isDown);
+        } break;
+        case 'A':
+        case VK_LEFT:
+        {
+            win32SetKeyState(input, Key_Left, isDown);
+        } break;
+        case 'S':
+        case VK_DOWN:
+        {
+            win32SetKeyState(input, Key_Down, isDown);
+        } break;
+        case 'D':
+        case VK_RIGHT:
+        {
+            win32SetKeyState(input, Key_Right, isDown);
+        } break;
+        case VK_ESCAPE:
+        {
+            win32SetKeyState(input, Key_Escape, isDown);
+        } break;
+        case VK_F5:
+        {
+            win32SetKeyState(input, Key_F5, isDown);
+        } break;
+        default:
+        {
+        } break;
+    }
+}
+
+internal void win32GetInput(Input *input)
+{
+    memset(input->keyPressed, 0, sizeof(b32) * Key_Count);
+    memset(input->buttonPressed, 0, sizeof(b32) * Button_Count);
+
+    MSG message;
+    while (PeekMessage(&message, 0, 0, 0, PM_REMOVE))
+    {
+        switch (message.message)
+        {
+            case WM_QUIT:
+            {
+                globalRunning = false;
+            } break;
+            case WM_SYSKEYUP:
+            case WM_KEYUP:
+            case WM_SYSKEYDOWN:
+            case WM_KEYDOWN:
+            {
+                b32 wasDown = message.lParam >> 30 != 0;
+                b32 isDown = message.lParam >> 31 == 0;
+
+                if (isDown)
+                {
+                    win32UpdateKeyboardInput(input, (u64)message.wParam, true);
+                }
+                if (wasDown && !isDown)
+                {
+                    win32UpdateKeyboardInput(input, (u64)message.wParam, false);
+                }
+            } break;
+            default:
+            {
+                TranslateMessage(&message);
+                DispatchMessageA(&message);
+            } break;
+        }
+    }
+
+    if (input->keyPressed[Key_Escape])
+    {
+        globalRunning = false;
+    }
+
+    if (input->keyPressed[Key_F5])
+    {
+        // toggleFullscreen(message.hwnd);
+    }
 }
 
 int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int CmdShow)
@@ -609,18 +732,22 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
 
     RegisterClass(&WindowClass);
 
-    int WindowWidth = 800;
-    int WindowHeight = 600;
+    int WindowWidth = 1920 / 2;
+    int WindowHeight = 1080 / 2;
     HWND WindowHandle = CreateWindowEx(0, WindowClass.lpszClassName, "OpenGL", WS_OVERLAPPEDWINDOW,
-                                       CW_USEDEFAULT, CW_USEDEFAULT, WindowWidth, WindowHeight,
+                                       CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
                                        0, 0, Instance, 0);
 
-    loadOpenGLFunctions();
-    GLuint program = compileShaders();
+    f32 tileWidthMeters = 1.0f;
+    f32 tileHeightMeters = 1.0f;
+    // f32 metersToPixels = 60.0f;
 
-    GLuint vertexArrayObject;
-    glCreateVertexArrays(1, &vertexArrayObject);
-    glBindVertexArray(vertexArrayObject);
+    // loadOpenGLFunctions();
+    // GLuint program = compileShaders();
+
+    // GLuint vertexArrayObject;
+    // glCreateVertexArrays(1, &vertexArrayObject);
+    // glBindVertexArray(vertexArrayObject);
 
     static const GLfloat quadData[] =
     {
@@ -630,38 +757,44 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
         1.0f, 1.0f, 0.0f, 1.0f,
         -1.0f, 1.0f, 0.0f, 1.0f,
         // Texture coordinates
-        0.0f, 0.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f,
-        0.0f, 1.0f
+        // 0.0f, 0.0f,
+        // 1.0f, 0.0f,
+        // 1.0f, 1.0f,
+        // 0.0f, 1.0f
     };
 
-    GLuint cubeBuffer;
-    glCreateBuffers(1, &cubeBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, cubeBuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quadData), quadData, GL_STATIC_DRAW);
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, NULL);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (GLvoid *)(16 * sizeof(GLfloat)));
-    glEnableVertexAttribArray(2);
+    // GLuint cubeBuffer;
+    // glCreateBuffers(1, &cubeBuffer);
+    // glBindBuffer(GL_ARRAY_BUFFER, cubeBuffer);
+    // glBufferData(GL_ARRAY_BUFFER, sizeof(quadData), quadData, GL_STATIC_DRAW);
+    // glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+    // glEnableVertexAttribArray(1);
+    // glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (GLvoid *)(16 * sizeof(GLfloat)));
+    // glEnableVertexAttribArray(2);
 
-    GLint projectionLocation = glGetUniformLocation(program, "projection");
-    GLint modelViewLocation = glGetUniformLocation(program, "modelView");
+    // GLint projectionLocation = glGetUniformLocation(program, "projection");
+    // GLint modelViewLocation = glGetUniformLocation(program, "modelView");
     glViewport(0, 0, WindowWidth, WindowHeight);
     // glEnable(GL_CULL_FACE);
     // glFrontFace(GL_CW);
     // glEnable(GL_DEPTH_TEST);
     // glDepthFunc(GL_LEQUAL);
 
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    LoadedBitmap linkLoadedBitmap = win32LoadBitmap("../../data/sprites/link_walking.bmp");
-    GLuint linkTexture;
-    glCreateTextures(GL_TEXTURE_2D, 1, &linkTexture);
-    glBindTexture(GL_TEXTURE_2D, linkTexture);
-    glTextureStorage2D(linkTexture, 1, GL_RGBA8, linkLoadedBitmap.width, linkLoadedBitmap.height);
-    glTextureSubImage2D(linkTexture, 0, 0, 0, linkLoadedBitmap.width, linkLoadedBitmap.height, GL_BGRA,
-                        GL_UNSIGNED_INT_8_8_8_8_REV, linkLoadedBitmap.pixels);
+    // glEnable(GL_BLEND);
+    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // LoadedBitmap linkLoadedBitmap = win32LoadBitmap("../../data/sprites/link_walking.bmp");
+    // GLuint linkTexture;
+    // glCreateTextures(GL_TEXTURE_2D, 1, &linkTexture);
+    // glBindTexture(GL_TEXTURE_2D, linkTexture);
+    // glTextureStorage2D(linkTexture, 1, GL_RGBA8, linkLoadedBitmap.width, linkLoadedBitmap.height);
+    // glTextureSubImage2D(linkTexture, 0, 0, 0, linkLoadedBitmap.width, linkLoadedBitmap.height, GL_BGRA,
+                        // GL_UNSIGNED_INT_8_8_8_8_REV, linkLoadedBitmap.pixels);
+
+    // TODO(chogan): Check for extension
+    wglSwapInterval = (PFNWGLSWAPINTERVALEXTPROC)GetAnyGLFuncAddress("wglSwapIntervalEXT");
+    wglSwapInterval(1);
+
+    Rect2 camera = {vec2(0.0f, 0.0f), vec2((f32)WindowWidth, (f32)WindowHeight)};
 
     LARGE_INTEGER start = win32GetTicks();
     if (WindowHandle)
@@ -669,27 +802,77 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
         HDC deviceContext = GetDC(WindowHandle);
         ShowWindow(WindowHandle, CmdShow);
         LARGE_INTEGER ElapsedMicroseconds = {0};
-        GlobalRunning = 1;
-        while (GlobalRunning)
+        globalRunning = 1;
+        while (globalRunning)
         {
             LARGE_INTEGER StartTime;
             QueryPerformanceCounter(&StartTime);
 
             LARGE_INTEGER currentTick = win32GetTicks();
 
-            MSG Message = {0};
-            while (PeekMessage(&Message, NULL, 0, 0, PM_NOREMOVE) == TRUE)
+            // f32 seconds_elapsed = win32GetSecondsElapsed(start, currentTick);
+            // f32 aspect = WindowWidth / (f32)WindowHeight;
+            // render(seconds_elapsed, program, projectionLocation, modelViewLocation, aspect);
+
+            // input
+            Input input = {};
+            input.dt = targetMsPerFrame;
+            win32GetInput(&input);
+
+            // update
+            if (input.keyPressed[Key_Up])
             {
-                if (GetMessage(&Message, NULL, 0, 0))
-                {
-                    TranslateMessage(&Message);
-                    DispatchMessage(&Message);
-                }
+                camera.minP.y += 5.0f;
+                camera.maxP.y += 5.0f;
+            }
+            if (input.keyPressed[Key_Down])
+            {
+                camera.minP.y -= 5.0f;
+                camera.maxP.y -= 5.0f;
+            }
+            if (input.keyPressed[Key_Left])
+            {
+                camera.minP.x -= 5.0f;
+                camera.maxP.x -= 5.0f;
+            }
+            if (input.keyPressed[Key_Right])
+            {
+                camera.minP.x += 5.0f;
+                camera.maxP.x += 5.0f;
             }
 
-            f32 seconds_elapsed = win32GetSecondsElapsed(start, currentTick);
-            f32 aspect = WindowWidth / (f32)WindowHeight;
-            render(seconds_elapsed, program, projectionLocation, modelViewLocation, aspect);
+            if (camera.minP.x < 0)
+            {
+                camera.minP.x = 0;
+            }
+            if (camera.minP.y < 0)
+            {
+                camera.minP.y = 0;
+            }
+            if (camera.maxP.x > WindowWidth - 1)
+            {
+                camera.maxP.x = (f32)(WindowWidth- 1);
+            }
+            if (camera.maxP.y > WindowHeight - 1)
+            {
+                camera.maxP.y = (f32)(WindowHeight - 1);
+            }
+
+            // render
+            glClearColor(1.0f, 0.0f, 1.0f, 0.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            for (int row = 0; row < (int)worldHeight; ++row)
+            {
+                for (int col = 0; col < (int)worldWidth; ++col)
+                {
+                    Rect2 rect = {};
+                    rect.minP = vec2((f32)col, (f32)row) - camera.minP;
+                    rect.maxP = rect.minP + vec2(tileWidthMeters, tileHeightMeters);
+                    Vec3 color = {0, (f32)globalMapData[row][col], 0};
+                    drawOpenGLRect(rect, color);
+                }
+            }
 
             SwapBuffers(deviceContext);
 
@@ -713,7 +896,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
                 }
             }
             // char dt_str[32];
-            // snprintf(dt_str, 32, "MS per frame: %f\n", dt);
+            // snprintf(dt_str, 32, "MS per frame: %f\n", (f32)dt);
             // OutputDebugString(dt_str);
         }
     }
@@ -721,10 +904,6 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
     {
         // TODO(cjh): logging
     }
-
-    glDeleteVertexArrays(1, &vertexArrayObject);
-    glDeleteTextures(1, &linkTexture);
-    glDeleteProgram(program);
 
     return 0;
 }

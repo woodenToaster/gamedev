@@ -46,6 +46,13 @@ union Vec3
         f32 z;
     };
 
+    struct
+    {
+        f32 r;
+        f32 g;
+        f32 b;
+    };
+
     f32 data[3];
 };
 

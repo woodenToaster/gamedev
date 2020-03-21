@@ -265,37 +265,39 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, void *rend
                 tile->width = map0->tileWidth;
                 tile->height = map0->tileHeight;
                 tile->position = {col*tile->width + 0.5f*tile->width,
-                                  row*tile->height + 0.5f*tile->height};
+                    row*tile->height + 0.5f*tile->height};
+
+                // NOTE(chogan): Walls
                 if (row == 0 || col == 0 || row == map0->rows - 1 || col == map0->cols - 1)
                 {
                     addTileFlags(tile, TileProperty_Solid);
                     tile->color = game->colors[Color_DarkGreen];
                     tile->collides = true;
                 }
+                // NOTE(chogan): Quicksand
                 if (row == 4 && (col == 1 || col == 2 || col == 3 || col ==4))
                 {
-                    // Quicksand
-                    addTileFlags(tile, TileProperty_Quicksand);
-                    tile->color = game->colors[Color_Brown];
-                    tile->collides = false;
+                    // addTileFlags(tile, TileProperty_Quicksand);
+                    // tile->color = game->colors[Color_Brown];
+                    // tile->collides = false;
                 }
                 if ((row == 2 && (col == 4 || col == 5 || col == 6 || col == 7)) ||
                     ((row == 3 || row == 4 || row == 5 || row == 6) && col == 7))
                 {
-                    initHarvestableTree(tile, game);
+                    // initHarvestableTree(tile, game);
                 }
 
                 if (row == 2 && col == 2)
                 {
                     // Glow tree
-                    initGlowTree(tile, game);
+                    // initGlowTree(tile, game);
                 }
 
                 if (row == 1 && col == 7)
                 {
                     // Lightable fire
-                    addTileFlags(tile, TileProperty_Campfire | TileProperty_Interactive);
-                    initEntitySpriteSheet(tile, game->firePitTexture, 1, 1);
+                    // addTileFlags(tile, TileProperty_Campfire | TileProperty_Interactive);
+                    // initEntitySpriteSheet(tile, game->firePitTexture, 1, 1);
                 }
             }
         }

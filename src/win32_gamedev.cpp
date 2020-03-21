@@ -419,7 +419,7 @@ internal void win32UpdateWindow(Win32BackBuffer *buffer, HDC deviceContext, int 
 
         glEnable(GL_TEXTURE_2D);
         glEnable(GL_BLEND);
-        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glMatrixMode(GL_TEXTURE);
         glLoadIdentity();
 
@@ -717,10 +717,10 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     b32 sleepIsGranular = (minimumResolution == 1 &&
                            (timeBeginPeriod(minimumResolution) == TIMERR_NOERROR));
 
-    // i32 screenWidth = 960;
-    // i32 screenHeight = 540;
-    i32 screenWidth = 1920;
-    i32 screenHeight = 1080;
+    i32 screenWidth = 960;
+    i32 screenHeight = 540;
+    // i32 screenWidth = 1920;
+    // i32 screenHeight = 1080;
 
     WNDCLASSA windowClass = {};
 
