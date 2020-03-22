@@ -61,6 +61,19 @@ struct Rect2
     Vec2 maxP;
 };
 
+struct Player
+{
+    Vec2 position;
+    Vec2 size;
+    Vec3u8 color;
+};
+
+struct Camera
+{
+    Rect2 viewport;
+    f32 z;
+};
+
 static const GLfloat cubeVertexPositions[] =
 {
     -0.25f,  0.25f, -0.25f,
@@ -574,43 +587,25 @@ void render(f32 dt, GLuint program, GLint projectionLocation, GLint modelViewLoc
 
 #endif
 
-void drawOpenGLRect(Rect2 rect, Vec3 color)
+void drawOpenGLFilledRect(Rect2 rect, Vec3u8 color, Camera camera)
 {
-    int width = 960;
-    int height = 540;
-
-    f32 metersToPixels = 60.0f;
-    Rect2 ndcRect = {};
-    ndcRect.minP = vec2(rect.minP.x * metersToPixels, rect.minP.y * metersToPixels);
-    ndcRect.maxP = vec2(rect.maxP.x * metersToPixels, rect.maxP.y * metersToPixels);
-
-    ndcRect.minP.x *= 2.0f / width;
-    ndcRect.minP.y *= 2.0f / height;
-    ndcRect.minP.x -= 1.0f;
-    ndcRect.minP.y -= 1.0f;
-
-    ndcRect.maxP.x *= 2.0f / width;
-    ndcRect.maxP.y *= 2.0f / height;
-    ndcRect.maxP.x -= 1.0f;
-    ndcRect.maxP.y -= 1.0f;
-
     glBegin(GL_TRIANGLES);
 
-    glColor3f(color.r, color.g, color.b);
+    glColor3f(color.r / 255.0f, color.g / 255.0f, color.b / 255.0f);
 
-    glVertex2f(ndcRect.minP.x, ndcRect.minP.y);
-    glVertex2f(ndcRect.maxP.x, ndcRect.minP.y);
-    glVertex2f(ndcRect.maxP.x, ndcRect.maxP.y);
-    glVertex2f(ndcRect.minP.x, ndcRect.minP.y);
-    glVertex2f(ndcRect.maxP.x, ndcRect.maxP.y);
-    glVertex2f(ndcRect.minP.x, ndcRect.maxP.y);
+    glVertex4f(rect.minP.x, rect.minP.y, 0, 1);
+    glVertex4f(rect.maxP.x, rect.minP.y, 0, 1);
+    glVertex4f(rect.maxP.x, rect.maxP.y, 0, 1);
+    glVertex4f(rect.minP.x, rect.minP.y, 0, 1);
+    glVertex4f(rect.maxP.x, rect.maxP.y, 0, 1);
+    glVertex4f(rect.minP.x, rect.maxP.y, 0, 1);
 
     glEnd();
 }
 
 internal void win32SetKeyState(Input *input, Key key, b32 isDown)
 {
-    if (!isDown)
+    if (input->keyDown[key] && !isDown)
     {
         input->keyPressed[key] = true;
     }
@@ -642,6 +637,14 @@ internal void win32UpdateKeyboardInput(Input* input, u64 vkCode, b32 isDown)
         {
             win32SetKeyState(input, Key_Right, isDown);
         } break;
+        case 'X':
+        {
+            win32SetKeyState(input, Key_X, isDown);
+        } break;
+        case 'Z':
+        {
+            win32SetKeyState(input, Key_Z, isDown);
+        } break;
         case VK_ESCAPE:
         {
             win32SetKeyState(input, Key_Escape, isDown);
@@ -658,9 +661,6 @@ internal void win32UpdateKeyboardInput(Input* input, u64 vkCode, b32 isDown)
 
 internal void win32GetInput(Input *input)
 {
-    memset(input->keyPressed, 0, sizeof(b32) * Key_Count);
-    memset(input->buttonPressed, 0, sizeof(b32) * Button_Count);
-
     MSG message;
     while (PeekMessage(&message, 0, 0, 0, PM_REMOVE))
     {
@@ -675,16 +675,15 @@ internal void win32GetInput(Input *input)
             case WM_SYSKEYDOWN:
             case WM_KEYDOWN:
             {
-                b32 wasDown = message.lParam >> 30 != 0;
-                b32 isDown = message.lParam >> 31 == 0;
+                // b32 altWasDown = message.lParam & (1 << 29);
+                // b32 shiftWasDown = message.lParam & (1 << 15);
 
-                if (isDown)
+                b32 wasDown = (message.lParam & (1 << 30)) != 0;
+                b32 isDown = (message.lParam & (1UL << 31)) == 0;
+
+                if (wasDown != isDown)
                 {
-                    win32UpdateKeyboardInput(input, (u64)message.wParam, true);
-                }
-                if (wasDown && !isDown)
-                {
-                    win32UpdateKeyboardInput(input, (u64)message.wParam, false);
+                    win32UpdateKeyboardInput(input, (u64)message.wParam, isDown);
                 }
             } break;
             default:
@@ -732,8 +731,8 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
 
     RegisterClass(&WindowClass);
 
-    int WindowWidth = 1920 / 2;
-    int WindowHeight = 1080 / 2;
+    int windowWidth = 1920 / 2;
+    int windowHeight = 1080 / 2;
     HWND WindowHandle = CreateWindowEx(0, WindowClass.lpszClassName, "OpenGL", WS_OVERLAPPEDWINDOW,
                                        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
                                        0, 0, Instance, 0);
@@ -772,9 +771,15 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
     // glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (GLvoid *)(16 * sizeof(GLfloat)));
     // glEnableVertexAttribArray(2);
 
+    RECT ClientRect;
+    GetClientRect(WindowHandle, &ClientRect);
+
+    int clientWidth = ClientRect.right;
+    int clientHeight = ClientRect.bottom;
+
     // GLint projectionLocation = glGetUniformLocation(program, "projection");
     // GLint modelViewLocation = glGetUniformLocation(program, "modelView");
-    glViewport(0, 0, WindowWidth, WindowHeight);
+    glViewport(0, 0, clientWidth, clientHeight);
     // glEnable(GL_CULL_FACE);
     // glFrontFace(GL_CW);
     // glEnable(GL_DEPTH_TEST);
@@ -794,7 +799,15 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
     wglSwapInterval = (PFNWGLSWAPINTERVALEXTPROC)GetAnyGLFuncAddress("wglSwapIntervalEXT");
     wglSwapInterval(1);
 
-    Rect2 camera = {vec2(0.0f, 0.0f), vec2((f32)WindowWidth, (f32)WindowHeight)};
+    Camera camera = {};
+    // camera.viewport = {vec2(0.0f, 0.0f), vec2((f32)windowWidth, (f32)windowHeight)};
+    // camera.z = -3.0f;
+
+    Input oldInput = {};
+    Player player = {};
+    player.position = vec2(0, 0);
+    player.size = vec2(1, 1.5);
+    player.color = vec3u8(255, 255, 0);
 
     LARGE_INTEGER start = win32GetTicks();
     if (WindowHandle)
@@ -815,64 +828,105 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
             // render(seconds_elapsed, program, projectionLocation, modelViewLocation, aspect);
 
             // input
-            Input input = {};
-            input.dt = targetMsPerFrame;
-            win32GetInput(&input);
+            Input newInput = {};
+
+            for (int i = 0; i < Key_Count; ++i)
+            {
+                newInput.keyDown[i] = oldInput.keyDown[i];
+            }
+
+            newInput.dt = targetMsPerFrame;
+            win32GetInput(&newInput);
+            oldInput = newInput;
 
             // update
-            if (input.keyPressed[Key_Up])
+            f32 speed = 0.2f;
+            if (newInput.keyDown[Key_Up])
             {
-                camera.minP.y += 5.0f;
-                camera.maxP.y += 5.0f;
+                player.position.y += speed;
             }
-            if (input.keyPressed[Key_Down])
+            if (newInput.keyDown[Key_Down])
             {
-                camera.minP.y -= 5.0f;
-                camera.maxP.y -= 5.0f;
+                player.position.y -= speed;
             }
-            if (input.keyPressed[Key_Left])
+            if (newInput.keyDown[Key_Left])
             {
-                camera.minP.x -= 5.0f;
-                camera.maxP.x -= 5.0f;
+                player.position.x -= speed;
             }
-            if (input.keyPressed[Key_Right])
+            if (newInput.keyDown[Key_Right])
             {
-                camera.minP.x += 5.0f;
-                camera.maxP.x += 5.0f;
+                player.position.x += speed;
+            }
+            if (newInput.keyDown[Key_Z])
+            {
+                camera.z += 0.1f;
+            }
+            if (newInput.keyDown[Key_X])
+            {
+                camera.z -= 0.1f;
             }
 
-            if (camera.minP.x < 0)
-            {
-                camera.minP.x = 0;
-            }
-            if (camera.minP.y < 0)
-            {
-                camera.minP.y = 0;
-            }
-            if (camera.maxP.x > WindowWidth - 1)
-            {
-                camera.maxP.x = (f32)(WindowWidth- 1);
-            }
-            if (camera.maxP.y > WindowHeight - 1)
-            {
-                camera.maxP.y = (f32)(WindowHeight - 1);
-            }
+            f32 metersToPixels = 60.f;
+            f32 pixelsToMeters = 1.0f / metersToPixels;
+            f32 viewportWidthInMeters = windowWidth * pixelsToMeters;
+            f32 viewportHeightInMeters = windowHeight * pixelsToMeters;
+            f32 maxCameraPx = worldWidth - viewportWidthInMeters;
+            f32 maxCameraPy = worldHeight - viewportHeightInMeters;
+            f32 maxPlayerPx = worldWidth - player.size.x;
+            f32 maxPlayerPy = worldHeight - player.size.y;
+
+            player.position.x = clampFloat(player.position.x, 0, maxPlayerPx);
+            player.position.y = clampFloat(player.position.y, 0, maxPlayerPy);
+
+            camera.viewport.minP.x = player.position.x - (viewportWidthInMeters / 2.0f);
+            camera.viewport.minP.y = player.position.y - (viewportHeightInMeters / 2.0f);
+            camera.viewport.minP.x = clampFloat(camera.viewport.minP.x, 0, maxCameraPx);
+            camera.viewport.minP.y = clampFloat(camera.viewport.minP.y, 0, maxCameraPy);
+            camera.viewport.maxP = camera.viewport.minP + vec2(viewportWidthInMeters,
+                                                               viewportHeightInMeters);
 
             // render
             glClearColor(1.0f, 0.0f, 1.0f, 0.0f);
             glClear(GL_COLOR_BUFFER_BIT);
 
-            for (int row = 0; row < (int)worldHeight; ++row)
+            glMatrixMode(GL_MODELVIEW);
+            glLoadIdentity();
+
+            glMatrixMode(GL_PROJECTION);
+            f32 screenFillPercentage = 0.95f;
+            f32 projection[] =
             {
-                for (int col = 0; col < (int)worldWidth; ++col)
+                (2.0f / viewportWidthInMeters) * screenFillPercentage, 0, 0, 0,
+                0, (2.0f / viewportHeightInMeters) * screenFillPercentage, 0, 0,
+                0, 0, 1, 0,
+                -1 * screenFillPercentage, -1 * screenFillPercentage, 0, 1,
+            };
+            glLoadMatrixf(projection);
+
+            int rowStart = maxInt32((int)camera.viewport.minP.y - 1, 0);
+            int rowEnd = minInt32((int)camera.viewport.maxP.y + 2, worldHeight);
+            int colStart = maxInt32((int)camera.viewport.minP.x - 1, 0);
+            int colEnd = minInt32((int)camera.viewport.maxP.x + 2, worldWidth);
+
+            for (int row = rowStart; row < rowEnd; ++row)
+            {
+                for (int col = colStart; col < colEnd; ++col)
                 {
                     Rect2 rect = {};
-                    rect.minP = vec2((f32)col, (f32)row) - camera.minP;
+                    rect.minP = vec2((f32)col, (f32)row) - camera.viewport.minP;
                     rect.maxP = rect.minP + vec2(tileWidthMeters, tileHeightMeters);
-                    Vec3 color = {0, (f32)globalMapData[row][col], 0};
-                    drawOpenGLRect(rect, color);
+                    Vec3u8 tileColor = globalMapData[row][col] ?
+                                       vec3u8(37, 71, 0) :
+                                       vec3u8(135, 135, 135);
+                    drawOpenGLFilledRect(rect, tileColor, camera);
                 }
             }
+
+
+            Rect2 playerRect = {};
+            playerRect.minP = player.position - camera.viewport.minP;
+            playerRect.maxP = playerRect.minP + player.size;
+            drawOpenGLFilledRect(playerRect, player.color, camera);
 
             SwapBuffers(deviceContext);
 
