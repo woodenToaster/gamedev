@@ -397,10 +397,10 @@ static const char *vertexShaderSource[] =
     "uniform mat4 projection;                                    \n",
     "void main(void)                                             \n",
     "{                                                           \n",
-    "    vec4 pos = projection * modelView * in_position;        \n",
+    // "    vec4 pos = projection * modelView * in_position;        \n",
     // "    gl_PointSize = (1.0 - pos.z / pos.w) * 64.0;            \n",
     "    gl_Position = in_position;                                      \n",
-    "    vs_tex_coord = in_tex_coord;                            \n",
+    // "    vs_tex_coord = in_tex_coord;                            \n",
     // "    gl_Position = pos;                                      \n",
     // "    vs_out.color = position * 2 + vec4(0.5, 0.5, 0.5, 0.0); \n",
     "}                                                           \n",
@@ -461,7 +461,8 @@ static const char *fragmentShaderSource[] =
     "void main(void)                              \n",
     "{                                            \n",
     // "    color = fs_in.color;                  \n",
-    "    color = texture(tex, vs_tex_coord);      \n",
+    // "    color = texture(tex, vs_tex_coord);      \n",
+    "       color = vec4(0, 0, 1, 1); \n",
     "}                                            \n"
 };
 
@@ -741,20 +742,23 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
     f32 tileHeightMeters = 1.0f;
     // f32 metersToPixels = 60.0f;
 
-    // loadOpenGLFunctions();
-    // GLuint program = compileShaders();
+    loadOpenGLFunctions();
+    GLuint program = compileShaders();
+    glUseProgram(program);
 
-    // GLuint vertexArrayObject;
-    // glCreateVertexArrays(1, &vertexArrayObject);
-    // glBindVertexArray(vertexArrayObject);
+    GLuint vao;
+    glCreateVertexArrays(1, &vao);
+    glBindVertexArray(vao);
 
     static const GLfloat quadData[] =
     {
         // Vertex positions
-        -1.0f, -1.0f, 0.0f, 1.0f,
-        1.0f, -1.0f, 0.0f, 1.0f,
-        1.0f, 1.0f, 0.0f, 1.0f,
-        -1.0f, 1.0f, 0.0f, 1.0f,
+        -0.9f, -0.9f, 0.0f, 1.0f,
+        0.9f, -0.9f, 0.0f, 1.0f,
+        0.9f, 0.9f, 0.0f, 1.0f,
+        -0.9f, -0.9f, 0.0f, 1.0f,
+        0.9f, 0.9f, 0.0f, 1.0f,
+        -0.9f, 0.9f, 0.0f, 1.0f,
         // Texture coordinates
         // 0.0f, 0.0f,
         // 1.0f, 0.0f,
@@ -762,12 +766,13 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
         // 0.0f, 1.0f
     };
 
-    // GLuint cubeBuffer;
-    // glCreateBuffers(1, &cubeBuffer);
-    // glBindBuffer(GL_ARRAY_BUFFER, cubeBuffer);
+    GLuint quadBuffer;
+    glCreateBuffers(1, &quadBuffer);
+    glNamedBufferStorage(quadBuffer, sizeof(quadData), quadData, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, quadBuffer);
     // glBufferData(GL_ARRAY_BUFFER, sizeof(quadData), quadData, GL_STATIC_DRAW);
-    // glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, NULL);
-    // glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+    glEnableVertexAttribArray(1);
     // glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (GLvoid *)(16 * sizeof(GLfloat)));
     // glEnableVertexAttribArray(2);
 
@@ -889,44 +894,46 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
             glClearColor(1.0f, 0.0f, 1.0f, 0.0f);
             glClear(GL_COLOR_BUFFER_BIT);
 
-            glMatrixMode(GL_MODELVIEW);
-            glLoadIdentity();
+            glDrawArrays(GL_TRIANGLES, 0, 6);
 
-            glMatrixMode(GL_PROJECTION);
-            f32 screenFillPercentage = 0.95f;
-            f32 projection[] =
-            {
-                (2.0f / viewportWidthInMeters) * screenFillPercentage, 0, 0, 0,
-                0, (2.0f / viewportHeightInMeters) * screenFillPercentage, 0, 0,
-                0, 0, 1, 0,
-                -1 * screenFillPercentage, -1 * screenFillPercentage, 0, 1,
-            };
-            glLoadMatrixf(projection);
+            // glMatrixMode(GL_MODELVIEW);
+            // glLoadIdentity();
+//
+            // glMatrixMode(GL_PROJECTION);
+            // f32 screenFillPercentage = 0.95f;
+            // f32 projection[] =
+            // {
+                // (2.0f / viewportWidthInMeters) * screenFillPercentage, 0, 0, 0,
+                // 0, (2.0f / viewportHeightInMeters) * screenFillPercentage, 0, 0,
+                // 0, 0, 1, 0,
+                // -1 * screenFillPercentage, -1 * screenFillPercentage, 0, 1,
+            // };
+            // glLoadMatrixf(projection);
 
             int rowStart = maxInt32((int)camera.viewport.minP.y - 1, 0);
             int rowEnd = minInt32((int)camera.viewport.maxP.y + 2, worldHeight);
             int colStart = maxInt32((int)camera.viewport.minP.x - 1, 0);
             int colEnd = minInt32((int)camera.viewport.maxP.x + 2, worldWidth);
 
-            for (int row = rowStart; row < rowEnd; ++row)
-            {
-                for (int col = colStart; col < colEnd; ++col)
-                {
-                    Rect2 rect = {};
-                    rect.minP = vec2((f32)col, (f32)row) - camera.viewport.minP;
-                    rect.maxP = rect.minP + vec2(tileWidthMeters, tileHeightMeters);
-                    Vec3u8 tileColor = globalMapData[row][col] ?
-                                       vec3u8(37, 71, 0) :
-                                       vec3u8(135, 135, 135);
-                    drawOpenGLFilledRect(rect, tileColor, camera);
-                }
-            }
-
-
-            Rect2 playerRect = {};
-            playerRect.minP = player.position - camera.viewport.minP;
-            playerRect.maxP = playerRect.minP + player.size;
-            drawOpenGLFilledRect(playerRect, player.color, camera);
+            // for (int row = rowStart; row < rowEnd; ++row)
+            // {
+                // for (int col = colStart; col < colEnd; ++col)
+                // {
+                    // Rect2 rect = {};
+                    // rect.minP = vec2((f32)col, (f32)row) - camera.viewport.minP;
+                    // rect.maxP = rect.minP + vec2(tileWidthMeters, tileHeightMeters);
+                    // Vec3u8 tileColor = globalMapData[row][col] ?
+                                       // vec3u8(37, 71, 0) :
+                                       // vec3u8(135, 135, 135);
+                    // drawOpenGLFilledRect(rect, tileColor, camera);
+                // }
+            // }
+//
+//
+            // Rect2 playerRect = {};
+            // playerRect.minP = player.position - camera.viewport.minP;
+            // playerRect.maxP = playerRect.minP + player.size;
+            // drawOpenGLFilledRect(playerRect, player.color, camera);
 
             SwapBuffers(deviceContext);
 
