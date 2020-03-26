@@ -28,6 +28,7 @@ PFNGLDELETESHADERPROC glDeleteShader;
 PFNGLDELETEVERTEXARRAYSPROC glDeleteVertexArrays;
 PFNGLENABLEVERTEXARRAYATTRIBPROC glEnableVertexArrayAttrib;
 PFNGLENABLEVERTEXATTRIBARRAYPROC glEnableVertexAttribArray;
+PFNGLGENBUFFERSPROC glGenBuffers;
 PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog;
 PFNGLGETSHADERIVPROC glGetShaderiv;
 PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation;
@@ -391,10 +392,10 @@ static const char *vertexShaderSource[] =
     "#version 450 core                                           \n",
     // "#version 330 core                                           \n",
     "layout (location = 1) in vec4 in_position;                  \n",
-    "layout (location = 2) in vec2 in_tex_coord;                 \n",
-    "out vec2 vs_tex_coord;                                      \n",
-    "uniform mat4 modelView;                                     \n",
-    "uniform mat4 projection;                                    \n",
+    // "layout (location = 2) in vec2 in_tex_coord;                 \n",
+    // "out vec2 vs_tex_coord;                                      \n",
+    // "uniform mat4 modelView;                                     \n",
+    // "uniform mat4 projection;                                    \n",
     "void main(void)                                             \n",
     "{                                                           \n",
     // "    vec4 pos = projection * modelView * in_position;        \n",
@@ -554,6 +555,7 @@ void loadOpenGLFunctions()
     LOAD_GL_FUNC(glBindTextureUnit, BINDTEXTUREUNIT);
     LOAD_GL_FUNC(glTextureParameteri, TEXTUREPARAMETERI);
     LOAD_GL_FUNC(glTextureParameteriv, TEXTUREPARAMETERIV);
+    LOAD_GL_FUNC(glGenBuffers, GENBUFFERS);
 }
 
 #if 0
@@ -583,10 +585,7 @@ void render(f32 dt, GLuint program, GLint projectionLocation, GLint modelViewLoc
     glUniformMatrix4fv(modelViewLocation, 1, GL_FALSE, modelView.data);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 }
-#else
 
-
-#endif
 
 void drawOpenGLFilledRect(Rect2 rect, Vec3u8 color, Camera camera)
 {
@@ -604,6 +603,7 @@ void drawOpenGLFilledRect(Rect2 rect, Vec3u8 color, Camera camera)
     glEnd();
 }
 
+#endif
 internal void win32SetKeyState(Input *input, Key key, b32 isDown)
 {
     if (input->keyDown[key] && !isDown)
@@ -746,17 +746,15 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
     GLuint program = compileShaders();
     glUseProgram(program);
 
-    GLuint vao;
-    glCreateVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    // GLuint vao;
+    // glCreateVertexArrays(1, &vao);
+    // glBindVertexArray(vao);
 
     static const GLfloat quadData[] =
     {
         // Vertex positions
         -0.9f, -0.9f, 0.0f, 1.0f,
         0.9f, -0.9f, 0.0f, 1.0f,
-        0.9f, 0.9f, 0.0f, 1.0f,
-        -0.9f, -0.9f, 0.0f, 1.0f,
         0.9f, 0.9f, 0.0f, 1.0f,
         -0.9f, 0.9f, 0.0f, 1.0f,
         // Texture coordinates
@@ -766,15 +764,23 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
         // 0.0f, 1.0f
     };
 
-    GLuint quadBuffer;
-    glCreateBuffers(1, &quadBuffer);
-    glNamedBufferStorage(quadBuffer, sizeof(quadData), quadData, 0);
+
+    u32 quadBuffer;
+    glGenBuffers(1, &quadBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, quadBuffer);
-    // glBufferData(GL_ARRAY_BUFFER, sizeof(quadData), quadData, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadData), quadData, GL_STATIC_DRAW);
+
     glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, NULL);
     glEnableVertexAttribArray(1);
     // glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (GLvoid *)(16 * sizeof(GLfloat)));
     // glEnableVertexAttribArray(2);
+
+    static const GLuint quadIndices[] = {0, 1, 2, 0, 2, 3};
+
+    GLuint ebo;
+    glGenBuffers(1, &ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(quadIndices), quadIndices, GL_STATIC_DRAW);
 
     RECT ClientRect;
     GetClientRect(WindowHandle, &ClientRect);
@@ -894,7 +900,10 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
             glClearColor(1.0f, 0.0f, 1.0f, 0.0f);
             glClear(GL_COLOR_BUFFER_BIT);
 
-            glDrawArrays(GL_TRIANGLES, 0, 6);
+            // glDrawArrays(GL_TRIANGLES, 0, 3);
+            // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+            // glBindVertexArray(vao);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
             // glMatrixMode(GL_MODELVIEW);
             // glLoadIdentity();
