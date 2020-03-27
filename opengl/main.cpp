@@ -39,6 +39,8 @@ PFNGLTEXTUREPARAMETERIPROC glTextureParameteri;
 PFNGLTEXTUREPARAMETERIVPROC glTextureParameteriv;
 PFNGLTEXTURESTORAGE2DPROC glTextureStorage2D;
 PFNGLTEXTURESUBIMAGE2DPROC glTextureSubImage2D;
+PFNGLUNIFORM4FVPROC glUniform4fv;
+PFNGLUNIFORM4FPROC glUniform4f;
 PFNGLUNIFORMMATRIX4FVPROC glUniformMatrix4fv;
 PFNGLUSEPROGRAMPROC glUseProgram;
 PFNGLVERTEXARRAYATTRIBBINDINGPROC glVertexArrayAttribBinding;
@@ -394,13 +396,14 @@ static const char *vertexShaderSource[] =
     "layout (location = 1) in vec4 in_position;                  \n",
     // "layout (location = 2) in vec2 in_tex_coord;                 \n",
     // "out vec2 vs_tex_coord;                                      \n",
-    // "uniform mat4 modelView;                                     \n",
-    // "uniform mat4 projection;                                    \n",
+    "out vec4 vs_color;                                          \n",
+    "uniform mat4 modelView;                                     \n",
+    "uniform mat4 projection;                                    \n",
+    "uniform vec4 ucolor;                                        \n",
     "void main(void)                                             \n",
     "{                                                           \n",
-    // "    vec4 pos = projection * modelView * in_position;        \n",
-    // "    gl_PointSize = (1.0 - pos.z / pos.w) * 64.0;            \n",
-    "    gl_Position = in_position;                                      \n",
+    "    gl_Position = projection * modelView * in_position;    \n",
+    "    vs_color = ucolor;                                     \n",
     // "    vs_tex_coord = in_tex_coord;                            \n",
     // "    gl_Position = pos;                                      \n",
     // "    vs_out.color = position * 2 + vec4(0.5, 0.5, 0.5, 0.0); \n",
@@ -458,12 +461,13 @@ static const char *fragmentShaderSource[] =
     // "#version 330 core                            \n",
     "uniform sampler2D tex;                       \n",
     "out vec4 color;                              \n",
-    "in vec2 vs_tex_coord;                        \n",
+    // "in vec2 vs_tex_coord;                        \n",
+    "in vec4 vs_color;                            \n",
     "void main(void)                              \n",
     "{                                            \n",
     // "    color = fs_in.color;                  \n",
     // "    color = texture(tex, vs_tex_coord);      \n",
-    "       color = vec4(0, 0, 1, 1); \n",
+    "       color = vs_color;                     \n",
     "}                                            \n"
 };
 
@@ -556,9 +560,10 @@ void loadOpenGLFunctions()
     LOAD_GL_FUNC(glTextureParameteri, TEXTUREPARAMETERI);
     LOAD_GL_FUNC(glTextureParameteriv, TEXTUREPARAMETERIV);
     LOAD_GL_FUNC(glGenBuffers, GENBUFFERS);
+    LOAD_GL_FUNC(glUniform4fv, UNIFORM4FV);
+    LOAD_GL_FUNC(glUniform4f, UNIFORM4F);
 }
 
-#if 0
 void render(f32 dt, GLuint program, GLint projectionLocation, GLint modelViewLocation, f32 aspect)
 {
     (void)dt;
@@ -587,6 +592,7 @@ void render(f32 dt, GLuint program, GLint projectionLocation, GLint modelViewLoc
 }
 
 
+#if 0
 void drawOpenGLFilledRect(Rect2 rect, Vec3u8 color, Camera camera)
 {
     glBegin(GL_TRIANGLES);
@@ -602,8 +608,24 @@ void drawOpenGLFilledRect(Rect2 rect, Vec3u8 color, Camera camera)
 
     glEnd();
 }
+#else
+void drawOpenGLFilledRect(Rect2 rect, Vec3u8 color, GLuint quadBuffer, GLint ucolorLocation)
+{
+    f32 quad[] =
+    {
+        rect.minP.x, rect.minP.y, 0.0f, 1.0f,
+        rect.maxP.x, rect.minP.y, 0.0f, 1.0f,
+        rect.maxP.x, rect.maxP.y, 0.0f, 1.0f,
+        rect.minP.x, rect.maxP.y, 0.0f, 1.0f,
+    };
 
+    glBindBuffer(GL_ARRAY_BUFFER, quadBuffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quad), quad, GL_STATIC_DRAW);
+    glUniform4f(ucolorLocation, color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, 1.0f);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+}
 #endif
+
 internal void win32SetKeyState(Input *input, Key key, b32 isDown)
 {
     if (input->keyDown[key] && !isDown)
@@ -782,14 +804,17 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(quadIndices), quadIndices, GL_STATIC_DRAW);
 
+    GLint ucolorLocation = glGetUniformLocation(program, "ucolor");
+
     RECT ClientRect;
     GetClientRect(WindowHandle, &ClientRect);
 
     int clientWidth = ClientRect.right;
     int clientHeight = ClientRect.bottom;
 
-    // GLint projectionLocation = glGetUniformLocation(program, "projection");
-    // GLint modelViewLocation = glGetUniformLocation(program, "modelView");
+    GLint projectionLocation = glGetUniformLocation(program, "projection");
+    GLint modelViewLocation = glGetUniformLocation(program, "modelView");
+
     glViewport(0, 0, clientWidth, clientHeight);
     // glEnable(GL_CULL_FACE);
     // glFrontFace(GL_CW);
@@ -900,49 +925,53 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
             glClearColor(1.0f, 0.0f, 1.0f, 0.0f);
             glClear(GL_COLOR_BUFFER_BIT);
 
+
+            f32 screenFillPercentage = 0.95f;
+            Mat4 projection =
+            {
+                (2.0f / viewportWidthInMeters) * screenFillPercentage, 0, 0, 0,
+                0, (2.0f / viewportHeightInMeters) * screenFillPercentage, 0, 0,
+                0, 0, 1, 0,
+                -1 * screenFillPercentage, -1 * screenFillPercentage, 0, 1,
+            };
+
+            Mat4 modelView =
+            {
+                1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1,
+            };
+
+            glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, projection.data);
+            glUniformMatrix4fv(modelViewLocation, 1, GL_FALSE, modelView.data);
             // glDrawArrays(GL_TRIANGLES, 0, 3);
             // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
             // glBindVertexArray(vao);
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-            // glMatrixMode(GL_MODELVIEW);
-            // glLoadIdentity();
-//
-            // glMatrixMode(GL_PROJECTION);
-            // f32 screenFillPercentage = 0.95f;
-            // f32 projection[] =
-            // {
-                // (2.0f / viewportWidthInMeters) * screenFillPercentage, 0, 0, 0,
-                // 0, (2.0f / viewportHeightInMeters) * screenFillPercentage, 0, 0,
-                // 0, 0, 1, 0,
-                // -1 * screenFillPercentage, -1 * screenFillPercentage, 0, 1,
-            // };
-            // glLoadMatrixf(projection);
 
             int rowStart = maxInt32((int)camera.viewport.minP.y - 1, 0);
             int rowEnd = minInt32((int)camera.viewport.maxP.y + 2, worldHeight);
             int colStart = maxInt32((int)camera.viewport.minP.x - 1, 0);
             int colEnd = minInt32((int)camera.viewport.maxP.x + 2, worldWidth);
 
-            // for (int row = rowStart; row < rowEnd; ++row)
-            // {
-                // for (int col = colStart; col < colEnd; ++col)
-                // {
-                    // Rect2 rect = {};
-                    // rect.minP = vec2((f32)col, (f32)row) - camera.viewport.minP;
-                    // rect.maxP = rect.minP + vec2(tileWidthMeters, tileHeightMeters);
-                    // Vec3u8 tileColor = globalMapData[row][col] ?
-                                       // vec3u8(37, 71, 0) :
-                                       // vec3u8(135, 135, 135);
-                    // drawOpenGLFilledRect(rect, tileColor, camera);
-                // }
-            // }
-//
-//
-            // Rect2 playerRect = {};
-            // playerRect.minP = player.position - camera.viewport.minP;
-            // playerRect.maxP = playerRect.minP + player.size;
-            // drawOpenGLFilledRect(playerRect, player.color, camera);
+            for (int row = rowStart; row < rowEnd; ++row)
+            {
+                for (int col = colStart; col < colEnd; ++col)
+                {
+                    Rect2 rect = {};
+                    rect.minP = vec2((f32)col, (f32)row) - camera.viewport.minP;
+                    rect.maxP = rect.minP + vec2(tileWidthMeters, tileHeightMeters);
+                    Vec3u8 tileColor = globalMapData[row][col] ?
+                                       vec3u8(37, 71, 0) :
+                                       vec3u8(135, 135, 135);
+                    drawOpenGLFilledRect(rect, tileColor, quadBuffer, ucolorLocation);
+                }
+            }
+
+            Rect2 playerRect = {};
+            playerRect.minP = player.position - camera.viewport.minP;
+            playerRect.maxP = playerRect.minP + player.size;
+            drawOpenGLFilledRect(playerRect, player.color, quadBuffer, ucolorLocation);
 
             SwapBuffers(deviceContext);
 
