@@ -397,13 +397,14 @@ static const char *vertexShaderSource[] =
     // "layout (location = 2) in vec2 in_tex_coord;                 \n",
     // "out vec2 vs_tex_coord;                                      \n",
     "out vec4 vs_color;                                          \n",
-    "uniform mat4 modelView;                                     \n",
+    "uniform mat4 model;                                         \n",
+    "uniform mat4 view;                                          \n",
     "uniform mat4 projection;                                    \n",
     "uniform vec4 ucolor;                                        \n",
     "void main(void)                                             \n",
     "{                                                           \n",
-    "    gl_Position = projection * modelView * in_position;    \n",
-    "    vs_color = ucolor;                                     \n",
+    "    gl_Position = projection * view * model * in_position;  \n",
+    "    vs_color = ucolor;                                      \n",
     // "    vs_tex_coord = in_tex_coord;                            \n",
     // "    gl_Position = pos;                                      \n",
     // "    vs_out.color = position * 2 + vec4(0.5, 0.5, 0.5, 0.0); \n",
@@ -612,11 +613,17 @@ void drawOpenGLFilledRect(Rect2 rect, Vec3u8 color, Camera camera)
 void drawOpenGLFilledRect(Rect2 rect, Vec3u8 color, GLuint quadBuffer, GLint ucolorLocation)
 {
     f32 quad[] =
+    // {
+        // rect.minP.x, rect.minP.y, -1.0f, 1.0f,
+        // rect.maxP.x, rect.minP.y, -1.0f, 1.0f,
+        // rect.maxP.x, rect.maxP.y, -1.0f, 1.0f,
+        // rect.minP.x, rect.maxP.y, -1.0f, 1.0f,
+        // };
     {
-        rect.minP.x, rect.minP.y, 0.0f, 1.0f,
-        rect.maxP.x, rect.minP.y, 0.0f, 1.0f,
-        rect.maxP.x, rect.maxP.y, 0.0f, 1.0f,
-        rect.minP.x, rect.maxP.y, 0.0f, 1.0f,
+        -0.5f, -0.5f, -1.0f, 1.0f,
+        0.5f, -0.5f, -1.0f, 1.0f,
+        0.5f, 0.5f, -1.0f, 1.0f,
+        -0.5f, 0.5f, -1.0f, 1.0f,
     };
 
     glBindBuffer(GL_ARRAY_BUFFER, quadBuffer);
@@ -751,6 +758,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
     WindowClass.hInstance = Instance;
     WindowClass.lpszClassName = "OpenGL";
     WindowClass.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
+    WindowClass.hCursor = LoadCursor(NULL, IDC_ARROW);
 
     RegisterClass(&WindowClass);
 
@@ -812,10 +820,13 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
     int clientWidth = ClientRect.right;
     int clientHeight = ClientRect.bottom;
 
+    // GLint mvpMatrixLocation = glGetUniformLocation(program, "mvpMatrix");
+    GLint modelLocation = glGetUniformLocation(program, "model");
+    GLint viewLocation = glGetUniformLocation(program, "view");
     GLint projectionLocation = glGetUniformLocation(program, "projection");
-    GLint modelViewLocation = glGetUniformLocation(program, "modelView");
 
-    glViewport(0, 0, clientWidth, clientHeight);
+    int fringe = 5;
+    glViewport(fringe, fringe, clientWidth - (2 * fringe), clientHeight - (2 * fringe));
     // glEnable(GL_CULL_FACE);
     // glFrontFace(GL_CW);
     // glEnable(GL_DEPTH_TEST);
@@ -837,7 +848,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
 
     Camera camera = {};
     // camera.viewport = {vec2(0.0f, 0.0f), vec2((f32)windowWidth, (f32)windowHeight)};
-    // camera.z = -3.0f;
+    camera.z = 3.0f;
 
     Input oldInput = {};
     Player player = {};
@@ -895,11 +906,11 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
             }
             if (newInput.keyDown[Key_Z])
             {
-                camera.z += 0.1f;
+                camera.z += 0.5f;
             }
             if (newInput.keyDown[Key_X])
             {
-                camera.z -= 0.1f;
+                camera.z -= 0.5f;
             }
 
             f32 metersToPixels = 60.f;
@@ -925,35 +936,64 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
             glClearColor(1.0f, 0.0f, 1.0f, 0.0f);
             glClear(GL_COLOR_BUFFER_BIT);
 
+            // Mat4 orthoProj = makeFrustum(0, viewportWidthInMeters, 0, viewportHeightInMeters, 0.1f, 10);
 
-            f32 screenFillPercentage = 0.95f;
-            Mat4 projection =
-            {
-                (2.0f / viewportWidthInMeters) * screenFillPercentage, 0, 0, 0,
-                0, (2.0f / viewportHeightInMeters) * screenFillPercentage, 0, 0,
-                0, 0, 1, 0,
-                -1 * screenFillPercentage, -1 * screenFillPercentage, 0, 1,
-            };
+            // {
+                // (2.0f / viewportWidthInMeters * camera.z), 0, 0, 0,
+                // 0, (2.0f / viewportHeightInMeters * camera.z), 0, 0,
+                // 0, 0, 1, 0,
+                // -1, -1, 0, 1,
+            // };
 
-            Mat4 modelView =
-            {
-                1, 0, 0, 0,
-                0, 1, 0, 0,
-                0, 0, 1, 0,
-                0, 0, 0, 1,
-            };
+            Vec3 cameraPos = {0.0f, 0.0f, camera.z};
+            Vec3 cameraUp = {0.0f, 1.0f, 0.0f};
+            Vec3 cameraRight = {1.0f, 0.0f, 0.0f};
+            Vec3 cameraDirection = {0.0f, 0.0f, 1.0f};
 
-            glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, projection.data);
-            glUniformMatrix4fv(modelViewLocation, 1, GL_FALSE, modelView.data);
+            Mat4 lookAtRot = {};
+            lookAtRot.col1 = {cameraRight.x, cameraUp.x, cameraDirection.x, 0};
+            lookAtRot.col2 = {cameraRight.y, cameraUp.y, cameraDirection.y, 0};
+            lookAtRot.col3 = {cameraRight.z, cameraUp.z, cameraDirection.z, 0};
+            lookAtRot.col4 = {0, 0, 0, 1};
+
+            Mat4 lookAtTrans = makeTranslationMat4(-cameraPos.x, -cameraPos.y, -cameraPos.z);
+
+            Mat4 view = multiplyMat4(&lookAtRot, &lookAtTrans);
+            // view = identityMat4();
+            // Mat4 model = identityMat4();
+            // model = makeTranslationMat4(0, 0, -9.0f);
+            // {
+                // (2.0f / viewportWidthInMeters), 0, 0, 0,
+                // 0, (2.0f / viewportHeightInMeters), 0, 0,
+                // 0, 0, 1, 0,
+                // -1, -1, 0, 1,
+            // };
+
+            Mat4 orthoProj = makePerspectiveMat4(45, viewportWidthInMeters / viewportHeightInMeters,
+                                                 0.1f, 100.0f);
+            // orthoProj = identityMat4();
+
+            glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, orthoProj.data);
+            glUniformMatrix4fv(viewLocation, 1, GL_FALSE, view.data);
+            // glUniformMatrix4fv(modelLocation, 1, GL_FALSE, model.data);
+
+            // Mat4 temp1 = multiplyMat4(&orthoProj, &model);
+            // Mat4 mvpMatrix = multiplyMat4(&view, &temp1);
+
+            // glUniformMatrix4fv(mvpMatrixLocation, 1, GL_FALSE, mvpMatrix.data);
             // glDrawArrays(GL_TRIANGLES, 0, 3);
             // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
             // glBindVertexArray(vao);
 
-            int rowStart = maxInt32((int)camera.viewport.minP.y - 1, 0);
-            int rowEnd = minInt32((int)camera.viewport.maxP.y + 2, worldHeight);
-            int colStart = maxInt32((int)camera.viewport.minP.x - 1, 0);
-            int colEnd = minInt32((int)camera.viewport.maxP.x + 2, worldWidth);
-
+            // int rowStart = maxInt32((int)camera.viewport.minP.y - 1, 0);
+            int rowStart = 0;
+            int rowEnd = worldHeight;
+            int colStart = 0;
+            int colEnd = worldWidth;
+            // int rowEnd = minInt32((int)camera.viewport.maxP.y + 2, worldHeight);
+            // int colStart = maxInt32((int)camera.viewport.minP.x - 1, 0);
+            // int colEnd = minInt32((int)camera.viewport.maxP.x + 2, worldWidth);
+//
             for (int row = rowStart; row < rowEnd; ++row)
             {
                 for (int col = colStart; col < colEnd; ++col)
@@ -964,6 +1004,8 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
                     Vec3u8 tileColor = globalMapData[row][col] ?
                                        vec3u8(37, 71, 0) :
                                        vec3u8(135, 135, 135);
+                    Mat4 tileModel = makeTranslationMat4(rect.minP.x, rect.minP.y, -9.0f);
+                    glUniformMatrix4fv(modelLocation, 1, GL_FALSE, tileModel.data);
                     drawOpenGLFilledRect(rect, tileColor, quadBuffer, ucolorLocation);
                 }
             }
@@ -971,6 +1013,10 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
             Rect2 playerRect = {};
             playerRect.minP = player.position - camera.viewport.minP;
             playerRect.maxP = playerRect.minP + player.size;
+            Mat4 playerModelunscaled = makeTranslationMat4(playerRect.minP.x, playerRect.minP.y, -9.0f);
+            Mat4 playerScale = makeScaleMat4(0.5, 1, 1);
+            Mat4 playerModel = multiplyMat4(&playerModelunscaled, &playerScale);
+            glUniformMatrix4fv(modelLocation, 1, GL_FALSE, playerModel.data);
             drawOpenGLFilledRect(playerRect, player.color, quadBuffer, ucolorLocation);
 
             SwapBuffers(deviceContext);

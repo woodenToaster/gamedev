@@ -2,9 +2,9 @@
 #define GAMEDEV_MAP_DATA_H
 
 #if 0
-const f32 worldWidth = 16.0f;
-const f32 worldHeight = 9.0f;
-global int globalMapData[(int)worldHeight][(int)worldWidth] = {
+const i32 worldWidth = 16;
+const i32 worldHeight = 9;
+global int globalMapData[worldHeight][worldWidth] = {
     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
     {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
     {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
@@ -16,9 +16,9 @@ global int globalMapData[(int)worldHeight][(int)worldWidth] = {
     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 };
 #else
-const f32 worldWidth = 50.0f;
-const f32 worldHeight = 50.0f;
-global int globalMapData[(int)worldHeight][(int)worldWidth] = {
+const i32 worldWidth = 50;
+const i32 worldHeight = 50;
+global int globalMapData[worldHeight][worldWidth] = {
     {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 

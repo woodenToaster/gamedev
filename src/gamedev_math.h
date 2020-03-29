@@ -1,6 +1,9 @@
 #ifndef GAMEDEV_MATH_H
 #define GAMEDEV_MATH_H
 
+#undef near
+#undef far
+
 #include <math.h>
 
 // TODO(chogan): More digits
@@ -168,6 +171,27 @@ Mat4 makePerspectiveMat4(f32 fovy, f32 aspect, f32 n, f32 f)
 
     return result;
 }
+
+Mat4 makeFrustum(f32 left, f32 right, f32 bottom, f32 top, f32 near, f32 far)
+{
+    Mat4 result = {};
+
+    f32 w = right - left;
+    f32 h = top - bottom;
+
+    result.col1 = {(2.0f * near) / w, 0.0f, 0.0f, 0.0f};
+    result.col2 = {0, (2.0f * near) / h, 0, 0};
+    result.col3 = {(2 * (left + right)) / w, (2 * (top + bottom)) / h,
+                       -((far + near) / (far - near)), -1.0f};
+    result.col4 = {0, 0, 2 * far * near / (far - near), 0};
+
+    return result;
+}
+
+// Mat4 lookAt(Vec3 position, Vec3 target, Vec3 up)
+// {
+    //
+// }
 
 Mat4 makeScaleMat4(f32 x, f32 y, f32 z)
 {
