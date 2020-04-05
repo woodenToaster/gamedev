@@ -60,8 +60,6 @@ struct Map;
 struct Entity;
 struct Sprite;
 
-#define Icon_Count 245
-
 struct Game
 {
     u32 totalFramesElapsed;

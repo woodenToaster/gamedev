@@ -59,16 +59,40 @@ global Win32BackBuffer globalBackBuffer;
 global int globalRunning;
 global i64 globalPerfFrequency;
 
+enum Direction
+{
+    Direction_Up,
+    Direction_Up_Right,
+    Direction_Right,
+    Direction_Down_Right,
+    Direction_Down,
+    Direction_Down_Left,
+    Direction_Left,
+    Direction_Up_Left,
+
+    Direction_COUNT
+};
+
 struct Rect2
 {
     Vec2 minP;
     Vec2 maxP;
 };
 
+struct Animation
+{
+    int totalFrames;
+    int currentFrame;
+    u32 delay;
+    u64 elapsed;
+};
+
 struct Player
 {
     Vec2 position;
     Vec2 size;
+    Direction direction;
+    Animation animation;
 };
 
 struct Camera
@@ -84,6 +108,18 @@ enum PlatformErrorType
     PlatformError_Fatal,
     PlatformError_Warning
 };
+
+static void updateAnimation(Animation* a, u64 elapsed_last_frame, b32 active)
+{
+    a->elapsed += elapsed_last_frame;
+    if (a->elapsed > a->delay && active) {
+        a->currentFrame++;
+        if (a->currentFrame > a->totalFrames - 1) {
+            a->currentFrame = 0;
+        }
+        a->elapsed = 0;
+    }
+}
 
 static void win32ErrorMessage(PlatformErrorType type, char *message)
 {
@@ -530,27 +566,73 @@ void render(f32 dt, GLuint program, GLint projectionLocation, GLint modelViewLoc
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 }
 
-void drawOpenGLBitmap(Rect2 rect, GLuint quadBuffer, GLint ucolorLocation)
+void drawOpenGLBitmap(Player *player, GLuint quadBuffer, GLint ucolorLocation)
 {
-    glEnableVertexAttribArray(2);
+    f32 spriteWidth = 24.0f;
+    f32 spriteHeight = 32.0f;
+    f32 sheetWidth = 264.0f;
+    f32 sheetHeight = 160.0f;
+
+    Rect2 spriteRect = {};
+    spriteRect.minP = player->position; //  - camera.viewport.minP;
+    spriteRect.maxP = spriteRect.minP + player->size;
+
+    int frame = player->animation.currentFrame;
+
+    f32 texMinX = (spriteWidth * frame) / (sheetWidth - 1);
+    f32 texMaxX = (spriteWidth * (frame + 1)) / (sheetWidth - 1);
+
+    int sheetRow;
+    switch (player->direction)
+    {
+        case Direction_Up:
+        {
+            sheetRow = 3;
+        } break;
+        case Direction_Down:
+        {
+            sheetRow = 0;
+        } break;
+        case Direction_Left:
+        {
+            sheetRow = 1;
+        } break;
+        case Direction_Right:
+        {
+            sheetRow = 4;
+        } break;
+        default:
+        {
+            sheetRow = 0;
+        }
+    }
+
+    f32 texMinY = (sheetRow * spriteHeight) / (sheetHeight - 1);
+    f32 texMaxY = texMinY + (spriteHeight / (sheetHeight - 1));
+
+    f32 z = -9.0f;
+    f32 w = 1.0f;
     f32 quad[] =
     {
         // Positions
-        rect.minP.x, rect.minP.y, -9.0f, 1.0f,
-        rect.maxP.x, rect.minP.y, -9.0f, 1.0f,
-        rect.maxP.x, rect.maxP.y, -9.0f, 1.0f,
-        rect.minP.x, rect.maxP.y, -9.0f, 1.0f,
+        spriteRect.minP.x, spriteRect.minP.y, z, w,
+        spriteRect.maxP.x, spriteRect.minP.y, z, w,
+        spriteRect.maxP.x, spriteRect.maxP.y, z, w,
+        spriteRect.minP.x, spriteRect.maxP.y, z, w,
         // Texture coordinates
-        0.0f, 0.0f,
-        1.0f, 0.0f,
-        1.0f, 1.0f,
-        0.0f, 1.0f,
+        texMinX, texMinY,
+        texMaxX, texMinY,
+        texMaxX, texMaxY,
+        texMinX, texMaxY,
     };
 
-    glBindBuffer(GL_ARRAY_BUFFER, quadBuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quad), quad, GL_STATIC_DRAW);
-    glUniform4f(ucolorLocation, 0.0f, 0.0f, 0.0f, 0.0f);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glEnableVertexAttribArray(2);
+    {
+        glBindBuffer(GL_ARRAY_BUFFER, quadBuffer);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(quad), quad, GL_STATIC_DRAW);
+        glUniform4f(ucolorLocation, 0.0f, 0.0f, 0.0f, 0.0f);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    }
     glDisableVertexAttribArray(2);
 }
 
@@ -780,6 +862,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     LoadedBitmap linkLoadedBitmap = win32LoadBitmap("../../data/sprites/link_walking.bmp");
     GLuint linkTexture;
     glCreateTextures(GL_TEXTURE_2D, 1, &linkTexture);
@@ -801,7 +884,10 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
     Input oldInput = {};
     Player player = {};
     player.position = vec2(0, 0);
-    player.size = vec2(1, 1.5);
+    player.size = vec2(pixelsToMeters * 24, pixelsToMeters * 32);
+    player.direction = Direction_Down;
+    player.animation.totalFrames = 8;
+    player.animation.delay = 80;
 
     LARGE_INTEGER start = win32GetTicks();
     if (WindowHandle)
@@ -833,18 +919,22 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
             if (newInput.keyDown[Key_Up])
             {
                 player.position.y += speed;
+                player.direction = Direction_Up;
             }
             if (newInput.keyDown[Key_Down])
             {
                 player.position.y -= speed;
+                player.direction = Direction_Down;
             }
             if (newInput.keyDown[Key_Left])
             {
                 player.position.x -= speed;
+                player.direction = Direction_Left;
             }
             if (newInput.keyDown[Key_Right])
             {
                 player.position.x += speed;
+                player.direction = Direction_Right;
             }
             if (newInput.keyPressed[Key_Z])
             {
@@ -867,6 +957,8 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
 
             player.position.x = clampFloat(player.position.x, 0, maxPlayerPx);
             player.position.y = clampFloat(player.position.y, 0, maxPlayerPy);
+
+            updateAnimation(&player.animation, newInput.dt, true);
 
             // Center camera over player
             camera.position.x = player.position.x + 0.5f * player.size.x;
@@ -916,16 +1008,14 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
                         Rect2 rect = {};
                         rect.minP = vec2((f32)col, (f32)row); // - camera.viewport.minP;
                         rect.maxP = rect.minP + vec2(tileWidthMeters, tileHeightMeters);
-                        Vec3u8 tileColor =  vec3u8(37, 71, 0);
+                        Vec3u8 tileColor = vec3u8(37, 71, 0);
                         drawOpenGLFilledRect(rect, tileColor, quadBuffer, ucolorLocation);
                     }
                 }
             }
 
-            Rect2 playerRect = {};
-            playerRect.minP = player.position; //  - camera.viewport.minP;
-            playerRect.maxP = playerRect.minP + player.size;
-            drawOpenGLBitmap(playerRect, quadBuffer, ucolorLocation);
+
+            drawOpenGLBitmap(&player, quadBuffer, ucolorLocation);
 
             SwapBuffers(deviceContext);
 
