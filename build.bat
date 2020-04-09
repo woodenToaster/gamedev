@@ -14,7 +14,7 @@ rem set INCLUDE=%DEBUG_SDL_INCLUDE_PATH%;%INCLUDE%;
 rem set LIBPATH="%DEBUG_SDL_PATH%;%LIBPATH%;"
 
 set COMMON_INCLUDE=%DEV_PREFIX%\gamedev\stb;"%INCLUDE%";
-set COMPILERFLAGS=/W4 /Gm- /Zi /GR- /nologo /EHa- /MTd /Oi /Od
+set COMPILERFLAGS=/W4 /FC /Gm- /Zi /GR- /nologo /EHa- /MTd /Oi /Od
 
 if %GAMEDEV_SDL% == 1 (
 rem Optimized SDL build
