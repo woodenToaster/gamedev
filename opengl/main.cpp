@@ -579,8 +579,8 @@ void drawOpenGLBitmap(Player *player, GLuint quadBuffer, GLint ucolorLocation)
 
     int frame = player->animation.currentFrame;
 
-    f32 texMinX = (spriteWidth * frame) / (sheetWidth - 1);
-    f32 texMaxX = (spriteWidth * (frame + 1)) / (sheetWidth - 1);
+    f32 texMinX = (spriteWidth * frame) / sheetWidth;
+    f32 texMaxX = (spriteWidth * (frame + 1)) / sheetWidth;
 
     int sheetRow;
     switch (player->direction)
@@ -607,8 +607,10 @@ void drawOpenGLBitmap(Player *player, GLuint quadBuffer, GLint ucolorLocation)
         }
     }
 
-    f32 texMinY = (sheetRow * spriteHeight) / (sheetHeight - 1);
-    f32 texMaxY = texMinY + (spriteHeight / (sheetHeight - 1));
+    f32 texMinY = (sheetRow * spriteHeight) / sheetHeight;
+    // TODO(chogan): Not sure why I have to subtract from the spriteHeight.
+    // If I don't, I get a small sliver of the sprite above.
+    f32 texMaxY = texMinY + ((spriteHeight - 2) / sheetHeight);
 
     f32 z = -9.0f;
     f32 w = 1.0f;
@@ -655,12 +657,13 @@ void drawOpenGLFilledRect(Rect2 rect, Vec3u8 color)
 #else
 void drawOpenGLFilledRect(Rect2 rect, Vec3u8 color, GLuint quadBuffer, GLint ucolorLocation)
 {
+    f32 z = -9.0f;
     f32 quad[] =
     {
-        rect.minP.x, rect.minP.y, -9.0f, 1.0f,
-        rect.maxP.x, rect.minP.y, -9.0f, 1.0f,
-        rect.maxP.x, rect.maxP.y, -9.0f, 1.0f,
-        rect.minP.x, rect.maxP.y, -9.0f, 1.0f,
+        rect.minP.x, rect.minP.y, z, 1.0f,
+        rect.maxP.x, rect.minP.y, z, 1.0f,
+        rect.maxP.x, rect.maxP.y, z, 1.0f,
+        rect.minP.x, rect.maxP.y, z, 1.0f,
     };
 
     glBindBuffer(GL_ARRAY_BUFFER, quadBuffer);
@@ -1013,7 +1016,6 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
                     }
                 }
             }
-
 
             drawOpenGLBitmap(&player, quadBuffer, ucolorLocation);
 
