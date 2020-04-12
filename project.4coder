@@ -32,9 +32,9 @@ command_list = {
    .cmd = { {build, .os ="win"  },
             {build, .os ="linux"}, 
             {build, .os ="mac"  }, }, },
- { .name = "run ogl",
+ { .name = "run",
    .out = "*run*", .footer_panel = true, .save_dirty_files = true,
-   .cmd = { {"pushd opengl\\build && main.exe", .os ="win" }, }, },
+   .cmd = { {"pushd data && ..\\build\\win32_gamedev.exe", .os ="win" }, }, },
 };
 
-fkey_command[5] = "run ogl";
+fkey_command[5] = "run";

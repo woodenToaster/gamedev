@@ -1,6 +1,8 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
+#include "gamedev.h"
+
 enum RenderLayer
 {
     RenderLayer_Ground,
@@ -16,6 +18,7 @@ enum RenderEntryType
     RenderEntryType_RenderEntryFilledRect,
     RenderEntryType_RenderEntrySprite,
     RenderEntryType_RenderEntryLoadedBitmap,
+    RenderEntryType_RenderEntryTexture,
 
     RenderEntryType_Count
 };
@@ -54,6 +57,18 @@ struct RenderEntrySprite
     Rect dest;
     TextureHandle sheet;
     RenderLayer layer;
+};
+
+struct RenderEntryTexture
+{
+    Vec2 position;
+    Vec2 size;
+    f32 spriteWidth;
+    f32 spriteHeight;
+    f32 sheetWidth;
+    f32 sheetHeight;
+    int currentFrame;
+    Direction direction;
 };
 
 struct RenderGroup

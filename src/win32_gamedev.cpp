@@ -1,9 +1,12 @@
 #include <windows.h>
 #include <GL/gl.h>
+#include "glext.h"
 
 #include "gamedev_platform.h"
 #include "gamedev_memory.h"
 #include "win32_gamedev.h"
+
+#include "gamedev_opengl.cpp"
 
 global i64 globalPerfFrequency;
 global WINDOWPLACEMENT globalWindowPosition = {sizeof(globalWindowPosition)};
@@ -11,11 +14,22 @@ global WINDOWPLACEMENT globalWindowPosition = {sizeof(globalWindowPosition)};
 global Win32State globalWin32State;
 global Win32BackBuffer globalBackBuffer;
 
+enum RenderingStyle
+{
+    RenderingStyle_OpenGLRenderAndDisplay,
+    RenderingStyle_SoftwareRender_OpenGLDisplay,
+    RenderingStyle_SofwareRender_GDIDisplay,
+};
+
+global RenderingStyle globalRenderingStyle;
+
 enum PlatformErrorType
 {
     PlatformError_Fatal,
     PlatformError_Warning
 };
+
+
 
 internal void win32ErrorMessage(PlatformErrorType type, char *message)
 {
@@ -41,6 +55,64 @@ internal void win32ErrorMessage(PlatformErrorType type, char *message)
     {
         ExitProcess(1);
     }
+}
+
+void *win32GetOpenGLProcAddress(const char *name)
+{
+    void *proc = (void *)wglGetProcAddress(name);
+    if (proc == 0 || (proc == (void*)0x1) || (proc == (void*)0x2) || (proc == (void*)0x3) ||
+        (proc == (void*)-1))
+    {
+        HMODULE module = LoadLibraryA("opengl32.dll");
+        proc = (void *)GetProcAddress(module, name);
+    }
+
+    return proc;
+}
+
+#define LOAD_GL_FUNC(name, uppername) name = (PFNGL##uppername##PROC)win32GetOpenGLProcAddress(#name)
+
+void loadOpenGLFunctions()
+{
+    LOAD_GL_FUNC(glClearBufferfv, CLEARBUFFERFV);
+    LOAD_GL_FUNC(glCreateShader, CREATESHADER);
+    LOAD_GL_FUNC(glShaderSource, SHADERSOURCE);
+    LOAD_GL_FUNC(glCompileShader, COMPILESHADER);
+    LOAD_GL_FUNC(glCreateProgram, CREATEPROGRAM);
+    LOAD_GL_FUNC(glAttachShader, ATTACHSHADER);
+    LOAD_GL_FUNC(glLinkProgram, LINKPROGRAM);
+    LOAD_GL_FUNC(glDeleteShader, DELETESHADER);
+    LOAD_GL_FUNC(glCreateVertexArrays, CREATEVERTEXARRAYS);
+    LOAD_GL_FUNC(glBindVertexArray, BINDVERTEXARRAY);
+    LOAD_GL_FUNC(glDeleteVertexArrays, DELETEVERTEXARRAYS);
+    LOAD_GL_FUNC(glDeleteProgram, DELETEPROGRAM);
+    LOAD_GL_FUNC(glUseProgram, USEPROGRAM);
+    LOAD_GL_FUNC(glGetShaderInfoLog, GETSHADERINFOLOG);
+    LOAD_GL_FUNC(glGetShaderiv, GETSHADERIV);
+    LOAD_GL_FUNC(glVertexAttrib4fv, VERTEXATTRIB4FV);
+    LOAD_GL_FUNC(glCreateBuffers, CREATEBUFFERS);
+    LOAD_GL_FUNC(glNamedBufferStorage, NAMEDBUFFERSTORAGE);
+    LOAD_GL_FUNC(glBufferSubData, BUFFERSUBDATA);
+    LOAD_GL_FUNC(glVertexArrayAttribBinding, VERTEXARRAYATTRIBBINDING);
+    LOAD_GL_FUNC(glVertexArrayVertexBuffer, VERTEXARRAYVERTEXBUFFER);
+    LOAD_GL_FUNC(glVertexArrayAttribFormat, VERTEXARRAYATTRIBFORMAT);
+    LOAD_GL_FUNC(glEnableVertexArrayAttrib, ENABLEVERTEXARRAYATTRIB);
+    LOAD_GL_FUNC(glBindBuffer, BINDBUFFER);
+    LOAD_GL_FUNC(glBufferData, BUFFERDATA);
+    LOAD_GL_FUNC(glVertexAttribPointer, VERTEXATTRIBPOINTER);
+    LOAD_GL_FUNC(glEnableVertexAttribArray, ENABLEVERTEXATTRIBARRAY);
+    LOAD_GL_FUNC(glUniformMatrix4fv, UNIFORMMATRIX4FV);
+    LOAD_GL_FUNC(glGetUniformLocation, GETUNIFORMLOCATION);
+    LOAD_GL_FUNC(glCreateTextures, CREATETEXTURES);
+    LOAD_GL_FUNC(glTextureStorage2D, TEXTURESTORAGE2D);
+    LOAD_GL_FUNC(glTextureSubImage2D, TEXTURESUBIMAGE2D);
+    LOAD_GL_FUNC(glBindTextureUnit, BINDTEXTUREUNIT);
+    LOAD_GL_FUNC(glTextureParameteri, TEXTUREPARAMETERI);
+    LOAD_GL_FUNC(glTextureParameteriv, TEXTUREPARAMETERIV);
+    LOAD_GL_FUNC(glGenBuffers, GENBUFFERS);
+    LOAD_GL_FUNC(glUniform4fv, UNIFORM4FV);
+    LOAD_GL_FUNC(glUniform4f, UNIFORM4F);
+    LOAD_GL_FUNC(glDisableVertexAttribArray, DISABLEVERTEXATTRIBARRAY);
 }
 
 internal void win32InitOpenGL(HWND window)
@@ -75,6 +147,8 @@ internal void win32InitOpenGL(HWND window)
 
     HGLRC renderingContext = wglCreateContext(deviceContext);
     wglMakeCurrent(deviceContext, renderingContext);
+
+    loadOpenGLFunctions();
 
     ReleaseDC(window, deviceContext);
 }
@@ -384,7 +458,7 @@ void win32RenderSprite(void *renderer, TextureHandle sheet, Rect source, Rect de
 }
 
 internal void win32UpdateWindow(Win32BackBuffer *buffer, HDC deviceContext, int windowWidth,
-                                int windowHeight)
+                                int windowHeight, RenderCommands *renderCommands)
 {
     int destWidth = buffer->width;
     int destHeight = buffer->height;
@@ -395,79 +469,77 @@ internal void win32UpdateWindow(Win32BackBuffer *buffer, HDC deviceContext, int 
         destHeight = 2 * buffer->height;
     }
 
-    bool hardwareRendering = true;
-    if (hardwareRendering)
+    if (globalRenderingStyle == RenderingStyle_OpenGLRenderAndDisplay)
     {
-        glViewport(0, 0, destWidth, destHeight);
-        static bool initialized = false;
-        GLuint texture;
-        if (!initialized)
-        {
-            glGenTextures(1, &texture);
-            initialized = true;
-        }
-
-        glBindTexture(GL_TEXTURE_2D, texture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, destWidth, destHeight, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE,
-                     buffer->memory);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-        glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
-        glEnable(GL_TEXTURE_2D);
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glMatrixMode(GL_TEXTURE);
-        glLoadIdentity();
-
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
-
-        glMatrixMode(GL_PROJECTION);
-        // f32 projMatrix[] = {
-            // 2.0f / buffer->width, 0, 0, 0,
-            // 0, 2.0f / buffer->height, 0, 0,
-            // 0, 0, 1, 0,
-            // -1, -1, 0, 1
-        // };
-        // glLoadMatrixf(projMatrix);
-        glLoadIdentity();
-
-        glBegin(GL_TRIANGLES);
-
-        glTexCoord2f(0.0f, 0.0f);
-        glVertex2f(-0.9f, -0.9f);
-
-        glTexCoord2f(1.0f, 0.0);
-        glVertex2f(0.9f, -0.9f);
-
-        glTexCoord2f(1.0f, 1.0f);
-        glVertex2f(0.9f, 0.9f);
-
-        glTexCoord2f(0.0f, 0.0f);
-        glVertex2f(-0.9f, -0.9f);
-
-        glTexCoord2f(1.0f, 1.0f);
-        glVertex2f(0.9f, 0.9f);
-
-        glTexCoord2f(0.0f, 1.0f);
-        glVertex2f(-0.9f, 0.9f);
-
-        glEnd();
-
-        SwapBuffers(deviceContext);
+        drawOpenGLRenderGroup(renderCommands);
     }
     else
     {
+        if (globalRenderingStyle == RenderingStyle_SoftwareRender_OpenGLDisplay)
+        {
+            glViewport(0, 0, destWidth, destHeight);
+            static bool initialized = false;
+            GLuint texture;
+            if (!initialized)
+            {
+                glGenTextures(1, &texture);
+                initialized = true;
+            }
 
-        StretchDIBits(deviceContext,
-                      0, 0, destWidth, destHeight,
-                      0, 0, buffer->width, buffer->height,
-                      buffer->memory,
-                      &buffer->bitmapInfo, DIB_RGB_COLORS, SRCCOPY);
+            glBindTexture(GL_TEXTURE_2D, texture);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, destWidth, destHeight, 0, GL_BGRA_EXT,
+                         GL_UNSIGNED_BYTE, buffer->memory);
+
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+            glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+            glEnable(GL_TEXTURE_2D);
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glMatrixMode(GL_TEXTURE);
+            glLoadIdentity();
+
+            glMatrixMode(GL_MODELVIEW);
+            glLoadIdentity();
+
+            glMatrixMode(GL_PROJECTION);
+            glLoadIdentity();
+
+            glBegin(GL_TRIANGLES);
+
+            glTexCoord2f(0.0f, 0.0f);
+            glVertex2f(-0.9f, -0.9f);
+
+            glTexCoord2f(1.0f, 0.0);
+            glVertex2f(0.9f, -0.9f);
+
+            glTexCoord2f(1.0f, 1.0f);
+            glVertex2f(0.9f, 0.9f);
+
+            glTexCoord2f(0.0f, 0.0f);
+            glVertex2f(-0.9f, -0.9f);
+
+            glTexCoord2f(1.0f, 1.0f);
+            glVertex2f(0.9f, 0.9f);
+
+            glTexCoord2f(0.0f, 1.0f);
+            glVertex2f(-0.9f, 0.9f);
+
+            glEnd();
+
+            SwapBuffers(deviceContext);
+        }
+        else
+        {
+            StretchDIBits(deviceContext,
+                          0, 0, destWidth, destHeight,
+                          0, 0, buffer->width, buffer->height,
+                          buffer->memory,
+                          &buffer->bitmapInfo, DIB_RGB_COLORS, SRCCOPY);
+        }
     }
 }
 
@@ -483,13 +555,13 @@ LRESULT CALLBACK win32MainWindowCallback(HWND windowHandle, UINT message, WPARAM
         case WM_PAINT:
         {
             PAINTSTRUCT paint;
-            HDC deviceContext = BeginPaint(windowHandle, &paint);
-            int width = paint.rcPaint.right - paint.rcPaint.left;
-            int height = paint.rcPaint.bottom - paint.rcPaint.top;
+            // HDC deviceContext = BeginPaint(windowHandle, &paint);
+            // int width = paint.rcPaint.right - paint.rcPaint.left;
+            // int height = paint.rcPaint.bottom - paint.rcPaint.top;
 
-            RECT clientRect;
-            GetClientRect(windowHandle, &clientRect);
-            win32UpdateWindow(&globalBackBuffer, deviceContext, width, height);
+            // RECT clientRect;
+            // GetClientRect(windowHandle, &clientRect);
+            // win32UpdateWindow(&globalBackBuffer, deviceContext, width, height);
             EndPaint(windowHandle, &paint);
         } break;
         default:
@@ -717,15 +789,12 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     b32 sleepIsGranular = (minimumResolution == 1 &&
                            (timeBeginPeriod(minimumResolution) == TIMERR_NOERROR));
 
-    i32 screenWidth = 960;
-    i32 screenHeight = 540;
-    // i32 screenWidth = 1920;
-    // i32 screenHeight = 1080;
+    i32 windowWidth = 1920 / 2;
+    i32 windowHeight = 1080 / 2;
+
+    win32ResizeDIBSection(&globalBackBuffer, windowWidth, windowHeight);
 
     WNDCLASSA windowClass = {};
-
-    win32ResizeDIBSection(&globalBackBuffer, screenWidth, screenHeight);
-
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
     windowClass.lpfnWndProc = win32MainWindowCallback;
     windowClass.hInstance = instance;
@@ -766,7 +835,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     // TextureHandle backBuffer = {};
     // backBuffer.texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
                                            // cols * tileWidth, rows * tileHeight);
-    Rect viewport = {0, 0, screenWidth, screenHeight};
+    Rect viewport = {0, 0, windowWidth, windowHeight};
 
     char *dllName = "gamedev.dll";
     char *tempDllName = "gamedev_temp.dll";
@@ -827,14 +896,16 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
         input.dt = targetMsPerFrame;
         win32GetInput(&input);
 
-        updateAndRender(&memory, &input, &globalBackBuffer);
+        RenderCommands renderCommands = {};
+
+        updateAndRender(&memory, &input, &renderCommands);
 
         HDC deviceContext = GetDC(globalWin32State.window);
         RECT clientRect;
         GetClientRect(globalWin32State.window, &clientRect);
         int width = clientRect.right - clientRect.left;
         int height = clientRect.bottom - clientRect.top;
-        win32UpdateWindow(&globalBackBuffer, deviceContext, width, height);
+        win32UpdateWindow(&globalBackBuffer, deviceContext, width, height, &renderCommands);
         ReleaseDC(globalWin32State.window, deviceContext);
 
         u32 dt = win32GetMillisecondsElapsed(currentTick, win32GetTicks());

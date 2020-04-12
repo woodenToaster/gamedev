@@ -3,9 +3,11 @@
 
 #include "gamedev_platform.h"
 #include "gamedev_memory.h"
+#include "gamedev_sprite_sheet.h"
 
 enum Direction
 {
+    Direction_None,
     Direction_Up,
     Direction_Up_Right,
     Direction_Right,

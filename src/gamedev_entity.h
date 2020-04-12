@@ -55,6 +55,8 @@ struct Entity
     i32 width;
     i32 height;
 
+    Vec2 size;
+
     // The current rectangle in the sprite sheet to be drawn
     Rect spriteRect;
     SpriteSheet spriteSheet;
@@ -63,7 +65,7 @@ struct Entity
     f32 speed;
     Direction direction;
     // For tiles, this is the center of the tile. For other entites, it is the
-    // bottome center of the collision rect
+    // bottom center of the collision rect
     Vec2 position;
     Vec2 velocity;
     Vec2 acceleration;

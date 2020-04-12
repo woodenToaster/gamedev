@@ -38,6 +38,16 @@ typedef int32_t b32;
 
 #define ARRAY_COUNT(arr) (sizeof(arr) / sizeof((arr)[0]))
 
+struct RenderCommands
+{
+    int width;
+    int height;
+    u32 maxBufferSize;
+    u32 bufferSize;
+    u8 *bufferBase;
+    void *renderer;
+};
+
 enum Colors
 {
     Color_None,
@@ -286,7 +296,7 @@ struct Input
 typedef void (GameUpdateAndRender)(GameMemory *memory, Input *input, TextureHandle outputTarget,
                                    Rect *viewport, void *rendererState);
 #else
-typedef void (GameUpdateAndRender)(GameMemory *memory, Input *input, void *rendererState);
+typedef void (GameUpdateAndRender)(GameMemory *memory, Input *input, RenderCommands *renderCommands);
 #endif
 
 #endif  // GAMEDEV_PLATFORM_H

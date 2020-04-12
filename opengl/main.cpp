@@ -61,6 +61,7 @@ global i64 globalPerfFrequency;
 
 enum Direction
 {
+    Direction_None,
     Direction_Up,
     Direction_Up_Right,
     Direction_Right,
@@ -71,12 +72,6 @@ enum Direction
     Direction_Up_Left,
 
     Direction_COUNT
-};
-
-struct Rect2
-{
-    Vec2 minP;
-    Vec2 maxP;
 };
 
 struct Animation

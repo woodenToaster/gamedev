@@ -22,6 +22,7 @@ inline b32 isZeroRect(Rect rect)
     return !(rect.x || rect.y || rect.w || rect.h);
 }
 
+
 struct Point
 {
     i32 x;
@@ -38,6 +39,12 @@ union Vec2
     };
 
     f32 data[2];
+};
+
+struct Rect2
+{
+    Vec2 minP;
+    Vec2 maxP;
 };
 
 union Vec3

@@ -157,6 +157,7 @@ internal void updateAnimation(Animation* a, u64 elapsed_last_frame, b32 active)
     }
 }
 
+#if GAMEDEV_SDL
 internal void centerCameraOverPoint(Camera* c, Vec2 pos)
 {
     c->viewport.x = (int)pos.x - c->viewport.w / 2;
@@ -170,7 +171,6 @@ internal void updateCamera(Camera* c, Vec2 centerPos)
     c->viewport.y = clampInt32(c->viewport.y, 0, c->maxY);
 }
 
-#if GAMEDEV_SDL
 internal void playQueuedSounds(SoundList *sl, u64 now)
 {
     for (u32 i = 0; i < sl->count; ++i)
@@ -191,7 +191,7 @@ internal void queueSound(SoundList *sl, Sound *s)
 extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHandle outputTarget,
                                     Rect *viewport, void *rendererState)
 #else
-extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, void *rendererState)
+extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderCommands *renderCommands)
 #endif
 {
     platform = memory->platformAPI;
@@ -212,7 +212,7 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, void *rend
                   (u8*)memory->permanentStorage + sizeof(Game));
         initArena(&game->transientArena, memory->transientStorageSize, (u8*)memory->transientStorage);
 
-        game->renderer = rendererState;
+        game->renderer = renderCommands->renderer;
         initColors(game->colors);
 
         // Asset loading

@@ -208,6 +208,7 @@ internal void pushSprite(RenderGroup *group, TextureHandle sheet, Rect source, R
     }
 }
 
+#if 0
 internal void pushBitmap(RenderGroup *group, LoadedBitmap bitmap, Rect source, Rect dest,
                          RenderLayer layer)
 {
@@ -221,7 +222,6 @@ internal void pushBitmap(RenderGroup *group, LoadedBitmap bitmap, Rect source, R
     }
 }
 
-#if 0
 internal void pushSprite(RenderGroup *group, Sprite *sprite, Rect dest, RenderLayer layer)
 {
     RenderEntrySprite *entry = PushRenderElement(group, RenderEntrySprite);
