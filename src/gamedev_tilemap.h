@@ -30,10 +30,10 @@ struct Map
     Entity *entityFreeList;
 };
 
-void drawTile(RenderGroup *group, Game *g, Entity *e, b32 isBeingPlace=false);
-void drawTiles(RenderGroup *group, Game *g);
+void drawTile(RenderCommands *commands, Game *g, Entity *e, b32 isBeingPlace=false);
+void drawTiles(RenderCommands *commands, Game *g);
 void updateTiles(Game *g, Input *input);
-void drawBackground(RenderGroup *group, Game *g);
+void drawBackground(RenderCommands *commands, Game *g);
 Rect getEntityRect(Entity *e);
 inline internal void addTileFlags(Entity *e, u32 prop);
 inline internal b32 isTileFlagSet(Entity *e, TileProperty prop);

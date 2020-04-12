@@ -20,6 +20,8 @@ enum Direction
     Direction_COUNT
 };
 
+
+#if 0
 struct Camera
 {
     i32 maxX;
@@ -29,6 +31,7 @@ struct Camera
     Rect viewport;
     Point startingPos;
 };
+#endif
 
 struct Animation
 {
@@ -75,7 +78,6 @@ struct Game
 
     Entity *hero;
 
-    void *renderer;
     TextureHandle linkTexture;
     TextureHandle harvestableTreeTexture;
     TextureHandle glowTreeTexture;

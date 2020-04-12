@@ -29,8 +29,6 @@ enum PlatformErrorType
     PlatformError_Warning
 };
 
-
-
 internal void win32ErrorMessage(PlatformErrorType type, char *message)
 {
     char *caption = "Gamedev Warning";
@@ -150,6 +148,11 @@ internal void win32InitOpenGL(HWND window)
 
     loadOpenGLFunctions();
 
+    // NOTE(chogan): Enable vsync
+    // TODO(chogan): Check for extension
+    wglSwapInterval = (PFNWGLSWAPINTERVALEXTPROC)win32GetOpenGLProcAddress("wglSwapIntervalEXT");
+    wglSwapInterval(1);
+
     ReleaseDC(window, deviceContext);
 }
 
@@ -159,6 +162,19 @@ u32 safeU64ToU32(u64 val)
     u32 result = (u32)val;
 
     return result;
+}
+
+inline static u8 *win32AllocateMemory(size_t bytes)
+{
+    u8 *result = 0;
+    result = (u8 *)VirtualAlloc(0, bytes, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+
+    return result;
+}
+
+inline static void win32FreeMemory(void *memory)
+{
+    VirtualFree(memory, 0, MEM_RELEASE);
 }
 
 EntireFile win32ReadEntireFile(char *filename)
@@ -172,7 +188,7 @@ EntireFile win32ReadEntireFile(char *filename)
         if (GetFileSizeEx(fileHandle, &fileSize))
         {
             u32 fileSize32 = safeU64ToU32(fileSize.QuadPart);
-            result.contents = (u8 *)VirtualAlloc(0, fileSize32, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+            result.contents = win32AllocateMemory(fileSize32);
             if (result.contents)
             {
                 DWORD bytesRead;
@@ -210,9 +226,9 @@ EntireFile win32ReadEntireFile(char *filename)
 
 internal void win32FreeFileMemory(EntireFile *file)
 {
-    if (file->contents)
+    if (file)
     {
-        VirtualFree(file->contents, 0, MEM_RELEASE);
+        win32FreeMemory(file->contents);
     }
 }
 
@@ -472,21 +488,15 @@ internal void win32UpdateWindow(Win32BackBuffer *buffer, HDC deviceContext, int 
     if (globalRenderingStyle == RenderingStyle_OpenGLRenderAndDisplay)
     {
         drawOpenGLRenderGroup(renderCommands);
+        SwapBuffers(deviceContext);
     }
     else
     {
+        // TODO(chogan): Delete this path
         if (globalRenderingStyle == RenderingStyle_SoftwareRender_OpenGLDisplay)
         {
             glViewport(0, 0, destWidth, destHeight);
-            static bool initialized = false;
-            GLuint texture;
-            if (!initialized)
-            {
-                glGenTextures(1, &texture);
-                initialized = true;
-            }
-
-            glBindTexture(GL_TEXTURE_2D, texture);
+            glBindTexture(GL_TEXTURE_2D, 1);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, destWidth, destHeight, 0, GL_BGRA_EXT,
                          GL_UNSIGNED_BYTE, buffer->memory);
 
@@ -555,13 +565,7 @@ LRESULT CALLBACK win32MainWindowCallback(HWND windowHandle, UINT message, WPARAM
         case WM_PAINT:
         {
             PAINTSTRUCT paint;
-            // HDC deviceContext = BeginPaint(windowHandle, &paint);
-            // int width = paint.rcPaint.right - paint.rcPaint.left;
-            // int height = paint.rcPaint.bottom - paint.rcPaint.top;
-
-            // RECT clientRect;
-            // GetClientRect(windowHandle, &clientRect);
-            // win32UpdateWindow(&globalBackBuffer, deviceContext, width, height);
+            BeginPaint(windowHandle, &paint);
             EndPaint(windowHandle, &paint);
         } break;
         default:
@@ -628,7 +632,7 @@ internal void toggleFullscreen(HWND window)
 
 internal void win32SetKeyState(Input *input, Key key, b32 isDown)
 {
-    if (!isDown)
+    if (input->keyDown[key] && !isDown)
     {
         input->keyPressed[key] = true;
     }
@@ -676,9 +680,6 @@ internal void win32UpdateKeyboardInput(Input* input, u64 vkCode, b32 isDown)
 
 internal void win32GetInput(Input *input)
 {
-    memset(input->keyPressed, 0, sizeof(b32) * Key_Count);
-    memset(input->buttonPressed, 0, sizeof(b32) * Button_Count);
-
     MSG message;
     while (PeekMessage(&message, 0, 0, 0, PM_REMOVE))
     {
@@ -693,16 +694,15 @@ internal void win32GetInput(Input *input)
             case WM_SYSKEYDOWN:
             case WM_KEYDOWN:
             {
-                b32 wasDown = message.lParam >> 30 != 0;
-                b32 isDown = message.lParam >> 31 == 0;
+                // b32 altWasDown = message.lParam & (1 << 29);
+                // b32 shiftWasDown = message.lParam & (1 << 15);
 
-                if (isDown)
+                b32 wasDown = (message.lParam & (1 << 30)) != 0;
+                b32 isDown = (message.lParam & (1UL << 31)) == 0;
+
+                if (wasDown != isDown)
                 {
-                    win32UpdateKeyboardInput(input, (u64)message.wParam, true);
-                }
-                if (wasDown && !isDown)
-                {
-                    win32UpdateKeyboardInput(input, (u64)message.wParam, false);
+                    win32UpdateKeyboardInput(input, (u64)message.wParam, isDown);
                 }
             } break;
             default:
@@ -828,15 +828,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     // SDL_GameController *controllerHandles[MAX_CONTROLLERS] = {};
     // SDLInitControllers(&controllerHandles[0]);
 
-    // u32 tileWidth = 80;
-    // u32 tileHeight = 80;
-    // u32 rows = 10;
-    // u32 cols = 12;
-    // TextureHandle backBuffer = {};
-    // backBuffer.texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET,
-                                           // cols * tileWidth, rows * tileHeight);
-    Rect viewport = {0, 0, windowWidth, windowHeight};
-
     char *dllName = "gamedev.dll";
     char *tempDllName = "gamedev_temp.dll";
     char *dllPath = "w:\\gamedev\\build\\gamedev.dll";
@@ -860,12 +851,22 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
         win32ErrorMessage(PlatformError_Fatal, errBuffer);
     }
 
-
     WIN32_FILE_ATTRIBUTE_DATA attributeData;
     GetFileAttributesExA(dllPath, GetFileExInfoStandard, &attributeData);
     FILETIME lastWriteTime = attributeData.ftLastWriteTime;
 
     LARGE_INTEGER lastTickCount = win32GetTicks();
+
+    LoadedBitmap heroLoadedBitmap = win32LoadBitmap("sprites/link_walking.bmp");
+    GLuint heroTexture;
+    glCreateTextures(GL_TEXTURE_2D, 1, &heroTexture);
+    glBindTexture(GL_TEXTURE_2D, heroTexture);
+    glTextureStorage2D(heroTexture, 1, GL_RGBA8, heroLoadedBitmap.width, heroLoadedBitmap.height);
+    glTextureSubImage2D(heroTexture, 0, 0, 0, heroLoadedBitmap.width, heroLoadedBitmap.height, GL_BGRA,
+                        GL_UNSIGNED_INT_8_8_8_8_REV, heroLoadedBitmap.pixels);
+
+    Input oldInput = {};
+    OpenGLState glState = initOpenGLState(windowWidth, windowHeight);
 
     globalWin32State.isRunning = true;
     while (globalWin32State.isRunning)
@@ -890,23 +891,36 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
         LARGE_INTEGER currentTick = win32GetTicks();
         memory.currentTickCount = currentTick.QuadPart;
 
-        Input input = {};
-        // TODO(chogan): Should this be based on the actual elapsed ms instead of
-        // the target?
-        input.dt = targetMsPerFrame;
-        win32GetInput(&input);
+        Input newInput = {};
+        newInput.dt = targetMsPerFrame;
+        for (int i = 0; i < Key_Count; ++i)
+        {
+            newInput.keyDown[i] = oldInput.keyDown[i];
+        }
+        win32GetInput(&newInput);
+        oldInput = newInput;
 
         RenderCommands renderCommands = {};
+        renderCommands.maxBufferSize = MEGABYTES(2);
+        renderCommands.bufferBase = win32AllocateMemory(renderCommands.maxBufferSize);
+        renderCommands.windowWidth = windowWidth;
+        renderCommands.windowHeight = windowHeight;
+        renderCommands.renderer = &glState;
+        updateAndRender(&memory, &newInput, &renderCommands);
 
-        updateAndRender(&memory, &input, &renderCommands);
+        updateOpenGLViewMatrix(&renderCommands);
 
         HDC deviceContext = GetDC(globalWin32State.window);
         RECT clientRect;
         GetClientRect(globalWin32State.window, &clientRect);
-        int width = clientRect.right - clientRect.left;
-        int height = clientRect.bottom - clientRect.top;
-        win32UpdateWindow(&globalBackBuffer, deviceContext, width, height, &renderCommands);
+        int clientWidth = clientRect.right - clientRect.left;
+        int clientHeight = clientRect.bottom - clientRect.top;
+        int fringe = 5;
+        glViewport(fringe, fringe, clientWidth - (2 * fringe), clientHeight - (2 * fringe));
+        win32UpdateWindow(&globalBackBuffer, deviceContext, clientWidth, clientHeight, &renderCommands);
         ReleaseDC(globalWin32State.window, deviceContext);
+
+        win32FreeMemory(renderCommands.bufferBase);
 
         u32 dt = win32GetMillisecondsElapsed(currentTick, win32GetTicks());
         if (dt < targetMsPerFrame)

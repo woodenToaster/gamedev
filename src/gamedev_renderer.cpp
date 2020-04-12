@@ -1,6 +1,6 @@
 
 // TODO(cjh): Account for wrapping off the viewport
-void drawText(RenderGroup *group, FontMetadata *fontMetadata, char* text, i32 x=0, i32 y=0)
+void drawText(RenderCommands *commands, FontMetadata *fontMetadata, char* text, i32 x=0, i32 y=0)
 {
     // Leave a little padding in case the character extends left
     i32 xpos = 2 + x;
@@ -19,7 +19,7 @@ void drawText(RenderGroup *group, FontMetadata *fontMetadata, char* text, i32 x=
             TextureHandle t = {};
             t.texture = fontMetadata->textures[text[at]].texture;
             Rect fullTexture = {0, 0, 0, 0};
-            pushSprite(group, t, fullTexture, dest, RenderLayer_HUD);
+            pushSprite(commands, t, fullTexture, dest, RenderLayer_HUD);
             xpos += (int)(cpm->advance * fontMetadata->scale);
         }
         else
@@ -39,7 +39,8 @@ void drawText(RenderGroup *group, FontMetadata *fontMetadata, char* text, i32 x=
     }
 }
 
-void drawDialogScreen(RenderGroup *group, Game *g, FontMetadata *fontMetadata)
+#if 0
+void drawDialogScreen(RenderCommands *commands, Game *g, FontMetadata *fontMetadata)
 {
     int thirdOfWidth = (int)(g->camera.viewport.w / 3);
     int fourthOfHeight = (int)(g->camera.viewport.h / 4);
@@ -48,11 +49,11 @@ void drawDialogScreen(RenderGroup *group, Game *g, FontMetadata *fontMetadata)
     int dialogueBoxWidth = 2 * (thirdOfWidth);
     int dialogueBoxHeight = fourthOfHeight;
     Rect dialogueBoxDest = {dialogueBoxX,dialogueBoxY, dialogueBoxWidth, dialogueBoxHeight};
-    pushFilledRect(group, dialogueBoxDest, g->colors[Color_BabyBlue], RenderLayer_HUD);
-    drawText(group, fontMetadata, g->dialogue, dialogueBoxX, dialogueBoxY);
+    pushFilledRect(commands, dialogueBoxDest, g->colors[Color_BabyBlue], RenderLayer_HUD);
+    drawText(commands, fontMetadata, g->dialogue, dialogueBoxX, dialogueBoxY);
 }
 
-void drawInventoryScreen(RenderGroup *group, Game *g, Entity *h, FontMetadata *fontMetadata)
+void drawInventoryScreen(RenderCommands*commands, Game *g, Entity *h, FontMetadata *fontMetadata)
 {
     int thirdOfWidth = (int)(g->camera.viewport.w / 3);
     int fourthOfHeight = (int)(g->camera.viewport.h / 4);
@@ -61,7 +62,7 @@ void drawInventoryScreen(RenderGroup *group, Game *g, Entity *h, FontMetadata *f
     int dialogueBoxWidth = 2 * (thirdOfWidth);
     int dialogueBoxHeight = fourthOfHeight;
     Rect dialogueBoxDest = {dialogueBoxX, dialogueBoxY, dialogueBoxWidth, dialogueBoxHeight};
-    pushFilledRect(group, dialogueBoxDest, g->colors[Color_BabyBlue], RenderLayer_HUD);
+    pushFilledRect(commands, dialogueBoxDest, g->colors[Color_BabyBlue], RenderLayer_HUD);
 
     for (int inventoryIndex = 1; inventoryIndex < InventoryItemType_Count; ++inventoryIndex)
     {
@@ -77,13 +78,13 @@ void drawInventoryScreen(RenderGroup *group, Game *g, Entity *h, FontMetadata *f
             default:
                 assert(!"Wrong inventory type");
         }
-        drawText(group, fontMetadata, itemString, dialogueBoxX, dialogueBoxY);
+        drawText(commands, fontMetadata, itemString, dialogueBoxX, dialogueBoxY);
         // TODO(cjh): Figure out correct y offset for next line
         dialogueBoxY += 25;
     }
 }
 
-void drawHUD(RenderGroup *group, Game *g, Entity *h, FontMetadata *font)
+void drawHUD(RenderCommands *commands, Game *g, Entity *h, FontMetadata *font)
 {
     u8 beltSlots = 8;
     u8 slotSize = 40;
@@ -95,7 +96,7 @@ void drawHUD(RenderGroup *group, Game *g, Entity *h, FontMetadata *font)
     Rect backgroundDest = {destX, destY, beltSlots * slotSize, slotSize};
     Vec4u8 transparentBlack = g->colors[Color_Black];
     transparentBlack.a = 128;
-    pushFilledRect(group, backgroundDest, transparentBlack, RenderLayer_HUD);
+    pushFilledRect(commands, backgroundDest, transparentBlack, RenderLayer_HUD);
 
     for (int i = 0; i < beltSlots; ++i)
     {
@@ -126,42 +127,44 @@ void drawHUD(RenderGroup *group, Game *g, Entity *h, FontMetadata *font)
 
             if (textureToDraw.texture)
             {
-                pushSprite(group, textureToDraw, tileRect, dest, RenderLayer_HUD);
+                pushSprite(commands, textureToDraw, tileRect, dest, RenderLayer_HUD);
             }
             // Draw inventory number
             assert(item->count <= 999);
             char numItems[4] = {};
             snprintf(numItems, 4, "%d", item->count);
-            drawText(group, font, numItems, dest.x, dest.y);
+            drawText(commands, font, numItems, dest.x, dest.y);
         }
         Vec4u8 inventoryOutlineColor = g->colors[Color_White];
         inventoryOutlineColor.a = i == h->activeBeltItemIndex ? 255 : 12;
-        pushRect(group, dest, g->colors[Color_White], RenderLayer_HUD);
+        pushRect(commands, dest, g->colors[Color_White], RenderLayer_HUD);
     }
 }
+#endif
 
-void darkenBackground(RenderGroup *group, Game *g)
+void darkenBackground(RenderCommands*commands, Game *g)
 {
     Rect dest = {};
     Vec4u8 transparentBlack = g->colors[Color_Black];
     transparentBlack.a = 64;
-    pushFilledRect(group, dest, transparentBlack, RenderLayer_HUD);
+    pushFilledRect(commands, dest, transparentBlack, RenderLayer_HUD);
 }
 
-#define PushRenderElement(group, type) (type*)pushRenderElement_(group, sizeof(type), RenderEntryType_##type)
+#define PushRenderElement(commands, type) (type*)pushRenderElement_(commands, sizeof(type), \
+    RenderEntryType_##type)
 
-internal void *pushRenderElement_(RenderGroup *group, u32 size, RenderEntryType type)
+internal void *pushRenderElement_(RenderCommands *commands, u32 size, RenderEntryType type)
 {
     void *result = 0;
 
     size += sizeof(RenderEntryHeader);
 
-    if (group->bufferSize + size < group->maxBufferSize)
+    if (commands->bufferSize + size < commands->maxBufferSize)
     {
-        RenderEntryHeader *header = (RenderEntryHeader*)(group->bufferBase + group->bufferSize);
+        RenderEntryHeader *header = (RenderEntryHeader*)(commands->bufferBase + commands->bufferSize);
         header->type = type;
         result = (u8*)header + sizeof(*header);
-        group->bufferSize += size;
+        commands->bufferSize += size;
     }
     else
     {
@@ -171,9 +174,9 @@ internal void *pushRenderElement_(RenderGroup *group, u32 size, RenderEntryType 
     return result;
 }
 
-internal void pushRect(RenderGroup *group, Rect dest, Vec4u8 color, RenderLayer layer)
+internal void pushRect(RenderCommands *commands, Rect dest, Vec4u8 color, RenderLayer layer)
 {
-    RenderEntryRect *rect = PushRenderElement(group, RenderEntryRect);
+    RenderEntryRect *rect = PushRenderElement(commands, RenderEntryRect);
     if (rect)
     {
         Rect sdlDest = {dest.x, dest.y, dest.w, dest.h};
@@ -183,9 +186,21 @@ internal void pushRect(RenderGroup *group, Rect dest, Vec4u8 color, RenderLayer 
     }
 }
 
-internal void pushFilledRect(RenderGroup *group, Rect dest, Vec4u8 color, RenderLayer layer)
+internal void pushFilledRect(RenderCommands *commands, Rect dest, Vec4u8 color, RenderLayer layer)
 {
-    RenderEntryFilledRect *filledRect = PushRenderElement(group, RenderEntryFilledRect);
+    RenderEntryFilledRect *filledRect = PushRenderElement(commands, RenderEntryFilledRect);
+    if (filledRect)
+    {
+        filledRect->dest = {vec2((f32)dest.x, (f32)dest.y),
+                            vec2((f32)dest.x + dest.w, (f32)dest.y + dest.h)};
+        filledRect->color = color;
+        filledRect->layer = layer;
+    }
+}
+
+internal void pushFilledRect(RenderCommands *commands, Rect2 dest, Vec4u8 color, RenderLayer layer)
+{
+    RenderEntryFilledRect *filledRect = PushRenderElement(commands, RenderEntryFilledRect);
     if (filledRect)
     {
         filledRect->dest = dest;
@@ -194,9 +209,9 @@ internal void pushFilledRect(RenderGroup *group, Rect dest, Vec4u8 color, Render
     }
 }
 
-internal void pushSprite(RenderGroup *group, TextureHandle sheet, Rect source, Rect dest, RenderLayer layer)
+internal void pushSprite(RenderCommands *commands, TextureHandle sheet, Rect source, Rect dest, RenderLayer layer)
 {
-    RenderEntrySprite *sprite = PushRenderElement(group, RenderEntrySprite);
+    RenderEntrySprite *sprite = PushRenderElement(commands, RenderEntrySprite);
     if (sprite)
     {
         Rect sdlDest = {dest.x, dest.y, dest.w, dest.h};
@@ -209,10 +224,10 @@ internal void pushSprite(RenderGroup *group, TextureHandle sheet, Rect source, R
 }
 
 #if 0
-internal void pushBitmap(RenderGroup *group, LoadedBitmap bitmap, Rect source, Rect dest,
+internal void pushBitmap(RenderCommands *commands, LoadedBitmap bitmap, Rect source, Rect dest,
                          RenderLayer layer)
 {
-    RenderEntryLoadedBitmap *bitmap_entry = PushRenderElement(group, RenderEntryLoadedBitmap);
+    RenderEntryLoadedBitmap *bitmap_entry = PushRenderElement(commands, RenderEntryLoadedBitmap);
     if (bitmap_entry)
     {
         bitmap_entry->bitmap = bitmap;
@@ -222,9 +237,9 @@ internal void pushBitmap(RenderGroup *group, LoadedBitmap bitmap, Rect source, R
     }
 }
 
-internal void pushSprite(RenderGroup *group, Sprite *sprite, Rect dest, RenderLayer layer)
+internal void pushSprite(RenderCommands *commands, Sprite *sprite, Rect dest, RenderLayer layer)
 {
-    RenderEntrySprite *entry = PushRenderElement(group, RenderEntrySprite);
+    RenderEntrySprite *entry = PushRenderElement(commands, RenderEntrySprite);
     if (entry && sprite)
     {
         Rect sdlDest = {dest.x, dest.y, dest.w, dest.h};
@@ -237,9 +252,10 @@ internal void pushSprite(RenderGroup *group, Sprite *sprite, Rect dest, RenderLa
 }
 #endif
 
-internal RenderGroup *allocateRenderGroup(Arena *arena, u32 maxSize)
+#if 0
+internal RenderCommands *allocateRenderGroup(Arena *arena, u32 maxSize)
 {
-    RenderGroup *result = PUSH_STRUCT(arena, RenderGroup);
+    RenderCommands *result = PUSH_STRUCT(arena, RenderCommands);
     result->bufferBase = pushSize(arena, maxSize);
     result->maxBufferSize = maxSize;
     result->bufferSize = 0;
@@ -247,7 +263,7 @@ internal RenderGroup *allocateRenderGroup(Arena *arena, u32 maxSize)
     return result;
 }
 
-internal void drawRenderGroup(void *renderer, RenderGroup *group)
+internal void drawRenderGroup(void *renderer, RenderCommands *group)
 {
     for (int layerIndex = 0; layerIndex < RenderLayer_Count; ++layerIndex)
     {
@@ -303,9 +319,7 @@ internal void drawRenderGroup(void *renderer, RenderGroup *group)
     }
 }
 
-#if 0
-internal void sortRenderGroup(RenderGroup *group)
+internal void sortRenderGroup(RenderCommands *group)
 {
 }
-
 #endif

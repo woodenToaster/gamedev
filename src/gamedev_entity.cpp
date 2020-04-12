@@ -38,14 +38,14 @@ b32 isEntity(Entity *e)
 }
 #endif
 
-void drawEntity(RenderGroup *group, Entity* e, Game* g)
+void drawEntity(RenderCommands *commands, Entity* e, Game* g)
 {
     if (e->type != EntityType_Flame)
     {
         // Draw collision box
         Rect collisionRect = {(int)(e->position.x - 0.5f * e->width), (int)(e->position.y - e->height),
                                 e->width, e->height};
-        pushFilledRect(group, collisionRect, g->colors[Color_Yellow], RenderLayer_Entities);
+        pushFilledRect(commands, collisionRect, g->colors[Color_Yellow], RenderLayer_Entities);
     }
 
     // Draw sprite
@@ -54,7 +54,7 @@ void drawEntity(RenderGroup *group, Entity* e, Game* g)
     // TODO(cjh): Duplicated in drawTile. Do this in updateEntity/updateTile
     e->spriteRect.x = e->spriteRect.w * e->animation.currentFrame;
     Rect dest = {(int)(e->position.x - 0.5f*widthScale), (int)(e->position.y - heightScale), widthScale, heightScale};
-    pushSprite(group, e->spriteSheet.sheet, e->spriteRect, dest, RenderLayer_Entities);
+    pushSprite(commands, e->spriteSheet.sheet, e->spriteRect, dest, RenderLayer_Entities);
     // Draw position
     // pushFilledRect(group, {(int)e->position.x, (int)e->position.y, 2, 2}, g->colors[Color_Yellow],
     //                RenderLayer_Entities);
@@ -62,15 +62,16 @@ void drawEntity(RenderGroup *group, Entity* e, Game* g)
     // Draw entity interactionRect
     if (e->harvesting)
     {
-        pushFilledRect(group, e->heroInteractionRect, g->colors[Color_DarkOrange], RenderLayer_Entities);
+        pushFilledRect(commands, e->heroInteractionRect, g->colors[Color_DarkOrange],
+                       RenderLayer_Entities);
     }
 }
 
-void drawPlacingTile(RenderGroup *group, Game *g, Entity *h)
+void drawPlacingTile(RenderCommands *commands, Game *g, Entity *h)
 {
     if (h->tileToPlace && h->placingItem)
     {
-        drawTile(group, g, h->tileToPlace, true);
+        drawTile(commands, g, h->tileToPlace, true);
     }
 }
 
@@ -93,7 +94,7 @@ void reverseDirection(Entity* e)
     }
 }
 
-void drawEntities(RenderGroup *group, Game* g)
+void drawEntities(RenderCommands *commands, Game* g)
 {
     Map *m = g->currentMap;
     for (u32 entityIndex = 0; entityIndex < m->entityCount; ++entityIndex)
@@ -101,7 +102,7 @@ void drawEntities(RenderGroup *group, Game* g)
         Entity *e = &m->entities[entityIndex];
         if (e->isVisible && e->type != EntityType_Tile && e->active)
         {
-            drawEntity(group, e, g);
+            drawEntity(commands, e, g);
         }
     }
 }
@@ -466,8 +467,9 @@ void pushInteractionHint(RenderGroup *group, Game *g, char *text)
 }
 #endif
 
-internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game* g)
+internal void updateHero(RenderCommands *renderCommands, Entity* h, Input* input, Game* g)
 {
+    (void)renderCommands;
     Map *map = g->currentMap;
     // TODO(cjh): Handle joystick and keyboard on separate paths
     Vec2 acceleration = {};
@@ -583,7 +585,8 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
                             if (isTileFlagSet(testEntity, TileProperty_Harvest))
                             {
                                 interactableThisFrame = testEntity;
-                                pushInteractionHint(renderGroup, g, "SPC to harvest");
+                                // TODO(chogan): Enable
+                                // pushInteractionHint(renderGroup, g, "SPC to harvest");
                             }
                             // TODO(cjh): Do we need TileProperty_Interactive?
                             if (isTileFlagSet(testEntity, TileProperty_Interactive))
@@ -594,12 +597,14 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
                                     if (!testEntity->isLit)
                                     {
                                         interactableThisFrame = testEntity;
-                                        pushInteractionHint(renderGroup, g, "SPC to light campfire");
+                                        // TODO(chogan): Enable
+                                        // pushInteractionHint(renderGroup, g, "SPC to light campfire");
                                     }
                                     else
                                     {
                                         interactableThisFrame = testEntity;
-                                        pushInteractionHint(renderGroup, g, "SPC to extinguish campfire");
+                                        // TODO(chogan): Enable
+                                        // pushInteractionHint(renderGroup, g, "SPC to extinguish campfire");
                                     }
                                 }
                             }
@@ -615,7 +620,8 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
                         if (rectsOverlap(&h->heroInteractionRect, &harlodCollisionRegion))
                         {
                             interactableThisFrame = testEntity;
-                            pushInteractionHint(renderGroup, g, "SPC to talk");
+                            // TODO(chogan): Enable
+                            // pushInteractionHint(renderGroup, g, "SPC to talk");
                         }
                         break;
                     }
@@ -710,7 +716,14 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
         playerDelta -= 1 * vec2_dot(&playerDelta, &wallNormal) * wallNormal;
     }
 
-    clampEntityToMap(h, map);
+    // clampEntityToMap(h, map);
+    int worldWidth = map->cols;
+    int worldHeight = map->rows;
+    f32 maxPlayerPx = worldWidth - h->size.x;
+    f32 maxPlayerPy = worldHeight - h->size.y;
+
+    h->position.x = clampFloat(h->position.x, 0, maxPlayerPx);
+    h->position.y = clampFloat(h->position.y, 0, maxPlayerPy);
 
     // Actions
     h->harvesting = input->keyPressed[Key_Space] || input->buttonPressed[Button_A];
@@ -802,7 +815,8 @@ internal void updateHero(RenderGroup *renderGroup, Entity* h, Input* input, Game
 
     if (h->placingItem)
     {
-        pushInteractionHint(renderGroup, g, "SPC to place tile");
+        // TODO(chogan): Enable
+        // pushInteractionHint(renderGroup, g, "SPC to place tile");
         if (!h->tileToPlace)
         {
             Map *m = g->currentMap;

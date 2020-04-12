@@ -90,14 +90,6 @@ struct Player
     Animation animation;
 };
 
-struct Camera
-{
-    Vec3 position;
-    Vec3 up;
-    Vec3 right;
-    Vec3 direction;
-};
-
 enum PlatformErrorType
 {
     PlatformError_Fatal,
@@ -900,7 +892,6 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
             QueryPerformanceCounter(&StartTime);
             LARGE_INTEGER currentTick = win32GetTicks();
 
-            // input
             Input newInput = {};
 
             for (int i = 0; i < Key_Count; ++i)

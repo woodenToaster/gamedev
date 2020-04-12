@@ -83,7 +83,7 @@ Rect getEntityRect(Entity *e)
     return result;
 }
 
-void drawTile(RenderGroup *group, Game *g, Entity *e, b32 isBeingPlaced)
+void drawTile(RenderCommands *commands, Game *g, Entity *e, b32 isBeingPlaced)
 {
     if (e->isVisible && e->active)
     {
@@ -94,18 +94,18 @@ void drawTile(RenderGroup *group, Game *g, Entity *e, b32 isBeingPlaced)
             {
                 e->spriteRect.x = e->spriteRect.w * e->animation.currentFrame;
             }
-            pushSprite(group, e->spriteSheet.sheet, e->spriteRect, tileRect, RenderLayer_Ground);
+            pushSprite(commands, e->spriteSheet.sheet, e->spriteRect, tileRect, RenderLayer_Ground);
         }
         else
         {
             if (e->color.a)
             {
-                pushFilledRect(group, tileRect, e->color, RenderLayer_Ground);
+                pushFilledRect(commands, tileRect, e->color, RenderLayer_Ground);
             }
         }
 
         // Draw position
-        // pushFilledRect(group, {(int)e->position.x, (int)e->position.y, 2, 2}, g->colors[Color_Red],
+        // pushFilledRect(commands, {(int)e->position.x, (int)e->position.y, 2, 2}, g->colors[Color_Red],
         //                RenderLayer_Entities);
 
         if (isBeingPlaced)
@@ -113,20 +113,20 @@ void drawTile(RenderGroup *group, Game *g, Entity *e, b32 isBeingPlaced)
             if (e->validPlacement)
             {
                 // TODO(cjh): Draw green filter?
-                // pushFilledRect(group, tileRect, g->colors[Color_Green], 128);
+                // pushFilledRect(commands, tileRect, g->colors[Color_Green], 128);
             }
             else
             {
                 // Draw red filter on top
                 Vec4u8 transparentRed = g->colors[Color_Red];
                 transparentRed.a = 128;
-                pushFilledRect(group, tileRect, transparentRed, RenderLayer_Entities);
+                pushFilledRect(commands, tileRect, transparentRed, RenderLayer_Entities);
             }
         }
     }
 }
 
-void drawTiles(RenderGroup *group, Game *g)
+void drawTiles(RenderCommands *commands, Game *g)
 {
     Map* map = g->currentMap;
     for (u32 entityIndex = 0; entityIndex < map->entityCount; ++entityIndex)
@@ -138,14 +138,15 @@ void drawTiles(RenderGroup *group, Game *g)
         }
         if (e->type == EntityType_Tile)
         {
-            drawTile(group, g, e);
+            drawTile(commands, g, e);
         }
     }
 }
 
-void drawBackground(RenderGroup *group, Game *g)
+void drawBackground(RenderCommands *commands, Game *g)
 {
-    Camera *c = &g->camera;
-    Rect backgroundDest = {c->viewport.x, c->viewport.y, c->viewport.w, c->viewport.h};
-    pushFilledRect(group, backgroundDest, g->colors[Color_Grey], RenderLayer_Ground);
+    Rect2 floor =  {};
+    floor.minP = vec2(0, 0);
+    floor.maxP = vec2((f32)g->currentMap->cols - 1, (f32)g->currentMap->rows - 1);
+    pushFilledRect(commands, floor, g->colors[Color_Grey], RenderLayer_Ground);
 }

@@ -17,6 +17,7 @@
 #include "gamedev_entity.cpp"
 #include "gamedev_tilemap.cpp"
 
+
 internal TemporaryMemory beginTemporaryMemory(Arena *arena)
 {
     TemporaryMemory result = {};
@@ -56,6 +57,7 @@ void destroyGame(Game* g)
     rendererAPI.destroyTexture(g->iconsTexture);
 }
 
+#if 0
 void initCamera(Game* g, i32 screenWidth, i32 screenHeight)
 {
     g->camera.viewport.w = screenWidth;
@@ -81,6 +83,16 @@ void initCamera(Game* g, i32 screenWidth, i32 screenHeight)
     g->camera.yPixelMovementThreshold = screenHeight / 2;
     g->camera.xPixelMovementThreshold = screenWidth / 2;
 }
+#else
+void initCamera(Camera *camera)
+{
+    camera->position = vec3(0.0f, 0.0f, 1.75f);
+    camera->up = vec3(0.0f, 1.0f, 0.0f);
+    camera->right = vec3(1.0f, 0.0f, 0.0f);
+    camera->direction = vec3(0.0f, 0.0f, 1.0);
+}
+#endif
+
 
 void initColors(Vec4u8 *colors)
 {
@@ -180,6 +192,36 @@ internal void playQueuedSounds(SoundList *sl, u64 now)
     }
     sl->count = 0;
 }
+#else
+internal void updateCamera(RenderCommands *commands, Game *game, Entity *hero)
+{
+    // TODO(chogan): Make this available here
+    i32 windowWidth = 1920 / 2;
+    i32 windowHeight = 1080 / 2;
+
+    int worldWidth = game->currentMap->cols;
+    int worldHeight = game->currentMap->rows;
+
+    Camera *camera = &game->camera;
+    // TODO(chogan): This is duplicated in initOpenGLState
+    f32 metersToPixels = 60.f;
+    f32 pixelsToMeters = 1.0f / metersToPixels;
+    f32 viewportWidthInMeters = windowWidth * pixelsToMeters;
+    f32 viewportHeightInMeters = windowHeight * pixelsToMeters;
+
+    f32 minCameraPx = 0.5f * viewportWidthInMeters;
+    f32 minCameraPy = 0.5f * viewportHeightInMeters;
+    f32 maxCameraPx = worldWidth - 0.5f * viewportWidthInMeters;
+    f32 maxCameraPy = worldHeight - 0.5f * viewportHeightInMeters;
+
+    camera->position.x = hero->position.x + 0.5f * hero->size.x;
+    camera->position.y = hero->position.y + 0.5f * hero->size.y;
+    camera->position.x = clampFloat(camera->position.x, minCameraPx, maxCameraPx);
+    camera->position.y = clampFloat(camera->position.y, minCameraPy, maxCameraPy);
+
+    commands->camera = *camera;
+}
+
 #endif
 
 internal void queueSound(SoundList *sl, Sound *s)
@@ -212,7 +254,6 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
                   (u8*)memory->permanentStorage + sizeof(Game));
         initArena(&game->transientArena, memory->transientStorageSize, (u8*)memory->transientStorage);
 
-        game->renderer = renderCommands->renderer;
         initColors(game->colors);
 
         // Asset loading
@@ -241,18 +282,17 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
         game->linkTexture = linkTexture;
 #endif
         // Map
+        Map *map0 = PUSH_STRUCT(&game->worldArena, Map);
+#if GAMEDEV_SDL
         u32 tileWidth = 80;
         u32 tileHeight = 80;
-        Map *map0 = PUSH_STRUCT(&game->worldArena, Map);
         map0->tileWidth = tileWidth;
         map0->tileHeight = tileHeight;
         map0->rows = 10;
         map0->cols = 12;
         map0->widthPixels = map0->cols * tileWidth;
         map0->heightPixels = map0->rows * tileHeight;
-#if GAMEDEV_SDL
         map0->texture = outputTarget;
-#endif
 
         for (u32 row = 0; row < map0->rows; ++row)
         {
@@ -301,21 +341,70 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
                 }
             }
         }
+#else
+
+        // TODO(chogan): Need access to this
+        f32 tileWidthMeters = 1.0f;
+        f32 tileHeightMeters = 1.0f;
+        f32 metersToPixels = 60.f;
+        f32 pixelsToMeters = 1.0f / metersToPixels;
+
+        int worldWidth = 16;
+        int worldHeight = 9;
+
+        map0->tileWidth = (u32)tileWidthMeters;
+        map0->tileHeight = (u32)tileHeightMeters;
+        map0->rows = worldHeight;
+        map0->cols = worldWidth;
+
+        u32 rowStart = 0;
+        u32 colStart = 0;
+        u32 rowEnd = worldHeight;
+        u32 colEnd = worldWidth;
+
+        for (u32 row = rowStart; row < rowEnd; ++row)
+        {
+            for (u32 col = colStart; col < colEnd; ++col)
+            {
+
+                Entity *tile = addEntity(map0);
+                tile->type = EntityType_Tile;
+                tile->isVisible = true;
+                tile->color = game->colors[Color_None];
+                tile->width = map0->tileWidth;
+                tile->height = map0->tileHeight;
+
+                tile->position = vec2((f32)col, (f32)row);
+                tile->size = vec2(tileWidthMeters, tileHeightMeters);
+
+                if (row == 0 || col == 0 || row == map0->rows - 1 || col == map0->cols - 1)
+                {
+                    addTileFlags(tile, TileProperty_Solid);
+                    tile->color = game->colors[Color_DarkGreen];
+                    tile->collides = true;
+                }
+            }
+        }
+#endif
+
 
         // Hero
         game->hero = addEntity(map0);
         Entity *hero = game->hero;
         Vec2 heroScale = {1.875f, 1.875f};
         // Vec2 heroScale = {1.0f, 1.0f};
-        initEntitySpriteSheet(hero, game->linkTexture, 11, 5, heroScale);
-        hero->width = 20;
-        hero->height = 10;
-        initAnimation(&hero->animation, 8, 80);
+        // initEntitySpriteSheet(hero, game->linkTexture, 11, 5, heroScale);
+        // hero->width = 20;
+        // hero->height = 10;
         hero->shouldAnimate = true;
-        hero->position = {120, 120};
-        hero->speed = 2000;
+        hero->position = {0, 0};
+        hero->size = vec2(pixelsToMeters * 24, pixelsToMeters * 32);
+        hero->direction = Direction_Down;
+        hero->speed = 200;
         hero->isVisible = true;
         hero->type = EntityType_Hero;
+        hero->animation.totalFrames = 8;
+        hero->animation.delay = 80;
 
         // Icons sheet
 #if 0
@@ -349,7 +438,7 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
         harlod->collides = true;
         harlod->width = 20;
         harlod->height = 10;
-        harlod->position = {300, 300};
+        harlod->position = {0, 0};
         harlod->speed = 10;
         harlod->isVisible = true;
         harlod->type = EntityType_Harlod;
@@ -357,13 +446,15 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
         game->currentMap = map0;
 #if GAMEDEV_SDL
         initCamera(game, viewport->w, viewport->h);
+#else
+        initCamera(&game->camera);
 #endif
 
         memory->isInitialized = true;
     }
 
-    TemporaryMemory renderMemory = beginTemporaryMemory(&game->transientArena);
-    RenderGroup *group = allocateRenderGroup(&game->transientArena, MEGABYTES(2));
+    // TemporaryMemory renderMemory = beginTemporaryMemory(&game->transientArena);
+    // RenderGroup *group = allocateRenderGroup(&game->transientArena, MEGABYTES(2));
 
     if (input->keyPressed[Key_I])
     {
@@ -375,13 +466,15 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
     {
         case GameMode_Playing:
         {
-            updateHero(group, hero, input, game);
+            updateHero(renderCommands, hero, input, game);
 #if GAMEDEV_SDL
             updateCamera(&game->camera, hero->position);
             viewport->x = game->camera.viewport.x;
             viewport->y = game->camera.viewport.y;
             updateEntities(game, input);
             playQueuedSounds(&game->sounds, now);
+#else
+            updateCamera(renderCommands, game, hero);
 #endif
             updateTiles(game, input);
             break;
@@ -398,22 +491,22 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
         }
     }
 
-    drawBackground(group, game);
-    drawTiles(group, game);
-    drawEntities(group, game);
-    drawPlacingTile(group, game, hero);
-    drawHUD(group, game, hero, &game->fontMetadata);
+    drawBackground(renderCommands, game);
+    drawTiles(renderCommands, game);
+    // drawEntities(renderCommands, game);
+    // drawPlacingTile(renderCommands, game, hero);
+    // drawHUD(renderCommands, game, hero, &game->fontMetadata);
 
     if (game->mode == GameMode_Dialogue)
     {
-        darkenBackground(group, game);
-        drawDialogScreen(group, game, &game->fontMetadata);
+        darkenBackground(renderCommands, game);
+        // drawDialogScreen(renderCommands, game, &game->fontMetadata);
     }
 
     if (game->mode == GameMode_Inventory)
     {
-        darkenBackground(group, game);
-        drawInventoryScreen(group, game, hero, &game->fontMetadata);
+        darkenBackground(renderCommands, game);
+        // drawInventoryScreen(renderCommands, game, hero, &game->fontMetadata);
     }
 
     /**************************************************************************/
@@ -436,9 +529,9 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
 #endif
 
     // TODO(cjh): sortRenderGroup(group);
-    drawRenderGroup(game->renderer, group);
+    // drawRenderGroup(game->renderer, group);
 
-    endTemporaryMemory(renderMemory);
+    // endTemporaryMemory(renderMemory);
 
     checkArena(&game->transientArena);
     checkArena(&game->worldArena);

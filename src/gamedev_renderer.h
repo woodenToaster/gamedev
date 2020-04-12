@@ -39,7 +39,7 @@ struct RenderEntryRect
 struct RenderEntryFilledRect
 {
     Vec4u8 color;
-    Rect dest;
+    Rect2 dest;
     RenderLayer layer;
 };
 
@@ -78,10 +78,11 @@ struct RenderGroup
     u8 *bufferBase;
 };
 
-internal void pushRect(RenderGroup *group, Rect dest, Vec4u8 color, RenderLayer layer);
-internal void pushFilledRect(RenderGroup *group, Rect dest, Vec4u8 color, RenderLayer layer);
-internal void pushSprite(RenderGroup *group, TextureHandle sheet, Rect source, Rect dest,
+internal void pushRect(RenderCommands *commands, Rect dest, Vec4u8 color, RenderLayer layer);
+internal void pushFilledRect(RenderCommands *commands, Rect2 dest, Vec4u8 color, RenderLayer layer);
+internal void pushFilledRect(RenderCommands *commands, Rect dest, Vec4u8 color, RenderLayer layer);
+internal void pushSprite(RenderCommands *commands, TextureHandle sheet, Rect source, Rect dest,
                          RenderLayer layer);
-internal void pushBitmap(RenderGroup *group, LoadedBitmap bitmap, Rect source, Rect dest,
+internal void pushBitmap(RenderCommands *commands, LoadedBitmap bitmap, Rect source, Rect dest,
                          RenderLayer layer);
 #endif

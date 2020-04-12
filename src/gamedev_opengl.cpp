@@ -42,10 +42,14 @@ PFNGLVERTEXATTRIBPOINTERPROC glVertexAttribPointer;
 PFNGLVERTEXARRAYVERTEXBUFFERPROC glVertexArrayVertexBuffer;
 PFNGLVERTEXATTRIB4FVPROC glVertexAttrib4fv;
 
+typedef BOOL (*PFNWGLSWAPINTERVALEXTPROC)(int interval);
+PFNWGLSWAPINTERVALEXTPROC wglSwapInterval;
+
 struct OpenGLState
 {
     GLuint quadBufferHandle;
     GLint colorUniformLocation;
+    GLint viewUniformLocation;
 };
 
 void drawOpenGLBitmap(RenderEntryTexture *entry, GLuint quadBuffer, GLint ucolorLocation)
@@ -120,20 +124,22 @@ void drawOpenGLBitmap(RenderEntryTexture *entry, GLuint quadBuffer, GLint ucolor
     glDisableVertexAttribArray(2);
 }
 
-void drawOpenGLFilledRect(Rect2 rect, Vec4u8 color, GLuint quadBuffer, GLint ucolorLocation)
+void drawOpenGLFilledRect(OpenGLState *glState, Rect2 rect, Vec4u8 color)
 {
     f32 z = -9.0f;
+    f32 w = 1.0f;
     f32 quad[] =
     {
-        rect.minP.x, rect.minP.y, z, 1.0f,
-        rect.maxP.x, rect.minP.y, z, 1.0f,
-        rect.maxP.x, rect.maxP.y, z, 1.0f,
-        rect.minP.x, rect.maxP.y, z, 1.0f,
+        rect.minP.x, rect.minP.y, z, w,
+        rect.maxP.x, rect.minP.y, z, w,
+        rect.maxP.x, rect.maxP.y, z, w,
+        rect.minP.x, rect.maxP.y, z, w,
     };
 
-    glBindBuffer(GL_ARRAY_BUFFER, quadBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, glState->quadBufferHandle);
     glBufferData(GL_ARRAY_BUFFER, sizeof(quad), quad, GL_STATIC_DRAW);
-    glUniform4f(ucolorLocation, color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, color.a / 255.0f);
+    glUniform4f(glState->colorUniformLocation, color.r / 255.0f, color.g / 255.0f, color.b / 255.0f,
+                color.a / 255.0f);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
 
@@ -206,9 +212,31 @@ GLuint compileShaders()
     return program;
 }
 
+
+internal void updateOpenGLViewMatrix(RenderCommands *commands)
+{
+    OpenGLState *glState = (OpenGLState *)commands->renderer;
+    Camera *camera = &commands->camera;
+
+    Mat4 lookAtRot = {};
+    lookAtRot.col1 = {camera->right.x, camera->up.x, camera->direction.x, 0};
+    lookAtRot.col2 = {camera->right.y, camera->up.y, camera->direction.y, 0};
+    lookAtRot.col3 = {camera->right.z, camera->up.z, camera->direction.z, 0};
+    lookAtRot.col4 = {0, 0, 0, 1};
+
+    Mat4 lookAtTrans = makeTranslationMat4(-camera->position.x, -camera->position.y,
+                                           -camera->position.z);
+
+    Mat4 view = multiplyMat4(&lookAtRot, &lookAtTrans);
+    glUniformMatrix4fv(glState->viewUniformLocation, 1, GL_FALSE, view.data);
+}
+
 internal void drawOpenGLRenderGroup(RenderCommands *commands)
 {
     OpenGLState *glState = (OpenGLState *)commands->renderer;
+
+    glClearColor(1.0f, 0.0f, 1.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
 
     for (int layerIndex = 0; layerIndex < RenderLayer_Count; ++layerIndex)
     {
@@ -236,12 +264,7 @@ internal void drawOpenGLRenderGroup(RenderCommands *commands)
                     if (entry->layer == layerIndex)
                     {
                         // rendererAPI.renderFilledRect(renderer, entry->dest, entry->color);
-                        Rect2 dest = {};
-                        dest.minP = vec2((f32)entry->dest.x, (f32)entry->dest.y);
-                        dest.maxP = dest.minP + vec2((f32)entry->dest.w, (f32)entry->dest.h);
-                        GLuint bufferHandle = glState->quadBufferHandle;
-                        GLint colorUniformLocation = glState->colorUniformLocation;
-                        drawOpenGLFilledRect(dest, entry->color, bufferHandle, colorUniformLocation);
+                        drawOpenGLFilledRect(glState, entry->dest, entry->color); 
                     }
                     baseAddress += sizeof(*entry);
                 } break;
@@ -280,3 +303,52 @@ internal void drawOpenGLRenderGroup(RenderCommands *commands)
         }
     }
 }
+OpenGLState initOpenGLState(int windowWidth, int windowHeight)
+{
+    // f32 tileWidthMeters = 1.0f;
+    // f32 tileHeightMeters = 1.0f;
+    f32 metersToPixels = 60.f;
+    f32 pixelsToMeters = 1.0f / metersToPixels;
+    f32 viewportWidthInMeters = windowWidth * pixelsToMeters;
+    f32 viewportHeightInMeters = windowHeight * pixelsToMeters;
+
+    OpenGLState result = {};
+    GLuint program = compileShaders();
+    glUseProgram(program);
+
+    u32 quadBuffer;
+    glGenBuffers(1, &quadBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, quadBuffer);
+    result.quadBufferHandle = quadBuffer;
+
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (GLvoid *)(16 * sizeof(GLfloat)));
+
+    const GLuint quadIndices[] = {0, 1, 2, 0, 2, 3};
+
+    GLuint ebo;
+    glGenBuffers(1, &ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(quadIndices), quadIndices, GL_STATIC_DRAW);
+
+    GLint ucolorLocation = glGetUniformLocation(program, "ucolor");
+    GLint modelLocation = glGetUniformLocation(program, "model");
+    GLint viewLocation = glGetUniformLocation(program, "view");
+    GLint projectionLocation = glGetUniformLocation(program, "projection");
+
+    result.colorUniformLocation = ucolorLocation;
+    result.viewUniformLocation = viewLocation;
+
+    Mat4 model = identityMat4();
+    f32 aspect = viewportWidthInMeters / viewportHeightInMeters;
+    Mat4 projection = makePerspectiveMat4(45, aspect, 0.1f, 100.0f);
+    glUniformMatrix4fv(modelLocation, 1, GL_FALSE, model.data);
+    glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, projection.data);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    return result;
+}
+

@@ -38,14 +38,23 @@ typedef int32_t b32;
 
 #define ARRAY_COUNT(arr) (sizeof(arr) / sizeof((arr)[0]))
 
+struct Camera
+{
+    Vec3 position;
+    Vec3 up;
+    Vec3 right;
+    Vec3 direction;
+};
+
 struct RenderCommands
 {
-    int width;
-    int height;
-    u32 maxBufferSize;
-    u32 bufferSize;
     u8 *bufferBase;
     void *renderer;
+    int windowWidth;
+    int windowHeight;
+    u32 maxBufferSize;
+    u32 bufferSize;
+    Camera camera;
 };
 
 enum Colors
