@@ -195,19 +195,16 @@ internal void playQueuedSounds(SoundList *sl, u64 now)
 #else
 internal void updateCamera(RenderCommands *commands, Game *game, Entity *hero)
 {
-    // TODO(chogan): Make this available here
-    i32 windowWidth = 1920 / 2;
-    i32 windowHeight = 1080 / 2;
-
+    // TODO(chogan): Multiply world width and height by tileSideInMeters
     int worldWidth = game->currentMap->cols;
     int worldHeight = game->currentMap->rows;
 
-    Camera *camera = &game->camera;
+    f32 pixelsToMeters = 1.0f / commands->metersToPixels;
+
+    Camera *camera = &commands->camera;
     // TODO(chogan): This is duplicated in initOpenGLState
-    f32 metersToPixels = 60.f;
-    f32 pixelsToMeters = 1.0f / metersToPixels;
-    f32 viewportWidthInMeters = windowWidth * pixelsToMeters;
-    f32 viewportHeightInMeters = windowHeight * pixelsToMeters;
+    f32 viewportWidthInMeters = commands->windowWidth * pixelsToMeters;
+    f32 viewportHeightInMeters = commands->windowHeight * pixelsToMeters;
 
     f32 minCameraPx = 0.5f * viewportWidthInMeters;
     f32 minCameraPy = 0.5f * viewportHeightInMeters;
@@ -218,8 +215,6 @@ internal void updateCamera(RenderCommands *commands, Game *game, Entity *hero)
     camera->position.y = hero->position.y + 0.5f * hero->size.y;
     camera->position.x = clampFloat(camera->position.x, minCameraPx, maxCameraPx);
     camera->position.y = clampFloat(camera->position.y, minCameraPy, maxCameraPy);
-
-    commands->camera = *camera;
 }
 
 #endif
@@ -247,6 +242,9 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
 #if GAMEDEV_SDL
     u64 now = memory->currentTickCount;
 #endif
+
+    f32 metersToPixels = renderCommands->metersToPixels;
+    f32 pixelsToMeters = 1.0f / metersToPixels;
 
     if (!memory->isInitialized)
     {
@@ -343,17 +341,13 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
         }
 #else
 
-        // TODO(chogan): Need access to this
         f32 tileWidthMeters = 1.0f;
         f32 tileHeightMeters = 1.0f;
-        f32 metersToPixels = 60.f;
-        f32 pixelsToMeters = 1.0f / metersToPixels;
+        map0->tileWidth = (u32)tileWidthMeters;
+        map0->tileHeight = (u32)tileHeightMeters;
 
         int worldWidth = 16;
         int worldHeight = 9;
-
-        map0->tileWidth = (u32)tileWidthMeters;
-        map0->tileHeight = (u32)tileHeightMeters;
         map0->rows = worldHeight;
         map0->cols = worldWidth;
 
@@ -366,14 +360,12 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
         {
             for (u32 col = colStart; col < colEnd; ++col)
             {
-
                 Entity *tile = addEntity(map0);
                 tile->type = EntityType_Tile;
                 tile->isVisible = true;
                 tile->color = game->colors[Color_None];
-                tile->width = map0->tileWidth;
-                tile->height = map0->tileHeight;
-
+                tile->width = (i32)tileWidthMeters;
+                tile->height = (i32)tileHeightMeters;
                 tile->position = vec2((f32)col, (f32)row);
                 tile->size = vec2(tileWidthMeters, tileHeightMeters);
 
@@ -386,21 +378,19 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
             }
         }
 #endif
-
-
         // Hero
         game->hero = addEntity(map0);
         Entity *hero = game->hero;
         Vec2 heroScale = {1.875f, 1.875f};
         // Vec2 heroScale = {1.0f, 1.0f};
-        // initEntitySpriteSheet(hero, game->linkTexture, 11, 5, heroScale);
+        initEntitySpriteSheet(hero, game->linkTexture, 11, 5, heroScale);
         // hero->width = 20;
         // hero->height = 10;
         hero->shouldAnimate = true;
-        hero->position = {0, 0};
+        hero->position = {1.2f, 1.2f};
         hero->size = vec2(pixelsToMeters * 24, pixelsToMeters * 32);
         hero->direction = Direction_Down;
-        hero->speed = 200;
+        hero->speed = 20;
         hero->isVisible = true;
         hero->type = EntityType_Hero;
         hero->animation.totalFrames = 8;
@@ -447,7 +437,7 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
 #if GAMEDEV_SDL
         initCamera(game, viewport->w, viewport->h);
 #else
-        initCamera(&game->camera);
+        // initCamera(&renderCommands->camera);
 #endif
 
         memory->isInitialized = true;
@@ -467,11 +457,11 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
         case GameMode_Playing:
         {
             updateHero(renderCommands, hero, input, game);
+            updateEntities(game, input);
 #if GAMEDEV_SDL
             updateCamera(&game->camera, hero->position);
             viewport->x = game->camera.viewport.x;
             viewport->y = game->camera.viewport.y;
-            updateEntities(game, input);
             playQueuedSounds(&game->sounds, now);
 #else
             updateCamera(renderCommands, game, hero);
@@ -493,6 +483,7 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
 
     drawBackground(renderCommands, game);
     drawTiles(renderCommands, game);
+    pushTexture(renderCommands, hero);
     // drawEntities(renderCommands, game);
     // drawPlacingTile(renderCommands, game, hero);
     // drawHUD(renderCommands, game, hero, &game->fontMetadata);

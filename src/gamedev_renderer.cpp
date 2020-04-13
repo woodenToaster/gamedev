@@ -223,6 +223,22 @@ internal void pushSprite(RenderCommands *commands, TextureHandle sheet, Rect sou
     }
 }
 
+internal void pushTexture(RenderCommands *commands, Entity *entity)
+{
+    RenderEntryTexture *texture = PushRenderElement(commands, RenderEntryTexture);
+    if (texture)
+    {
+        texture->position = entity->position;
+        texture->size = entity->size;
+        texture->spriteWidth = (f32)entity->spriteSheet.spriteWidth;
+        texture->spriteHeight = (f32)entity->spriteSheet.spriteHeight;
+        texture->sheetWidth = (f32)entity->spriteSheet.width;
+        texture->sheetHeight = (f32)entity->spriteSheet.height;
+        texture->currentFrame = entity->animation.currentFrame;
+        texture->direction = entity->direction;
+    }
+}
+
 #if 0
 internal void pushBitmap(RenderCommands *commands, LoadedBitmap bitmap, Rect source, Rect dest,
                          RenderLayer layer)

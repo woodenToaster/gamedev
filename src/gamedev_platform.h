@@ -54,6 +54,7 @@ struct RenderCommands
     int windowHeight;
     u32 maxBufferSize;
     u32 bufferSize;
+    f32 metersToPixels;
     Camera camera;
 };
 

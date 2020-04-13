@@ -486,11 +486,11 @@ internal void updateHero(RenderCommands *renderCommands, Entity* h, Input* input
     }
     if (input->keyDown[Key_Up])
     {
-        acceleration.y = -1.0f;
+        acceleration.y = 1.0f;
     }
     if (input->keyDown[Key_Down])
     {
-        acceleration.y = 1.0f;
+        acceleration.y = -1.0f;
     }
 
     if (acceleration.x == 0.0f && acceleration.y == 0.0f)
@@ -515,12 +515,12 @@ internal void updateHero(RenderCommands *renderCommands, Entity* h, Input* input
         if (acceleration.y < 0)
         {
             h->spriteRect.y = 1 * spriteHeight;
-            h->direction = Direction_Up;
+            h->direction = Direction_Down;
         }
         if (acceleration.y > 0)
         {
             h->spriteRect.y = 4 * spriteHeight;
-            h->direction = Direction_Down;
+            h->direction = Direction_Up;
         }
 
         h->isMoving = true;
@@ -576,8 +576,10 @@ internal void updateHero(RenderCommands *renderCommands, Entity* h, Input* input
                     case EntityType_Tile:
                     {
                         // Tile position is at center of tile
-                        Rect tileBoundingBox = {(i32)testEntity->position.x - (i32)(0.5f*testEntity->width),
-                                                (i32)testEntity->position.y - (i32)(0.5f*testEntity->height),
+                        Rect tileBoundingBox = {(i32)testEntity->position.x -
+                                                (i32)(0.5f*testEntity->width),
+                                                (i32)testEntity->position.y -
+                                                (i32)(0.5f*testEntity->height),
                                                 testEntity->width, testEntity->height};
 
                         if (rectsOverlap(&h->heroInteractionRect, &tileBoundingBox))
@@ -719,8 +721,8 @@ internal void updateHero(RenderCommands *renderCommands, Entity* h, Input* input
     // clampEntityToMap(h, map);
     int worldWidth = map->cols;
     int worldHeight = map->rows;
-    f32 maxPlayerPx = worldWidth - h->size.x;
-    f32 maxPlayerPy = worldHeight - h->size.y;
+    f32 maxPlayerPx = (worldWidth - 1) - h->size.x;
+    f32 maxPlayerPy = (worldHeight - 1) - h->size.y;
 
     h->position.x = clampFloat(h->position.x, 0, maxPlayerPx);
     h->position.y = clampFloat(h->position.y, 0, maxPlayerPy);

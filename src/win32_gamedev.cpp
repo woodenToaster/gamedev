@@ -789,8 +789,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     b32 sleepIsGranular = (minimumResolution == 1 &&
                            (timeBeginPeriod(minimumResolution) == TIMERR_NOERROR));
 
-    i32 windowWidth = 1920 / 2;
-    i32 windowHeight = 1080 / 2;
+    i32 windowWidth = 1920; //  / 2;
+    i32 windowHeight = 1080; //  / 2;
 
     win32ResizeDIBSection(&globalBackBuffer, windowWidth, windowHeight);
 
@@ -865,8 +865,15 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     glTextureSubImage2D(heroTexture, 0, 0, 0, heroLoadedBitmap.width, heroLoadedBitmap.height, GL_BGRA,
                         GL_UNSIGNED_INT_8_8_8_8_REV, heroLoadedBitmap.pixels);
 
+    f32 metersToPixels = 60.0f;
     Input oldInput = {};
-    OpenGLState glState = initOpenGLState(windowWidth, windowHeight);
+    OpenGLState glState = initOpenGLState(metersToPixels, windowWidth, windowHeight);
+
+    Camera camera = {};
+    camera.position = vec3(0.0f, 0.0f, 1.75f);
+    camera.up = vec3(0.0f, 1.0f, 0.0f);
+    camera.right = vec3(1.0f, 0.0f, 0.0f);
+    camera.direction = vec3(0.0f, 0.0f, 1.0);
 
     globalWin32State.isRunning = true;
     while (globalWin32State.isRunning)
@@ -901,11 +908,13 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
         oldInput = newInput;
 
         RenderCommands renderCommands = {};
+        renderCommands.metersToPixels = metersToPixels;
         renderCommands.maxBufferSize = MEGABYTES(2);
         renderCommands.bufferBase = win32AllocateMemory(renderCommands.maxBufferSize);
         renderCommands.windowWidth = windowWidth;
         renderCommands.windowHeight = windowHeight;
         renderCommands.renderer = &glState;
+        renderCommands.camera = camera;
         updateAndRender(&memory, &newInput, &renderCommands);
 
         updateOpenGLViewMatrix(&renderCommands);

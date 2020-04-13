@@ -303,11 +303,8 @@ internal void drawOpenGLRenderGroup(RenderCommands *commands)
         }
     }
 }
-OpenGLState initOpenGLState(int windowWidth, int windowHeight)
+OpenGLState initOpenGLState(f32 metersToPixels, int windowWidth, int windowHeight)
 {
-    // f32 tileWidthMeters = 1.0f;
-    // f32 tileHeightMeters = 1.0f;
-    f32 metersToPixels = 60.f;
     f32 pixelsToMeters = 1.0f / metersToPixels;
     f32 viewportWidthInMeters = windowWidth * pixelsToMeters;
     f32 viewportHeightInMeters = windowHeight * pixelsToMeters;
