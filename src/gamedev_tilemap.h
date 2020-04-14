@@ -26,7 +26,7 @@ struct Map
     int heightPixels;
     TextureHandle texture;
     u32 entityCount;
-    Entity entities[256];
+    Entity entities[1024];
     Entity *entityFreeList;
 };
 

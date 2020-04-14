@@ -202,14 +202,31 @@ internal void updateCamera(RenderCommands *commands, Game *game, Entity *hero)
     f32 pixelsToMeters = 1.0f / commands->metersToPixels;
 
     Camera *camera = &commands->camera;
-    // TODO(chogan): This is duplicated in initOpenGLState
     f32 viewportWidthInMeters = commands->windowWidth * pixelsToMeters;
     f32 viewportHeightInMeters = commands->windowHeight * pixelsToMeters;
 
-    f32 minCameraPx = 0.5f * viewportWidthInMeters;
-    f32 minCameraPy = 0.5f * viewportHeightInMeters;
-    f32 maxCameraPx = worldWidth - 0.5f * viewportWidthInMeters;
-    f32 maxCameraPy = worldHeight - 0.5f * viewportHeightInMeters;
+    f32 minCameraPx = minFloat32(0.5f * viewportWidthInMeters, 0.5f * worldWidth);
+    f32 minCameraPy = minFloat32(0.5f * viewportHeightInMeters, 0.5f * worldHeight);
+
+    f32 maxCameraPx;
+    if (worldWidth > viewportWidthInMeters)
+    {
+        maxCameraPx = worldWidth - 0.5f * viewportWidthInMeters;
+    }
+    else
+    {
+        maxCameraPx = 0.5f * worldWidth;
+    }
+
+    f32 maxCameraPy;
+    if (worldHeight > viewportHeightInMeters)
+    {
+        maxCameraPy = worldHeight - 0.5f * viewportHeightInMeters;
+    }
+    else
+    {
+        maxCameraPy = 0.5f * worldHeight;
+    }
 
     camera->position.x = hero->position.x + 0.5f * hero->size.x;
     camera->position.y = hero->position.y + 0.5f * hero->size.y;

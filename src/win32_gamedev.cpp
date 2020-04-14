@@ -296,7 +296,6 @@ internal LARGE_INTEGER win32GetTicks()
 
     return result;
 }
-#endif
 
 internal void win32ResizeDIBSection(Win32BackBuffer *buffer, int width, int height)
 {
@@ -320,6 +319,7 @@ internal void win32ResizeDIBSection(Win32BackBuffer *buffer, int width, int heig
     int bitmapMemorySize = width * height * buffer->bytesPerPixel;
     buffer->memory = VirtualAlloc(0, bitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
 }
+#endif
 
 void win32RenderFilledRect(void *renderer, Rect dest, Vec4u8 color)
 {
@@ -789,10 +789,10 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     b32 sleepIsGranular = (minimumResolution == 1 &&
                            (timeBeginPeriod(minimumResolution) == TIMERR_NOERROR));
 
-    i32 windowWidth = 1920; //  / 2;
-    i32 windowHeight = 1080; //  / 2;
+    // i32 windowWidth = 1920  / 2;
+    // i32 windowHeight = 1080  / 2;
 
-    win32ResizeDIBSection(&globalBackBuffer, windowWidth, windowHeight);
+    // win32ResizeDIBSection(&globalBackBuffer, windowWidth, windowHeight);
 
     WNDCLASSA windowClass = {};
     windowClass.style = CS_HREDRAW | CS_VREDRAW;
@@ -867,7 +867,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
 
     f32 metersToPixels = 60.0f;
     Input oldInput = {};
-    OpenGLState glState = initOpenGLState(metersToPixels, windowWidth, windowHeight);
+    OpenGLState glState = initOpenGLState();
 
     Camera camera = {};
     camera.position = vec3(0.0f, 0.0f, 1.75f);
@@ -907,25 +907,28 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
         win32GetInput(&newInput);
         oldInput = newInput;
 
-        RenderCommands renderCommands = {};
-        renderCommands.metersToPixels = metersToPixels;
-        renderCommands.maxBufferSize = MEGABYTES(2);
-        renderCommands.bufferBase = win32AllocateMemory(renderCommands.maxBufferSize);
-        renderCommands.windowWidth = windowWidth;
-        renderCommands.windowHeight = windowHeight;
-        renderCommands.renderer = &glState;
-        renderCommands.camera = camera;
-        updateAndRender(&memory, &newInput, &renderCommands);
-
-        updateOpenGLViewMatrix(&renderCommands);
-
         HDC deviceContext = GetDC(globalWin32State.window);
         RECT clientRect;
         GetClientRect(globalWin32State.window, &clientRect);
         int clientWidth = clientRect.right - clientRect.left;
         int clientHeight = clientRect.bottom - clientRect.top;
         int fringe = 5;
-        glViewport(fringe, fringe, clientWidth - (2 * fringe), clientHeight - (2 * fringe));
+        int viewportWidth = clientWidth - (2 * fringe);
+        int viewportHeight = clientHeight - (2 * fringe);
+
+        RenderCommands renderCommands = {};
+        renderCommands.metersToPixels = metersToPixels;
+        renderCommands.maxBufferSize = MEGABYTES(2);
+        renderCommands.bufferBase = win32AllocateMemory(renderCommands.maxBufferSize);
+        renderCommands.windowWidth = viewportWidth;
+        renderCommands.windowHeight = viewportHeight;
+        renderCommands.renderer = &glState;
+        renderCommands.camera = camera;
+        updateAndRender(&memory, &newInput, &renderCommands);
+
+        updateOpenGLViewMatrix(&renderCommands);
+
+        glViewport(fringe, fringe, viewportWidth, viewportHeight);
         win32UpdateWindow(&globalBackBuffer, deviceContext, clientWidth, clientHeight, &renderCommands);
         ReleaseDC(globalWin32State.window, deviceContext);
 

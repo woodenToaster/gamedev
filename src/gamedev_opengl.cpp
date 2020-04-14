@@ -303,12 +303,8 @@ internal void drawOpenGLRenderGroup(RenderCommands *commands)
         }
     }
 }
-OpenGLState initOpenGLState(f32 metersToPixels, int windowWidth, int windowHeight)
+OpenGLState initOpenGLState()
 {
-    f32 pixelsToMeters = 1.0f / metersToPixels;
-    f32 viewportWidthInMeters = windowWidth * pixelsToMeters;
-    f32 viewportHeightInMeters = windowHeight * pixelsToMeters;
-
     OpenGLState result = {};
     GLuint program = compileShaders();
     glUseProgram(program);
@@ -338,7 +334,7 @@ OpenGLState initOpenGLState(f32 metersToPixels, int windowWidth, int windowHeigh
     result.viewUniformLocation = viewLocation;
 
     Mat4 model = identityMat4();
-    f32 aspect = viewportWidthInMeters / viewportHeightInMeters;
+    f32 aspect = 16.0f / 9.0f; // viewportWidthInMeters / viewportHeightInMeters;
     Mat4 projection = makePerspectiveMat4(45, aspect, 0.1f, 100.0f);
     glUniformMatrix4fv(modelLocation, 1, GL_FALSE, model.data);
     glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, projection.data);
