@@ -27,6 +27,12 @@ enum class TokenType {
     SingleQuote,
     Pipe,
     Ampersand,
+    Plus,
+    Minus,
+    Colon,
+    Pound,
+    Dot,
+    Char,
     
     Count
 };
@@ -35,6 +41,7 @@ struct Token {
     Token *next;
     char *data;
     u32 size;
+    u32 line;
     TokenType type;
 };
 
@@ -57,6 +64,42 @@ T *PushClearedStruct(Arena *arena)
     T *result = (T *)pushSizeAndClear(arena, sizeof(T));
     
     return result;
+}
+
+void printTokenType(TokenType token_type)
+{
+    switch (token_type)
+    {
+        case TokenType::Identifier: { printf("Identifier: "); } break;
+        case TokenType::Number: { printf("Number: "); } break;
+        case TokenType::String: { printf("String: "); } break;
+        case TokenType::OpenCurlyBrace: { printf("OpenCurlyBrace: "); } break;
+        case TokenType::CloseCurlyBrace: { printf("CloseCurlyBrace: "); } break;
+        case TokenType::OpenParen: { printf("OpenParen: "); } break;
+        case TokenType::CloseParen: { printf("CloseParen: "); } break;
+        case TokenType::OpenBracket: { printf("OpenBracket: "); } break;
+        case TokenType::CloseBracket: { printf("CloseBracket: "); } break;
+        case TokenType::Comma: { printf("Comma: "); } break;
+        case TokenType::Equal: { printf("Equal: "); } break;
+        case TokenType::Semicolon: { printf("Semicolon: "); } break;
+        case TokenType::Star: { printf("Star: "); } break;
+        case TokenType::GreaterThan: { printf("GreaterThan: "); } break;
+        case TokenType::LessThan: { printf("LessThan: "); } break;
+        case TokenType::ForwardSlash: { printf("ForwardSlash: "); } break;
+        case TokenType::BackSlash: { printf("BackSlash: "); } break;
+        case TokenType::At: { printf("At: "); } break;
+        case TokenType::Exclamation: { printf("Exclamation: "); } break;
+        case TokenType::SingleQuote: { printf("SingleQuote: "); } break;
+        case TokenType::Pipe: { printf("Pipe: "); } break;
+        case TokenType::Ampersand: { printf("Ampersand: "); } break;
+        case TokenType::Plus: { printf("Plus: "); } break;
+        case TokenType::Minus: { printf("Minus: "); } break;
+        case TokenType::Colon: { printf("Colon: "); } break;
+        case TokenType::Pound: { printf("Pound: "); } break;
+        case TokenType::Dot: { printf("Dot: "); } break;
+        case TokenType::Char: { printf("Char: "); } break;
+        default: { break; }
+    }
 }
 
 EntireFile ReadEntireFile(Arena *arena, const char *path) {
@@ -103,15 +146,24 @@ EntireFile ReadEntireFile(Arena *arena, const char *path) {
     return result;
 }
 
-void AddTokenToList(Arena *arena, TokenList *list, TokenType type) {
+void AddTokenToList(Arena *arena, TokenList *list, TokenType type, u32 line_number) {
     Token *tok = PushClearedStruct<Token>(arena);
     tok->type = type;
+    tok->line = line_number;
     list->head->next = tok;
     list->head = tok;
 }
 
-inline bool BeginsComment(char c) {
-    bool result = c == '#';
+inline bool BeginsComment(char *at) {
+    bool result = false;
+
+    if (at[0] && at[1])
+    {
+        if (at[0] == '/' && at[1] == '/')
+        {
+            result = true;
+        }
+    }
     
     return result;
 }
@@ -135,24 +187,43 @@ inline bool BeginsIdentifier(char c) {
 }
 
 inline bool EndOfIdentifier(char c) {
-    bool result = IsWhitespace(c) || c == '=';
-    
+    bool result = !((c >= 'A' && c <= 'Z') ||
+                    (c >= 'a' && c <= 'z') ||
+                    (c == '_') ||
+                    (c >= '0' && c <= '9'));
     return result;
 }
 
 inline bool BeginsNumber(char c) {
-    bool result = (c >= '0' && c <= '9') || (c == '.');
+    bool result = (c >= '0' && c <= '9');
     
     return result;
 }
 
 inline bool EndOfNumber(char c) {
-    bool result = IsWhitespace(c) || (c == ',') || (c == ';') || (c == '}');
-    
+    bool result = !BeginsNumber(c) && (c != '.');
+
+    return result;
+}
+
+inline bool IsEndOfLine(char **at, char *end)
+{
+    bool result = (*at)[0] == '\n';
+
+    if (*at + 1 < end && !result)
+    {
+        result = ((*at)[0] == '\r' && (*at)[1] == '\n');
+        if (result)
+        {
+            (*at)++;
+        }
+    }
+
     return result;
 }
 
 TokenList Tokenize(Arena *arena, EntireFile entire_file) {
+    u32 line_number = 0;
     TokenList result = {};
     Token dummy = {};
     result.head = &dummy;
@@ -162,27 +233,39 @@ TokenList Tokenize(Arena *arena, EntireFile entire_file) {
     
     while (at < end) {
         if (IsWhitespace(*at)) {
+            if (IsEndOfLine(&at, end))
+            {
+                line_number++;
+            }
+
             ++at;
             continue;
         }
         
-        if (BeginsComment(*at)) {
-            while (at < end && !EndOfComment(*at)) {
+        // TODO(chogan): Tokenize comments
+        if (BeginsComment(at)) {
+            while (at < end) {
+                if (IsEndOfLine(&at, end))
+                {
+                    line_number++;
+                    ++at;
+                    break;
+                }
                 ++at;
             }
             continue;
         }
         
         if (BeginsIdentifier(*at)) {
-            AddTokenToList(arena, &result, TokenType::Identifier);
+            AddTokenToList(arena, &result, TokenType::Identifier, line_number);
             result.head->data = at;
-            
+
             while (at && !EndOfIdentifier(*at)) {
                 result.head->size++;
                 at++;
             }
         } else if (BeginsNumber(*at)) {
-            AddTokenToList(arena, &result, TokenType::Number);
+            AddTokenToList(arena, &result, TokenType::Number, line_number);
             result.head->data = at;
             
             while (at && !EndOfNumber(*at)) {
@@ -192,84 +275,108 @@ TokenList Tokenize(Arena *arena, EntireFile entire_file) {
         } else {
             switch (*at) {
                 case ';': {
-                    AddTokenToList(arena, &result, TokenType::Semicolon);
+                    AddTokenToList(arena, &result, TokenType::Semicolon, line_number);
                     break;
                 }
                 case '=': {
-                    AddTokenToList(arena, &result, TokenType::Equal);
+                    AddTokenToList(arena, &result, TokenType::Equal, line_number);
                     break;
                 }
                 case ',': {
-                    AddTokenToList(arena, &result, TokenType::Comma);
+                    AddTokenToList(arena, &result, TokenType::Comma, line_number);
                     break;
                 }
                 case '{': {
-                    AddTokenToList(arena, &result, TokenType::OpenCurlyBrace);
+                    AddTokenToList(arena, &result, TokenType::OpenCurlyBrace, line_number);
                     break;
                 }
                 case '}': {
-                    AddTokenToList(arena, &result, TokenType::CloseCurlyBrace);
+                    AddTokenToList(arena, &result, TokenType::CloseCurlyBrace, line_number);
                     break;
                 }
                 case '*':
                 {
-                    AddTokenToList(arena, &result, TokenType::Star);
+                    AddTokenToList(arena, &result, TokenType::Star, line_number);
                 } break;
                 case '(':
                 {
-                    AddTokenToList(arena, &result, TokenType::OpenParen);
+                    AddTokenToList(arena, &result, TokenType::OpenParen, line_number);
                 } break;
                 case ')':
                 {
-                    AddTokenToList(arena, &result, TokenType::CloseParen);
+                    AddTokenToList(arena, &result, TokenType::CloseParen, line_number);
                 } break;
                 case '[':
                 {
-                    AddTokenToList(arena, &result, TokenType::OpenBracket);
+                    AddTokenToList(arena, &result, TokenType::OpenBracket, line_number);
                 } break;
                 case ']':
                 {
-                    AddTokenToList(arena, &result, TokenType::CloseBracket);
+                    AddTokenToList(arena, &result, TokenType::CloseBracket, line_number);
                 } break;
                 case '<':
                 {
-                    AddTokenToList(arena, &result, TokenType::LessThan);
+                    AddTokenToList(arena, &result, TokenType::LessThan, line_number);
                 } break;
                 case '>':
                 {
-                    AddTokenToList(arena, &result, TokenType::GreaterThan);
+                    AddTokenToList(arena, &result, TokenType::GreaterThan, line_number);
                 } break;
                 case '/':
                 {
-                    AddTokenToList(arena, &result, TokenType::ForwardSlash);
+                    AddTokenToList(arena, &result, TokenType::ForwardSlash, line_number);
                 } break;
                 case '@':
                 {
-                    AddTokenToList(arena, &result, TokenType::At);
+                    AddTokenToList(arena, &result, TokenType::At, line_number);
                 } break;
                 case '!':
                 {
-                    AddTokenToList(arena, &result, TokenType::Exclamation);
+                    AddTokenToList(arena, &result, TokenType::Exclamation, line_number);
                 } break;
                 case '\'':
                 {
-                    AddTokenToList(arena, &result, TokenType::SingleQuote);
+                    AddTokenToList(arena, &result, TokenType::Char, line_number);
+                    at++;
+                    result.head->data = at;
+                    result.head->size = 1;
+                    at += 2;
                 } break;
                 case '\\':
                 {
-                    AddTokenToList(arena, &result, TokenType::BackSlash);
+                    AddTokenToList(arena, &result, TokenType::BackSlash, line_number);
                 } break;
                 case '|':
                 {
-                    AddTokenToList(arena, &result, TokenType::Pipe);
+                    AddTokenToList(arena, &result, TokenType::Pipe, line_number);
                 } break;
                 case '&':
                 {
-                    AddTokenToList(arena, &result, TokenType::Ampersand);
+                    AddTokenToList(arena, &result, TokenType::Ampersand, line_number);
+                } break;
+                case '+':
+                {
+                    AddTokenToList(arena, &result, TokenType::Plus, line_number);
+                } break;
+                case '-':
+                {
+                    AddTokenToList(arena, &result, TokenType::Minus, line_number);
+                } break;
+                case ':':
+                {
+                    AddTokenToList(arena, &result, TokenType::Colon, line_number);
+                } break;
+                case '#':
+                {
+                    AddTokenToList(arena, &result, TokenType::Pound, line_number);
+                } break;
+                case '.':
+                {
+                    AddTokenToList(arena, &result, TokenType::Dot, line_number);
                 } break;
                 
                 case '"': {
-                    AddTokenToList(arena, &result, TokenType::String);
+                    AddTokenToList(arena, &result, TokenType::String, line_number);
                     at++;
                     result.head->data = at;
                     
@@ -280,7 +387,7 @@ TokenList Tokenize(Arena *arena, EntireFile entire_file) {
                     break;
                 }
                 default: {
-                    fprintf(stderr, "Unexpected token encountered: %c\n", *at);
+                    fprintf(stderr, "Unexpected token encountered on line %d: %c\n", line_number, *at);
                     exit(1);
                     break;
                 }
@@ -751,8 +858,7 @@ int main(int argc, char **argv)
         exit(1);
     }
     
-    
-    size_t memory_size = 4 * 20 * 1024;
+    size_t memory_size = 135 * 1024;
     u8 *memory = (u8 *)malloc(memory_size);
     Arena arena = {};
     initArena(&arena, memory_size, memory);
@@ -762,7 +868,12 @@ int main(int argc, char **argv)
     
     for (Token *tok = tokens.head; tok; tok = tok->next)
     {
-        printf("%.*s\n", tok->size, tok->data);        
+        if (tok->size)
+        {
+            printf("%d:", tok->line);
+            printTokenType(tok->type);
+            printf("%.*s\n", tok->size, tok->data);
+        }
     }
     
     free(memory);
