@@ -1,8 +1,12 @@
-#include <float.h>
-#include <stdio.h>
-#include <string.h>
-
 #include "gamedev_memory.h"
+
+#define BEGIN_METAPROGRAM
+#define END_METAPROGRAM
+
+// TODO(chogan): Replace stdlib with win32
+// TODO(chogan): Don't really need TokenList
+// TODO(chogan): Assert that each metaprogram tag ends with a ';'
+// TODO(chogan): Nested metaprograms?
 
 enum class TokenType {
     Identifier,
@@ -37,7 +41,14 @@ enum class TokenType {
     Count
 };
 
-struct Token {
+struct String
+{
+    char *str;
+    size_t size;
+};
+
+struct Token
+{
     Token *next;
     char *data;
     u32 size;
@@ -45,7 +56,8 @@ struct Token {
     TokenType type;
 };
 
-struct TokenList {
+struct TokenList
+{
     Token *head;
     int count;
 };
@@ -102,11 +114,13 @@ void printTokenType(TokenType token_type)
     }
 }
 
-EntireFile ReadEntireFile(Arena *arena, const char *path) {
+EntireFile ReadEntireFile(Arena *arena, const char *path)
+{
     EntireFile result = {};
-    FILE *fstream = fopen(path, "r");
+    FILE *fstream;
+    errno_t err = fopen_s(&fstream, path, "rb");
     
-    if (fstream) {
+    if (err == 0 && fstream) {
         int fseek_result = fseek(fstream, 0, SEEK_END);
         
         if (fseek_result == 0) {
@@ -114,11 +128,11 @@ EntireFile ReadEntireFile(Arena *arena, const char *path) {
             
             if (file_size > 0) {
                 
-                if ((u32)file_size <= arena->maxCap) {
+                if ((u32)file_size + arena->used <= arena->maxCap) {
                     fseek(fstream, 0, SEEK_SET);
                     result.contents = PushArray<u8>(arena, file_size);
-                    size_t items_read = fread(result.contents, file_size, 1, fstream);
-                    assert(items_read == 1);
+                    size_t items_read = fread(result.contents, 1, file_size, fstream);
+                    assert(items_read == file_size);
                     result.size = file_size;
                 } else {
                     fprintf(stderr, "Arena capacity (%zu) too small to read file of size %d\n",
@@ -146,7 +160,8 @@ EntireFile ReadEntireFile(Arena *arena, const char *path) {
     return result;
 }
 
-void AddTokenToList(Arena *arena, TokenList *list, TokenType type, u32 line_number) {
+void AddTokenToList(Arena *arena, TokenList *list, TokenType type, u32 line_number)
+{
     Token *tok = PushClearedStruct<Token>(arena);
     tok->type = type;
     tok->line = line_number;
@@ -154,7 +169,8 @@ void AddTokenToList(Arena *arena, TokenList *list, TokenType type, u32 line_numb
     list->head = tok;
 }
 
-inline bool BeginsComment(char *at) {
+inline bool BeginsComment(char *at)
+{
     bool result = false;
 
     if (at[0] && at[1])
@@ -168,25 +184,29 @@ inline bool BeginsComment(char *at) {
     return result;
 }
 
-inline bool EndOfComment(char c) {
+inline bool EndOfComment(char c)
+{
     bool result = (c == '\n') || ( c == '\r' );
     
     return result;
 }
 
-inline bool IsWhitespace(char c) {
+inline bool IsWhitespace(char c)
+{
     bool result = c == ' ' || c == '\t' || c == '\n' || c == '\r';
     
     return result;
 }
 
-inline bool BeginsIdentifier(char c) {
+inline bool BeginsIdentifier(char c)
+{
     bool result = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c == '_');
     
     return result;
 }
 
-inline bool EndOfIdentifier(char c) {
+inline bool EndOfIdentifier(char c)
+{
     bool result = !((c >= 'A' && c <= 'Z') ||
                     (c >= 'a' && c <= 'z') ||
                     (c == '_') ||
@@ -194,13 +214,15 @@ inline bool EndOfIdentifier(char c) {
     return result;
 }
 
-inline bool BeginsNumber(char c) {
+inline bool BeginsNumber(char c)
+{
     bool result = (c >= '0' && c <= '9');
     
     return result;
 }
 
-inline bool EndOfNumber(char c) {
+inline bool EndOfNumber(char c)
+{
     bool result = !BeginsNumber(c) && (c != '.');
 
     return result;
@@ -222,8 +244,9 @@ inline bool IsEndOfLine(char **at, char *end)
     return result;
 }
 
-TokenList Tokenize(Arena *arena, EntireFile entire_file) {
-    u32 line_number = 0;
+TokenList Tokenize(Arena *arena, EntireFile entire_file)
+{
+    u32 line_number = 1;
     TokenList result = {};
     Token dummy = {};
     result.head = &dummy;
@@ -380,14 +403,23 @@ TokenList Tokenize(Arena *arena, EntireFile entire_file) {
                     at++;
                     result.head->data = at;
                     
-                    while (at && *at != '"') {
+                    eat_string:
+                    while (at && *at != '"')
+                    {
                         result.head->size++;
                         at++;
+                    }
+                    if (*(at - 1) == '\\')
+                    {
+                        result.head->size++;
+                        at++;
+                        goto eat_string;
                     }
                     break;
                 }
                 default: {
-                    fprintf(stderr, "Unexpected token encountered on line %d: %c\n", line_number, *at);
+                    fprintf(stderr, "Unexpected token encountered on line %d: %c\n", line_number,
+                            *at);
                     exit(1);
                     break;
                 }
@@ -402,311 +434,97 @@ TokenList Tokenize(Arena *arena, EntireFile entire_file) {
     return result;
 }
 
-inline bool IsIdentifier(Token *tok) {
+inline bool IsIdentifier(Token *tok)
+{
     bool result = tok->type == TokenType::Identifier;
     
     return result;
 }
 
-inline bool IsNumber(Token *tok) {
+inline bool IsNumber(Token *tok)
+{
     bool result = tok->type == TokenType::Number;
     
     return result;
 }
 
-inline bool IsString(Token *tok) {
+inline bool IsString(Token *tok)
+{
     bool result = tok->type == TokenType::String;
     
     return result;
 }
 
-inline bool IsOpenCurlyBrace(Token *tok) {
+inline bool IsOpenCurlyBrace(Token *tok)
+{
     bool result = tok->type == TokenType::OpenCurlyBrace;
     
     return result;
 }
 
-inline bool IsCloseCurlyBrace(Token *tok) {
+inline bool IsCloseCurlyBrace(Token *tok)
+{
     bool result = tok->type == TokenType::CloseCurlyBrace;
     
     return result;
 }
 
-inline bool IsComma(Token *tok) {
+inline bool IsComma(Token *tok)
+{
     bool result = tok->type == TokenType::Comma;
     
     return result;
 }
 
-inline bool IsEqual(Token *tok) {
+inline bool IsEqual(Token *tok)
+{
     bool result = tok->type == TokenType::Equal;
     
     return result;
 }
 
-inline bool IsSemicolon(Token *tok) {
+inline bool IsSemicolon(Token *tok)
+{
     bool result = tok->type == TokenType::Semicolon;
     
     return result;
 }
 
-void PrintExpectedAndFail(const char *expected) {
+void PrintExpectedAndFail(const char *expected)
+{
     fprintf(stderr, "Configuration parser expected: %s\n", expected);
     exit(1);
 }
 
-size_t ParseSizet(Token **tok) {
-    size_t result = 0;
-    if (*tok && IsNumber(*tok)) {
-        if (sscanf((*tok)->data, "%zu", &result) == 1) {
-            *tok = (*tok)->next;
-        } else {
-            // LOG(FATAL) << "Could not interpret token data '"
-                // << std::string((*tok)->data, (*tok)->size) << "' as a size_t"
-                // << std::endl;
-        }
-    } else {
-        PrintExpectedAndFail("a number");
-    }
-    
-    return result;
-}
-
-Token *ParseSizetList(Token *tok, size_t *out, int n) {
-    if (IsOpenCurlyBrace(tok)) {
+Token *BeginStatement(Token *tok)
+{
+    if (tok && IsIdentifier(tok))
+    {
         tok = tok->next;
-        for (int i = 0; i < n; ++i) {
-            out[i] = ParseSizet(&tok);
-            if (i != n - 1) {
-                if (IsComma(tok)) {
-                    tok = tok->next;
-                } else {
-                    PrintExpectedAndFail(",");
-                }
-            }
-        }
-        
-        if (IsCloseCurlyBrace(tok)) {
+        if (tok && IsEqual(tok))
+        {
             tok = tok->next;
-        } else {
-            PrintExpectedAndFail("}");
-        }
-    } else {
-        PrintExpectedAndFail("{");
-    }
-    
-    return tok;
-}
-
-int ParseInt(Token **tok) {
-    long result = 0;
-    if (*tok && IsNumber(*tok)) {
-        result = strtol((*tok)->data, NULL, 0);
-        if (errno == ERANGE || result <= 0 || result >= INT_MAX) {
-            PrintExpectedAndFail("an integer between 1 and INT_MAX");
-        }
-        *tok = (*tok)->next;
-    } else {
-        PrintExpectedAndFail("a number");
-    }
-    
-    return (int)result;
-}
-
-Token *ParseIntList(Token *tok, int *out, int n) {
-    if (IsOpenCurlyBrace(tok)) {
-        tok = tok->next;
-        for (int i = 0; i < n; ++i) {
-            out[i] = ParseInt(&tok);
-            if (i != n - 1) {
-                if (IsComma(tok)) {
-                    tok = tok->next;
-                } else {
-                    PrintExpectedAndFail(",");
-                }
-            }
-        }
-        if (IsCloseCurlyBrace(tok)) {
-            tok = tok->next;
-        } else {
-            PrintExpectedAndFail("}");
-        }
-    } else {
-        PrintExpectedAndFail("{");
-    }
-    
-    return tok;
-}
-
-// Token *ParseIntListList(Token *tok, int out[][hermes::kMaxBufferPoolSlabs],
-                        // int n, int *m) {
-    // if (IsOpenCurlyBrace(tok)) {
-        // tok = tok->next;
-        // for (int i = 0; i < n; ++i) {
-            // tok = ParseIntList(tok, out[i], m[i]);
-            // if (i != n - 1) {
-                // assert(IsComma(tok));
-                // tok = tok->next;
-            // } else {
-                // Optional final comma
-                // if (IsComma(tok)) {
-                    // tok = tok->next;
-                // }
-            // }
-        // }
-        // if (IsCloseCurlyBrace(tok)) {
-            // tok = tok->next;
-        // } else {
-            // PrintExpectedAndFail("}");
-        // }
-    // } else {
-        // PrintExpectedAndFail("{");
-    // }
-    // 
-    // return tok;
-// }
-
-f32 ParseFloat(Token **tok) {
-    double result = 0;
-    if (*tok && IsNumber(*tok)) {
-        result = strtod((*tok)->data, NULL);
-        if (result <= 0 || errno == ERANGE || result > FLT_MAX) {
-            PrintExpectedAndFail("a floating point number between 1 and FLT_MAX");
-        }
-        *tok = (*tok)->next;
-    } else {
-        PrintExpectedAndFail("a number");
-    }
-    
-    return (f32)result;
-}
-
-Token *ParseFloatList(Token *tok, f32 *out, int n) {
-    if (IsOpenCurlyBrace(tok)) {
-        tok = tok->next;
-        for (int i = 0; i < n; ++i) {
-            out[i] = ParseFloat(&tok);
-            if (i != n - 1) {
-                if (IsComma(tok)) {
-                    tok = tok->next;
-                } else {
-                    PrintExpectedAndFail(",");
-                }
-            }
-        }
-        if (IsCloseCurlyBrace(tok)) {
-            tok = tok->next;
-        } else {
-            PrintExpectedAndFail("}");
-        }
-    } else {
-        PrintExpectedAndFail("{");
-    }
-    
-    return tok;
-}
-
-// Token *ParseFloatListList(Token *tok, f32 out[][hermes::kMaxBufferPoolSlabs],
-                          // int n, int *m) {
-    // if (IsOpenCurlyBrace(tok)) {
-        // tok = tok->next;
-        // for (int i = 0; i < n; ++i) {
-            // tok = ParseFloatList(tok, out[i], m[i]);
-            // if (i != n - 1) {
-                // if (IsComma(tok)) {
-                    // tok = tok->next;
-                // } else {
-                    // PrintExpectedAndFail(",");
-                // }
-            // } else {
-                // Optional final comma
-                // if (IsComma(tok)) {
-                    // tok = tok->next;
-                // }
-            // }
-        // }
-        // if (IsCloseCurlyBrace(tok)) {
-            // tok = tok->next;
-        // } else {
-            // PrintExpectedAndFail("}");
-        // }
-    // } else {
-        // PrintExpectedAndFail("{");
-    // }
-    // 
-    // return tok;
-// }
-
-// Token *ParseStringList(Token *tok, std::string *out, int n) {
-    // if (IsOpenCurlyBrace(tok)) {
-        // tok = tok->next;
-        // for (int i = 0; i < n; ++i) {
-            // out[i] = ParseString(&tok);
-            // if (i != n - 1) {
-                // if (IsComma(tok)) {
-                    // tok = tok->next;
-                // } else {
-                    // PrintExpectedAndFail(",");
-                // }
-            // }
-        // }
-        // if (IsCloseCurlyBrace(tok)) {
-            // tok = tok->next;
-        // } else {
-            // PrintExpectedAndFail("}");
-        // }
-    // } else {
-        // PrintExpectedAndFail("{");
-    // }
-    // 
-    // return tok;
-// }
-
-Token *ParseCharArrayString(Token *tok, char *arr) {
-    if (tok && IsString(tok)) {
-        strncpy(arr, tok->data, tok->size);
-        arr[tok->size] = '\0';
-        tok = tok->next;
-    } else {
-        PrintExpectedAndFail("a string");
-    }
-    
-    return tok;
-}
-
-// void RequireNumTiers(Config *config) {
-    // if (config->num_tiers == 0) {
-        // LOG(FATAL) << "The configuration variable 'num_tiers' must be defined first"
-            // << std::endl;
-    // }
-// }
-
-// void RequireNumSlabs(Config *config) {
-    // if (config->num_slabs == 0) {
-        // LOG(FATAL) << "The configuration variable 'num_slabs' must be defined first"
-            // << std::endl;
-    // }
-// }
-
-Token *BeginStatement(Token *tok) {
-    if (tok && IsIdentifier(tok)) {
-        tok = tok->next;
-        if (tok && IsEqual(tok)) {
-            tok = tok->next;
-        } else {
+        } else
+        {
             PrintExpectedAndFail("=");
         }
-    } else {
+    }
+    else
+    {
         PrintExpectedAndFail("an identifier");
     }
     
     return tok;
 }
 
-Token *EndStatement(Token *tok) {
-    if (tok && IsSemicolon(tok)) {
+Token *EndStatement(Token *tok)
+{
+    if (tok && IsSemicolon(tok))
+    {
         tok = tok->next;
-    } else {
+    }
+    else
+    {
         PrintExpectedAndFail(";");
     }
     
@@ -850,6 +668,152 @@ Token *EndStatement(Token *tok) {
     // ParseTokens(&tokens, config);
 // }
 
+void dumpTokens(TokenList tokens)
+{
+    for (Token *tok = tokens.head; tok; tok = tok->next)
+    {
+        printf("%d:", tok->line);
+        printTokenType(tok->type);
+        if (tok->size)
+        {
+            printf("%.*s\n", tok->size, tok->data);
+        }
+        else
+        {
+            printf("\n");
+        }
+    }
+}
+
+struct MetaprogramInfo
+{
+    MetaprogramInfo *next;
+    u8 *metaprogram_start;
+    u8 *metaprogram_end;
+    u8 *insertion_start;
+    u8 *insertion_end;
+    int line_start;
+    int line_end;
+};
+
+bool stringsAreEqual(String *s1, String *s2)
+{
+    bool result = false;
+    if (s1->size == s2->size)
+    {
+        result = true;
+        for (int i = 0; i < s1->size; ++i)
+        {
+            if (s1->str[i] != s2->str[i])
+            {
+                result = false;
+                break;
+            }
+        }
+    }
+
+    return result;
+}
+
+enum MetaprogramTag
+{
+    MetaprogramTag_Begin,
+    MetaprogramTag_End,
+};
+
+static char global_begin_str[] = "BEGIN_METAPROGRAM";
+static char global_end_str[] = "END_METAPROGRAM";
+static const size_t global_begin_metaprogram_size = sizeof(global_begin_str) - 1;
+static const size_t global_end_metaprogram_size = sizeof(global_end_str) - 1;
+
+bool isMetaprogramTag(Token *tok, MetaprogramTag tag)
+{
+    bool result = false;
+
+    String target = {};
+    if (tag == MetaprogramTag_Begin)
+    {
+        target.str = global_begin_str;
+        target.size = global_begin_metaprogram_size;
+    }
+    else if (tag == MetaprogramTag_End)
+    {
+        target.str = global_end_str;
+        target.size = global_end_metaprogram_size;
+    }
+
+    if (tok->type == TokenType::Identifier && tok->next && tok->next->type == TokenType::Semicolon)
+    {
+        String s1 = {tok->data, tok->size};
+        if (stringsAreEqual(&s1, &target))
+        {
+            result = true;
+        }
+    }
+
+    return result;
+}
+
+MetaprogramInfo *getMetaprogramInfo(Arena *arena, TokenList *tokens)
+{
+    MetaprogramInfo *head = 0;
+
+    for (Token *tok = tokens->head; tok; tok = tok->next)
+    {
+        if (isMetaprogramTag(tok, MetaprogramTag_Begin))
+        {
+            MetaprogramInfo *info = PUSH_STRUCT(arena, MetaprogramInfo);
+            info->next = head;
+            info->line_start = tok->line;
+            info->insertion_start = (u8 *)tok->data;
+            info->metaprogram_start = (u8 *)(tok->data + global_begin_metaprogram_size + 1); // 1 is for ;
+
+            while (tok && !isMetaprogramTag(tok, MetaprogramTag_End))
+            {
+                tok = tok->next;
+            }
+
+            info->line_end = tok->line;
+            info->insertion_end = (u8 *)(tok->data + global_end_metaprogram_size + 1); // 1 is for ;
+            info->metaprogram_end = (u8 *)tok->data;
+            head = info;
+        }
+    }
+
+    return head;
+}
+
+void printMetaprograms(MetaprogramInfo *metaprograms)
+{
+    for (MetaprogramInfo *info = metaprograms; info; info = info->next)
+    {
+        printf("start: %d\n", info->line_start);
+        printf("end: %d\n", info->line_end);
+    }
+}
+
+String extractMetaprogram(MetaprogramInfo *info)
+{
+    String result = {};
+    result.size = info->metaprogram_end - info->metaprogram_start;
+    result.str = (char *)info->metaprogram_start;
+
+    return result;
+}
+
+void genBeginMain(FILE *fstream)
+{
+    fprintf(fstream, "#include <stdio.h>\n");
+    fprintf(fstream, "int main()\n");
+    fprintf(fstream, "{\n");
+}
+
+void genEndMain(FILE *fstream)
+{
+    fprintf(fstream, "return 0;\n");
+    fprintf(fstream, "}\n");
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 2)
@@ -866,16 +830,49 @@ int main(int argc, char **argv)
     EntireFile file = ReadEntireFile(&arena, argv[1]);
     TokenList tokens = Tokenize(&arena, file);
     
-    for (Token *tok = tokens.head; tok; tok = tok->next)
+    MetaprogramInfo *metaprograms = getMetaprogramInfo(&arena, &tokens);
+
+    for (MetaprogramInfo *info = metaprograms; info; info= info->next)
     {
-        if (tok->size)
+        int counter = 0;
+        char filename[64];
+        snprintf(filename, 64, "generated/meta_%s_%d.cpp", argv[1], counter);
+        String metaprogram_source = extractMetaprogram(info);
+        FILE *fstream;
+        errno_t err = fopen_s(&fstream, filename, "wb");
+        if (err == 0 && fstream)
         {
-            printf("%d:", tok->line);
-            printTokenType(tok->type);
-            printf("%.*s\n", tok->size, tok->data);
+            genBeginMain(fstream);
+            fprintf(fstream, "%.*s", (int)metaprogram_source.size, metaprogram_source.str);
+            genEndMain(fstream);
+            fflush(fstream);
+            fclose(fstream);
+
+            char generate_cmd[128];
+            snprintf(generate_cmd, 128, "generate.bat %s", filename);
+            system(generate_cmd);
+
+            char generated_output_filename[64];
+            snprintf(generated_output_filename, 64, "%s.out", filename);
+            EntireFile generated_output = ReadEntireFile(&arena, generated_output_filename);
+
+            char final_filename[64];
+            snprintf(final_filename, 64, "generated/generated_%s", argv[1]);
+
+            err = fopen_s(&fstream, final_filename, "wb");
+            if (err == 0 && fstream)
+            {
+                size_t first_chunk_size = info->insertion_start - file.contents;
+                fwrite(file.contents, first_chunk_size, 1, fstream);
+                fwrite(generated_output.contents, generated_output.size, 1, fstream);
+                size_t last_chunk_size = (file.contents + file.size) - info->insertion_end;
+                fwrite(info->insertion_end, last_chunk_size, 1, fstream);
+                fclose(fstream);
+            }
         }
     }
-    
+
     free(memory);
+
     return 0;
 }
