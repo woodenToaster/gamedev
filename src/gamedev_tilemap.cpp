@@ -100,7 +100,10 @@ void drawTile(RenderCommands *commands, Game *g, Entity *e, b32 isBeingPlaced)
         {
             if (e->color.a)
             {
-                pushFilledRect(commands, tileRect, e->color, RenderLayer_Ground);
+                Rect2 dest = {};
+                dest.minP = e->position;
+                dest.maxP = dest.minP + e->size;
+                pushFilledRect(commands, dest, e->color, RenderLayer_Ground);
             }
         }
 

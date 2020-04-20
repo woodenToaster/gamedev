@@ -195,9 +195,8 @@ internal void playQueuedSounds(SoundList *sl, u64 now)
 #else
 internal void updateCamera(RenderCommands *commands, Game *game, Entity *hero)
 {
-    // TODO(chogan): Multiply world width and height by tileSideInMeters
-    int worldWidth = game->currentMap->cols;
-    int worldHeight = game->currentMap->rows;
+    int worldWidth = game->currentMap->cols * game->currentMap->tileWidth;
+    int worldHeight = game->currentMap->rows;  game->currentMap->tileHeight;
 
     f32 pixelsToMeters = 1.0f / commands->metersToPixels;
 

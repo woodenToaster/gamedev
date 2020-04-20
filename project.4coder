@@ -5,36 +5,32 @@ patterns = {
 "*.c",
 "*.cpp",
 "*.h",
-"*.m",
-"*.mm",
 "*.bat",
-"*.sh",
 "*.4coder",
-"*.txt",
 };
+
 blacklist_patterns = {
 ".*",
 };
+
 load_paths_only = {
  {"."},
 };
+
 load_paths = {
  { load_paths_only, .os = "win"  },
- { load_paths_only, .os = "linux"},
- { load_paths_only, .os = "mac"  },
 };
 
-build = "build.bat";
+run_ogl = "run_ogl";
 
 command_list = {
- { .name = "build",
-   .out = "*compilation*", .footer_panel = true, .save_dirty_files = true,
-   .cmd = { {build, .os ="win"  },
-            {build, .os ="linux"}, 
-            {build, .os ="mac"  }, }, },
  { .name = "run",
    .out = "*run*", .footer_panel = true, .save_dirty_files = true,
    .cmd = { {"pushd data && ..\\build\\win32_gamedev.exe", .os ="win" }, }, },
+ { .name = run_ogl,
+   .out = "*run*", .footer_panel = true, .save_dirty_files = true,
+   .cmd = { {"pushd opengl\\build && main.exe", .os ="win" }, }, }
 };
 
 fkey_command[5] = "run";
+fkey_command[6] = run_ogl;

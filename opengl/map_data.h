@@ -1,7 +1,7 @@
 #ifndef GAMEDEV_MAP_DATA_H
 #define GAMEDEV_MAP_DATA_H
 
-#if 0
+#if 1
 const i32 worldWidth = 16;
 const i32 worldHeight = 9;
 global int globalMapData[worldHeight][worldWidth] = {

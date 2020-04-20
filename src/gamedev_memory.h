@@ -1,6 +1,8 @@
 #ifndef GAMEDEV_MEMORY_H
 #define GAMEDEV_MEMORY_H
 
+#include "gamedev_platform.h"
+
 struct Arena
 {
     size_t used;
@@ -30,8 +32,16 @@ u8* pushSize(Arena *arena, size_t size)
     assert(size + arena->used < arena->maxCap);
     u8* result = arena->start + arena->used;
     arena->used += size;
-    memset(result, 0, size);
+    // memset(result, 0, size);
     return result;
 }
 
+u8* pushSizeAndClear(Arena *arena, size_t size)
+{
+    assert(size + arena->used < arena->maxCap);
+    u8* result = arena->start + arena->used;
+    arena->used += size;
+    memset(result, 0, size);
+    return result;
+}
 #endif

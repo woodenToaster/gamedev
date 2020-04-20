@@ -789,8 +789,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     b32 sleepIsGranular = (minimumResolution == 1 &&
                            (timeBeginPeriod(minimumResolution) == TIMERR_NOERROR));
 
-    // i32 windowWidth = 1920  / 2;
-    // i32 windowHeight = 1080  / 2;
+    i32 windowWidth = 1920 / 2;
+    i32 windowHeight = 1080 / 2;
 
     // win32ResizeDIBSection(&globalBackBuffer, windowWidth, windowHeight);
 
@@ -807,9 +807,20 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
         win32ErrorMessage(PlatformError_Fatal, "Cannot register window class");
     }
 
+    RECT desiredClientRect = {};
+    desiredClientRect.top = 0;
+    desiredClientRect.bottom = windowHeight;
+    desiredClientRect.left = 0;
+    desiredClientRect.right = windowWidth;
+    AdjustWindowRectEx(&desiredClientRect, WS_OVERLAPPEDWINDOW | WS_VISIBLE, FALSE, 0);
+
     globalWin32State.window = CreateWindowExA(0, windowClass.lpszClassName, "Gamedev",
                                               WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT,
-                                              CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, 0, 0,
+                                              CW_USEDEFAULT,
+                                              desiredClientRect.right - desiredClientRect.left,
+                                              desiredClientRect.bottom - desiredClientRect.top,
+                                              // CW_USEDEFAULT, CW_USEDEFAULT,
+                                              0, 0,
                                               instance, 0);
 
     if (!globalWin32State.window)
@@ -870,7 +881,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     OpenGLState glState = initOpenGLState();
 
     Camera camera = {};
-    camera.position = vec3(0.0f, 0.0f, 1.75f);
+    camera.position = vec3(0.0f, 0.0f, 1.63f);
     camera.up = vec3(0.0f, 1.0f, 0.0f);
     camera.right = vec3(1.0f, 0.0f, 0.0f);
     camera.direction = vec3(0.0f, 0.0f, 1.0);
@@ -912,13 +923,15 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
         GetClientRect(globalWin32State.window, &clientRect);
         int clientWidth = clientRect.right - clientRect.left;
         int clientHeight = clientRect.bottom - clientRect.top;
-        int fringe = 5;
+        int fringe = 0;
         int viewportWidth = clientWidth - (2 * fringe);
         int viewportHeight = clientHeight - (2 * fringe);
+        glViewport(fringe, fringe, viewportWidth, viewportHeight);
 
         RenderCommands renderCommands = {};
         renderCommands.metersToPixels = metersToPixels;
         renderCommands.maxBufferSize = MEGABYTES(2);
+        // TODO(chogan): Keep this around as a temporary Arena
         renderCommands.bufferBase = win32AllocateMemory(renderCommands.maxBufferSize);
         renderCommands.windowWidth = viewportWidth;
         renderCommands.windowHeight = viewportHeight;
@@ -928,7 +941,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
 
         updateOpenGLViewMatrix(&renderCommands);
 
-        glViewport(fringe, fringe, viewportWidth, viewportHeight);
         win32UpdateWindow(&globalBackBuffer, deviceContext, clientWidth, clientHeight, &renderCommands);
         ReleaseDC(globalWin32State.window, deviceContext);
 

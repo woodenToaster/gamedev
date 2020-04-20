@@ -334,9 +334,15 @@ OpenGLState initOpenGLState()
     result.viewUniformLocation = viewLocation;
 
     Mat4 model = identityMat4();
-    f32 aspect = 16.0f / 9.0f; // viewportWidthInMeters / viewportHeightInMeters;
-    Mat4 projection = makePerspectiveMat4(45, aspect, 0.1f, 100.0f);
     glUniformMatrix4fv(modelLocation, 1, GL_FALSE, model.data);
+
+    int windowWidth = 1920 / 2;
+    int windowHeight = 1080 / 2;
+    f32 pixelsToMeters = 1.0f / 60.0f;
+    f32 viewportWidthInMeters = windowWidth * pixelsToMeters;
+    f32 viewportHeightInMeters = windowHeight * pixelsToMeters;
+    f32 aspect = viewportWidthInMeters / viewportHeightInMeters;
+    Mat4 projection = makePerspectiveMat4(45, aspect, 0.1f, 100.0f);
     glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, projection.data);
 
     glEnable(GL_BLEND);

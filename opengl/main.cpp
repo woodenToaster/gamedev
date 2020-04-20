@@ -792,7 +792,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
     int windowWidth = 1920 / 2;
     int windowHeight = 1080 / 2;
     HWND WindowHandle = CreateWindowEx(0, WindowClass.lpszClassName, "OpenGL", WS_OVERLAPPEDWINDOW,
-                                       CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+                                       CW_USEDEFAULT, CW_USEDEFAULT, windowWidth, windowHeight,
                                        0, 0, Instance, 0);
 
     f32 tileWidthMeters = 1.0f;
@@ -837,14 +837,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
                                           100.0f);
     glUniformMatrix4fv(projectionLocation, 1, GL_FALSE, projection.data);
 
-    RECT ClientRect;
-    GetClientRect(WindowHandle, &ClientRect);
 
-    int clientWidth = ClientRect.right;
-    int clientHeight = ClientRect.bottom;
-
-    int fringe = 5;
-    glViewport(fringe, fringe, clientWidth - (2 * fringe), clientHeight - (2 * fringe));
     // glEnable(GL_CULL_FACE);
     // glFrontFace(GL_CW);
     // glEnable(GL_DEPTH_TEST);
@@ -866,7 +859,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
     wglSwapInterval(1);
 
     Camera camera = {};
-    camera.position = vec3(0.0f, 0.0f, 1.75f);
+    camera.position = vec3(0.0f, 0.0f, 1.63f);
     camera.up = vec3(0.0f, 1.0f, 0.0f);
     camera.right = vec3(1.0f, 0.0f, 0.0f);
     camera.direction = vec3(0.0f, 0.0f, 1.0);
@@ -971,6 +964,25 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
             Mat4 view = multiplyMat4(&lookAtRot, &lookAtTrans);
             glUniformMatrix4fv(viewLocation, 1, GL_FALSE, view.data);
 
+            RECT ClientRect;
+            GetClientRect(WindowHandle, &ClientRect);
+
+            int clientWidth = ClientRect.right;
+            int clientHeight = ClientRect.bottom;
+
+            int fringe = 0;
+            glViewport(fringe, fringe, clientWidth - (2 * fringe), clientHeight - (2 * fringe));
+
+#if 0
+            for (int i = 0; i < worldWidth; ++i)
+            {
+                Rect2 rect = {};
+                rect.minP = vec2((f32)i, (f32)worldHeight / 2.0f);
+                rect.maxP = rect.minP + vec2(tileWidthMeters, tileHeightMeters);
+                Vec3u8 tileColor = vec3u8(37, 71, 0);
+                drawOpenGLFilledRect(rect, tileColor, quadBuffer, ucolorLocation);
+            }
+#else
             // World floor
             Rect2 floor =  {};
             floor.minP = vec2(0, 0);
@@ -987,7 +999,6 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
             // int rowEnd = minInt32((int)camera.viewport.maxP.y + 2, worldHeight);
             // int colStart = maxInt32((int)camera.viewport.minP.x - 1, 0);
             // int colEnd = minInt32((int)camera.viewport.maxP.x + 2, worldWidth);
-
             for (int row = rowStart; row < rowEnd; ++row)
             {
                 for (int col = colStart; col < colEnd; ++col)
@@ -1004,7 +1015,7 @@ int WINAPI WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, PSTR CmdLine, int
             }
 
             drawOpenGLBitmap(&player, quadBuffer, ucolorLocation);
-
+#endif
             SwapBuffers(deviceContext);
 
             LARGE_INTEGER EndTime;
