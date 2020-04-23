@@ -69,7 +69,7 @@ struct Game
 {
     u32 totalFramesElapsed;
     bool running;
-    // Camera camera;
+    Camera camera;
     Map *currentMap;
     SoundList sounds;
     GameMode mode;

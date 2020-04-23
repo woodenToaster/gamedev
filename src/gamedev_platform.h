@@ -48,6 +48,7 @@ struct Camera
 
 struct RenderCommands
 {
+    Camera camera;
     u8 *bufferBase;
     void *renderer;
     int windowWidth;
@@ -55,7 +56,6 @@ struct RenderCommands
     u32 maxBufferSize;
     u32 bufferSize;
     f32 metersToPixels;
-    Camera camera;
 };
 
 enum Colors
@@ -210,10 +210,6 @@ struct AudioAPI
 
 struct GameMemory
 {
-#if 0
-    u64 sdlStorageSize;
-    void *sdlStorage;
-#endif
     u64 permanentStorageSize;
     void *permanentStorage;
     u64 transientStorageSize;

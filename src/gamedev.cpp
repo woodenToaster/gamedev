@@ -193,14 +193,14 @@ internal void playQueuedSounds(SoundList *sl, u64 now)
     sl->count = 0;
 }
 #else
-internal void updateCamera(RenderCommands *commands, Game *game, Entity *hero)
+internal void updateCamera(RenderCommands *commands, Game *game, Entity *hero, bool startZoom)
 {
     int worldWidth = game->currentMap->cols * game->currentMap->tileWidth;
     int worldHeight = game->currentMap->rows;  game->currentMap->tileHeight;
 
     f32 pixelsToMeters = 1.0f / commands->metersToPixels;
 
-    Camera *camera = &commands->camera;
+    Camera *camera = &game->camera;
     f32 viewportWidthInMeters = commands->windowWidth * pixelsToMeters;
     f32 viewportHeightInMeters = commands->windowHeight * pixelsToMeters;
 
@@ -229,8 +229,22 @@ internal void updateCamera(RenderCommands *commands, Game *game, Entity *hero)
 
     camera->position.x = hero->position.x + 0.5f * hero->size.x;
     camera->position.y = hero->position.y + 0.5f * hero->size.y;
+
+    // camera->direction.x = pixelsToMeters * 0.5f * commands->windowWidth;
+    // camera->direction.y = pixelsToMeters * 0.5f * commands->windowHeight;
+
+    // camera->position.x = pixelsToMeters * 0.5f * commands->windowWidth;
+    // camera->position.y = pixelsToMeters * 0.25f* commands->windowHeight - 6;
+
+    // camera->direction.y -= 0.01f;
+    // Vec3 normalizedDirection = normalizeV3(&camera->direction);
+    // camera->up = crossV3(&camera->right, &normalizedDirection);
+    // camera->up *= -1.0f;
+
     camera->position.x = clampFloat(camera->position.x, minCameraPx, maxCameraPx);
     camera->position.y = clampFloat(camera->position.y, minCameraPy, maxCameraPy);
+
+    commands->camera = *camera;
 }
 
 #endif
@@ -269,6 +283,11 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
         initArena(&game->transientArena, memory->transientStorageSize, (u8*)memory->transientStorage);
 
         initColors(game->colors);
+
+        game->camera.position = vec3(0.0f, 0.0f, 1.63f);
+        game->camera.up = vec3(0.0f, 1.0f, 0.0f);
+        game->camera.right = vec3(1.0f, 0.0f, 0.0f);
+        game->camera.direction = vec3(0.0f, 0.0f, 1.0f);
 
         // Asset loading
         // TODO(cjh): Packed asset file
@@ -480,7 +499,8 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
             viewport->y = game->camera.viewport.y;
             playQueuedSounds(&game->sounds, now);
 #else
-            updateCamera(renderCommands, game, hero);
+            bool startZoom = input->keyPressed[Key_Z];
+            updateCamera(renderCommands, game, hero, startZoom);
 #endif
             updateTiles(game, input);
             break;

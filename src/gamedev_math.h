@@ -405,6 +405,55 @@ Vec3 vec3(f32 x, f32 y, f32 z)
     return v;
 }
 
+f32 magnitudeV3(Vec3* v)
+{
+    return sqrtf(powf(v->x, 2) + powf(v->y, 2) + powf(v->z, 2));
+}
+
+Vec3 crossV3(Vec3 *a, Vec3 *b)
+{
+    Vec3 result = {a->y * b->z - a->z * b->y,
+                   a->z * b->x - a->x * b->z,
+                   a->x * b->y - a->y * b->x};
+
+    return result;
+}
+
+Vec3 normalizeV3(Vec3 *v)
+{
+    f32 length = magnitudeV3(v);
+    Vec3 result = {v->x / length, v->y / length, v->z / length};
+
+    return result;
+}
+
+Vec3 operator-(Vec3 v1, Vec3 v2)
+{
+    Vec3 result = {};
+    result.x = v1.x - v2.x;
+    result.y = v1.y - v2.y;
+    result.z = v1.z - v2.z;
+
+    return result;
+}
+
+Vec3 operator*(f32 s, Vec3 v)
+{
+    Vec3 result = {};
+    result.x = v.x * s;
+    result.y = v.y * s;
+    result.z = v.z * s;
+
+    return result;
+}
+
+Vec3& operator*=(Vec3& v1, f32 s)
+{
+    v1 = s * v1;
+
+    return v1;
+}
+
 Vec3u8 vec3u8(u8 r, u8 g, u8 b)
 {
     Vec3u8 v = {r, g, b};

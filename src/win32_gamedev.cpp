@@ -664,6 +664,10 @@ internal void win32UpdateKeyboardInput(Input* input, u64 vkCode, b32 isDown)
         {
             win32SetKeyState(input, Key_Right, isDown);
         } break;
+        case 'Z':
+        {
+            win32SetKeyState(input, Key_Z, isDown);
+        } break;
         case VK_ESCAPE:
         {
             win32SetKeyState(input, Key_Escape, isDown);
@@ -812,7 +816,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     desiredClientRect.bottom = windowHeight;
     desiredClientRect.left = 0;
     desiredClientRect.right = windowWidth;
-    AdjustWindowRectEx(&desiredClientRect, WS_OVERLAPPEDWINDOW | WS_VISIBLE, FALSE, 0);
+    AdjustWindowRectEx(&desiredClientRect, windowClass.style | WS_OVERLAPPEDWINDOW | WS_VISIBLE, FALSE,
+                       0);
 
     globalWin32State.window = CreateWindowExA(0, windowClass.lpszClassName, "Gamedev",
                                               WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT,
@@ -880,12 +885,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     Input oldInput = {};
     OpenGLState glState = initOpenGLState();
 
-    Camera camera = {};
-    camera.position = vec3(0.0f, 0.0f, 1.63f);
-    camera.up = vec3(0.0f, 1.0f, 0.0f);
-    camera.right = vec3(1.0f, 0.0f, 0.0f);
-    camera.direction = vec3(0.0f, 0.0f, 1.0);
-
     globalWin32State.isRunning = true;
     while (globalWin32State.isRunning)
     {
@@ -936,7 +935,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
         renderCommands.windowWidth = viewportWidth;
         renderCommands.windowHeight = viewportHeight;
         renderCommands.renderer = &glState;
-        renderCommands.camera = camera;
         updateAndRender(&memory, &newInput, &renderCommands);
 
         updateOpenGLViewMatrix(&renderCommands);
