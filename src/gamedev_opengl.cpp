@@ -303,6 +303,7 @@ internal void drawOpenGLRenderGroup(RenderCommands *commands)
         }
     }
 }
+
 OpenGLState initOpenGLState()
 {
     OpenGLState result = {};

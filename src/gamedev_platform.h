@@ -34,7 +34,7 @@ typedef int32_t b32;
 
 #define KILOBYTES(n) ((n) * 1024)
 #define MEGABYTES(n) ((n) * 1024 * 1024)
-#define GIGABYTES(n) ((n) * 1024 * 1024 * 1024)
+#define GIGABYTES(n) ((n) * 1024UL * 1024UL * 1024UL)
 
 #define ARRAY_COUNT(arr) (sizeof(arr) / sizeof((arr)[0]))
 

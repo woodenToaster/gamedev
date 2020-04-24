@@ -18,29 +18,6 @@
 #include "gamedev_tilemap.cpp"
 
 
-internal TemporaryMemory beginTemporaryMemory(Arena *arena)
-{
-    TemporaryMemory result = {};
-    result.arena = arena;
-    result.used = arena->used;
-    arena->tmpCount++;
-
-    return result;
-}
-
-internal void endTemporaryMemory(TemporaryMemory tempMem)
-{
-    Arena *arena = tempMem.arena;
-    assert(arena->used >= tempMem.used);
-    arena->used = tempMem.used;
-    assert(arena->tmpCount > 0);
-    --arena->tmpCount;
-}
-
-internal void checkArena(Arena *arena)
-{
-    assert(arena->tmpCount == 0);
-}
 
 void destroyGame(Game* g)
 {
@@ -193,7 +170,7 @@ internal void playQueuedSounds(SoundList *sl, u64 now)
     sl->count = 0;
 }
 #else
-internal void updateCamera(RenderCommands *commands, Game *game, Entity *hero, bool startZoom)
+internal void updateCamera(RenderCommands *commands, Game *game, Entity *hero)
 {
     int worldWidth = game->currentMap->cols * game->currentMap->tileWidth;
     int worldHeight = game->currentMap->rows;  game->currentMap->tileHeight;
@@ -276,6 +253,8 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
     f32 metersToPixels = renderCommands->metersToPixels;
     f32 pixelsToMeters = 1.0f / metersToPixels;
 
+    ObjData castle_data = {};
+
     if (!memory->isInitialized)
     {
         initArena(&game->worldArena, memory->permanentStorageSize - sizeof(Game),
@@ -283,6 +262,8 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
         initArena(&game->transientArena, memory->transientStorageSize, (u8*)memory->transientStorage);
 
         initColors(game->colors);
+
+        castle_data = loadObjFromFile(&game->transientArena, &game->worldArena, "models/castle.obj");
 
         game->camera.position = vec3(0.0f, 0.0f, 1.63f);
         game->camera.up = vec3(0.0f, 1.0f, 0.0f);
@@ -499,8 +480,7 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
             viewport->y = game->camera.viewport.y;
             playQueuedSounds(&game->sounds, now);
 #else
-            bool startZoom = input->keyPressed[Key_Z];
-            updateCamera(renderCommands, game, hero, startZoom);
+            updateCamera(renderCommands, game, hero);
 #endif
             updateTiles(game, input);
             break;

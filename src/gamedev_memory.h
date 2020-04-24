@@ -17,7 +17,9 @@ struct TemporaryMemory
     size_t used;
 };
 
-#define PUSH_STRUCT(arena, type) ((type*)pushSize((arena), sizeof(type)))
+#define PUSH_STRUCT(arena, type) ((type *)pushSize((arena), sizeof(type)))
+#define PUSH_CLEARED_STRUCT(arena, type) ((type *)pushSizeAndClear((arena), sizeof(type)))
+#define PUSH_ARRAY(arena, type, count) ((type *)pushSize((arena), sizeof(type) * (count)))
 
 void initArena(Arena *arena, size_t bytes, u8 *start)
 {
@@ -32,7 +34,6 @@ u8* pushSize(Arena *arena, size_t size)
     assert(size + arena->used < arena->maxCap);
     u8* result = arena->start + arena->used;
     arena->used += size;
-    // memset(result, 0, size);
     return result;
 }
 
@@ -44,4 +45,29 @@ u8* pushSizeAndClear(Arena *arena, size_t size)
     memset(result, 0, size);
     return result;
 }
+
+internal TemporaryMemory beginTemporaryMemory(Arena *arena)
+{
+    TemporaryMemory result = {};
+    result.arena = arena;
+    result.used = arena->used;
+    arena->tmpCount++;
+
+    return result;
+}
+
+internal void endTemporaryMemory(TemporaryMemory tempMem)
+{
+    Arena *arena = tempMem.arena;
+    assert(arena->used >= tempMem.used);
+    arena->used = tempMem.used;
+    assert(arena->tmpCount > 0);
+    --arena->tmpCount;
+}
+
+internal void checkArena(Arena *arena)
+{
+    assert(arena->tmpCount == 0);
+}
+
 #endif

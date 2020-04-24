@@ -174,6 +174,7 @@ internal void *pushRenderElement_(RenderCommands *commands, u32 size, RenderEntr
     return result;
 }
 
+#if 0
 internal void pushRect(RenderCommands *commands, Rect dest, Vec4u8 color, RenderLayer layer)
 {
     RenderEntryRect *rect = PushRenderElement(commands, RenderEntryRect);
@@ -185,6 +186,7 @@ internal void pushRect(RenderCommands *commands, Rect dest, Vec4u8 color, Render
         rect->layer = layer;
     }
 }
+#endif
 
 internal void pushFilledRect(RenderCommands *commands, Rect dest, Vec4u8 color, RenderLayer layer)
 {

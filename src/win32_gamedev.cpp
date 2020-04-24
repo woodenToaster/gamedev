@@ -735,8 +735,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     (void)showCode;
 
     GameMemory memory = {};
-    memory.permanentStorageSize = (size_t)MEGABYTES(1);
-    memory.transientStorageSize = (size_t)MEGABYTES(4);
+    memory.permanentStorageSize = (size_t)GIGABYTES(2);
+    memory.transientStorageSize = (size_t)MEGABYTES(32);
     memory.permanentStorage = VirtualAlloc(0, memory.permanentStorageSize + memory.transientStorageSize,
                                            MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
     memory.transientStorage = (u8*)memory.permanentStorage + memory.permanentStorageSize;
