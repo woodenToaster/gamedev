@@ -737,9 +737,13 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     GameMemory memory = {};
     memory.permanentStorageSize = (size_t)GIGABYTES(2);
     memory.transientStorageSize = (size_t)MEGABYTES(32);
-    memory.permanentStorage = VirtualAlloc(0, memory.permanentStorageSize + memory.transientStorageSize,
-                                           MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+    memory.renderCommandsStorageSize = (size_t)MEGABYTES(2);
+    size_t totalStorageSize = memory.permanentStorageSize + memory.transientStorageSize +
+        memory.renderCommandsStorageSize;
+
+    memory.permanentStorage = VirtualAlloc(0, totalStorageSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
     memory.transientStorage = (u8*)memory.permanentStorage + memory.permanentStorageSize;
+    memory.renderCommandsStorage = (u8 *)memory.transientStorage + memory.transientStorageSize;
 
     memory.platformAPI.readEntireFile = win32ReadEntireFile;
     memory.platformAPI.freeFileMemory = win32FreeFileMemory;
@@ -922,9 +926,8 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
 
         RenderCommands renderCommands = {};
         renderCommands.metersToPixels = metersToPixels;
-        renderCommands.maxBufferSize = MEGABYTES(2);
-        // TODO(chogan): Keep this around as a temporary Arena
-        renderCommands.bufferBase = win32AllocateMemory(renderCommands.maxBufferSize);
+        renderCommands.maxBufferSize = memory.renderCommandsStorageSize;
+        renderCommands.bufferBase = (u8 *)memory.renderCommandsStorage;
         renderCommands.windowWidth = viewportWidth;
         renderCommands.windowHeight = viewportHeight;
         renderCommands.renderer = &glState;
@@ -934,8 +937,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
 
         win32UpdateWindow(&globalBackBuffer, deviceContext, clientWidth, clientHeight, &renderCommands);
         ReleaseDC(globalWin32State.window, deviceContext);
-
-        win32FreeMemory(renderCommands.bufferBase);
 
         u32 dt = win32GetMillisecondsElapsed(currentTick, win32GetTicks());
         if (dt < targetMsPerFrame)

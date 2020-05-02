@@ -53,8 +53,8 @@ struct RenderCommands
     void *renderer;
     int windowWidth;
     int windowHeight;
-    u32 maxBufferSize;
-    u32 bufferSize;
+    u64 maxBufferSize;
+    u64 bufferSize;
     f32 metersToPixels;
 };
 
@@ -213,6 +213,8 @@ struct GameMemory
     void *permanentStorage;
     u64 transientStorageSize;
     void *transientStorage;
+    u64 renderCommandsStorageSize;
+    void *renderCommandsStorage;
 
     u64 currentTickCount;
     b32 isInitialized;

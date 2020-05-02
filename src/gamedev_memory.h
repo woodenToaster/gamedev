@@ -46,28 +46,7 @@ u8* pushSizeAndClear(Arena *arena, size_t size)
     return result;
 }
 
-internal TemporaryMemory beginTemporaryMemory(Arena *arena)
-{
-    TemporaryMemory result = {};
-    result.arena = arena;
-    result.used = arena->used;
-    arena->tmpCount++;
-
-    return result;
-}
-
-internal void endTemporaryMemory(TemporaryMemory tempMem)
-{
-    Arena *arena = tempMem.arena;
-    assert(arena->used >= tempMem.used);
-    arena->used = tempMem.used;
-    assert(arena->tmpCount > 0);
-    --arena->tmpCount;
-}
-
-internal void checkArena(Arena *arena)
-{
-    assert(arena->tmpCount == 0);
-}
+internal TemporaryMemory beginTemporaryMemory(Arena *arena);
+internal void endTemporaryMemory(TemporaryMemory tempMem);
 
 #endif
