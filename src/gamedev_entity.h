@@ -84,6 +84,7 @@ struct Entity
 
     EntityType type;
 
+    TextureHandle texture;
     Entity *nextFree;
 
     // TODO(cjh): @win32

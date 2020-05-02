@@ -748,6 +748,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     memory.rendererAPI.renderFilledRect = win32RenderFilledRect;
     memory.rendererAPI.renderRect = win32RenderRect;
     memory.rendererAPI.loadBitmap = win32LoadBitmap;
+    memory.rendererAPI.loadTexture = loadOpenGLTexture;
     memory.rendererAPI.renderBitmap = win32RenderBitmap;
     memory.rendererAPI.renderSprite = win32RenderSprite;
     memory.rendererAPI.getTextureDims = win32GetTextureDims;
@@ -872,14 +873,6 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
     FILETIME lastWriteTime = attributeData.ftLastWriteTime;
 
     LARGE_INTEGER lastTickCount = win32GetTicks();
-
-    LoadedBitmap heroLoadedBitmap = win32LoadBitmap("sprites/link_walking.bmp");
-    GLuint heroTexture;
-    glCreateTextures(GL_TEXTURE_2D, 1, &heroTexture);
-    glBindTexture(GL_TEXTURE_2D, heroTexture);
-    glTextureStorage2D(heroTexture, 1, GL_RGBA8, heroLoadedBitmap.width, heroLoadedBitmap.height);
-    glTextureSubImage2D(heroTexture, 0, 0, 0, heroLoadedBitmap.width, heroLoadedBitmap.height, GL_BGRA,
-                        GL_UNSIGNED_INT_8_8_8_8_REV, heroLoadedBitmap.pixels);
 
     f32 metersToPixels = 60.0f;
     Input oldInput = {};

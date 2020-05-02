@@ -88,13 +88,14 @@ void drawTile(RenderCommands *commands, Game *g, Entity *e, b32 isBeingPlaced)
     if (e->isVisible && e->active)
     {
         Rect tileRect = getEntityRect(e);
-        if (e->spriteSheet.sheet.texture)
+        if (e->texture.id)
         {
             if (e->animation.totalFrames > 0)
             {
                 e->spriteRect.x = e->spriteRect.w * e->animation.currentFrame;
             }
-            pushSprite(commands, e->spriteSheet.sheet, e->spriteRect, tileRect, RenderLayer_Ground);
+            // pushSprite(commands, e->spriteSheet.sheet, e->spriteRect, tileRect, RenderLayer_Ground);
+            pushTexture(commands, e);
         }
         else
         {

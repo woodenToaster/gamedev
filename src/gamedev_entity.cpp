@@ -1,6 +1,6 @@
-void initEntitySpriteSheet(Entity* e, TextureHandle texture, int num_x, int num_y, Vec2 scale = {1.0f, 1.0f})
+void initEntitySpriteSheet(Entity* e, int num_x, int num_y, Vec2 scale = {1.0f, 1.0f})
 {
-    initSpriteSheet(&e->spriteSheet, texture, num_x, num_y);
+    initSpriteSheet(e, num_x, num_y);
     e->spriteRect.w = e->spriteSheet.spriteWidth;
     e->spriteRect.h = e->spriteSheet.spriteHeight;
     e->spriteSheet.scale = scale;
@@ -12,16 +12,16 @@ void initHarvestableTree(Entity *tile, Game *game)
     tile->color = game->colors[Color_None];
     tile->collides = true;
     tile->burntTileIndex = 2;
-    initEntitySpriteSheet(tile, game->harvestableTreeTexture, 3, 1);
+    initEntitySpriteSheet(tile, 3, 1);
     tile->isVisible = true;
     tile->harvestedItem = InventoryItemType_Leaves;
 }
 
-void initGlowTree(Entity *tile, Game *game)
+void initGlowTree(Entity *tile)
 {
     addTileFlags(tile, (u32)(TileProperty_Harvest | TileProperty_Solid));
     tile->collides = true;
-    initEntitySpriteSheet(tile, game->glowTreeTexture, 2, 1);
+    initEntitySpriteSheet(tile, 2, 1);
     tile->isVisible = true;
     tile->harvestedItem = InventoryItemType_Glow;
 }
@@ -178,7 +178,7 @@ Entity *addFlame(Game *g, Vec2 pos)
     result->height = 10;
     // TODO(cjh): Should pass this to renderer rather than storing it in spriteSheet?
     Vec2 flameScale = {1.25f, 1.25f};
-    initEntitySpriteSheet(result, g->flameTexture, 10, 1, flameScale);
+    initEntitySpriteSheet(result, 10, 1, flameScale);
     initAnimation(&result->animation, 10, 100);
     result->color = g->colors[Color_None];
     result->isVisible = true;
@@ -274,7 +274,7 @@ internal void placeItem(Game *g, Entity *h)
                 break;
             case Craftable_Glow_Juice:
                 // TODO(cjh): Calls initEntitySpriteSheet twice, which does QueryTexture
-                initGlowTree(tile, g);
+                initGlowTree(tile);
                 break;
             default:
                 break;
@@ -833,10 +833,10 @@ internal void updateHero(RenderCommands *renderCommands, Entity* h, Input* input
             {
                 case Craftable_Tree:
                     // TODO(cjh): This is called again in placeItem
-                    initEntitySpriteSheet(tile, g->harvestableTreeTexture, 3, 1);
+                    initEntitySpriteSheet(tile, 3, 1);
                     break;
                 case Craftable_Glow_Juice:
-                    initEntitySpriteSheet(tile, g->glowTreeTexture, 2, 1);
+                    initEntitySpriteSheet(tile, 2, 1);
                     break;
             }
         }

@@ -48,6 +48,7 @@ PFNWGLSWAPINTERVALEXTPROC wglSwapInterval;
 struct OpenGLState
 {
     GLuint quadBufferHandle;
+    GLuint heroTextureHandle;
     GLint colorUniformLocation;
     GLint viewUniformLocation;
 };
@@ -115,12 +116,12 @@ void drawOpenGLBitmap(RenderEntryTexture *entry, GLuint quadBuffer, GLint ucolor
     };
 
     glEnableVertexAttribArray(2);
-    {
-        glBindBuffer(GL_ARRAY_BUFFER, quadBuffer);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(quad), quad, GL_STATIC_DRAW);
-        glUniform4f(ucolorLocation, 0.0f, 0.0f, 0.0f, 0.0f);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-    }
+    glBindTexture(GL_TEXTURE_2D, entry->handle);
+    glBindBuffer(GL_ARRAY_BUFFER, quadBuffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quad), quad, GL_STATIC_DRAW);
+    glUniform4f(ucolorLocation, 0.0f, 0.0f, 0.0f, 0.0f);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
     glDisableVertexAttribArray(2);
 }
 
@@ -304,11 +305,25 @@ internal void drawOpenGLRenderGroup(RenderCommands *commands)
     }
 }
 
+GLuint loadOpenGLTexture(LoadedBitmap *bitmap)
+{
+    GLuint id;
+    glCreateTextures(GL_TEXTURE_2D, 1, &id);
+    glBindTexture(GL_TEXTURE_2D, id);
+    glTextureStorage2D(id, 1, GL_RGBA8, bitmap->width, bitmap->height);
+    glTextureSubImage2D(id, 0, 0, 0, bitmap->width, bitmap->height, GL_BGRA,
+                            GL_UNSIGNED_INT_8_8_8_8_REV, bitmap->pixels);
+
+    return id;
+}
+
 OpenGLState initOpenGLState()
 {
     OpenGLState result = {};
     GLuint program = compileShaders();
     glUseProgram(program);
+
+
 
     u32 quadBuffer;
     glGenBuffers(1, &quadBuffer);

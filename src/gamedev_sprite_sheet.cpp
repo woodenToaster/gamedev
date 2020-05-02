@@ -1,13 +1,15 @@
 #include "gamedev_sprite_sheet.h"
 
-void initSpriteSheet(SpriteSheet* ss, TextureHandle texture, int xSprites, int ySprites)
+void initSpriteSheet(Entity *entity, int xSprites, int ySprites)
 {
-    ss->sheet = texture;
-    TextureDims textureDims = rendererAPI.getTextureDims(texture);
-    ss->width = textureDims.width;
-    ss->height = textureDims.height;
-    ss->spriteWidth = ss->width / xSprites;
-    ss->spriteHeight = ss->height / ySprites;
-    ss->numX = xSprites;
-    ss->numY = ySprites;
+    // ss->sheet = texture;
+    // TextureDims textureDims = rendererAPI.getTextureDims(texture);
+    // ss->width = textureDims.width;
+    // ss->height = textureDims.height;
+    entity->spriteSheet.width = entity->texture.bitmap.width;
+    entity->spriteSheet.height = entity->texture.bitmap.height;
+    entity->spriteSheet.spriteWidth = entity->spriteSheet.width / xSprites;
+    entity->spriteSheet.spriteHeight = entity->spriteSheet.height / ySprites;
+    entity->spriteSheet.numX = xSprites;
+    entity->spriteSheet.numY = ySprites;
 }

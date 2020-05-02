@@ -1,4 +1,5 @@
 
+#if 0
 // TODO(cjh): Account for wrapping off the viewport
 void drawText(RenderCommands *commands, FontMetadata *fontMetadata, char* text, i32 x=0, i32 y=0)
 {
@@ -39,7 +40,6 @@ void drawText(RenderCommands *commands, FontMetadata *fontMetadata, char* text, 
     }
 }
 
-#if 0
 void drawDialogScreen(RenderCommands *commands, Game *g, FontMetadata *fontMetadata)
 {
     int thirdOfWidth = (int)(g->camera.viewport.w / 3);
@@ -238,6 +238,7 @@ internal void pushTexture(RenderCommands *commands, Entity *entity)
         texture->sheetHeight = (f32)entity->spriteSheet.height;
         texture->currentFrame = entity->animation.currentFrame;
         texture->direction = entity->direction;
+        texture->handle = entity->texture.id;
     }
 }
 

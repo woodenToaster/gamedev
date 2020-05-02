@@ -106,11 +106,8 @@ struct LoadedBitmap
 
 struct TextureHandle
 {
-    union
-    {
-        void *texture;
-        LoadedBitmap bitmap;
-    };
+    LoadedBitmap bitmap;
+    u32 id;
 };
 
 struct TextureDims
@@ -130,6 +127,7 @@ typedef TextureHandle (CreateTextureFromPng)(const char *fname, void *renderer);
 typedef TextureHandle (CreateTextureFromGreyscaleBitmap)(void *renderer, u8 *bitmap, i32 width,
                                                          i32 height);
 typedef LoadedBitmap (LoadBitmapFunc)(char *path);
+typedef u32 (LoadTextureFunc)(LoadedBitmap *);
 
 struct RendererAPI
 {
@@ -143,6 +141,7 @@ struct RendererAPI
     CreateTextureFromPng *createTextureFromPng;
     CreateTextureFromGreyscaleBitmap *createTextureFromGreyscaleBitmap;
     LoadBitmapFunc *loadBitmap;
+    LoadTextureFunc *loadTexture;
 };
 
 struct FontInfoHandle

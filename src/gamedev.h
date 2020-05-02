@@ -78,7 +78,7 @@ struct Game
 
     Entity *hero;
 
-    TextureHandle linkTexture;
+    // TextureHandle heroTexture;
     TextureHandle harvestableTreeTexture;
     TextureHandle glowTreeTexture;
     TextureHandle harlodTexture;

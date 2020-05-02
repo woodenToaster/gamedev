@@ -24,14 +24,15 @@ void destroyGame(Game* g)
     // TODO(cjh): This should be stored in gameMemory instead of malloced
     free(g->dialogue);
     // TODO(cjh): Don't require typing these in here (may forget)
-    rendererAPI.destroyTexture(g->linkTexture);
-    rendererAPI.destroyTexture(g->harvestableTreeTexture);
-    rendererAPI.destroyTexture(g->harlodTexture);
-    rendererAPI.destroyTexture(g->knightTexture);
-    rendererAPI.destroyTexture(g->flameTexture);
-    rendererAPI.destroyTexture(g->firePitTexture);
-    rendererAPI.destroyTexture(g->glowTreeTexture);
-    rendererAPI.destroyTexture(g->iconsTexture);
+    // TODO(chogan): Clean up gl texture handles
+    // rendererAPI.destroyTexture(g->heroTexture);
+    // rendererAPI.destroyTexture(g->harvestableTreeTexture);
+    // rendererAPI.destroyTexture(g->harlodTexture);
+    // rendererAPI.destroyTexture(g->knightTexture);
+    // rendererAPI.destroyTexture(g->flameTexture);
+    // rendererAPI.destroyTexture(g->firePitTexture);
+    // rendererAPI.destroyTexture(g->glowTreeTexture);
+    // rendererAPI.destroyTexture(g->iconsTexture);
 }
 
 #if 0
@@ -289,11 +290,6 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
         game->mudSound.chunk = audioAPI.loadWav("sounds/mud_walk.wav");
         game->mudSound.delay = 250;
         fontAPI.generateFontData(&game->fontMetadata, rendererState);
-#else
-        LoadedBitmap linkBitmap  = rendererAPI.loadBitmap("sprites/link_walking.bmp");
-        TextureHandle linkTexture = {};
-        linkTexture.bitmap = linkBitmap;
-        game->linkTexture = linkTexture;
 #endif
         // Map
         Map *map0 = PUSH_STRUCT(&game->worldArena, Map);
@@ -391,6 +387,13 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
                     tile->color = game->colors[Color_DarkGreen];
                     tile->collides = true;
                 }
+                if ((row == 2 && (col == 4 || col == 5 || col == 6 || col == 7)) ||
+                    ((row == 3 || row == 4 || row == 5 || row == 6) && col == 7))
+                {
+                    tile->texture.bitmap = rendererAPI.loadBitmap("sprites/harvestable_tree.bmp");
+                    tile->texture.id = rendererAPI.loadTexture(&tile->texture.bitmap);
+                    initHarvestableTree(tile, game);
+                }
             }
         }
 #endif
@@ -399,7 +402,9 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
         Entity *hero = game->hero;
         Vec2 heroScale = {1.875f, 1.875f};
         // Vec2 heroScale = {1.0f, 1.0f};
-        initEntitySpriteSheet(hero, game->linkTexture, 11, 5, heroScale);
+        hero->texture.bitmap  = rendererAPI.loadBitmap("sprites/link_walking.bmp");
+        hero->texture.id = rendererAPI.loadTexture(&hero->texture.bitmap);
+        initEntitySpriteSheet(hero, 11, 5, heroScale);
         // hero->width = 20;
         // hero->height = 10;
         hero->shouldAnimate = true;

@@ -69,6 +69,7 @@ struct RenderEntryTexture
     f32 sheetHeight;
     int currentFrame;
     Direction direction;
+    u32 handle;
 };
 
 struct RenderGroup
