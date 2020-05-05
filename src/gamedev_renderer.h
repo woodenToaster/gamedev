@@ -19,6 +19,7 @@ enum RenderEntryType
     RenderEntryType_RenderEntrySprite,
     RenderEntryType_RenderEntryLoadedBitmap,
     RenderEntryType_RenderEntryTexture,
+    RenderEntryType_RenderEntryGlyph,
 
     RenderEntryType_Count
 };

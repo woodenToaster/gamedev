@@ -259,7 +259,7 @@ internal void queueSound(SoundList *sl, Sound *s)
 extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, TextureHandle outputTarget,
                                     Rect *viewport, void *rendererState)
 #else
-extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderCommands *renderCommands)
+extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderCommands *renderCommands, LoadedBitmap *codepointZ)
 #endif
 {
     platform = memory->platformAPI;
@@ -279,6 +279,8 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
 
     ObjData castle_data = {};
 
+    Glyph zGlyph = {};
+
     if (!memory->isInitialized)
     {
         initArena(&game->worldArena, memory->permanentStorageSize - sizeof(Game),
@@ -293,6 +295,9 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
         game->camera.up = vec3(0.0f, 1.0f, 0.0f);
         game->camera.right = vec3(1.0f, 0.0f, 0.0f);
         game->camera.direction = vec3(0.0f, 0.0f, 1.0f);
+
+        zGlyph.bitmap = codepointZ;
+        zGlyph.id = rendererAPI.loadTexture(codepointZ);
 
         // Asset loading
         // TODO(cjh): Packed asset file
@@ -528,6 +533,9 @@ extern "C" void gameUpdateAndRender(GameMemory *memory, Input *input, RenderComm
     drawBackground(renderCommands, game);
     drawTiles(renderCommands, game);
     pushTexture(renderCommands, hero);
+
+    pushGlyph(renderCommands, &zGlyph, vec2(1, 1), vec2(0.5, 0.5));
+
     // drawEntities(renderCommands, game);
     // drawPlacingTile(renderCommands, game, hero);
     // drawHUD(renderCommands, game, hero, &game->fontMetadata);

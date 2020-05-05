@@ -242,6 +242,36 @@ internal void pushTexture(RenderCommands *commands, Entity *entity)
     }
 }
 
+struct Glyph
+{
+    LoadedBitmap *bitmap;
+    u32 id;
+};
+
+struct RenderEntryGlyph
+{
+    LoadedBitmap *bitmap;
+    u32 id;
+    Vec2 position;
+    Vec2 size;
+};
+
+internal void pushGlyph(RenderCommands *commands, Glyph *glyph, Vec2 position, Vec2 size)
+{
+    RenderEntryTexture *glyph_entry = PushRenderElement(commands, RenderEntryTexture);
+    if (glyph_entry)
+    {
+        glyph_entry->position = position;
+        glyph_entry->size = size;
+        glyph_entry->spriteWidth = size.x;
+        glyph_entry->spriteHeight = size.y;
+        glyph_entry->sheetWidth = size.x;
+        glyph_entry->sheetHeight = size.y;
+        glyph_entry->currentFrame = 0;
+        glyph_entry->handle = glyph->id;
+    }
+}
+
 #if 0
 internal void pushBitmap(RenderCommands *commands, LoadedBitmap bitmap, Rect source, Rect dest,
                          RenderLayer layer)

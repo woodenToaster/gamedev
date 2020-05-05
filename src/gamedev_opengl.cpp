@@ -323,8 +323,6 @@ OpenGLState initOpenGLState()
     GLuint program = compileShaders();
     glUseProgram(program);
 
-
-
     u32 quadBuffer;
     glGenBuffers(1, &quadBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, quadBuffer);

@@ -840,6 +840,46 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
 
     win32InitOpenGL(globalWin32State.window);
 
+    HDC dc = CreateCompatibleDC(0);
+    HBITMAP bitmap = CreateCompatibleBitmap(dc, 1024, 1024);
+    SelectObject(dc, bitmap);
+    SetBkColor(dc, RGB(0, 0, 0));
+
+    TEXTMETRIC textMetric;
+    GetTextMetrics(dc, &textMetric);
+
+    wchar_t codepoint = 90;  // Z
+
+    SIZE glyphSize;
+    GetTextExtentPoint32W(dc, &codepoint, 1, &glyphSize);
+
+    int glyphWidth = glyphSize.cx;
+    int glyphHeight = glyphSize.cy;
+
+    SetTextColor(dc, RGB(255, 255, 255));
+    TextOutW(dc, 0, 0, &codepoint, 1);
+
+    LoadedBitmap codepointZ = {};
+    codepointZ.width = glyphWidth;
+    codepointZ.height = glyphHeight;
+    codepointZ.pixels = (u32 *)malloc(glyphHeight * glyphWidth * 4);
+
+    u32 *dest = codepointZ.pixels;
+    for (int y = 0; y < glyphHeight; ++y)
+    {
+        for (int x = 0; x < glyphWidth; ++x)
+        {
+            COLORREF color = GetPixel(dc, x, y);
+            u8 r = 255;
+            u8 g = 255;
+            u8 b = 255;
+            u8 a = color & 0xFF;
+            // *dest++ = pixel;
+            *dest++ = ((a << 24) | (r << 16) | (g << 8) | (b << 0));
+        }
+        dest = (u32 *)((u8 *)dest + glyphWidth * y * 4);
+    }
+
     u32 targetFps = 60;
     // TODO(chogan): This gets set when memory is initialized in gameUpdateAndRender.
     // Remove this once we're calling that function.
@@ -931,8 +971,7 @@ int CALLBACK WinMain(HINSTANCE instance, HINSTANCE prevInstance, LPSTR commandLi
         renderCommands.windowWidth = viewportWidth;
         renderCommands.windowHeight = viewportHeight;
         renderCommands.renderer = &glState;
-        updateAndRender(&memory, &newInput, &renderCommands);
-
+        updateAndRender(&memory, &newInput, &renderCommands, &codepointZ);
         updateOpenGLViewMatrix(&renderCommands);
 
         win32UpdateWindow(&globalBackBuffer, deviceContext, clientWidth, clientHeight, &renderCommands);

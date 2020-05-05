@@ -303,7 +303,7 @@ struct Input
 typedef void (GameUpdateAndRender)(GameMemory *memory, Input *input, TextureHandle outputTarget,
                                    Rect *viewport, void *rendererState);
 #else
-typedef void (GameUpdateAndRender)(GameMemory *memory, Input *input, RenderCommands *renderCommands);
+typedef void (GameUpdateAndRender)(GameMemory *memory, Input *input, RenderCommands *renderCommands, LoadedBitmap *codepointZ);
 #endif
 
 #endif  // GAMEDEV_PLATFORM_H
