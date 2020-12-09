@@ -321,6 +321,57 @@ This is the place where most of your configurations should be done. Unless it is
 explicitly specified that a variable should be set before a package is loaded,
 you should place your code here."
 
+  (require 'org-table)
+  (require 'org-clock)
+  ;; Show clock reports in hours, not days
+  (setq org-duration-format 'h:mm)
+  (defun clocktable-by-tag/shift-cell (n)
+    (let ((str ""))
+      (dotimes (i n)
+        (setq str (concat str "| ")))
+      str))
+
+  (defun clocktable-by-tag/insert-tag (params)
+    (let ((tag (plist-get params :tags)))
+      (insert "|--\n")
+      (insert (format "| %s | *Tag time* |\n" tag))
+      (let ((total 0))
+        ;; (mapcar
+        ;;  (lambda (file)
+        ;;    (let ((clock-data (with-current-buffer (find-file-noselect file)
+        ;;                        (org-clock-get-table-data (buffer-name) params))))
+        ;;      (when (> (nth 1 clock-data) 0)
+        ;;        (setq total (+ total (nth 1 clock-data)))
+        ;;        (insert (format "| | File *%s* | %.2f |\n"
+        ;;                        (file-name-nondirectory file)
+        ;;                        (/ (nth 1 clock-data) 60.0)))
+        ;;        (dolist (entry (nth 2 clock-data))
+        ;;          (insert (format "| | . %s%s | %s %.2f |\n"
+        ;;                          (org-clocktable-indent-string (nth 0 entry))
+        ;;                          (nth 1 entry)
+        ;;                          (clocktable-by-tag/shift-cell (nth 0 entry))
+        ;;                          (/ (nth 4 entry) 60.0)))))))
+        ;;  (org-agenda-files))
+        (let ((clock-data (org-clock-get-table-data (buffer-name) params)))
+          (when (> (nth 1 clock-data) 0)
+            (setq total (+ total (nth 1 clock-data))))
+          )
+        (save-excursion
+          (re-search-backward "*Tag time*")
+          (org-table-next-field)
+          (org-table-blank-field)
+          (let ((hours (/ (floor total) 60)))
+            (insert (format "*%dh %dm*" hours (% total 60))))))
+      (org-table-align)))
+
+  (defun org-dblock-write:clocktable-by-tag (params)
+    (insert "| Tag | Headline | Time (h) |\n")
+    ;;(insert "|     |          | <r>  |\n")
+    (let ((tag (plist-get params :match)))
+      (clocktable-by-tag/insert-tag (plist-put (plist-put params :match tag) :tags tag))))
+
+  (provide 'clocktable-by-tag)
+
   (defun cjh-wrap-region-in-if (start end)
     (interactive "r")
     (let ((num-lines (count-lines start end)))
@@ -455,14 +506,24 @@ you should place your code here."
   (add-hook 'prog-mode-hook 'turn-on-evil-mc-mode)
   (add-hook 'text-mode-hook 'turn-on-evil-mc-mode)
 
+  ;; Enable execution of code blocks in org-mode
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((emacs-lisp . t)))
+
   ;; Turn on column ruler
   ;; This causes graphical weirdness
   ;; (add-hook 'c-mode-common-hook 'turn-on-fci-mode)
   ;; (setq-default fill-column 100)
   ;; (setq fci-rule-color "#586A84")
 
-  (setq spacemacs-theme-comment-bg nil)
-  (setq-default tab-width 4)
+  ;; Fix slow org-mode on Windows
+  ;; (setq gc-cons-threshold (* 511 1024 1024))
+  ;; (setq gc-cons-percentage 0.5)
+  ;; (run-with-idle-timer 5 t #'garbage-collect)
+
+  ;; (setq spacemacs-theme-comment-bg nil)
+  ;; (setq-default tab-width 4)
 )
 
 ;; Do not write anything past this comment. This is where Emacs will
@@ -475,7 +536,7 @@ you should place your code here."
  '(compilation-search-path (quote (nil "w:\\gamedev")))
  '(package-selected-packages
    (quote
-    (zenburn-theme zen-and-art-theme white-sand-theme underwater-theme ujelly-theme twilight-theme twilight-bright-theme twilight-anti-bright-theme toxi-theme tao-theme tangotango-theme tango-plus-theme tango-2-theme sunny-day-theme sublime-themes subatomic256-theme subatomic-theme spacegray-theme soothe-theme solarized-theme soft-stone-theme soft-morning-theme soft-charcoal-theme smyx-theme seti-theme reverse-theme rebecca-theme railscasts-theme purple-haze-theme professional-theme planet-theme phoenix-dark-pink-theme phoenix-dark-mono-theme organic-green-theme omtose-phellack-theme oldlace-theme occidental-theme obsidian-theme noctilux-theme naquadah-theme mustang-theme monokai-theme monochrome-theme molokai-theme moe-theme minimal-theme material-theme majapahit-theme madhat2r-theme lush-theme light-soap-theme jbeans-theme jazz-theme ir-black-theme inkpot-theme heroku-theme hemisu-theme hc-zenburn-theme gruvbox-theme gruber-darker-theme grandshell-theme gotham-theme gandalf-theme flatui-theme flatland-theme farmhouse-theme exotica-theme espresso-theme dracula-theme django-theme darktooth-theme autothemer darkokai-theme darkmine-theme darkburn-theme dakrone-theme cyberpunk-theme color-theme-sanityinc-tomorrow color-theme-sanityinc-solarized clues-theme cherry-blossom-theme busybee-theme bubbleberry-theme birds-of-paradise-plus-theme badwolf-theme apropospriate-theme anti-zenburn-theme ample-zen-theme ample-theme alect-themes afternoon-theme doom-themes powerline alert log4e gntp hydra parent-mode projectile pos-tip flx highlight smartparens iedit anzu evil goto-chg company bind-map bind-key yasnippet packed helm avy helm-core async f s auto-complete popup flycheck pkg-info dash epl omnisharp csharp-mode mmm-mode markdown-toc markdown-mode gh-md lua-mode yaml-mode powershell yapfify pyvenv pytest pyenv-mode py-isort pip-requirements live-py-mode hy-mode dash-functional helm-pydoc disaster cython-mode company-c-headers company-anaconda cmake-mode clang-format anaconda-mode pythonic helm-themes helm-swoop helm-projectile helm-mode-manager helm-flx helm-descbinds helm-company helm-c-yasnippet helm-ag ace-jump-helm-line org-projectile org-category-capture org-present org-plus-contrib ws-butler winum which-key wgrep volatile-highlights vi-tilde-fringe uuidgen use-package toc-org spaceline smex restart-emacs request rainbow-delimiters popwin persp-mode pcre2el paradox org-pomodoro org-mime org-download org-bullets open-junk-file neotree move-text macrostep lorem-ipsum linum-relative link-hint ivy-hydra indent-guide hungry-delete htmlize hl-todo highlight-parentheses highlight-numbers highlight-indentation helm-make google-translate golden-ratio gnuplot fuzzy flycheck-pos-tip flx-ido fill-column-indicator fancy-battery eyebrowse expand-region exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-search-highlight-persist evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-lisp-state evil-indent-plus evil-iedit-state evil-exchange evil-escape evil-ediff evil-args evil-anzu eval-sexp-fu elisp-slime-nav dumb-jump diminish define-word counsel-projectile company-statistics column-enforce-mode clean-aindent-mode bracketed-paste auto-yasnippet auto-highlight-symbol auto-compile aggressive-indent adaptive-wrap ace-window ace-link ac-ispell)))
+    (smeargle orgit magit-gitflow magit-popup helm-gitignore gitignore-mode gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link evil-magit magit git-commit with-editor transient zenburn-theme zen-and-art-theme white-sand-theme underwater-theme ujelly-theme twilight-theme twilight-bright-theme twilight-anti-bright-theme toxi-theme tao-theme tangotango-theme tango-plus-theme tango-2-theme sunny-day-theme sublime-themes subatomic256-theme subatomic-theme spacegray-theme soothe-theme solarized-theme soft-stone-theme soft-morning-theme soft-charcoal-theme smyx-theme seti-theme reverse-theme rebecca-theme railscasts-theme purple-haze-theme professional-theme planet-theme phoenix-dark-pink-theme phoenix-dark-mono-theme organic-green-theme omtose-phellack-theme oldlace-theme occidental-theme obsidian-theme noctilux-theme naquadah-theme mustang-theme monokai-theme monochrome-theme molokai-theme moe-theme minimal-theme material-theme majapahit-theme madhat2r-theme lush-theme light-soap-theme jbeans-theme jazz-theme ir-black-theme inkpot-theme heroku-theme hemisu-theme hc-zenburn-theme gruvbox-theme gruber-darker-theme grandshell-theme gotham-theme gandalf-theme flatui-theme flatland-theme farmhouse-theme exotica-theme espresso-theme dracula-theme django-theme darktooth-theme autothemer darkokai-theme darkmine-theme darkburn-theme dakrone-theme cyberpunk-theme color-theme-sanityinc-tomorrow color-theme-sanityinc-solarized clues-theme cherry-blossom-theme busybee-theme bubbleberry-theme birds-of-paradise-plus-theme badwolf-theme apropospriate-theme anti-zenburn-theme ample-zen-theme ample-theme alect-themes afternoon-theme doom-themes powerline alert log4e gntp hydra parent-mode projectile pos-tip flx highlight smartparens iedit anzu evil goto-chg company bind-map bind-key yasnippet packed helm avy helm-core async f s auto-complete popup flycheck pkg-info dash epl omnisharp csharp-mode mmm-mode markdown-toc markdown-mode gh-md lua-mode yaml-mode powershell yapfify pyvenv pytest pyenv-mode py-isort pip-requirements live-py-mode hy-mode dash-functional helm-pydoc disaster cython-mode company-c-headers company-anaconda cmake-mode clang-format anaconda-mode pythonic helm-themes helm-swoop helm-projectile helm-mode-manager helm-flx helm-descbinds helm-company helm-c-yasnippet helm-ag ace-jump-helm-line org-projectile org-category-capture org-present org-plus-contrib ws-butler winum which-key wgrep volatile-highlights vi-tilde-fringe uuidgen use-package toc-org spaceline smex restart-emacs request rainbow-delimiters popwin persp-mode pcre2el paradox org-pomodoro org-mime org-download org-bullets open-junk-file neotree move-text macrostep lorem-ipsum linum-relative link-hint ivy-hydra indent-guide hungry-delete htmlize hl-todo highlight-parentheses highlight-numbers highlight-indentation helm-make google-translate golden-ratio gnuplot fuzzy flycheck-pos-tip flx-ido fill-column-indicator fancy-battery eyebrowse expand-region exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-search-highlight-persist evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-lisp-state evil-indent-plus evil-iedit-state evil-exchange evil-escape evil-ediff evil-args evil-anzu eval-sexp-fu elisp-slime-nav dumb-jump diminish define-word counsel-projectile company-statistics column-enforce-mode clean-aindent-mode bracketed-paste auto-yasnippet auto-highlight-symbol auto-compile aggressive-indent adaptive-wrap ace-window ace-link ac-ispell)))
  '(paradox-github-token t)
  '(same-window-buffer-names nil)
  '(spacemacs-large-file-modes-list
